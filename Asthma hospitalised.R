@@ -2,23 +2,25 @@
 #   children hospitalised with asthma (under16). 
 
 #   Part 1 - Extract data from SMRA.
-#   Part 2 -  Create the different geographies basefiles
-#   Part 3 - Run macros
+#   Part 2 - Create the different geographies basefiles
+#   Part 3 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
-source("./function_analysis.R") #It will need to sit on non-confi
-server_desktop <- "server" # change depending if you are using R server or R desktop
 
+server_desktop <- "server" # change depending if you are using R server or R desktop
 if (server_desktop == "server") {
   prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-  # functions <- ""
+  functions <- "/PHI_conf/ScotPHO/Profiles/Data/2. Functions code/"
 } else if (server_desktop == "desktop") {
   prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-  # functions <- ""
+  functions <- "//stats/ScotPHO/Profiles/Data/2. Functions code/"
 }
+
+source(paste0(functions, "function_analysis.R")) #Normal indicator functions
+
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
 ###############################################.
@@ -93,7 +95,7 @@ ir_file <- rbind(dz01, ir_file) #joining together
 saveRDS(ir_file, file=paste0(prepared_data, 'DZ_asthma_IR_raw.rds'))
 
 ###############################################.
-## Part 3 - Run macros. ----
+## Part 3 - Run analysis functions ----
 ###############################################.
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 

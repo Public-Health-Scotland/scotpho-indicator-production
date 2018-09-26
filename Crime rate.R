@@ -1,4 +1,4 @@
-#Code to create data for crime rate indicator, including deprivation.
+# ScotPHO indicators: crime rate, including deprivation.
 
 ## Part 1 - Format raw data ready for analysis functions 
 ## Part 2 - calling the analysis functions 
@@ -27,20 +27,21 @@ if (server_desktop == "server") {
 source(paste0(functions, "deprivation_analysis.R")) # deprivation function
 source(paste0(functions, "function_analysis.R")) #Normal indicator functions
 
-###############################################.
-## Part 1 - Format raw data ready for analysis functions ----
-###############################################.
-#Small macro to standarize each years info. Macro parameters:
-#Data is for what basefile to use, Datazone is for what dz type using, simd for which simd variables-year to look at, year for what year is the data created.
+#Small function to standarize each years info. Function parameters:
+#Data is for what basefile to use, Datazone is for what dz type using, 
+#simd for which simd variables-year to look at, year for what year is the data created.
 read_simd_quint <- function(data, simd, datazone, year) {
   data_simd <- read.spss(paste0(cl_out_depr, data, '.sav'), 
-                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
+                         to.data.frame=TRUE, use.value.labels=FALSE) %>% 
     setNames(tolower(names(.))) %>%   #variables to lower case
     select_(simd, datazone) %>% 
     rename_(numerator = simd, datazone = datazone) %>% 
     mutate(year = year)
 }
 
+###############################################.
+## Part 1 - Format raw data ready for analysis functions ----
+###############################################.
 data_crime <- as.data.frame(rbind(
   read_simd_quint(year = 2004, data = "DataZone2001_all_simd", 
                   simd = "simd2006_crime_n", datazone = "datazone2001"),

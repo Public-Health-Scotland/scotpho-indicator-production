@@ -2,27 +2,27 @@
 
 #   Part 1 - P1 Child dental raw data 
 #   Part 2 - P7 Child dental raw data 
-#   Part 3 - Run macros
+#   Part 3 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 lapply(c("dplyr", "readxl"), library, character.only = TRUE)
-server_desktop <- "server" # change depending if you are using R server or R desktop
 
+server_desktop <- "server" # change depending if you are using R server or R desktop
 if (server_desktop == "server") {
   prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "/PHI_conf/ScotPHO/Profiles/Data/Received Data/"
-  # functions <- ""
+  functions <- "/PHI_conf/ScotPHO/Profiles/Data/2. Functions code/"
 } else if (server_desktop == "desktop") {
   prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "//stats/ScotPHO/Profiles/Data/Received Data/"
-  # functions <- ""
+  functions <- "//stats/ScotPHO/Profiles/Data/2. Functions code/"
 }
 
-data <- read_excel(paste0(received_data, "IR2017-01731_DZ2011 Child dental Health.xlsx"), 
-                   sheet = "2013_P1_C_DZ2011", range = "A5:E13075")
+source(paste0(functions, "function_analysis.R")) #Normal indicator functions
 
+#Function to read raw data for each year
 read_excel_sheet <- function(sheet, range) {
   data <- read_excel(paste0(received_data, "IR2017-01731_DZ2011 Child dental Health.xlsx"), 
                             sheet = sheet, range = range) %>% 
@@ -60,10 +60,8 @@ data_p7 <- as.data.frame(rbind(
 saveRDS(data_p7, file=paste0(prepared_data, 'child_dental_p7_raw.rds'))
 
 ###############################################.
-## Part 3 - Calling the  macros ----
+## Part 3 - Run analysis functions ----
 ###############################################.
-source("./function_analysis.R") #It will need to sit on non-confi
-
 #I need to amend the function so it works with population finite correction factor
 #Children at P1
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
