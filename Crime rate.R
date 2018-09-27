@@ -104,8 +104,6 @@ analyze_first(filename = "crime_rate_ca", geography = "council", measure = "crud
 analyze_first(filename = "crime_rate_dz11", geography = "datazone11", measure = "crude", 
               yearstart = 2014, yearend = 2017, time_agg = 1, pop = "DZ11_pop_allages")
 
-test <- readRDS(paste0(temporal_data, "crime_rate_ca_formatted.rds"))
-
 #Merging CA and DZ11 together
 all_data <- rbind(readRDS(paste0(temporal_data, "crime_rate_dz11_formatted.rds")),
                   readRDS(paste0(temporal_data, "crime_rate_ca_formatted.rds")))
@@ -113,7 +111,7 @@ saveRDS(all_data, file = paste0(temporal_data, "crime_rate_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "crime_rate_all", measure = "crude", time_agg = 1, crude_rate = 1000,
-               ind_id = 20801, year_type = "school", profile = "HN", min_opt = 2999)
+               ind_id = 20801, year_type = "calendar", profile = "HN", min_opt = 2999)
 
 ###############################################.
 #Deprivation analysis function
