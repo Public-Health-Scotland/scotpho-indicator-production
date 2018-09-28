@@ -49,11 +49,13 @@ source(paste0(functions, "function_analysis.R")) #Normal indicator functions
 #   setNames(tolower(names(.))  #variables to lower case
            
 ##can't access SMRA tables yet so data coming from spss extract
-data<- read_spss("/conf/phip/Projects/Profiles/Data/Indicators/Deaths, Injury and Disease/Raw Data/Prepared Data/deaths_allages_smraextract.sav")%>%
+data<- read_csv("/conf/phip/Projects/Profiles/Data/Indicators/Deaths, Injury and Disease/Raw Data/Prepared Data/deaths_allages_smraextract.csv")%>%
   setNames(tolower(names(.))) %>% #variables to lower case
-  mutate_all(factor) # converting variables into factors
-
-
+  mutate_if(is.character, factor) # converting variables into factors
+#  mutate_all(factor) # converting variables into factors
+data$sex_grp <- as.factor(data$sex_grp) #reading in data needed to cheat to get factors correct
+  
+  
 # Creating age groups for standardization.
 data <- data %>% mutate(age_grp = case_when( 
   age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
@@ -107,6 +109,18 @@ saveRDS(dz01, file=paste0(prepared_data, 'deaths_allages_dz01_raw.rds'))
 ir_file <- dz11 %>% subset(year>2010)
 ir_file <- rbind(dz01, ir_file) #joining together
 
-saveRDS(ir_file, file=paste0(prepared_data, 'DZ_asthma_IR_raw.rds'))
+saveRDS(ir_file, file=paste0(prepared_data, 'DZ_deaths_allages_IR_raw.rds'))
 
 
+###############################################.
+## Part 3 - Run analysis functions ----
+###############################################.
+#Deaths all ages
+
+analyze_first(filename = "deaths_allages_dz11", geography = "datazone11", measure = "stdrate", 
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
+              time_agg = 3, epop_age = "normal")
+
+analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg = 3, 
+               epop_total = 200000, ind_id = 20103, year_type = "calendar", 
+               profile = "HN", min_opt = 1245385)
