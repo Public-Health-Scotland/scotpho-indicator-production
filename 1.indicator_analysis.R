@@ -264,9 +264,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   ##################################################.
   ##  Part 5 - Adding time labels and indicator info ----
   ##################################################.
-    #Indicator code and OPT Number
-    data <- data %>% mutate(ind_id = ind_id, 
-             uni_id = paste0(profile, (seq_len(nrow(data)) + min_opt - 1))) %>% 
+    #Indicator code 
+    data <- data %>% mutate(ind_id = ind_id) %>% 
       # fill in missing values and if any have negative lower CI change that to zero.
       mutate_at(c("rate", "lowci", "upci"), funs(replace(., is.na(.), 0))) 
     data$lowci <- ifelse(data$lowci<0, 0, data$lowci)
@@ -316,10 +315,13 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   
     #Preparing data for old OPT tool
     #Excluding HSC locality and partnership.
-    data <- data %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99')))
+    data <- data %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) 
+    # OPT number
+    data <- data %>% mutate(uni_id = paste0(profile, (seq_len(nrow(data)) + min_opt - 1))) 
     
     # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-    data <- data[c(8,2,7,1,3,4,5,6,10,9)] 
+    data <- data[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+                   "upci", "def_period", "trend_axis")] 
     
     write_csv(data, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
               col_names = FALSE)
