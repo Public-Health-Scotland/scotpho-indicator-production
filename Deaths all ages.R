@@ -6,28 +6,21 @@
 
 library(odbc) #load first or packages seem to conflict
 library(haven) #for SPPS file reading
-
 library(dplyr)
 library(readr)
-
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
-
-server_desktop <- "server" # change depending if you are using R server or R desktop
 if (server_desktop == "server") {
   prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-  functions <- "/PHI_conf/ScotPHO/Profiles/Data/2. Functions code/"
 } else if (server_desktop == "desktop") {
   prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-  functions <- "//stats/ScotPHO/Profiles/Data/2. Functions code/"
 }
 
-source(paste0(functions, "function_analysis.R")) #Normal indicator functions
-
+source("./1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -124,3 +117,5 @@ analyze_first(filename = "deaths_allages_dz11", geography = "datazone11", measur
 analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg = 3, 
                epop_total = 200000, ind_id = 20103, year_type = "calendar", 
                profile = "HN", min_opt = 1245385)
+
+##END
