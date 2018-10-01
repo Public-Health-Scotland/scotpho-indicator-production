@@ -15,17 +15,15 @@ if (server_desktop == "server") {
   prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "/PHI_conf/ScotPHO/Profiles/Data/Received Data/"
   cl_out_depr <- "/conf/linkage/output/lookups/Unicode/Deprivation/"
-  functions <- "/PHI_conf/ScotPHO/Profiles/Data/2. Functions code/"
 } else if (server_desktop == "desktop") {
   temporal_data <- "//stats/ScotPHO/Profiles/Data/Temporal/"
   prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "//stats/ScotPHO/Profiles/Data/Received Data/"
   cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
-  functions <- "//stats/ScotPHO/Profiles/Data/2. Functions code/"
 }
 
-source(paste0(functions, "deprivation_analysis.R")) # deprivation function
-source(paste0(functions, "function_analysis.R")) #Normal indicator functions
+source("./1.indicator_analysis.R") #Normal indicator functions
+source("./2.deprivation_analysis.R") # deprivation function
 
 #Small function to standarize each years info. Function parameters:
 #Data is for what basefile to use, Datazone is for what dz type using, 

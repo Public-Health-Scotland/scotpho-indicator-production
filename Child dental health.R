@@ -13,14 +13,12 @@ server_desktop <- "server" # change depending if you are using R server or R des
 if (server_desktop == "server") {
   prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "/PHI_conf/ScotPHO/Profiles/Data/Received Data/"
-  functions <- "/PHI_conf/ScotPHO/Profiles/Data/2. Functions code/"
 } else if (server_desktop == "desktop") {
   prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
   received_data <- "//stats/ScotPHO/Profiles/Data/Received Data/"
-  functions <- "//stats/ScotPHO/Profiles/Data/2. Functions code/"
 }
 
-source(paste0(functions, "function_analysis.R")) #Normal indicator functions
+source("./1.indicator_analysis.R") #Normal indicator functions
 
 #Function to read raw data for each year
 read_excel_sheet <- function(sheet, range) {
