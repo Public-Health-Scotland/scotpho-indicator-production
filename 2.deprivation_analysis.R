@@ -44,8 +44,6 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
                                 epop_age = NULL, epop_total = NULL, pop = NULL, 
                                 crude_rate = 0, ind_id, year_type) {
   
-
-
   ###############################################.
   ## Part 1 - Read in raw data and add in lookup info ----
   ###############################################.
@@ -125,7 +123,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
         mutate_at(c("sex_grp", "code"), as.factor)
       
       data_depr <- full_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
-                        by = c("year", "code", "sex_grp", "age_grp", "quintile"))
+                        by = c("year", "code", "sex_grp", "age_grp", "quintile", "quint_type"))
       
     } else if (measure %in% c("crude", "percent")){
       
@@ -133,7 +131,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
         subset(year >= yearstart) #Reading population file and selecting only for 2011 onwards
       
       # Matching population with data
-      data_depr <- full_join(x=data_depr, y=pop_depr_lookup, by = c("year", "code", "quintile"))
+      data_depr <- full_join(x=data_depr, y=pop_depr_lookup, 
+                             by = c("year", "code", "quintile", "quint_type"))
       
     }
   } 
@@ -203,7 +202,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   saveRDS(data_depr, file=paste0(data_folder, "Temporal/", filename, "_formatted.rds"))
   
   ##################################################.
-  ##  Part 4 - Create rates or percentages ----
+  ##  Part 5 - Create rates or percentages ----
   ##################################################.
 
   if (measure == "stdrate"){ #European Age-sex standardized rates
@@ -252,7 +251,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   }
   
   ##################################################.
-  ##  Part 5 - Create SII ----
+  ##  Part 6 - Create SII ----
   ##################################################.
   #Splitting into two files: on with quintiles for SII and one without for RII
   data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
@@ -317,43 +316,46 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   data_depr_sii$lowci_slope <- ifelse(data_depr_sii$lowci_slope < 0 , 0, data_depr_sii$lowci_slope)  
 
   ##################################################.
-  ##  Part 5 - Create RII  ----
+  ##  Part 7 - Calculate RII, Population attributable risk and range  ----
   ##################################################.
+  #Calculating RII
   data_depr <- data_depr_sii %>% 
     mutate(rii = slope_coef / overall_rate,
            lowci_rii = lowci_slope / overall_rate,
            upci_rii = upci_slope / overall_rate)
 
-  ##################################################.
-  ##  Part 5 - Create Population attributable risk and range ----
-  ##################################################.
+  #Calculation PAR
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   # Should we match with the least deprived quintile or with the lowest value?
-  data_depr <- data_depr %>% group_by(code, year, quint_type) %>% 
-    mutate(par_rr = (rate/rate[quintile == "5"] - 1) * proportion_pop,
+  #Most and least deprived rates
+  most_depr <- data_depr %>% filter(quintile == "1") %>% 
+    select(code, year, quint_type, rate) %>% rename(most_rate = rate)
+  least_depr <- data_depr %>% filter(quintile == "5") %>% 
+    select(code, year, quint_type, rate) %>% rename(least_rate = rate)
+
+  data_depr <- left_join(data_depr, most_depr, by = c("code", "year", "quint_type"))
+  data_depr <- left_join(data_depr, least_depr, by = c("code", "year", "quint_type"))
+  
+  data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
+    mutate(par_rr = (rate/least_rate - 1) * proportion_pop,
            par = sum(par_rr)/(sum(par_rr) + 1) * 100,
-  # Create ranges 
-           abs_range = rate[quintile == "1"] - rate[quintile == "5"],
-           rel_range = rate[quintile == "1"] / rate[quintile == "5"]
-           ) %>% 
-    ungroup() 
+           # Calculate ranges 
+           abs_range = most_rate - least_rate,
+           rel_range = most_rate / least_rate
+    ) %>% ungroup()
   
   #Joining with totals.
   data_depr_match <- data_depr %>% filter(quintile == "1") %>% 
     select(code, year, quint_type, slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
            par, abs_range, rel_range)
   
-  data_depr_totals <- left_join(data_depr_totals, data_depr_match, by = c("code", "year", "quint_type"))
+  data_depr_totals <- left_join(data_depr_totals, data_depr_match, 
+                                by = c("code", "year", "quint_type"))
   
   data_depr <- bind_rows(data_depr, data_depr_totals) 
   
-  data_depr <- data_depr %>% 
-    select(code, year, quintile, numerator, denominator, rate, lowci, upci, 
-           slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
-           par, abs_range, rel_range)
-  
   ##################################################.
-  ##  Part 6 - Adding time labels and indicator info ----
+  ##  Part 8 - Adding time labels and indicator info ----
   ##################################################.
   #Indicator code
   data_depr <- data_depr %>% mutate(ind_id = ind_id) %>% 
@@ -395,7 +397,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    select(c(code, quintile, ind_id, year, numerator, rate, lowci, upci, 
+    select(c(code, quintile, quint_type, ind_id, year, numerator, rate, lowci, upci, 
              slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
              par, abs_range, rel_range, def_period, trend_axis))
   
@@ -403,7 +405,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_ineq.rds"))
 
   ##################################################.
-  ##  Part 7 - Checking results ----
+  ##  Part 9 - Checking results ----
   ##################################################.
   #Selecting Health boards and Scotland for latest year in dataset
   ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
