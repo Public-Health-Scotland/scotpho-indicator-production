@@ -114,7 +114,7 @@ analyze_second(filename = "income_deprived_all", measure = "percent", time_agg =
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="income_deprived_depr", measure="percent", time_agg=1, 
-                    crude_rate = 1000, yearstart= 2004, yearend=2017,  
+                    yearstart= 2004, yearend=2017,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20701)
 
 #END
