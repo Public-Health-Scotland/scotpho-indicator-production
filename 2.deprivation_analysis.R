@@ -57,43 +57,56 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #merging them
   data_depr <- left_join(data_depr, depr_lookup, by = c("datazone", "year"))
   
+  #Adding Scotland
+  data_depr <- data_depr %>% mutate(scotland = "S00000001")
+  
   ###############################################.
   ## Part 2 - Aggregate up to get figures for each area. ----
   ###############################################.
- 
-  #NEED TO INCLUDE STD RATE, maybe simplify with function
+  #This function groups the data for the variables selected and then aggregates it
+  #It works for the different types of quintiles and for all measures
+  create_quintile_data <- function(group_vars, geo, quint) {
+    if (measure %in% c("crude", "percent")) {
+      data_depr %>% select(c("numerator", group_vars)) %>% 
+        group_by_at(group_vars) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
+        rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+        mutate(quint_type = quint)
+    } else if (measure == "stdrate") {
+      data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
+        group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
+        summarise(numerator= sum(numerator, na.rm =T)) %>% 
+        rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+        mutate(quint_type = quint)
+    }
+  }
   
-  data_depr <- data_depr %>% mutate(scotland = "S00000001")
-if (measure %in% c("crude", "percent")) {
-  
-  data_scot <- data_depr %>% select(numerator, scotland, year, sc_quin) %>% 
-    group_by(scotland, year, sc_quin) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
-    rename(code = scotland, quintile = sc_quin) %>% ungroup()
-  
-  data_hb <- data_depr %>% select(numerator, hb2014, year, hb_quin) %>% 
-    group_by(hb2014, year, hb_quin) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
-    rename(code = hb2014, quintile = hb_quin) %>% ungroup()
-  
-  data_ca <- data_depr %>% select(numerator, ca2011, year, ca_quin) %>% 
-    group_by(ca2011, year, ca_quin) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
-    rename(code = ca2011, quintile = ca_quin) %>% ungroup()
-  
-} else if (measure == "stdrate") {
-  
-}
-  #merging data together
-  data_depr <- rbind(data_scot, data_hb, data_ca)
+  data_depr <- rbind( 
+    #Scotland 
+    create_quintile_data(geo = "scotland", quint = "sc_quin", 
+                         group_vars =  c("scotland", "year", "sc_quin")),
+    #Health boards using national quintiles
+    create_quintile_data(geo = "hb2014", quint = "sc_quin", 
+                         group_vars =  c("hb2014", "year", "sc_quin")),
+    #Health boards using health board quintiles
+    create_quintile_data(geo = "hb2014", quint = "hb_quin", 
+                         group_vars =  c("hb2014", "year", "hb_quin")),
+    #Council area using national quintiles
+    create_quintile_data(geo = "ca2011", quint = "sc_quin", 
+                         group_vars =  c("ca2011", "year", "sc_quin")),
+    #Council area using concil quintiles
+    create_quintile_data(geo = "ca2011", quint = "ca_quin",
+                         group_vars =  c("ca2011", "year", "ca_quin")))
   
   #Creating combined totals
   if (measure %in% c("crude", "percent")) {
     
-    data_depr_totals <- data_depr %>% group_by(code, year) %>% 
+    data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
       summarise(numerator= sum(numerator)) %>% 
       mutate(quintile = "Total") %>% ungroup()
     
   } else if (measure == "stdrate") {
     
-    data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp) %>% 
+    data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
       summarise(numerator= sum(numerator)) %>% 
       mutate(quintile = "Total") %>% ungroup()
   }
@@ -109,17 +122,15 @@ if (measure %in% c("crude", "percent")) {
     if(measure == "stdrate") {
       pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'_SR.rds')) %>% 
         subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
-        mutate_at(c("sex_grp", "age_grp", "code"), as.factor)
+        mutate_at(c("sex_grp", "code"), as.factor)
       
-      data_depr$age_grp <-as.factor(data_depr$age_grp)
       data_depr <- full_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
                         by = c("year", "code", "sex_grp", "age_grp", "quintile"))
       
     } else if (measure %in% c("crude", "percent")){
       
       pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
-        subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
-        mutate(code = as.factor(code))
+        subset(year >= yearstart) #Reading population file and selecting only for 2011 onwards
       
       # Matching population with data
       data_depr <- full_join(x=data_depr, y=pop_depr_lookup, by = c("year", "code", "quintile"))
@@ -142,8 +153,8 @@ if (measure %in% c("crude", "percent")) {
   ## Data needs to be sorted to calculate the right figures
   if (measure == "stdrate") {
     data_depr <- data_depr %>% 
-      arrange(code, quintile, sex_grp, age_grp, year) %>% 
-      group_by(code, quintile, sex_grp, age_grp) %>%
+      arrange(code, quintile, quint_type, sex_grp, age_grp, year) %>% 
+      group_by(code, quintile, quint_type, sex_grp, age_grp) %>%
       mutate(numerator = roll_meanr(numerator, time_agg), 
              denominator = roll_meanr(denominator, time_agg)) %>% 
       subset(!is.na(denominator)) %>%  #excluding NA rows 
@@ -152,8 +163,8 @@ if (measure %in% c("crude", "percent")) {
     
   } else if (measure %in% c("crude", "percent")) {
     data_depr <- data_depr %>% 
-      arrange(code, quintile, year) %>% 
-      group_by(code, quintile) %>%
+      arrange(code, quintile, quint_type, year) %>% 
+      group_by(code, quintile, quint_type) %>%
       mutate(numerator = roll_meanr(numerator, time_agg), 
              denominator = roll_meanr(denominator, time_agg)) %>% 
       subset(!is.na(denominator)) %>%  #excluding NA rows 
@@ -205,7 +216,7 @@ if (measure %in% c("crude", "percent")) {
     
     # aggregating by year, code and time
     data_depr <- data_depr %>% subset(select= -c(age_grp, sex_grp)) %>%
-      group_by(year, code, quintile) %>% summarise_all(funs(sum)) %>% ungroup()
+      group_by(year, code, quintile, quint_type) %>% summarise_all(funs(sum)) %>% ungroup()
     
     #Calculating rates and confidence intervals
     data_depr <- data_depr %>%
@@ -240,20 +251,19 @@ if (measure %in% c("crude", "percent")) {
     
   }
   
+  ##################################################.
+  ##  Part 5 - Create SII ----
+  ##################################################.
   #Splitting into two files: on with quintiles for SII and one without for RII
-  data_depr_sii <- data_depr %>% group_by(code, year) %>% 
+  data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
     filter(quintile != "Total") %>% ungroup()
   
   data_depr_totals <- data_depr %>% filter(quintile == "Total")
   
-  ##################################################.
-  ##  Part 5 - Create SII ----
-  ##################################################.
-
   #calculate the total population for each area (without SIMD).
   # proportion of the population in each SIMD out of the total population. 
-  data_depr_sii <- data_depr_sii %>% group_by(code, year) %>% 
+  data_depr_sii <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
     mutate(total_pop = sum(denominator),
            proportion_pop = denominator/total_pop,
   # cumulative proportion population for each area
@@ -267,7 +277,7 @@ if (measure %in% c("crude", "percent")) {
   # Calculate the regression coefficient
   # the formula for the regression coefficient can be found on 
   # http://www.statisticshowto.com/how-to-find-a-linear-regression-equation/ . 
-  data_depr_sii <- data_depr_sii %>% group_by(code, year) %>% 
+  data_depr_sii <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
       mutate(xy = relative_rank * rate,
              x_2 = relative_rank^2,
              sum_x = sum(relative_rank),
@@ -288,7 +298,7 @@ if (measure %in% c("crude", "percent")) {
         y_diff = (rate - yi)^2,
       # calculate the difference between relative_rank (x values) and the mean of relative_rank.
         x_diff = (relative_rank - mean_x)^2) %>% 
-      group_by(code, year) %>% 
+      group_by(code, year, quint_type) %>% 
       # sum the y difference and the x difference.
       mutate(sum_ydiff = sum(y_diff),
              sum_xdiff = sum(x_diff)) %>%  ungroup() %>% 
@@ -319,7 +329,7 @@ if (measure %in% c("crude", "percent")) {
   ##################################################.
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   # Should we match with the least deprived quintile or with the lowest value?
-  data_depr <- data_depr %>% group_by(code, year) %>% 
+  data_depr <- data_depr %>% group_by(code, year, quint_type) %>% 
     mutate(par_rr = (rate/rate[quintile == "5"] - 1) * proportion_pop,
            par = sum(par_rr)/(sum(par_rr) + 1) * 100,
   # Create ranges 
@@ -330,10 +340,10 @@ if (measure %in% c("crude", "percent")) {
   
   #Joining with totals.
   data_depr_match <- data_depr %>% filter(quintile == "1") %>% 
-    select(code, year, slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
+    select(code, year, quint_type, slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
            par, abs_range, rel_range)
   
-  data_depr_totals <- left_join(data_depr_totals, data_depr_match, by = c("code", "year"))
+  data_depr_totals <- left_join(data_depr_totals, data_depr_match, by = c("code", "year", "quint_type"))
   
   data_depr <- bind_rows(data_depr, data_depr_totals) 
   
