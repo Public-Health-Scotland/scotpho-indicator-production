@@ -202,7 +202,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       }
     }
     
-    saveRDS(data, file=paste0(data_folder, "Temporal/", filename, "_formatted.rds"))
+    saveRDS(data, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
 }
 ##################################################.
 ##  Second analysis function ----
@@ -214,7 +214,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   ##################################################.
   ##  Part 4 - Create rates or percentages ----
   ##################################################.
-  data <- readRDS(data, file=paste0(data_folder, "Temporal/", filename, "_formatted.rds"))
+  data <- readRDS(data, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
     
   if (measure == "stdrate"){ #European Age-sex standardized rates
     #Calculating individual easr and variance
@@ -304,7 +304,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
                                   "-year aggregates"))
     }
   
-    saveRDS(data, paste0(data_folder, "Temporal/", filename, "_final.rds"))
+    saveRDS(data, paste0(data_folder, "Temporary/", filename, "_final.rds"))
     
     #Preparing data for Shiny tool
     data_shiny <- data %>% select(c(code, ind_id, year, numerator, rate, lowci,
