@@ -22,7 +22,7 @@ source("./1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
-#Function to read raw data for each year
+#Reading data provided by Prescribing team
 data_products <- read_excel(paste0(received_data, "IR2018-01479-smoking cessation products.xlsx"), 
                             sheet = "Output", range = cell_limits(c(8, 2), c(NA, 10))) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
