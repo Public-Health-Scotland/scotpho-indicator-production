@@ -93,6 +93,8 @@ saveRDS(ir_file, file=paste0(prepared_data, 'DZ_deaths_allages_IR_raw.rds'))
 ###############################################.
 #Deprivation indicator numerator file
 
+##deprivation script not yet finished so dep macro may fail.
+
 #deaths_allages_depr <- ir_file %>% rename(code = datazone)
 
 saveRDS(ir_file, file=paste0(prepared_data, 'deaths_allages_depr_raw.rds'))
