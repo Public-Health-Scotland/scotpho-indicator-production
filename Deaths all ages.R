@@ -95,9 +95,15 @@ saveRDS(ir_file, file=paste0(prepared_data, 'DZ_deaths_allages_IR_raw.rds'))
 
 ##deprivation script not yet finished so dep macro may fail.
 
-#deaths_allages_depr <- ir_file %>% rename(code = datazone)
+# Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+dz01_dep <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% subset(year<=2013) %>% rename(datazone = datazone2001)
 
-saveRDS(ir_file, file=paste0(prepared_data, 'deaths_allages_depr_raw.rds'))
+# Deprivation basefile
+dep_file <- dz11 %>% subset(year>=2014)
+dep_file <- rbind(dz01_dep, dep_file) #joining together
+
+saveRDS(dep_file, file=paste0(prepared_data, 'deaths_allages_depr_raw.rds'))
 
 
 
