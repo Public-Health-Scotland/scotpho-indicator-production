@@ -4,13 +4,10 @@
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run macros
 
-
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 lapply(c("odbc", "readr", "dplyr"), library, character.only = TRUE)
-
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 if (server_desktop == "server") {
@@ -35,12 +32,12 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 #exclude deaths where sex is unknown (9)
 
 data_deaths <- tbl_df(dbGetQuery(channel, statement=
-                                   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
-                                 FROM ANALYSIS.GRO_DEATHS_C 
-                                 WHERE date_of_registration between '1 January 2002' AND '31 December 2017'
-                                 AND country_of_residence ='XS'
-                                 AND age is not NULL
-                                 AND sex <> 9")) %>%
+ "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
+  FROM ANALYSIS.GRO_DEATHS_C 
+  WHERE date_of_registration between '1 January 2002' AND '31 December 2017'
+        AND country_of_residence ='XS'
+        AND age is not NULL
+        AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Creating age groups for standardization.
@@ -59,7 +56,6 @@ data_deaths <- data_deaths %>% mutate(age_grp = case_when(
 
 postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
   setNames(tolower(names(.)))  #variables to lower case
-
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
   select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% 
@@ -105,8 +101,6 @@ dep_file <- rbind(dz01_dep, dep_file) #joining together
 
 saveRDS(dep_file, file=paste0(prepared_data, 'deaths_allages_depr_raw.rds'))
 
-
-
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
@@ -120,8 +114,6 @@ analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg =
                epop_total = 200000, ind_id = 20103, year_type = "calendar", 
                profile = "HN", min_opt = 1245385)
 
-
-
 #############################################.
 #Deprivation analysis function
 
@@ -131,5 +123,3 @@ analyze_deprivation(filename="deaths_allages_depr", measure="stdrate", time_agg=
                     epop_age="normal", epop_total =200000, ind_id = 10101)
 
 #END
-
-
