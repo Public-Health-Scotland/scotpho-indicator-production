@@ -122,7 +122,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
         subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
         mutate_at(c("sex_grp", "code"), as.factor)
       
-      data_depr <- full_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
+      data_depr <- right_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
                         by = c("year", "code", "sex_grp", "age_grp", "quintile", "quint_type"))
       
     } else if (measure %in% c("crude", "percent")){
@@ -131,13 +131,15 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
         subset(year >= yearstart) #Reading population file and selecting only for 2011 onwards
       
       # Matching population with data
-      data_depr <- full_join(x=data_depr, y=pop_depr_lookup, 
+      data_depr <- right_join(x=data_depr, y=pop_depr_lookup, 
                              by = c("year", "code", "quintile", "quint_type"))
       
     }
   } 
   #selecting only years of interest
   data_depr <- data_depr %>% subset(year >= yearstart & year <= yearend)
+  
+  data_depr$numerator[is.na(data_depr$numerator)] <- 0 # Converting NA's to 0s
   
   ###############################################.
   ## Part 4 - Create required time periods ----
@@ -199,7 +201,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     }
   }
   
-  saveRDS(data_depr, file=paste0(data_folder, "Temporal/", filename, "_formatted.rds"))
+  saveRDS(data_depr, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
   
   ##################################################.
   ##  Part 5 - Create rates or percentages ----
@@ -229,7 +231,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              upci = (easr+sqrt(var/numerator)*(o_upper - numerator))*100000) #Upper CI final step
     
     data_depr <- data_depr %>% subset(select = -c(var, easr, epop_total, o_lower, o_upper, 
-                                        easr_first, epop, var_dsr, denominator)) #deleting variables
+                                        easr_first, epop, var_dsr)) #deleting variables
     
   } else if (measure == "percent"){ #Percentage
     data_depr <- data_depr %>%
@@ -345,7 +347,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     ) %>% ungroup()
   
   #Joining with totals.
-  data_depr_match <- data_depr %>% filter(quintile == "1") %>% 
+  data_depr_match <- data_depr %>% filter(quintile == "3") %>% 
     select(code, year, quint_type, slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
            par, abs_range, rel_range)
   
@@ -393,7 +395,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
                                  "-year aggregates"))
   }
   
-  saveRDS(data_depr, paste0(data_folder, "Temporal/", filename, "_final.rds"))
+  saveRDS(data_depr, paste0(data_folder, "Temporary/", filename, "_final.rds"))
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
@@ -409,7 +411,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   ##################################################.
   #Selecting Health boards and Scotland for latest year in dataset
   ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                               & year==2014 & quintile == "Total")), aes(code, rate) ) +
+                               & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
+         aes(code, rate) ) +
     geom_point(stat = "identity") +
     geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
 }
