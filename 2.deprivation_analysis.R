@@ -1,12 +1,14 @@
 #Function to create data for indicators by deprivation quintile (SIMD).
 
 #TODO:
-#What happens wth RII/SII when not all quintiles present in an area
-#How are the calculations happening when quintiles with unequal pop
 #Instead of showing RII and SII use translation as percentage
-#Think about how interpretation (high better or worse) migh affect SII/RII calculation
-#DEal with RII/SII calculation: socepi?
+#Think about how interpretation (high better or worse) migh affect SII/RII/PAR calculation
 #Monte Carlo simulation for CIs - Lumme et al. 2015
+#simplify easr ci calculation
+
+#NOTES:
+# When not all quintiles present in an area, RII and SII won't be shown in the tool
+# I am including negative CI's as this tool can cope with them
 
 ## HOW TO USE THIS FUNCTION
 # File is expected at datazone 2011 level with only these other variables:
@@ -263,12 +265,16 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   }
   
   ##################################################.
-  ##  Part 6 - Create SII ----
+  ##  Part 6 - Create SII and RII ----
   ##################################################.
-  #Splitting into two files: one with quintiles for SII and one without for RII
+  #Splitting into two files: one with quintiles for SII and one without to keep the total values
   data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
-    filter(quintile != "Total") %>% ungroup()
+    filter(quintile != "Total") %>% 
+    #This variables are used for SII, RII and PAR calculation
+    mutate(total_pop = sum(denominator), # calculate the total population for each area (without SIMD).
+           proportion_pop = denominator/total_pop) %>% # proportion of the population in each SIMD out of the total population. )
+    ungroup()
   
   data_depr_totals <- data_depr %>% filter(quintile == "Total")
   
@@ -278,9 +284,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   # geography, year and quintile type
   sii_model <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
     #This first part is to adjust rate and denominator with the population weights
-    mutate(total_pop = sum(denominator), # calculate the total population for each area (without SIMD).
-           proportion_pop = denominator/total_pop,   # proportion of the population in each SIMD out of the total population. 
-           cumulative_pro = cumsum(proportion_pop),  # cumulative proportion population for each area
+    mutate(cumulative_pro = cumsum(proportion_pop),  # cumulative proportion population for each area
            relative_rank = case_when(
               quintile == "1" ~ 0.5*proportion_pop,
               quintile != "1" ~ lag(cumulative_pro) + 0.5*proportion_pop),
@@ -299,26 +303,26 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     filter(row_number() %% 2 == 0) %>% 
     mutate(lowci_sii = -1 * conf.high, #fixing interpretation
            upci_sii = -1 * conf.low) %>% 
-    select(-conf.low, -conf.high)
+    select(-conf.low, -conf.high) %>% 
+  mutate_at(c("sii", "lowci_sii", "upci_sii"), funs(replace(., is.na(.), NA_real_))) #recoding NAs
   
-  data_depr_sii <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
+  #Merging sii with main data set
+  data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
   
-  
-  ##################################################.
-  ##  Part 7 - Calculate RII, Population attributable risk and range  ----
-  ##################################################.
   #Calculating RII
-  data_depr <- data_depr_sii %>% 
-    mutate(rii = sii / overall_rate,
+  data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
            lowci_rii = lowci_sii / overall_rate,
            upci_rii = upci_sii / overall_rate)
 
+  ##################################################.
+  ##  Part 7 - Population attributable risk and range  ----
+  ##################################################.
   #Calculation PAR
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
-  # Should we match with the least deprived quintile or with the lowest value?
   #Most and least deprived rates
   most_depr <- data_depr %>% filter(quintile == "1") %>% 
     select(code, year, quint_type, rate) %>% rename(most_rate = rate)
+  
   least_depr <- data_depr %>% filter(quintile == "5") %>% 
     select(code, year, quint_type, rate) %>% rename(least_rate = rate)
 
@@ -326,17 +330,19 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   data_depr <- left_join(data_depr, least_depr, by = c("code", "year", "quint_type"))
   
   data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
-    mutate(par_rr = (rate/least_rate - 1) * proportion_pop,
-           par = sum(par_rr)/(sum(par_rr) + 1) * 100,
-           # Calculate ranges 
-           abs_range = most_rate - least_rate,
-           rel_range = most_rate / least_rate
+    mutate(#calculating PAR
+      par_rr = (rate/least_rate - 1) * proportion_pop,
+      par = sum(par_rr)/(sum(par_rr) + 1) * 100,
+      # Calculate ranges 
+      abs_range = most_rate - least_rate,
+      rel_range = most_rate / least_rate
     ) %>% ungroup()
   
   #Joining with totals.
-  data_depr_match <- data_depr %>% filter(quintile == "3") %>% 
+  #dataframe with the unique values for the different inequality measures
+  data_depr_match <- data_depr %>% 
     select(code, year, quint_type, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
-           par, abs_range, rel_range)
+           par, abs_range, rel_range) %>% unique()
   
   data_depr_totals <- left_join(data_depr_totals, data_depr_match, 
                                 by = c("code", "year", "quint_type"))
@@ -386,10 +392,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    select(c(code, quintile, quint_type, ind_id, year, numerator, rate, lowci, upci, 
-             sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
-             par, abs_range, rel_range, def_period, trend_axis))
-  
+    select(-c(overall_rate, total_pop, denominator, proportion_pop, most_rate, least_rate, par_rr))
+
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_ineq.rds"))
 
