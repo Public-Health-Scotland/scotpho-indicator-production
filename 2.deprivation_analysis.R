@@ -1,5 +1,13 @@
 #Function to create data for indicators by deprivation quintile (SIMD).
 
+#TODO:
+#What happens wth RII/SII when not all quintiles present in an area
+#How are the calculations happening when quintiles with unequal pop
+#Instead of showing RII and SII use translation as percentage
+#Think about how interpretation (high better or worse) migh affect SII/RII calculation
+#DEal with RII/SII calculation: socepi?
+#Monte Carlo simulation for CIs - Lumme et al. 2015
+
 ## HOW TO USE THIS FUNCTION
 # File is expected at datazone 2011 level with only these other variables:
 # year, code, numerator. denominator, age_grp, sex_grp could be required depending
@@ -27,6 +35,8 @@ library(dplyr) # for data manipulation
 library(ggplot2) # for plotting
 library(tidyr) # for data manipulation
 library(RcppRoll) #for moving averages 
+library(broom) #for the models
+library(purrr) #for the models
 
 if (server_desktop == "server") {
   data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
@@ -255,76 +265,53 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   ##################################################.
   ##  Part 6 - Create SII ----
   ##################################################.
-  #Splitting into two files: on with quintiles for SII and one without for RII
+  #Splitting into two files: one with quintiles for SII and one without for RII
   data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
     filter(quintile != "Total") %>% ungroup()
   
   data_depr_totals <- data_depr %>% filter(quintile == "Total")
   
-  #calculate the total population for each area (without SIMD).
-  # proportion of the population in each SIMD out of the total population. 
-  data_depr_sii <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
-    mutate(total_pop = sum(denominator),
-           proportion_pop = denominator/total_pop,
-  # cumulative proportion population for each area
-           cumulative_pro = cumsum(proportion_pop),
-           relative_rank = case_when(
-           quintile == "1" ~ 0.5*proportion_pop,
-           quintile != "1" ~ lag(cumulative_pro) + 0.5*proportion_pop)) %>% 
-    ungroup()
-  
   ###############################################.
   # Calculate the regression coefficient
-  # the formula for the regression coefficient can be found on 
-  # http://www.statisticshowto.com/how-to-find-a-linear-regression-equation/ . 
-  data_depr_sii <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
-      mutate(xy = relative_rank * rate,
-             x_2 = relative_rank^2,
-             sum_x = sum(relative_rank),
-             sum_y = sum(rate),
-             mean_x = mean(relative_rank),
-             slope_coef = abs((5*sum(xy) - sum_x*sum_y) / (5*sum(x_2) - sum_x^2)),
-             # calculate the intercept value.
-             intercept = (sum_y *sum(x_2) -sum_x*sum(xy))/(5*sum(x_2) - sum_x^2)) %>% 
-      ungroup()
-    
-    ###############################################.
-    # Calculate the standard error
-    # the formula can be found on http://stattrek.com/regression/slope-confidence-interval.aspx?Tutorial=AP .
-    
-  data_depr_sii <- data_depr_sii %>% mutate( # first calculate the predicted y values.
-        yi = -slope_coef * relative_rank + intercept,
-      # calculate the difference between the predicted y and the real y and square the results.
-        y_diff = (rate - yi)^2,
-      # calculate the difference between relative_rank (x values) and the mean of relative_rank.
-        x_diff = (relative_rank - mean_x)^2) %>% 
-      group_by(code, year, quint_type) %>% 
-      # sum the y difference and the x difference.
-      mutate(sum_ydiff = sum(y_diff),
-             sum_xdiff = sum(x_diff)) %>%  ungroup() %>% 
-      # calculate the standard error. 
-      mutate(se = sqrt(sum_ydiff / (5-2) ) / sqrt(sum_xdiff))
-    
-    ###############################################.
-    # Calculate the confidence intervals
-  data_depr_sii <- data_depr_sii %>% mutate(
-    #use a t-value of 3.15245 as degrees of freedom = n-2 = 3.
-      lowci_slope = slope_coef - (3.18245*se),
-      upci_slope = slope_coef + (3.18245*se)) 
-    
-    #if lower confidence interval below zero/goes through zero this means there could be no association between the quintiles
-    #as the tool can't cope with negative confidence intervals.  
-  data_depr_sii$lowci_slope <- ifelse(data_depr_sii$lowci_slope < 0 , 0, data_depr_sii$lowci_slope)  
-
+  #The dataframe sii_model will have a column for sii, lower ci and upper ci for each
+  # geography, year and quintile type
+  sii_model <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
+    #This first part is to adjust rate and denominator with the population weights
+    mutate(total_pop = sum(denominator), # calculate the total population for each area (without SIMD).
+           proportion_pop = denominator/total_pop,   # proportion of the population in each SIMD out of the total population. 
+           cumulative_pro = cumsum(proportion_pop),  # cumulative proportion population for each area
+           relative_rank = case_when(
+              quintile == "1" ~ 0.5*proportion_pop,
+              quintile != "1" ~ lag(cumulative_pro) + 0.5*proportion_pop),
+           sqr_proportion_pop = sqrt(proportion_pop), #square root of the proportion of the population in each SIMD
+           relrank_sqr_proppop = relative_rank * sqr_proportion_pop,
+           rate_sqr_proppop = sqr_proportion_pop * rate) %>% #rate based on population weights
+    nest() %>% #creating one column called data with all the variables not in the grouping
+    # Calculating linear regression for all the groups, then formatting the results
+    # and calculating the confidence intervals
+    mutate(model = map(data, ~ lm(rate_sqr_proppop ~ sqr_proportion_pop + relrank_sqr_proppop + 0, data = .)),
+           #extracting sii from model, a bit fiddly but it works
+           sii = -1 * as.numeric(map(map(model, "coefficients"), "relrank_sqr_proppop")),
+           cis = map(model, confint_tidy)) %>% #calculating confidence intervals
+    ungroup() %>% unnest(cis) %>% #Unnesting the CIs 
+  #selecting only even row numbers which are the ones that have the sii cis
+    filter(row_number() %% 2 == 0) %>% 
+    mutate(lowci_sii = -1 * conf.high, #fixing interpretation
+           upci_sii = -1 * conf.low) %>% 
+    select(-conf.low, -conf.high)
+  
+  data_depr_sii <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
+  
+  
   ##################################################.
   ##  Part 7 - Calculate RII, Population attributable risk and range  ----
   ##################################################.
   #Calculating RII
   data_depr <- data_depr_sii %>% 
-    mutate(rii = slope_coef / overall_rate,
-           lowci_rii = lowci_slope / overall_rate,
-           upci_rii = upci_slope / overall_rate)
+    mutate(rii = sii / overall_rate,
+           lowci_rii = lowci_sii / overall_rate,
+           upci_rii = upci_sii / overall_rate)
 
   #Calculation PAR
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
@@ -348,7 +335,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   #Joining with totals.
   data_depr_match <- data_depr %>% filter(quintile == "3") %>% 
-    select(code, year, quint_type, slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
+    select(code, year, quint_type, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
            par, abs_range, rel_range)
   
   data_depr_totals <- left_join(data_depr_totals, data_depr_match, 
@@ -400,7 +387,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
     select(c(code, quintile, quint_type, ind_id, year, numerator, rate, lowci, upci, 
-             slope_coef, upci_slope, lowci_slope, rii, lowci_rii, upci_rii,
+             sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
              par, abs_range, rel_range, def_period, trend_axis))
   
   #Saving file
