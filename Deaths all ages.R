@@ -120,6 +120,6 @@ analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg =
 analyze_deprivation(filename="deaths_allages_depr", measure="stdrate", time_agg=3, 
                     crude_rate = 1000, yearstart= 2004, yearend=2017,  
                     year_type = "calendar", pop = "depr_pop_allages", 
-                    epop_age="normal", epop_total =200000, ind_id = 10101)
+                    epop_age="normal", epop_total =200000, ind_id = 20103)
 
 #END
