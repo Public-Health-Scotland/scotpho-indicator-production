@@ -18,6 +18,7 @@ if (server_desktop == "server") {
 }
 
 source("./1.indicator_analysis.R") #Normal indicator functions
+source("./2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -81,7 +82,11 @@ saveRDS(ca_under16, file=paste0(prepared_data, 'asthma_under16_raw.rds'))
 ###############################################.
 # Datazone2001. Only used for IRs
 dz01 <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% subset(year<2011) %>% rename(datazone = datazone2001)
+  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001)
+
+dz01_dep <- dz01 # to user later for deprivation basefile
+
+dz01 <- dz01 %>% subset(year<2011) 
 
 saveRDS(dz01, file=paste0(prepared_data, 'asthma_dz01_raw.rds'))
 
@@ -91,6 +96,13 @@ ir_file <- dz11 %>% subset(year>2010)
 ir_file <- rbind(dz01, ir_file) #joining together
 
 saveRDS(ir_file, file=paste0(prepared_data, 'DZ_asthma_IR_raw.rds'))
+
+###############################################.
+#Deprivation basefile
+# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
+
+saveRDS(dep_file, file=paste0(prepared_data, 'asthma_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
@@ -104,6 +116,13 @@ analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3,
                epop_total = 200000, ind_id = 20304, year_type = "financial", 
                profile = "HN", min_opt = 2999)
 
+#Deprivation analysis function
+analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
+                    yearstart= 2002, yearend=2017,   year_type = "financial", 
+                    pop = "depr_pop_allages", epop_age="normal",
+                    epop_total =200000, ind_id = 20304)
+
+#############################################.
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
               pop = "LA_pop_under16", yearstart = 2002, yearend = 2017,
