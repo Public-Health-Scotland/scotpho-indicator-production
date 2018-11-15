@@ -215,7 +215,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   }
   
   saveRDS(data_depr, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
-  
+
   ##################################################.
   ##  Part 5 - Create rates or percentages ----
   ##################################################.
@@ -225,7 +225,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     data_depr <- data_depr %>%
       mutate(easr_first = numerator*epop/denominator, #easr population
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
-      # Converting NA's to 0s to allow proper functioning
+      # Converting Infinites to NA and NA's to 0s to allow proper functioning
+      na_if(Inf) %>% #Caused by a denominator of 0 in an age group with numerator >0
       mutate_at(c("easr_first", "var_dsr"), funs(replace(., is.na(.), 0)))  
     
     # aggregating by year, code and time
@@ -284,6 +285,9 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #The dataframe sii_model will have a column for sii, lower ci and upper ci for each
   # geography, year and quintile type
   sii_model <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
+    #Checking that all quintiles are present, if not excluding as we are not showing
+    #RII and SII for those. Calculations would need to be adjusted and thought well if we wanted to include them
+    mutate(count= n()) %>% filter(count == 5) %>% 
     #This first part is to adjust rate and denominator with the population weights
     mutate(cumulative_pro = cumsum(proportion_pop),  # cumulative proportion population for each area
            relative_rank = case_when(
@@ -326,7 +330,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   ##################################################.
   #Calculation PAR
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
-  #Most and least deprived rates
+  #Adding columns for Most and least deprived rates
   most_depr <- data_depr %>% filter(quintile == "1") %>% 
     select(code, year, quint_type, rate) %>% rename(most_rate = rate)
   
@@ -337,19 +341,21 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   data_depr <- left_join(data_depr, least_depr, by = c("code", "year", "quint_type"))
   
   data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
-    mutate(#calculating PAR
+    mutate(#calculating PAR. PAR of incomplete groups to NA
       par_rr = (rate/least_rate - 1) * proportion_pop,
-      par = sum(par_rr)/(sum(par_rr) + 1) * 100,
+      count= n(),
+      par = case_when(count != 5 ~ NA_real_,
+                      count == 5 ~ sum(par_rr)/(sum(par_rr) + 1) * 100),
       # Calculate ranges 
       abs_range = most_rate - least_rate,
-      rel_range = most_rate / least_rate
-    ) %>% ungroup()
-  
+      rel_range = most_rate / least_rate) %>% ungroup()
+    
   #Joining with totals.
   #dataframe with the unique values for the different inequality measures
   data_depr_match <- data_depr %>% 
     select(code, year, quint_type, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
-           par, abs_range, rel_range) %>% unique()
+           rii_int, lowci_rii_int, upci_rii_int, par, abs_range, rel_range) %>% 
+    unique()
   
   data_depr_totals <- left_join(data_depr_totals, data_depr_match, 
                                 by = c("code", "year", "quint_type"))
@@ -399,7 +405,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    select(-c(overall_rate, total_pop, denominator, proportion_pop, most_rate, least_rate, par_rr))
+    select(-c(overall_rate, total_pop, denominator, proportion_pop, most_rate, 
+              least_rate, par_rr, count))
 
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_ineq.rds"))
