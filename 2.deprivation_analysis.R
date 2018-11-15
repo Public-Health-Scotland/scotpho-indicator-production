@@ -420,6 +420,9 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
          aes(code, rate) ) +
     geom_point(stat = "identity") +
     geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+  
+  #Making final dataset available outside the function
+  final_result <<- data_shiny
 }
 
 ##END
