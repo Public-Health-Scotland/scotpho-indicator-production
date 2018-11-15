@@ -9,6 +9,7 @@
 #NOTES:
 # When not all quintiles present in an area, RII and SII won't be shown in the tool
 # I am including negative CI's as this tool can cope with them
+# What to do with original RII values keep or just use the interpreations
 
 ## HOW TO USE THIS FUNCTION
 # File is expected at datazone 2011 level with only these other variables:
@@ -312,7 +313,13 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #Calculating RII
   data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
            lowci_rii = lowci_sii / overall_rate,
-           upci_rii = upci_sii / overall_rate)
+           upci_rii = upci_sii / overall_rate,
+  #Transforming RII into %. This way is interpreted as "most deprived areas are
+  # xx% above the average" For example: Cancer mortality rate is around 55% higher 
+  # in deprived areas relative to the mean rate in the population
+           rii_int = rii * 0.5 *100,
+           lowci_rii_int = lowci_rii * 0.5 *100,
+           upci_rii_int = upci_rii * 0.5 *100)
 
   ##################################################.
   ##  Part 7 - Population attributable risk and range  ----
