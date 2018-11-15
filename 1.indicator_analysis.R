@@ -68,7 +68,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
   ##################################################.
     
     #Reading file
-    data <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
+    data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
       subset(year >= yearstart) #selecting only years of interes
     
     # Lookup with geographical information.
@@ -76,7 +76,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
     
     ## Matching with geography lookup.
-    data <- left_join(x=data, y=geo_lookup, c("datazone" = "datazone2011")) 
+    data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) 
 
     } else if (geography == "council") {
       geo_lookup <- read.spss( '/conf/linkage/output/lookups/geography/other_ref_files/CA_HB2014.sav', 
@@ -85,7 +85,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         setNames(tolower(names(.)))   #variables to lower case
       
       ## Matching with geography lookup.
-      data <- left_join(x=data, y=geo_lookup, c("ca")) 
+      data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) 
       
     }
     
@@ -93,28 +93,28 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     ## Part 2 - Aggregate up to get figures for each area. ----
     ##################################################.
    #Need to include different measures and geography (non standard evaluation could help to make it easy)
-    data <- data %>% mutate(scotland = as.factor("S00000001")) 
+    data_indicator <- data_indicator %>% mutate(scotland = as.factor("S00000001")) 
 
     if (measure == "stdrate" & geography == "datazone11" ) {
-    data <- data %>% gather(geolevel, code, intzone2011:scotland) %>% 
+    data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
       ungroup() %>% select(-c(geolevel, datazone)) %>% 
       group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) 
 
     } else if (measure == "stdrate" & geography == "council") {
-      data <- data %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) 
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
-      data <- data %>% gather(geolevel, code, intzone2011:scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
         ungroup() %>% select(-c(geolevel, datazone)) %>% 
         group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) 
     } else if (measure %in% c("crude", "percent") & geography == "council") {
-      data <- data %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) 
     }
     
-    data <- data %>% ungroup() 
+    data_indicator <- data_indicator %>% ungroup() 
 
     # Matching with population lookup
     if (!is.null(pop)){
@@ -123,8 +123,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
           subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
           mutate_at(c("sex_grp", "age_grp", "code"), as.factor)
         
-        data$age_grp <-as.factor(data$age_grp)
-        data <- full_join(x=data, y=pop_lookup, # Matching population with data
+        data_indicator$age_grp <-as.factor(data_indicator$age_grp)
+        data_indicator <- full_join(x=data_indicator, y=pop_lookup, # Matching population with data
                       by = c("year", "code", "sex_grp", "age_grp"))
         
       } else if (measure %in% c("crude", "percent")){
@@ -134,14 +134,14 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
           mutate(code = as.factor(code))
         
         # Matching population with data
-        data <- full_join(x=data, y=pop_lookup, by = c("year", "code"))
+        data_indicator <- full_join(x=data_indicator, y=pop_lookup, by = c("year", "code"))
         
       }
     }
     #selecting only years of interest
-    data <- data %>% subset(year >= yearstart & year <= yearend)
+    data_indicator <- data_indicator %>% subset(year >= yearstart & year <= yearend)
     
-    data$numerator[is.na(data$numerator)] <- 0 # Converting NA's to 0s
+    data_indicator$numerator[is.na(data_indicator$numerator)] <- 0 # Converting NA's to 0s
     ##################################################.
     ##  Part 3 - Aggregate by required time periods ----
     ##################################################.
@@ -154,7 +154,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     ## Calculating moving average for denominator and numerator
     ## Data needs to be sorted to calculate the right figures
     if (measure == "stdrate") {
-    data <- data %>% 
+    data_indicator <- data_indicator %>% 
       arrange(code, sex_grp, age_grp, year) %>% 
       group_by(code, sex_grp, age_grp) %>%
       mutate(numerator = roll_meanr(numerator, time_agg), 
@@ -164,7 +164,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       ungroup()
     
     } else if (measure %in% c("crude", "percent")) {
-      data <- data %>% 
+      data_indicator <- data_indicator %>% 
         arrange(code, year) %>% 
         group_by(code) %>%
         mutate(numerator = roll_meanr(numerator, time_agg), 
@@ -177,32 +177,32 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     #Creating variable with European population 2016 depending on age cut
     if (!is.null(pop) & measure == "stdrate"){
     if (epop_age == "normal") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                         "1"=5000, "2"=5500, "3"=5500, "4"=5500, "5"=6000, 
                         "6"=6000, "7"= 6500, "8"=7000, "9"=7000, "10"=7000,
                         "11"=7000, "12"=6500, "13"=6000, "14"=5500, "15"=5000,
                         "16"= 4000, "17"=2500, "18"=1500, "19"=1000)
     } else if (epop_age == "16+") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                           "4"=4400, "5"=6000, "6"=6000, "7"= 6500, "8"=7000, 
                           "9"=7000, "10"=7000, "11"=7000, "12"=6500, "13"=6000, 
                           "14"=5500, "15"=5000, "16"= 4000, "17"=2500, "18"=1500, "19"=1000)
     } else if (epop_age == "<16") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                           "1"=5000, "2"=5500, "3"=5500, "4"=1100)
     } else if (epop_age == "0to25") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                           "1"=5000, "2"=5500, "3"=5500, "4"=5500, "5"=6000, "6"=1200)
     } else if (epop_age == "11to25") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                           "3"=4400, "4"=5500, "5"=6000, "6"=1200)
     } else if (epop_age == "15to25") {
-      data$epop <- recode(as.character(data$age_grp), 
+      data_indicator$epop <- recode(as.character(data_indicator$age_grp), 
                           "4"=5500, "5"=6000, "6"= 1200)
       }
     }
     
-    saveRDS(data, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
+    saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
 }
 ##################################################.
 ##  Second analysis function ----
@@ -214,11 +214,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   ##################################################.
   ##  Part 4 - Create rates or percentages ----
   ##################################################.
-  data <- readRDS(data, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
+  data_indicator <- readRDS(file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
     
   if (measure == "stdrate"){ #European Age-sex standardized rates
     #Calculating individual easr and variance
-    data <- data %>%
+    data_indicator <- data_indicator %>%
       mutate(easr_first = numerator*epop/denominator, #easr population
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
       # Converting Infinites to NA and NA's to 0s to allow proper functioning
@@ -226,11 +226,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
       mutate_at(c("easr_first", "var_dsr"), funs(replace(., is.na(.), 0)))  
       
     # aggregating by year, code and time
-    data <- data %>% subset(select= -c(age_grp, sex_grp)) %>%
+    data_indicator <- data_indicator %>% subset(select= -c(age_grp, sex_grp)) %>%
       group_by(year, code) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
 
     #Calculating rates and confidence intervals
-    data <- data %>%
+    data_indicator <- data_indicator %>%
       mutate(epop_total = epop_total,  # Total EPOP population
              easr = easr_first/epop_total, # easr calculation
              o_lower = numerator*(1-(1/(9*numerator)) - (1.96/(3*sqrt(numerator))))^3,  # Lower CI
@@ -240,11 +240,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
              lowci = (easr+sqrt(var/numerator)*(o_lower - numerator))*100000, #Lower CI final step
              upci = (easr+sqrt(var/numerator)*(o_upper - numerator))*100000) #Upper CI final step
 
-    data <- data %>% subset(select = -c(var, easr, epop_total, o_lower, o_upper, 
+    data_indicator <- data_indicator %>% subset(select = -c(var, easr, epop_total, o_lower, o_upper, 
                     easr_first, epop, var_dsr, denominator)) #deleting variables
                 
     } else if (measure == "percent"){ #Percentage
-      data <- data %>%
+      data_indicator <- data_indicator %>%
         mutate(rate = numerator/denominator*100,
                lowci=(2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))) 
                / (2*(denominator+1.96*1.96))*100,
@@ -252,7 +252,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
                /  (2*(denominator+1.96*1.96))*100.)
 
     } else if (measure == "crude"){ #Crude rates
-      data <- data %>%
+      data_indicator <- data_indicator %>%
         mutate(rate = numerator/denominator*crude_rate,
                o_lower = numerator *(1-1/9/numerator-1.96/3/sqrt(numerator))^3,
                o_upper = (numerator+1) *(1-1/9/(numerator+1)+1.96/3/sqrt(numerator+1))^3,
@@ -266,10 +266,10 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   ##  Part 5 - Adding time labels and indicator info ----
   ##################################################.
     #Indicator code 
-    data <- data %>% mutate(ind_id = ind_id) %>% 
+    data_indicator <- data_indicator %>% mutate(ind_id = ind_id) %>% 
       # fill in missing values and if any have negative lower CI change that to zero.
       mutate_at(c("rate", "lowci", "upci"), funs(replace(., is.na(.), 0))) 
-    data$lowci <- ifelse(data$lowci<0, 0, data$lowci)
+    data_indicator$lowci <- ifelse(data_indicator$lowci<0, 0, data_indicator$lowci)
 
     # add in the definition period and trend axis labels
     time_fix <- ifelse(time_agg < 3, 0, ifelse(time_agg == 3, 1,
@@ -277,25 +277,25 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
     
       #Calendar aggregate years
     if (year_type == "calendar" & time_fix>0){ 
-      data <- data %>% 
+      data_indicator <- data_indicator %>% 
         mutate(trend_axis=paste0(year-time_fix, "-", year+time_fix),  
               def_period=paste0(year-time_fix, " to ", year+time_fix, " ", year_type, 
                                 " years; ", time_agg, "-year aggregates")) 
       #Calendar single years
     } else if (year_type == "calendar" & time_fix==0){ 
-      data <- data %>% 
+      data_indicator <- data_indicator %>% 
         mutate(trend_axis=year,  
                def_period=paste0(year, " ", year_type, " year"))
       #Financial single years
     } else if (year_type %in% c("financial", "school") & time_fix == 0){
       
-      data <- data %>% 
+      data_indicator <- data_indicator %>% 
         mutate(trend_axis = paste0(year, "/", substr(year+1, 3, 4)),
                def_period = paste0(trend_axis, " ", year_type, " year"))
       #Financial aggregate years
     } else if (year_type %in% c("financial", "school") & time_fix>0){
   
-      data <- data %>% 
+      data_indicator <- data_indicator %>% 
         mutate(trend_axis = paste0(year-time_fix, "/", substr(year, 3, 4),
                                    "-", year + time_fix, "/",
                                    substr((year+time_fix+1), 3, 4)),
@@ -305,10 +305,10 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
                                   "-year aggregates"))
     }
   
-    saveRDS(data, paste0(data_folder, "Temporary/", filename, "_final.rds"))
+    saveRDS(data_indicator, paste0(data_folder, "Temporary/", filename, "_final.rds"))
     
     #Preparing data for Shiny tool
-    data_shiny <- data %>% select(c(code, ind_id, year, numerator, rate, lowci,
+    data_shiny <- data_indicator %>% select(c(code, ind_id, year, numerator, rate, lowci,
                                     upci, def_period, trend_axis))
     #Including both rds and csv file for now
     saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
@@ -316,24 +316,28 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   
     #Preparing data for old OPT tool
     #Excluding HSC locality and partnership.
-    data <- data %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) 
+    data_indicator <- data_indicator %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) 
     # OPT number
-    data <- data %>% mutate(uni_id = paste0(profile, (seq_len(nrow(data)) + min_opt - 1))) 
+    data_indicator <- data_indicator %>% mutate(uni_id = paste0(profile, (seq_len(nrow(data_indicator)) + min_opt - 1))) 
     
     # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-    data <- data[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+    data_indicator <- data_indicator[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
                    "upci", "def_period", "trend_axis")] 
     
-    write_csv(data, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
+    write_csv(data_indicator, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
               col_names = FALSE)
     
     ##################################################.
     ##  Part 6 - Checking results ----
     ##################################################.
     #Selecting Health boards and Scotland for latest year in dataset
-    ggplot(data=(data %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") & year==2014 )), aes(code, rate) ) +
+    ggplot(data = data_indicator %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                              & year== max(year)), aes(code, rate) ) +
       geom_point(stat = "identity") +
       geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+    
+    #Making final dataset available outside the function
+    final_result <<- data_shiny
     
     } 
 
