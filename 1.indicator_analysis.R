@@ -221,7 +221,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
     data <- data %>%
       mutate(easr_first = numerator*epop/denominator, #easr population
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
-      # Converting NA's to 0s to allow proper functioning
+      # Converting Infinites to NA and NA's to 0s to allow proper functioning
+      na_if(Inf) %>% #Caused by a denominator of 0 in an age group with numerator >0
       mutate_at(c("easr_first", "var_dsr"), funs(replace(., is.na(.), 0)))  
       
     # aggregating by year, code and time
