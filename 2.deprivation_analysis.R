@@ -412,7 +412,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    select(-c(overall_rate, total_pop, denominator, proportion_pop, most_rate, 
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
               least_rate, par_rr, count))
 
   #Saving file
