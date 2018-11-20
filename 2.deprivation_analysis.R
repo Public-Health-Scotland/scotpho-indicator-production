@@ -5,6 +5,7 @@
 #Think about how interpretation (high better or worse) migh affect SII/RII/PAR calculation
 #Monte Carlo simulation for CIs - Lumme et al. 2015
 #simplify easr ci calculation
+#CIs for PAR
 
 #NOTES:
 # When not all quintiles present in an area, RII and SII won't be shown in the tool
@@ -40,6 +41,7 @@ library(tidyr) # for data manipulation
 library(RcppRoll) #for moving averages 
 library(broom) #for the models
 library(purrr) #for the models
+library(binom)
 
 if (server_desktop == "server") {
   data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
@@ -253,7 +255,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              lowci=(2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))) 
              / (2*(denominator+1.96*1.96))*100,
              upci=(2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100)))
-             /  (2*(denominator+1.96*1.96))*100.)
+             /  (2*(denominator+1.96*1.96))*100)
     
   } else if (measure == "crude"){ #Crude rates
     data_depr <- data_depr %>%
@@ -282,6 +284,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   ###############################################.
   # Calculate the regression coefficient
+  #Formula from: https://www.scotpho.org.uk/comparative-health/health-inequalities-tools/archive/triple-i-and-hits/
+  #https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   #The dataframe sii_model will have a column for sii, lower ci and upper ci for each
   # geography, year and quintile type
   sii_model <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
@@ -330,6 +334,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   ##################################################.
   #Calculation PAR
   #Formula here: https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
+  # https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
   #Adding columns for Most and least deprived rates
   most_depr <- data_depr %>% filter(quintile == "1") %>% 
     select(code, year, quint_type, rate) %>% rename(most_rate = rate)
@@ -342,6 +347,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   
   data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
     mutate(#calculating PAR. PAR of incomplete groups to NA
+      #CI calculation missing, this can help https://onlinelibrary.wiley.com/doi/pdf/10.1002/sim.2779
+      #https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
       par_rr = (rate/least_rate - 1) * proportion_pop,
       count= n(),
       par = case_when(count != 5 ~ NA_real_,
@@ -349,7 +356,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       # Calculate ranges 
       abs_range = most_rate - least_rate,
       rel_range = most_rate / least_rate) %>% ungroup()
-    
+
   #Joining with totals.
   #dataframe with the unique values for the different inequality measures
   data_depr_match <- data_depr %>% 
