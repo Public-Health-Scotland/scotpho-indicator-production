@@ -2,7 +2,6 @@
 
 #TODO
 #Test for 2 year aggregations
-#Need to include with finite population correction factor
 #Add ADP level? It might require changing the geography lookups. Not easyy.
 #Make changes in CI calculation (Andy P suggestion)
 #Non standard evaluation techniques might help to simplify a lot the syntax
@@ -16,7 +15,7 @@
 # FUNCTION ONE: ANALYZE_FIRST
 # filename -  Name of the raw file the function reads without the "_raw.sav" at the end
 # geography - what is the base geography of the raw file: council or datazone2011
-# measure - crude rate (crude), standardized rate(stdrate), percentage (percent)
+# measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
 # time_agg - Aggregation period used expressed in year, e.g. 3
 # pop - Name of the population file. Only used for those that need a denominator.  
 # yearstart - Start of the period you want to run an analysis for
@@ -27,13 +26,15 @@
 # FUNCTION TWO: ANALYZE_SECOND
 # filename -  Name of the formatted file the function reads without the "_formatted.sav" at the end
 # measure - crude rate (crude), standardized rate(stdrate), percentage (percent)
-# time_agg - Aggregation period used expressed in year, e.g. 3
+#           percentage with finite population correction factor (perc_pcf)
+# time_agg - Aggregation period used expressed in year, e.g. 3 
 # ind_id - indicator code/number
 # year_type - calendar, financial or school
 # crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
 # min_opt - Only relevant for old OPT. First serial OPT number to include.
 # profile - Only relevant for old OPT. Profile initials that will be combined with opt number.
+# pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
 ###############################################.
 ## Packages and filepaths ----
@@ -148,8 +149,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     #The moving average is left aligned this means that the year variable will not 
     #reflect the right time. This is the way to fix it depending on what is the 
     #aggregation period.
-    time_fix <- ifelse(time_agg < 3, 0, ifelse(time_agg == 3, 1,
-                              ifelse(time_agg == 5, 2, "ERROR")))
+    time_fix <- case_when(time_agg < 3 ~ 0, time_agg == 3 ~ 1,
+                          time_agg == 5 ~ 2, TRUE ~ NA_real_)
     
     ## Calculating moving average for denominator and numerator
     ## Data needs to be sorted to calculate the right figures
@@ -207,13 +208,17 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
 ##################################################.
 ##  Second analysis function ----
 ##################################################.
-analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"), 
+analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf", "stdrate"), 
                            time_agg,  ind_id, year_type = c("calendar", "financial", "school"),
-                           min_opt, crude_rate = 0, epop_total = NULL, profile) {   
+                           min_opt, crude_rate = 0, epop_total = NULL, profile, pop = NULL) {   
   
   ##################################################.
   ##  Part 4 - Create rates or percentages ----
   ##################################################.
+  #Used for trend labels and finite population  correction factor
+  time_fix <- case_when(time_agg < 3 ~ 0, time_agg == 3 ~ 1,
+                        time_agg == 5 ~ 2, TRUE ~ NA_real_)
+  
   data_indicator <- readRDS(file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
     
   if (measure == "stdrate"){ #European Age-sex standardized rates
@@ -249,7 +254,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
                lowci=(2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))) 
                / (2*(denominator+1.96*1.96))*100,
                upci=(2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100)))
-               /  (2*(denominator+1.96*1.96))*100.)
+               /  (2*(denominator+1.96*1.96))*100)
 
     } else if (measure == "crude"){ #Crude rates
       data_indicator <- data_indicator %>%
@@ -260,6 +265,38 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
                upci = o_upper/(denominator)*crude_rate) %>% 
         subset(select = -c(o_upper, o_lower))
       
+    } else if (measure == "perc_pcf") {
+      
+      #Brining reference population and aggregating by the required time period
+      pop_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
+        group_by(code) %>%
+        mutate(denominator = roll_meanr(denominator, time_agg),
+               year = as.numeric(year)-time_fix) %>% # year minus to adjust to center year
+        subset(!is.na(denominator)) %>%  #excluding NA rows 
+        ungroup() %>% rename(est_pop = denominator)
+      
+      # Matching population with data
+      data_indicator <- left_join(x=data_indicator, y=pop_lookup, by = c("year", "code")) %>% 
+# Calculate the finite population correction factor.
+# Read more about it here: http://www.statisticshowto.com/finite-population-correction-factor/.
+        mutate(pcf = case_when(est_pop > 0 ~ sqrt((est_pop-denominator)/(est_pop-1)),
+# If no population estimate available resorting to calculate it the normal way, so pcf 1.
+               est_pop == 0 ~ 1),
+#compute the percentage and confidence intervals.
+               rate = numerator/denominator*100,
+# The denominator may be greater than the population estimate so the population 
+# correction factor would be less than 0.
+# This will mean that there is no CI for those areas, we assume that the whole 
+# population has been assessed and therefore there is 0 variation.
+# So we set them to be the same value as the rate in these cases.
+               lowci = case_when(est_pop < denominator ~ rate,
+                                 est_pop >= denominator ~ 
+              (2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf) 
+               / (2*(denominator+1.96*1.96))*100),
+               upci = case_when(est_pop < denominator ~ rate,
+                                est_pop >= denominator ~ 
+              (2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf)
+               /  (2*(denominator+1.96*1.96))*100))
     }
     
   ##################################################.
@@ -270,11 +307,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
       # fill in missing values and if any have negative lower CI change that to zero.
       mutate_at(c("rate", "lowci", "upci"), funs(replace(., is.na(.), 0))) 
     data_indicator$lowci <- ifelse(data_indicator$lowci<0, 0, data_indicator$lowci)
-
-    # add in the definition period and trend axis labels
-    time_fix <- ifelse(time_agg < 3, 0, ifelse(time_agg == 3, 1,
-                                               ifelse(time_agg == 5, 2, "ERROR")))
     
+    # add in the definition period and trend axis labels
       #Calendar aggregate years
     if (year_type == "calendar" & time_fix>0){ 
       data_indicator <- data_indicator %>% 
@@ -316,15 +350,14 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
   
     #Preparing data for old OPT tool
     #Excluding HSC locality and partnership.
-    data_indicator <- data_indicator %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) 
-    # OPT number
-    data_indicator <- data_indicator %>% mutate(uni_id = paste0(profile, (seq_len(nrow(data_indicator)) + min_opt - 1))) 
+    data_oldopt <- data_indicator %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) %>% 
+      mutate(uni_id = paste0(profile, (seq_len(nrow(.)) + min_opt - 1))) #OPT number
     
     # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-    data_indicator <- data_indicator[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+    data_oldopt <- data_oldopt[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
                    "upci", "def_period", "trend_axis")] 
     
-    write_csv(data_indicator, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
+    write_csv(data_oldopt, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
               col_names = FALSE)
     
     ##################################################.
@@ -337,7 +370,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "stdrate"),
       geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
     
     #Making final dataset available outside the function
-    final_result <<- data_shiny
+    final_result <<- data_indicator
     
     } 
 
