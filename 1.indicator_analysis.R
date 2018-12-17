@@ -8,8 +8,6 @@
 #How to simplify epop, lookup?
 #Dealing with incomplete aggregation periods needs improvement, package roll might be
 # the solution but it doesn't work in the server
-#What about deprivation? A bit too much
-#Need to mount non-confi ScotPHO in server to be able to use it with source from a non-confi area
 
 ## HOW TO USE THESE FUNCTIONS
 # FUNCTION ONE: ANALYZE_FIRST
@@ -267,7 +265,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
       
     } else if (measure == "perc_pcf") {
       
-      #Brining reference population and aggregating by the required time period
+      #Bringing reference population and aggregating by the required time period
       pop_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
         group_by(code) %>%
         mutate(denominator = roll_meanr(denominator, time_agg),
