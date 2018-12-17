@@ -19,8 +19,10 @@
 # Arguments of the function:
 # filename -  Name of the raw file the function reads without the "_raw.sav" at the end
 # measure - crude rate (crude), standardized rate(stdrate), percentage (percent)
+#           percentage with finite population correction factor (perc_pcf)
 # time_agg - Aggregation period used expressed in year, e.g. 3
-# pop - Name of the population file. Only used for those that need a denominator.  
+# pop - Name of the population file. Only used for those that need a denominator.
+# pop_pcf - Only for crude rate cases that need finite population correction factor. Reference population.
 # yearstart - Start of the period you want to run an analysis for
 # yearend -  End of the period you want to run an analysis for
 # epop_age - Type of european population to use: 16+, <16, 0to25, 11to25, 15to25. 
@@ -55,15 +57,17 @@ if (server_desktop == "server") {
 ##  Analysis function ----
 ##################################################.
 analyze_deprivation <- function(filename, yearstart, yearend, time_agg, 
-                                measure = c("percent", "crude", "stdrate"),
+                                measure = c("percent", "crude", "stdrate", "perc_pcf"),
                                 epop_age = NULL, epop_total = NULL, pop = NULL, 
-                                crude_rate = 0, ind_id, year_type) {
+                                pop_pcf = NULL, crude_rate = 0, ind_id, year_type) {
   
   ###############################################.
   ## Part 1 - Read in raw data and add in lookup info ----
   ###############################################.
   # read in raw data. 
-  data_depr <- readRDS(paste0(prepared_data, filename, "_raw.rds"))
+  data_depr <- readRDS(paste0(prepared_data, filename, "_raw.rds")) %>% 
+    mutate(year = as.numeric(year))
+  
   # read in deprivation lookup. 
   depr_lookup <- readRDS(paste0(lookups, "Geography/deprivation_geography.rds"))
 
@@ -79,17 +83,38 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #This function groups the data for the variables selected and then aggregates it
   #It works for the different types of quintiles and for all measures
   create_quintile_data <- function(group_vars, geo, quint) {
-    if (measure %in% c("crude", "percent")) {
-      data_depr %>% select(c("numerator", group_vars)) %>% 
-        group_by_at(group_vars) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
-        rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-        mutate(quint_type = quint)
-    } else if (measure == "stdrate") {
-      data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
-        group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
-        summarise(numerator= sum(numerator, na.rm =T)) %>% 
-        rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-        mutate(quint_type = quint)
+    if ("denominator" %in% names(data_depr)) { #if denominator included
+      
+      if (measure %in% c("crude", "percent", "perc_pcf")) {
+        data_depr %>% select(c("numerator", "denominator", group_vars)) %>% 
+          group_by_at(group_vars) %>% 
+          summarise(numerator = sum(numerator, na.rm =T),
+                    denominator = sum(denominator, na.rm =T)) %>% 
+          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+          mutate(quint_type = quint)
+      } else if (measure == "stdrate") {
+        data_depr %>% select(c("numerator", "denominator", "age_grp", "sex_grp", group_vars)) %>% 
+          group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
+          summarise(numerator = sum(numerator, na.rm =T),
+                    denominator = sum(denominator, na.rm =T)) %>% 
+          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+          mutate(quint_type = quint)
+      }
+      
+    } else if (!("denominator" %in% names(data_depr))) { #if denominator not included
+      
+      if (measure %in% c("crude", "percent", "perc_pcf")) {
+        data_depr %>% select(c("numerator", group_vars)) %>% 
+          group_by_at(group_vars) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
+          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+          mutate(quint_type = quint)
+      } else if (measure == "stdrate") {
+        data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
+          group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
+          summarise(numerator= sum(numerator, na.rm =T)) %>% 
+          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
+          mutate(quint_type = quint)
+      }
     }
   }
   
@@ -106,22 +131,40 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     #Council area using national quintiles
     create_quintile_data(geo = "ca2011", quint = "sc_quin", 
                          group_vars =  c("ca2011", "year", "sc_quin")),
-    #Council area using concil quintiles
+    #Council area using council quintiles
     create_quintile_data(geo = "ca2011", quint = "ca_quin",
                          group_vars =  c("ca2011", "year", "ca_quin")))
   
   #Creating combined totals
-  if (measure %in% c("crude", "percent")) {
+  if ("denominator" %in% names(data_depr)) { #if denominator included
+    if (measure %in% c("crude", "percent", "perc_pcf")) {
     
-    data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
-      summarise(numerator= sum(numerator)) %>% 
-      mutate(quintile = "Total") %>% ungroup()
+      data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
+        summarise(numerator = sum(numerator, na.rm =T),
+                  denominator = sum(denominator, na.rm =T)) %>% 
+        mutate(quintile = "Total") %>% ungroup()
     
-  } else if (measure == "stdrate") {
+    } else if (measure == "stdrate") {
     
-    data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
-      summarise(numerator= sum(numerator)) %>% 
-      mutate(quintile = "Total") %>% ungroup()
+      data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
+        summarise(numerator = sum(numerator, na.rm =T),
+                  denominator = sum(denominator, na.rm =T)) %>% 
+        mutate(quintile = "Total") %>% ungroup()
+    }
+  } else if (!("denominator" %in% names(data_depr))) { #if denominator not included
+  
+    if (measure %in% c("crude", "percent", "perc_pcf")) {
+      
+      data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
+        summarise(numerator= sum(numerator)) %>% 
+        mutate(quintile = "Total") %>% ungroup()
+      
+    } else if (measure == "stdrate") {
+      
+      data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
+        summarise(numerator= sum(numerator)) %>% 
+        mutate(quintile = "Total") %>% ungroup()
+    }
   }
   
   #And merging them with the rest of the data
@@ -140,7 +183,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       data_depr <- right_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
                         by = c("year", "code", "sex_grp", "age_grp", "quintile", "quint_type"))
       
-    } else if (measure %in% c("crude", "percent")){
+    } else if (measure %in% c("crude", "percent", "perc_pcf")){
       
       pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
         subset(year >= yearstart) #Reading population file and selecting only for 2011 onwards
@@ -150,7 +193,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
                              by = c("year", "code", "quintile", "quint_type"))
       
     }
-  } 
+  }
+  
   #selecting only years of interest
   data_depr <- data_depr %>% subset(year >= yearstart & year <= yearend)
   
@@ -177,7 +221,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       mutate(year = year-time_fix) %>%  # year minus to adjust to center year
       ungroup()
     
-  } else if (measure %in% c("crude", "percent")) {
+  } else if (measure %in% c("crude", "percent", "perc_pcf")) {
     data_depr <- data_depr %>% 
       arrange(code, quintile, quint_type, year) %>% 
       group_by(code, quintile, quint_type) %>%
@@ -266,6 +310,39 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              upci = o_upper/(denominator)*crude_rate) %>% 
       subset(select = -c(o_upper, o_lower))
     
+  } else if (measure == "perc_pcf") {
+    
+    #Bringing reference population and aggregating by the required time period
+    pop_lookup <- readRDS(paste0(lookups, "Population/", pop_pcf,'.rds')) %>% 
+      group_by(code) %>%
+      mutate(denominator = roll_meanr(denominator, time_agg),
+             year = as.numeric(year)-time_fix) %>% # year minus to adjust to center year
+      subset(!is.na(denominator)) %>%  #excluding NA rows 
+      ungroup() %>% rename(est_pop = denominator)
+    
+    # Matching population with data
+    data_depr <- left_join(x=data_depr, y=pop_lookup, 
+                           by = c("year", "code", "quintile", "quint_type")) %>% 
+      # Calculate the finite population correction factor.
+      # Read more about it here: http://www.statisticshowto.com/finite-population-correction-factor/.
+      mutate(pcf = case_when(est_pop > 0 ~ sqrt((est_pop-denominator)/(est_pop-1)),
+                             # If no population estimate available resorting to calculate it the normal way, so pcf 1.
+                             est_pop == 0 ~ 1),
+             #compute the percentage and confidence intervals.
+             rate = numerator/denominator*100,
+             # The denominator may be greater than the population estimate so the population 
+             # correction factor would be less than 0.
+             # This will mean that there is no CI for those areas, we assume that the whole 
+             # population has been assessed and therefore there is 0 variation.
+             # So we set them to be the same value as the rate in these cases.
+             lowci = case_when(est_pop < denominator ~ rate,
+                               est_pop >= denominator ~ 
+                                 (2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf) 
+                               / (2*(denominator+1.96*1.96))*100),
+             upci = case_when(est_pop < denominator ~ rate,
+                              est_pop >= denominator ~ 
+                                (2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf)
+                              /  (2*(denominator+1.96*1.96))*100))
   }
   
   ##################################################.
