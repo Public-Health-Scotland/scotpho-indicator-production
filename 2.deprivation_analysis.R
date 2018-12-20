@@ -342,7 +342,8 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              upci = case_when(est_pop < denominator ~ rate,
                               est_pop >= denominator ~ 
                                 (2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf)
-                              /  (2*(denominator+1.96*1.96))*100))
+                              /  (2*(denominator+1.96*1.96))*100)) %>% 
+      select(-pcf, -est_pop)
   }
   
   ##################################################.
