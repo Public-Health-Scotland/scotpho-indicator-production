@@ -358,6 +358,9 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     write_csv(data_oldopt, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
               col_names = FALSE)
     
+    #Making final dataset available outside the function
+    final_result <<- data_indicator
+    
     ##################################################.
     ##  Part 6 - Checking results ----
     ##################################################.
@@ -367,8 +370,6 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
       geom_point(stat = "identity") +
       geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
     
-    #Making final dataset available outside the function
-    final_result <<- data_indicator
     
     } 
 

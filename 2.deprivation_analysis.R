@@ -65,7 +65,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   ## Part 1 - Read in raw data and add in lookup info ----
   ###############################################.
   # read in raw data. 
-  data_depr <- readRDS(paste0(prepared_data, filename, "_raw.rds")) %>% 
+  data_depr <- readRDS(paste0(data_folder, "Prepared Data/" ,filename, "_raw.rds")) %>% 
     mutate(year = as.numeric(year))
   
   # read in deprivation lookup. 
@@ -496,6 +496,9 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_ineq.rds"))
 
+  #Making final dataset available outside the function
+  final_result <<- data_shiny
+  
   ##################################################.
   ##  Part 9 - Checking results ----
   ##################################################.
@@ -505,9 +508,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
          aes(code, rate) ) +
     geom_point(stat = "identity") +
     geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
-  
-  #Making final dataset available outside the function
-  final_result <<- data_shiny
+
 }
 
 ##END
