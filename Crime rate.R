@@ -11,14 +11,8 @@ lapply(c("dplyr", "readr", "foreign", "odbc"), library, character.only = TRUE)
 #Filepaths, change from server to desktop depending on R version you use
 server_desktop <- "server"
 if (server_desktop == "server") {
-  temporal_data <- "/PHI_conf/ScotPHO/Profiles/Data/Temporal/"
-  prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-  received_data <- "/PHI_conf/ScotPHO/Profiles/Data/Received Data/"
   cl_out_depr <- "/conf/linkage/output/lookups/Unicode/Deprivation/"
 } else if (server_desktop == "desktop") {
-  temporal_data <- "//stats/ScotPHO/Profiles/Data/Temporal/"
-  prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-  received_data <- "//stats/ScotPHO/Profiles/Data/Received Data/"
   cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
 }
 
@@ -72,12 +66,12 @@ data_crime <- as.data.frame(rbind(
 ))
 
 #File for deprivation analysis
-saveRDS(data_crime, file = paste0(prepared_data, "crime_rate_depr_raw.rds"))
+saveRDS(data_crime, file = paste0(data_folder, "Prepared Data/crime_rate_depr_raw.rds"))
 
 #File for DZ11 for 2014 onwards
 data_crimedz11 <- data_crime %>% filter(year>2013)
 
-saveRDS(data_crimedz11, file = paste0(prepared_data, "crime_rate_dz11_raw.rds"))
+saveRDS(data_crimedz11, file = paste0(data_folder, "Prepared Data/crime_rate_dz11_raw.rds"))
 
 #Preparing file for CA for period 2004 to 2013
 data_crimedz01 <- data_crime %>% filter(year<2014)
@@ -91,7 +85,7 @@ ca_lookup <- read.spss('/conf/linkage/output/lookups/geography/other_ref_files/D
 data_crimedz01 <- left_join(data_crimedz01, ca_lookup, by = c("datazone" = "datazone2001")) %>% 
   rename(ca = ca2011) %>% group_by(ca, year) %>% summarise(numerator=sum(numerator, na.rm = T))
 
-saveRDS(data_crimedz01, file = paste0(prepared_data, "crime_rate_ca_raw.rds"))
+saveRDS(data_crimedz01, file = paste0(data_folder, "Prepared Data/crime_rate_ca_raw.rds"))
 
 ###############################################.
 ## Part 2 - Calling the analysis functions ----
@@ -103,9 +97,9 @@ analyze_first(filename = "crime_rate_dz11", geography = "datazone11", measure = 
               yearstart = 2014, yearend = 2017, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
-all_data <- rbind(readRDS(paste0(temporal_data, "crime_rate_dz11_formatted.rds")),
-                  readRDS(paste0(temporal_data, "crime_rate_ca_formatted.rds")))
-saveRDS(all_data, file = paste0(temporal_data, "crime_rate_all_formatted.rds"))
+all_data <- rbind(readRDS(paste0(data_folder, "Temporal/crime_rate_dz11_formatted.rds")),
+                  readRDS(paste0(data_folder, "Temporal/crime_rate_ca_formatted.rds")))
+saveRDS(all_data, file = paste0(data_folder, "Temporal/crime_rate_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "crime_rate_all", measure = "crude", time_agg = 1, crude_rate = 1000,

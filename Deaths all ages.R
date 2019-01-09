@@ -10,12 +10,6 @@
 lapply(c("odbc", "readr", "dplyr"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
-if (server_desktop == "server") {
-  prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-} else if (server_desktop == "desktop") {
-  prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-}
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
 
@@ -70,21 +64,21 @@ data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>%
 dz11 <- data_deaths %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(dz11, file=paste0(prepared_data, 'deaths_allages_dz11_raw.rds'))
-datadz <- readRDS(paste0(prepared_data, 'deaths_allages_dz11_raw.rds'))
+saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
+datadz <- readRDS(paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
 
 # Datazone2001. Only used for IRs
 dz01 <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% subset(year<2011) %>% rename(datazone = datazone2001)
 
-saveRDS(dz01, file=paste0(prepared_data, 'deaths_allages_dz01_raw.rds'))
+saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz01_raw.rds'))
 
 ###############################################.
 # IR basefile
 ir_file <- dz11 %>% subset(year>2010)
 ir_file <- rbind(dz01, ir_file) #joining together
 
-saveRDS(ir_file, file=paste0(prepared_data, 'DZ_deaths_allages_IR_raw.rds'))
+saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_deaths_allages_IR_raw.rds'))
 
 ###############################################.
 #Deprivation indicator numerator file
@@ -99,7 +93,7 @@ dz01_dep <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%
 dep_file <- dz11 %>% subset(year>=2014)
 dep_file <- rbind(dz01_dep, dep_file) #joining together
 
-saveRDS(dep_file, file=paste0(prepared_data, 'deaths_allages_depr_raw.rds'))
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/deaths_allages_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----

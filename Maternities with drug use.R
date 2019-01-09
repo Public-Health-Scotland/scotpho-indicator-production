@@ -96,5 +96,4 @@ data_oldopt <- data_drugmat[c("uni_id", "code", "ind_id", "year", "numerator", "
 write_csv(data_oldopt, path = paste0(folder_data, "OPT Data/maternity_druguse_OPT.csv"),
           col_names = FALSE)
 
-
 ##END

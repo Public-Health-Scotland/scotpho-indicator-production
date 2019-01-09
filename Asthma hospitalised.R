@@ -11,11 +11,6 @@
 lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
-if (server_desktop == "server") {
-  prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-} else if (server_desktop == "desktop") {
-  prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-}
 
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
@@ -69,15 +64,15 @@ data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>%
 dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(dz11, file=paste0(prepared_data, 'asthma_dz11_raw.rds'))
-datadz <- readRDS(paste0(prepared_data, 'asthma_dz11_raw.rds'))
+saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
+datadz <- readRDS(paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
 
 ###############################################.
 # CA file for under 16 cases 
 ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2011)
 
-saveRDS(ca_under16, file=paste0(prepared_data, 'asthma_under16_raw.rds'))
+saveRDS(ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
 
 ###############################################.
 # Datazone2001. Only used for IRs
@@ -88,21 +83,21 @@ dz01_dep <- dz01 # to user later for deprivation basefile
 
 dz01 <- dz01 %>% subset(year<2011) 
 
-saveRDS(dz01, file=paste0(prepared_data, 'asthma_dz01_raw.rds'))
+saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/asthma_dz01_raw.rds'))
 
 ###############################################.
 # IR basefile
 ir_file <- dz11 %>% subset(year>2010)
 ir_file <- rbind(dz01, ir_file) #joining together
 
-saveRDS(ir_file, file=paste0(prepared_data, 'DZ_asthma_IR_raw.rds'))
+saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_asthma_IR_raw.rds'))
 
 ###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
 
-saveRDS(dep_file, file=paste0(prepared_data, 'asthma_depr_raw.rds'))
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----

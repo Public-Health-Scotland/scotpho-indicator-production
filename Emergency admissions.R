@@ -16,13 +16,6 @@
 lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
-if (server_desktop == "server") {
-  prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-  lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-} else if (server_desktop == "desktop") {
-  prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-  lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
-}
 
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
@@ -89,7 +82,7 @@ data_adm <- left_join(x=data_adm, y=geo_lookup, c("datazone2011")) %>%
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
-saveRDS(data_adm, paste0(prepared_data, 'smr01_emergency_basefile.rds'))
+saveRDS(data_adm, paste0(data_folder, 'Prepared Data/smr01_emergency_basefile.rds'))
 
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
@@ -104,7 +97,7 @@ data_ea <- as.data.frame(rbind(
   create_geo_levels(geography = "intzone2011", type = "ea")
 ))
 
-saveRDS(data_ea, paste0(prepared_data, 'ea_raw.rds'))
+saveRDS(data_ea, paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 
 ###############################################.
 #creating file for multiple admissions
@@ -117,7 +110,7 @@ data_ma <- as.data.frame(rbind(
   create_geo_levels(geography = "intzone2011", type = "ma")
 ))
 
-saveRDS(data_ma, paste0(prepared_data, 'ma_raw.rds'))
+saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
 
 #creating file for ma deprivation
 data_ma_depr <- data_adm %>% mutate(datazone = case_when(year <= 2013 ~ datazone2001,

@@ -9,21 +9,13 @@
 lapply(c("dplyr", "readxl"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
-if (server_desktop == "server") {
-  prepared_data <- "/PHI_conf/ScotPHO/Profiles/Data/Prepared Data/"
-  received_data <- "/PHI_conf/ScotPHO/Profiles/Data/Received Data/"
-} else if (server_desktop == "desktop") {
-  prepared_data <- "//stats/ScotPHO/Profiles/Data/Prepared Data/"
-  received_data <- "//stats/ScotPHO/Profiles/Data/Received Data/"
-}
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-data_products <- read_excel(paste0(received_data, "IR2018-01479-smoking cessation products.xlsx"), 
+data_products <- read_excel(paste0(data_folder, "Received Data/IR2018-01479-smoking cessation products.xlsx"), 
                             sheet = "Output", range = cell_limits(c(8, 2), c(NA, 10))) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   rename_all(funs(gsub("\\s","_",.))) # changing spaces for underscores
@@ -42,7 +34,7 @@ data_products <- data_products %>% rename(year = financial_year) %>%
   mutate(numerator = numerator/365) %>%  # value is defined daily doses, so needs to be divided by 365.
   ungroup() %>% select(ca, year, numerator) 
 
-saveRDS(data_products, file=paste0(prepared_data, 'cessation_products_raw.rds'))
+saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_products_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
