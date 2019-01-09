@@ -6,7 +6,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
+lapply(c("dplyr", "readr"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 

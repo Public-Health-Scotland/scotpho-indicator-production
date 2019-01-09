@@ -1,4 +1,4 @@
-# ScotPHO indicators: Maternal obesity
+# ScotPHO indicators: Premature births
 
 #   Part 1 - Prepare basefile
 #   Part 2 - Run analysis functions
@@ -6,7 +6,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
+lapply(c("dplyr", "readr"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 
