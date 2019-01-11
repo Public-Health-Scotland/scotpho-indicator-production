@@ -50,7 +50,7 @@ drugmat_adp <- data_drugmat %>% filter(substr(code,1,3) == "S12") %>%
     code == "S12000005" ~ "S11000005", code == "S12000006" ~ "S11000006", code == "S12000008" ~ "S11000008", 
     code == "S12000010" ~ "S11000051", code == "S12000011" ~ "S11000011", code == "S12000014" ~ "S11000013", 
     code == "S12000017" ~ "S11000016", code == "S12000018" ~ "S11000017", code == "S12000019" ~ "S11000051", 
-    code == "S12000020" ~ "S11000019", code == "S12000021" ~ "S11000010", code == "S12000026" ~ "S11000025", 
+    code == "S12000020" ~ "S11000019", code == "S12000021" ~ "S11000020", code == "S12000026" ~ "S11000025", 
     code == "S12000028" ~ "S11000027", code == "S12000029" ~ "S11000052", code == "S12000030" ~ "S11000029", 
     code == "S12000033" ~ "S11000001", code == "S12000034" ~ "S11000002", code == "S12000035" ~ "S11000004", 
     code == "S12000036" ~ "S11000012", code == "S12000038" ~ "S11000024", code == "S12000039" ~ "S11000030", 
@@ -60,7 +60,10 @@ drugmat_adp <- data_drugmat %>% filter(substr(code,1,3) == "S12") %>%
     code == "S12000027" ~ "S11000026", code == "S12000023" ~ "S11000022", TRUE ~ "Error")) %>% 
   group_by(year, code, trend_axis) %>% summarise_all(funs(sum)) %>% ungroup()
 
-data_drugmat <- rbind(data_drugmat, drugmat_adp) 
+data_drugmat <- rbind(data_drugmat, drugmat_adp) %>% 
+  #temporary fix to deal with new codes of Tayside and Fife that are not accepted in old OPT
+  mutate(code = recode(code, "S92000003" = "S00000001", #Scotland
+         "S08000030" = "S08000027", "S08000029" = "S08000018"))
 
 ###############################################.
 ## Part 2 - Computing rates and adding labels ----
@@ -79,21 +82,26 @@ data_drugmat <- data_drugmat %>%
   # add in the definition period label.
 mutate(def_period = paste0(substr(trend_axis, 1, 7), " to ", substr(trend_axis, 9, 15),
                     " ", "financial years; 3-year aggregates"),
-       ind_id = 4129, #indicator number
-       #change number to first opt number
-       uni_id = paste0("DU", (seq_len(nrow(.)) + 160000 - 1)))
+       ind_id = 4129) #indicator number
 
 #Preparing data for Shiny tool
-data_shiny <- data_drugmat %>% select(-denominator, -uni_id)
+data_shiny <- data_drugmat %>% select(-denominator)
 #Including both rds and csv file for now
 saveRDS(data_shiny, file = paste0(folder_data, "Shiny Data/maternity_druguse_shiny.rds"))
-write_csv(data_shiny, path = paste0(folder_data, "Shiny Data/", filename, "_shiny.csv"))
+write_csv(data_shiny, path = paste0(folder_data, "Shiny Data/maternity_druguse_shiny.csv"))
 
 # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-data_oldopt <- data_drugmat[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
-                             "upci", "def_period", "trend_axis")] 
+data_oldopt <- data_drugmat %>% 
+  filter(substr(code,1,3) != "S12") %>%  #as in old opt no council present
+  arrange(year, code) %>% #I think it might be needed for old opt
+  #change number to first opt number
+  mutate(uni_id = paste0("DU", (seq_len(nrow(.)) + 166000- 1)))
+
+data_oldopt <- data_oldopt[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+                            "upci", "def_period", "trend_axis")] 
+
 #Saving file for old OPT
 write_csv(data_oldopt, path = paste0(folder_data, "OPT Data/maternity_druguse_OPT.csv"),
-          col_names = FALSE)
+          col_names = FALSE, na="")
 
 ##END
