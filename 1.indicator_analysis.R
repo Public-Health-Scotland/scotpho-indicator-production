@@ -356,7 +356,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                    "upci", "def_period", "trend_axis")] 
     
     write_csv(data_oldopt, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
-              col_names = FALSE)
+              col_names = FALSE, na="")
     
     #Making final dataset available outside the function
     final_result <<- data_indicator
