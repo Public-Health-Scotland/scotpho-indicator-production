@@ -8,7 +8,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("dplyr", "readr", "odbc"), library, character.only = TRUE)
+lapply(c("dplyr", "readr", "odbc", "lubridate"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 
@@ -70,8 +70,6 @@ copd_deaths_fin <- copd_deaths %>%
   #to allow merging later on
   mutate()
 
-saveRDS(copd_deaths_fin, file=paste0(data_folder, 'Prepared Data/copd_deaths_incidence.rds'))
-
 ###############################################.
 ## Part 2 - Hospitalisations data basefiles ----
 ###############################################.
@@ -121,8 +119,6 @@ copd_adm <- left_join(copd_adm, postcode_lookup, by = "pc7") %>%
   age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, TRUE ~ NA_real_)) %>% 
   select(-pc7) %>% rename(ca = ca2011)
   
-saveRDS(copd_adm, file=paste0(data_folder, 'Prepared Data/SMR01_copd_diag_basefile.rds'))
-
 ###############################################.
 # Preparing stays indicator raw files 
 copd_adm_indicator <- copd_adm %>% filter(year>2001) %>% 
@@ -135,7 +131,7 @@ copd_admind_dz11 <- copd_adm_indicator %>% group_by(year, datazone2011, age_grp,
   count() %>% ungroup() %>% rename(datazone = datazone2011, numerator = n)
 
 saveRDS(copd_admind_dz11, file=paste0(data_folder, 'Prepared Data/copd_hospital_dz11_raw.rds'))
-.
+
 #Datazone2001 raw file
 copd_admind_dz01 <- copd_adm_indicator %>% group_by(year, datazone2001, age_grp, sex_grp) %>% 
   count() %>% ungroup() %>% rename(datazone = datazone2001, numerator = n)
@@ -150,75 +146,59 @@ saveRDS(copd_admind_depr, file=paste0(data_folder, 'Prepared Data/copd_hospital_
 ###############################################.
 ## Part 3 - Incidence data file ----
 ###############################################.
-copd_incidence <- bind_rows(copd_adm, copd_deaths_fin) 
-# *for COPD Incidence (tobacco profile), open the base file and select only a patients first stay in 10 years.
-# * Add deaths and admissions data together.
-# add files file = 'Raw Data/Prepared Data/COPD_deaths_file.sav'
-# /file = 'Raw Data/Prepared Data/SMR01_copd_diag_basefile.zsav'.
-# execute.
-# 
-# *calculate look back.
-# compute lookback = datesum(doadm,-10,'years').
-# formats lookback (SDATE10).
-# execute.
-# 
-# select if age_grp16 ne 0.
-# 
-# sort cases by linkno doadm.
-# *keep only those that did not have a COPD related discharge within the previous 10 years.
-# compute keep = 1. 
-# if linkno = lag(linkno,1) and lookback <lag(doadm,1) keep = 0.
-# execute.
-# 
-# select if keep = 1.
-# execute.
-# 
-# aggregate outfile = *
-#   /break year ca2011 age_grp16 sex_grp
-# /numerator = n.
-# 
-# *select years needed.
-# select if range(year, 2002, 2017).
-# execute.
+# Add deaths and admissions data together.
+copd_incidence <- bind_rows(copd_adm, copd_deaths_fin) %>%
+  filter(age>15 | is.na(age)) %>% #select 16 and over
+# keep only those that did not have a COPD related discharge within the previous 10 years.  
+  arrange(linkno, doadm) %>% 
+  mutate(doadm = as.Date(doadm), lookback = doadm - years(10),
+         exclude = case_when(linkno == lag(linkno) & lookback <lag(doadm) ~ 1,
+                             TRUE ~0)) %>% 
+  filter(exclude==0 & year>2001) %>%  # also excluding years not needed in profiles
+  #aggregating by council
+  group_by(year, ca, age_grp, sex_grp) %>% count() %>% ungroup() %>% 
+  rename(numerator = n)
+
+saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_raw.rds'))
 
 
 ###############################################.
 ## Part 4 - Run analysis functions ----
 ###############################################.
 #COPD deaths
-analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
-              time_agg = 3, epop_age = "normal")
+analyze_first(filename = "copd_deaths", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              time_agg = 3, epop_age = "16+")
 
-analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20304, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3, 
+               epop_total = 165800, ind_id = 1547, year_type = "calendar", 
+               profile = "TP", min_opt = 1008507)
 
 ###############################################.
 # COPD incidence
-analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
-              time_agg = 3, epop_age = "normal")
+analyze_first(filename = "copd_incidence", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2017,
+              time_agg = 3, epop_age = "16+")
 
-analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20304, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3, 
+               epop_total = 165800, ind_id = 1550, year_type = "financial", 
+               profile = "TP", min_opt = 1009165)
 
 ###############################################.
 # COPD hospitalisations 
-analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
+analyze_first(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
               time_agg = 3, epop_age = "normal")
 
-analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20304, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 3, 
+               epop_total = 200000, ind_id = 20302, year_type = "financial", 
+               profile = "HN", min_opt = 1464237)
 
 #Deprivation analysis function
-analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
+analyze_deprivation(filename="copd_hospital_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2017,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
-                    epop_total =200000, ind_id = 20304)
+                    epop_total =200000, ind_id = 20302)
 
 odbcClose(channel) # closing connection to SMRA
 
