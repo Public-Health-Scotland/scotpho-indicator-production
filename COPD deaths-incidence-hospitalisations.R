@@ -15,15 +15,15 @@ server_desktop <- "server" # change depending if you are using R server or R des
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
 
-###############################################.
-## Part 1 - Deaths data basefiles ----
-###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
 
+###############################################.
+## Part 1 - Deaths data basefiles ----
+###############################################.
 #Extracting deaths with a main cause of copd, excluding unknown sex, for over 16, 
-# scottish residents by financial and calendar year. 
+# Scottish residents by financial and calendar year. 
 copd_deaths <- tbl_df(dbGetQuery(channel, statement=
                   "SELECT LINK_NO linkno, YEAR_OF_REGISTRATION year, AGE, SEX sex_grp, 
                     POSTCODE pc7, date_of_registration dodth,
@@ -66,9 +66,7 @@ saveRDS(copd_deaths_cal, file=paste0(data_folder, 'Prepared Data/copd_deaths_raw
 copd_deaths_fin <- copd_deaths %>% 
   filter(finyear>2001) %>% #excluding incomplete year 
   select(finyear, linkno, age, age_grp, sex_grp, dodth, ca2011) %>% 
-  rename(ca = ca2011, doadm = dodth, year = finyear) %>% 
-  #to allow merging later on
-  mutate()
+  rename(ca = ca2011, doadm = dodth, year = finyear)
 
 ###############################################.
 ## Part 2 - Hospitalisations data basefiles ----
@@ -88,8 +86,8 @@ copd_adm <- tbl_df(dbGetQuery(channel, statement=
       AND regexp_like(main_condition, 'J4[0-4]') 
       AND exists (select * from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-          and admission_date between '1 January 1997' and '31 March 2018'
-          and regexp_like(main_condition, 'J4[0-4]') )
+            and admission_date between '1 January 1997' and '31 March 2018'
+            and regexp_like(main_condition, 'J4[0-4]') )
    GROUP BY link_no, cis_marker
   UNION ALL 
   SELECT distinct link_no linkno, cis_marker cis, min(AGE_IN_YEARS) age, 
@@ -148,7 +146,7 @@ saveRDS(copd_admind_depr, file=paste0(data_folder, 'Prepared Data/copd_hospital_
 ###############################################.
 # Add deaths and admissions data together.
 copd_incidence <- bind_rows(copd_adm, copd_deaths_fin) %>%
-  filter(age>15 | is.na(age)) %>% #select 16 and over
+  filter(age>15) %>% #select 16 and over
 # keep only those that did not have a COPD related discharge within the previous 10 years.  
   arrange(linkno, doadm) %>% 
   mutate(doadm = as.Date(doadm), lookback = doadm - years(10),
@@ -160,7 +158,6 @@ copd_incidence <- bind_rows(copd_adm, copd_deaths_fin) %>%
   rename(numerator = n)
 
 saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_raw.rds'))
-
 
 ###############################################.
 ## Part 4 - Run analysis functions ----
