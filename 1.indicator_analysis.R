@@ -68,7 +68,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     
     #Reading file
     data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
-      subset(year >= yearstart) #selecting only years of interes
+      subset(year >= yearstart) #selecting only years of interest
     
     # Lookup with geographical information.
     if(geography == "datazone11") {
