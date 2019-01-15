@@ -6,8 +6,6 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("dplyr", "readr", "foreign", "odbc"), library, character.only = TRUE)
-
 #Filepaths, change from server to desktop depending on R version you use
 server_desktop <- "server"
 if (server_desktop == "server") {

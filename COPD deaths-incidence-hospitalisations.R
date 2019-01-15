@@ -8,7 +8,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("dplyr", "readr", "odbc", "lubridate"), library, character.only = TRUE)
+lapply(c("odbc", "lubridate"), library, character.only = TRUE)
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 
@@ -164,7 +164,7 @@ saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_r
 ###############################################.
 #COPD deaths
 analyze_first(filename = "copd_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2017,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3, 

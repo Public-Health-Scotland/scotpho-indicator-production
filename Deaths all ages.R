@@ -7,7 +7,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("odbc", "readr", "dplyr"), library, character.only = TRUE)
+library(odbc) #for reading oracle databases
 
 server_desktop <- "server" # change depending if you are using R server or R desktop
 source("./1.indicator_analysis.R") #Normal indicator functions
