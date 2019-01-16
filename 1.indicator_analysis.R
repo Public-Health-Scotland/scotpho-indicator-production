@@ -275,9 +275,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
       
       # Matching population with data
       data_indicator <- left_join(x=data_indicator, y=pop_lookup, by = c("year", "code")) %>% 
+#if no est_pop then assume is 0
+         mutate(est_pop = case_when(is.na(est_pop) ~ 0, TRUE ~est_pop),
 # Calculate the finite population correction factor.
 # Read more about it here: http://www.statisticshowto.com/finite-population-correction-factor/.
-        mutate(pcf = case_when(est_pop > 0 ~ sqrt((est_pop-denominator)/(est_pop-1)),
+          pcf = case_when(est_pop > 0 ~ sqrt((est_pop-denominator)/(est_pop-1)),
 # If no population estimate available resorting to calculate it the normal way, so pcf 1.
                est_pop == 0 ~ 1),
 #compute the percentage and confidence intervals.
