@@ -75,16 +75,17 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
     
     ## Matching with geography lookup.
-    data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) 
+    data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) %>% 
+      mutate(scotland = as.factor("S00000001")) # adding Scotland
 
     } else if (geography == "council") {
       geo_lookup <- read.spss( '/conf/linkage/output/lookups/geography/other_ref_files/CA_HB2014.sav', 
                                to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-        mutate(scotland = "S00000001") %>% 
         setNames(tolower(names(.)))   #variables to lower case
       
       ## Matching with geography lookup.
-      data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) 
+      data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) %>% 
+        mutate(scotland = as.factor("S00000001")) # adding Scotland
       
     }
     
@@ -92,28 +93,24 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     ## Part 2 - Aggregate up to get figures for each area. ----
     ##################################################.
    #Need to include different measures and geography (non standard evaluation could help to make it easy)
-    data_indicator <- data_indicator %>% mutate(scotland = as.factor("S00000001")) 
-
     if (measure == "stdrate" & geography == "datazone11" ) {
     data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
       ungroup() %>% select(-c(geolevel, datazone)) %>% 
-      group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) 
+      group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
 
     } else if (measure == "stdrate" & geography == "council") {
       data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
         select(-c(geolevel)) %>% 
-        group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) 
+        group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
       data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
         ungroup() %>% select(-c(geolevel, datazone)) %>% 
-        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) 
+        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "council") {
       data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
         select(-c(geolevel)) %>% 
-        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) 
+        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     }
-    
-    data_indicator <- data_indicator %>% ungroup() 
 
     # Matching with population lookup
     if (!is.null(pop)){
