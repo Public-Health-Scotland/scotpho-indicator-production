@@ -9,7 +9,6 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 lapply(c("odbc", "lubridate"), library, character.only = TRUE)
-
 server_desktop <- "server" # change depending if you are using R server or R desktop
 
 source("./1.indicator_analysis.R") #Normal indicator functions
@@ -46,8 +45,8 @@ copd_deaths <- copd_deaths %>% mutate(age_grp = case_when(
   age > 74 & age <80 ~ 16,age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, 
   age > 89 ~ 19,  TRUE ~ NA_real_ ))
 
-# Bringing  LA info.
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
+# Bringing datazones and LA info.
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2011)
 
@@ -83,7 +82,6 @@ copd_adm <- tbl_df(dbGetQuery(channel, statement=
    FROM ANALYSIS.SMR01_PI z
    WHERE admission_date between '1 January 1997' and '31 March 2018'
       AND sex <> 9 
-      AND regexp_like(main_condition, 'J4[0-4]') 
       AND exists (select * from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
             and admission_date between '1 January 1997' and '31 March 2018'
@@ -122,7 +120,7 @@ copd_adm <- left_join(copd_adm, postcode_lookup, by = "pc7") %>%
 copd_adm_indicator <- copd_adm %>% filter(year>2001) %>% 
 # select the first stay within each year.
   arrange(year, linkno, doadm) %>% group_by(year, linkno) %>% 
-  filter(row_number()==1 ) %>% ungroup()
+  filter(row_number()==1 ) %>% ungroup() 
 
 #Datazone2011 raw file
 copd_admind_dz11 <- copd_adm_indicator %>% group_by(year, datazone2011, age_grp, sex_grp) %>% 
