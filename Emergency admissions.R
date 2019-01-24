@@ -21,42 +21,26 @@ source("./2.deprivation_analysis.R") # deprivation function
 
 #Function to create data for different geography levels
 create_geo_levels <- function(geography, type) {
-  data_agg <- data_adm %>% rename_(code = geography) %>% 
+  #If there are multiple admissions in one year it selects one.
+  data_agg <- data_adm %>% rename_(code = geography) %>% #renames using NSE
+    arrange(year, link_no, doadm) %>% 
     group_by(link_no, year, code) %>% 
-    mutate(sex_grp = first(sex_grp), age_grp = first(age_grp)) %>% ungroup()
+    summarise(sex_grp = first(sex_grp), age_grp = first(age_grp), admissions = n()) %>%
+    ungroup()
 
   if (type == "ea") { #if emergency admissions just count
+    #And now it aggregates total count of patients.
     data_agg <- data_agg %>% group_by(year, code, sex_grp, age_grp) %>% 
       count() %>% ungroup() %>% rename(numerator = n)
+      
   } else if (type == "ma") {
     #select only patients who have had 2 or more admissions and 65+.
     data_agg <- data_agg %>% 
-      filter(age_grp >= 14) %>% # Only 65 and over
-      mutate(admissions = n()) %>% 
-      filter(admissions >= 2 ) %>% # only those with 2 or more admissions
+      filter(age_grp >= 14 & admissions >= 2 ) %>% 
       group_by(year, code, sex_grp, age_grp) %>% 
       count() %>% ungroup() %>% rename(numerator = n)
   }
 }
-
-# define !ea_agg (data = !tokens(1) ).
-# get file =  'Raw Data/Prepared Data/SMR01_emergency_basefile.zsav'
-# /rename (!data =code).
-# 
-# *aggregate to get the count for health board.
-# aggregate outfile = *
-#   /break link_no year code
-# /sex_grp age_grp = first(sex_grp age_grp).
-# 
-# *aggregate again to count one patient in each health board.
-# aggregate outfile = *
-#   /break year sex_grp age_grp code
-# /numerator = n.
-# 
-# alter type code(a9).
-# 
-# dataset name !data.
-# !enddefine.
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -70,10 +54,10 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 #Only emergency or urgent admissions. Selecting one record per admission.
 data_adm <- tbl_df(dbGetQuery(channel, statement=
    "SELECT distinct link_no, cis_marker, min(AGE_IN_YEARS) age, min(SEX) sex_grp, 
-      min(dr_postcode) pc7, min(admission_date) doadm, 
-      max(extract(year from discharge_date)) year
+      min(dr_postcode) pc7, max(extract(year from discharge_date)) year,
+      min(admission_date) doadm
    FROM ANALYSIS.SMR01_PI 
-   WHERE admission_date between '1 January 2002' and '31 December 2017'
+   WHERE discharge_date between '1 January 2002' and '31 December 2017'
       AND sex not in ('9', '0')
       AND AGE_IN_YEARS is not null 
       AND (admission_type between '20' and '22' or admission_type between '30' and '40') 
@@ -84,7 +68,7 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=
 # Bringing geography info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(pc7, datazone2001, datazone2011, ca2011, hb2014, hscp2016)
+  select(pc7, datazone2001, datazone2011, intzone2011, ca2011, hb2014, hscp2016)
 
 geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) %>% 
   select(datazone2011, hscp_locality) #as locality not present in the postcode one
@@ -104,11 +88,13 @@ data_adm <- left_join(x=data_adm, y=geo_lookup, c("datazone2011")) %>%
     age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
     age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
     age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-    TRUE ~ as.numeric(age)))
+    TRUE ~ as.numeric(age))) %>% 
+  arrange(year, link_no, doadm) %>% #sorting needed for part 2
+  select(-pc7, -cis_marker, -age)
 
 saveRDS(data_adm, paste0(data_folder, 'Prepared Data/smr01_emergency_basefile.rds'))
 data_adm <- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency_basefile.rds'))
-# 8,376,957 records here, 8,379,147 in SPSS - check at SQL level
+
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
@@ -167,11 +153,11 @@ analyze_second(filename = "ea", measure = "stdrate", time_agg = 3,
 ###############################################.
 #Multiple emergency admissions for 65+
 analyze_first(filename = "ma", geography = "all", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2017,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "ma", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20306, year_type = "calendar", 
+               epop_total = 39000, ind_id = 20306, year_type = "calendar", 
                profile = "HN", min_opt = 2999)
 
 #Deprivation analysis function
