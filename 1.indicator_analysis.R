@@ -351,7 +351,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
       mutate(uni_id = paste0(profile, (seq_len(nrow(.)) + min_opt - 1))) #OPT number
     
     # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-    data_oldopt <<- data_oldopt[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+    data_oldopt <- data_oldopt[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
                    "upci", "def_period", "trend_axis")] 
     
     write_csv(data_oldopt, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
@@ -359,6 +359,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     
     #Making final dataset available outside the function
     final_result <<- data_indicator
+    data_oldopt <<- data_oldopt
     
     # To know which one is the last OPT
     print(paste0("Maximum OPT number: ", max(data_oldopt$uni_id)))
