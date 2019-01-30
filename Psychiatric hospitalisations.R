@@ -24,7 +24,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 #Creates one record per CIS and selects only one case per patient/year.
 data_psychiatric <- tbl_df(dbGetQuery(channel, statement=
                                         "SELECT distinct link_no linkno, max(AGE_IN_YEARS) age, max(SEX) sex_grp, max(DATAZONE_2001) datazone_2001, max(DATAZONE_2011) datazone_2011,
-                                      CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
+                                      CASE WHEN extract(month from discharge_date) > 3 THEN extract(year from discharge_date) 
                                       ELSE extract(year from discharge_date) -1 END as year 
                                       FROM ANALYSIS.SMR04_PI z
                                       WHERE discharge_date between '1 April 2002' and '31 March 2018'
