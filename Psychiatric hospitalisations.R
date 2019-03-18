@@ -12,6 +12,7 @@ library(odbc) #for reading oracle databases
 server_desktop <- "server" # change depending if you are using R server or R desktop
 
 source("./1.indicator_analysis.R") #Normal indicator functions
+source("./2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -28,7 +29,7 @@ data_psychiatric <- tbl_df(dbGetQuery(channel, statement=
                                       ELSE extract(year from discharge_date) -1 END as year 
                                       FROM ANALYSIS.SMR04_PI z
                                       WHERE discharge_date between '1 April 2002' and '31 March 2018'
-                                      AND speciality <> 'G5' 
+                                      AND specialty <> 'G5' 
                                       AND sex <> 0 
                                       AND datazone_2011 is not null 
                                       GROUP BY link_no, CASE WHEN extract(month from discharge_date) > 3 THEN
@@ -50,6 +51,8 @@ data_psychiatric <- data_psychiatric %>% mutate(age_grp = case_when(
 # Datazone2001 - Equivalent of aggregate
 dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
+
+dz01_dep <- dz01 # to user later for deprivation basefile
 
 #equivalent of select if
 dz01 <- dz01 %>% subset(year<2011) 
@@ -73,6 +76,13 @@ ir_file <- rbind(dz01, ir_file) #joining together
 
 saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_psychistric_discharges_IR_raw.rds'))
 
+###############################################.
+#Deprivation basefile
+# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
+
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_depr_raw.rds'))
+
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
@@ -86,7 +96,11 @@ analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", ti
                epop_total = 200000, ind_id = 20402, year_type = "financial", 
                profile = "HN", min_opt = 1347346)
 
-
+#Deprivation analysis function
+analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
+                    yearstart= 2002, yearend=2017,   year_type = "financial", 
+                    pop = "depr_pop_allages", epop_age="normal",
+                    epop_total =200000, ind_id = 20402)
 
 odbcClose(channel) # closing connection to SMRA
 
