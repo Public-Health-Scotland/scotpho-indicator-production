@@ -41,7 +41,7 @@ cancer_deaths <- cancer_deaths %>% mutate(age_grp = case_when(
   age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
   age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
   age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19))
+  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19,  TRUE ~ NA_real_))
 
 # Open LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
@@ -49,7 +49,7 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   select(pc7, datazone2001, datazone2011)
 
 cancer_deaths <- left_join(cancer_deaths, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011) %>% 
+  select(year, age_grp, sex_grp, datazone2001, datazone2011) %>% 
   mutate_if(is.character, factor) #converting variables into factors
 
 ###############################################.
@@ -74,7 +74,7 @@ candeath_depr <- rbind(candeath_dz01, candeath_dz11 %>% subset(year>=2014))
 saveRDS(candeath_depr, file=paste0(data_folder, 'Prepared Data/early_cancer_deaths_depr_raw.rds'))
 
 ###############################################.
-## Part 2 - Run analysis functions ----
+## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "early_cancer_deaths_dz11", geography = "datazone11", 
               measure = "stdrate", yearstart = 2002, yearend = 2017, time_agg = 3,
