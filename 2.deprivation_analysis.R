@@ -45,10 +45,11 @@ library(broom) #for the models
 library(purrr) #for the models
 library(binom)
 
-if (server_desktop == "server") {
+# Varies filepaths depending on if using server or not.
+if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
   data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
   lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-} else if (server_desktop == "desktop") {
+} else {
   data_folder <- "//stats/ScotPHO/Profiles/Data/"
   lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
 }
