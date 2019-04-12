@@ -6,8 +6,6 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-server_desktop <- "server" # change depending if you are using R server or R desktop
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
 

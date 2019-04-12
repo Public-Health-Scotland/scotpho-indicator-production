@@ -6,16 +6,15 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-#Filepaths, change from server to desktop depending on R version you use
-server_desktop <- "server"
-if (server_desktop == "server") {
+# Varies filepaths depending on if using server or not.
+if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
   cl_out_depr <- "/conf/linkage/output/lookups/Unicode/Deprivation/"
-} else if (server_desktop == "desktop") {
+} else {
   cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
 }
 
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 #Small function to standarize each years info. Function parameters:
 #Data is for what basefile to use, Datazone is for what dz type using, 
