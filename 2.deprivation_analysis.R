@@ -299,7 +299,10 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              lowci=(2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))) 
              / (2*(denominator+1.96*1.96))*100,
              upci=(2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100)))
-             /  (2*(denominator+1.96*1.96))*100)
+             /  (2*(denominator+1.96*1.96))*100,
+             # if over 100 or under 0, set to these values as it is a percentage
+             upci = case_when(upci>100 ~ 100, TRUE ~ upci),
+             lowci = case_when(lowci<0 ~ 0, TRUE ~ lowci))
     
   } else if (measure == "crude"){ #Crude rates
     data_depr <- data_depr %>%
@@ -335,15 +338,15 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
              # This will mean that there is no CI for those areas, we assume that the whole 
              # population has been assessed and therefore there is 0 variation.
              # So we set them to be the same value as the rate in these cases.
-             lowci = case_when(est_pop < denominator ~ rate,
-                               est_pop >= denominator ~ 
-                                 (2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf) 
-                               / (2*(denominator+1.96*1.96))*100),
-             upci = case_when(est_pop < denominator ~ rate,
-                              est_pop >= denominator ~ 
-                                (2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf)
-                              /  (2*(denominator+1.96*1.96))*100)) %>% 
-      select(-pcf, -est_pop)
+             ci_interval = case_when(est_pop < denominator ~ 0,
+                                     est_pop >= denominator ~ 
+                                       1.96 * sqrt(((rate * (100-rate))/denominator) * pcf)),
+             lowci = rate - ci_interval,
+             upci = rate + ci_interval,
+             # if over 100 or under 0, set to these values as it is a percentage
+             upci = case_when(upci>100 ~ 100, TRUE ~ upci),
+             lowci = case_when(lowci<0 ~ 0, TRUE ~ lowci)) %>% 
+      select(-pcf, -est_pop, -ci_interval)
   }
   
   ##################################################.
