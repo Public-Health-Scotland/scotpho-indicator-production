@@ -8,8 +8,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-lapply(c("odbc", "lubridate"), library, character.only = TRUE)
-server_desktop <- "server" # change depending if you are using R server or R desktop
+library(lubridate)
 
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function

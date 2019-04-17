@@ -8,10 +8,6 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-library(odbc) #for reading oracle databases
-
-server_desktop <- "server" # change depending if you are using R server or R desktop
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
 
@@ -48,11 +44,12 @@ data_asthma <- data_asthma %>% mutate(age_grp = case_when(
 ))
 
 # Bringing  LA and datazone info.
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
-  setNames(tolower(names(.)))  #variables to lower case
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
+  setNames(tolower(names(.))) %>%   #variables to lower case
+  select(pc7, datazone2001, datazone2011, ca2018)
 
 data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% 
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2018) %>% 
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
@@ -61,43 +58,27 @@ data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>%
 ###############################################.
 ###############################################.
 # Datazone2011
-dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
+asthma_dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
-datadz <- readRDS(paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
-
+saveRDS(asthma_dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
 ###############################################.
 # CA file for under 16 cases 
-ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2011)
+asthma_ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2018, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2018)
 
-saveRDS(ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
-
-###############################################.
-# Datazone2001. Only used for IRs
-dz01 <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001)
-
-dz01_dep <- dz01 # to user later for deprivation basefile
-
-dz01 <- dz01 %>% subset(year<2011) 
-
-saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/asthma_dz01_raw.rds'))
-
-###############################################.
-# IR basefile
-ir_file <- dz11 %>% subset(year>2010)
-ir_file <- rbind(dz01, ir_file) #joining together
-
-saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_asthma_IR_raw.rds'))
+saveRDS(asthma_ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
 
 ###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
+astham_dz01_dep <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+  subset(year<=2013)
 
-saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
+dep_file <- rbind(astham_dz01_dep, asthma_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+
+saveRDS(astham_dz01_dep, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
