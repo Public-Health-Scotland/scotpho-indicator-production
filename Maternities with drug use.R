@@ -8,10 +8,10 @@
 library(dplyr)
 library(readr)
 
-server_desktop <- "server" # change depending if you are using R server or R desktop
-if (server_desktop == "server") {
+# Varies filepaths depending on if using server or not.
+if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
   folder_data <- "/PHI_conf/ScotPHO/Profiles/Data/"
-} else if (server_desktop == "desktop") {
+} else {
   folder_data <- "//stats/ScotPHO/Profiles/Data/"
 }
 

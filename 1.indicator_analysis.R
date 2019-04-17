@@ -2,7 +2,6 @@
 
 #TODO
 #Test for 2 year aggregations
-#Add ADP level? It might require changing the geography lookups. Not easyy.
 #Make changes in CI calculation (Andy P suggestion)
 #Non standard evaluation techniques might help to simplify a lot the syntax
 #How to simplify epop, lookup?
@@ -13,6 +12,7 @@
 # FUNCTION ONE: ANALYZE_FIRST
 # filename -  Name of the raw file the function reads without the "_raw.sav" at the end
 # geography - what is the base geography of the raw file: council or datazone2011
+# adp - To calculate the data for ADP level as well change it to TRUE, default is false.
 # measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
 # time_agg - Aggregation period used expressed in year, e.g. 3
 # pop - Name of the population file. Only used for those that need a denominator.  
@@ -43,11 +43,14 @@ library(ggplot2) # for plotting
 library(tidyr) # for data manipulation
 library(RcppRoll) #for moving averages
 library(readr) # writing csv's
+library(odbc) # for reading oracle databases
+library(readxl) #for reading excel
 
-if (server_desktop == "server") {
+# Varies filepaths depending on if using server or not.
+if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
   data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
   lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-} else if (server_desktop == "desktop") {
+} else {
   data_folder <- "//stats/ScotPHO/Profiles/Data/"
   lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
 }
@@ -60,7 +63,7 @@ if (server_desktop == "server") {
 #With 260 lines in R I replaced the 8 major macros we used, plus the two auxilliary ones
 analyze_first <- function(filename, geography = c("council", "datazone11"), 
                           measure = c("percent", "crude", "stdrate"), time_agg, 
-                          pop = NULL, yearstart, yearend, epop_age = NULL) {
+                          pop = NULL, yearstart, yearend, epop_age = NULL, adp = FALSE) {
   
   ##################################################.
   ## Part 1 - Read in raw data and add in lookup info ----
@@ -72,12 +75,12 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     
     # Lookup with geographical information.
     if(geography == "datazone11") {
-    geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
-    
-    ## Matching with geography lookup.
-    data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) %>% 
-      mutate(scotland = as.factor("S00000001")) # adding Scotland
-
+      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
+      
+      ## Matching with geography lookup.
+      data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) %>% 
+        mutate(scotland = as.factor("S00000001")) # adding Scotland
+      
     } else if (geography == "council") {
       geo_lookup <- read.spss( '/conf/linkage/output/lookups/geography/other_ref_files/CA_HB2014.sav', 
                                to.data.frame=TRUE, use.value.labels=FALSE) %>% 
@@ -88,7 +91,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         mutate(scotland = as.factor("S00000001")) # adding Scotland
       
     }
-    
+
     ##################################################.
     ## Part 2 - Aggregate up to get figures for each area. ----
     ##################################################.
@@ -114,7 +117,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
 
     # Matching with population lookup
     if (!is.null(pop)){
-      if(measure == "stdrate") {
+      if (measure == "stdrate") {
         pop_lookup <- readRDS(paste0(lookups, "Population/", pop,'_SR.rds')) %>% 
           subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
           mutate_at(c("sex_grp", "age_grp", "code"), as.factor)
@@ -138,6 +141,12 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     data_indicator <- data_indicator %>% subset(year >= yearstart & year <= yearend)
     
     data_indicator$numerator[is.na(data_indicator$numerator)] <- 0 # Converting NA's to 0s
+    
+    # Excludes ADP level if not wanted
+    if (adp == FALSE) {
+      data_indicator <- data_indicator %>% subset(substr(code,1,3) != "S11")
+    }
+    
     ##################################################.
     ##  Part 3 - Aggregate by required time periods ----
     ##################################################.
@@ -249,7 +258,10 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                lowci=(2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))) 
                / (2*(denominator+1.96*1.96))*100,
                upci=(2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100)))
-               /  (2*(denominator+1.96*1.96))*100)
+               /  (2*(denominator+1.96*1.96))*100,
+        # if over 100 or under 0, set to these values as it is a percentage
+               upci = case_when(upci>100 ~ 100, TRUE ~ upci),
+               lowci = case_when(lowci<0 ~ 0, TRUE ~ lowci))
 
     } else if (measure == "crude"){ #Crude rates
       data_indicator <- data_indicator %>%
@@ -286,14 +298,15 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 # This will mean that there is no CI for those areas, we assume that the whole 
 # population has been assessed and therefore there is 0 variation.
 # So we set them to be the same value as the rate in these cases.
-               lowci = case_when(est_pop < denominator ~ rate,
-                                 est_pop >= denominator ~ 
-              (2*numerator+1.96*1.96-1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf) 
-               / (2*(denominator+1.96*1.96))*100),
-               upci = case_when(est_pop < denominator ~ rate,
-                                est_pop >= denominator ~ 
-              (2*numerator+1.96*1.96+1.96*sqrt(1.96*1.96+4*numerator*(1-rate/100))*pcf)
-               /  (2*(denominator+1.96*1.96))*100))
+               ci_interval = case_when(est_pop < denominator ~ 0,
+                                       est_pop >= denominator ~ 
+                          1.96 * sqrt(((rate * (100-rate))/denominator) * pcf)),
+               lowci = rate - ci_interval,
+               upci = rate + ci_interval,
+# if over 100 or under 0, set to these values as it is a percentage
+               upci = case_when(upci>100 ~ 100, TRUE ~ upci),
+               lowci = case_when(lowci<0 ~ 0, TRUE ~ lowci))
+
     }
     
   ##################################################.
