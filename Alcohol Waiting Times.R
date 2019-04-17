@@ -7,10 +7,6 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-library(readxl) #for reading excel
-
-server_desktop <- "server" # change depending if you are using R server or R desktop
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
 
@@ -56,7 +52,7 @@ AWT_data_scotland <- AWT_data_raw %>% filter(str_detect(code, "S08")) %>% mutate
 
 AWT_data_formatted <- full_join(AWT_data_raw, AWT_data_scotland) %>% mutate(type = "percent", time = "single years")
 
-saveRDS(AWT_data_formatted, file=paste0(data_folder, 'Prepared Data/Alcohol_waiting_times_formatted.rds'))
+saveRDS(AWT_data_formatted, file=paste0(data_folder, 'Temporary/Alcohol_waiting_times_formatted.rds'))
 
 ###############################################.
 ## Part 3 - Call analysis macros ----
@@ -66,10 +62,7 @@ saveRDS(AWT_data_formatted, file=paste0(data_folder, 'Prepared Data/Alcohol_wait
 analyze_second(filename = "Alcohol_waiting_times", measure = "percent", time_agg = 1, 
                ind_id = 4119, year_type = "financial", profile = "AL", min_opt = 1005872)
 
-#Deprivation analysis function
-analyze_deprivation(filename="Alcohol_waiting_times", measure="percent", time_agg=1, 
-                    yearstart= 2011, yearend=2017,   year_type = "financial", 
-                    pop = "depr_pop_allages", ind_id = 4119)
+
 ######################*******************************#############################
 
 ##END
