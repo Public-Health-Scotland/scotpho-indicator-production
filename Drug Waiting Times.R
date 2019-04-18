@@ -7,12 +7,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-library(readxl) #for reading excel
-
-server_desktop <- "server" # change depending if you are using R server or R desktop
-
 source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Create basefile ----
@@ -56,20 +51,12 @@ DWT_data_scotland <- DWT_data_raw %>% filter(str_detect(code, "S08")) %>% mutate
                                
 DWT_data_formatted <- full_join(DWT_data_raw, DWT_data_scotland) %>% mutate(type = "percent", time = "single years")
 
-saveRDS(DWT_data_formatted, file=paste0(data_folder, 'Prepared Data/Drug_waiting_times_formatted.rds'))
+saveRDS(DWT_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_times_formatted.rds'))
 
 ###############################################.
 ## Part 3 - Call analysis macros ----
 ###############################################.
-
-######################*******************************#############################
 analyze_second(filename = "Drug_waiting_times", measure = "percent", time_agg = 1, 
                ind_id = 4136, year_type = "financial", profile = "DU", min_opt = 162970)
-
-#Deprivation analysis function
-analyze_deprivation(filename="Drug_waiting_times", measure="percent", time_agg=1, 
-                    yearstart= 2011, yearend=2017,   year_type = "financial", 
-                    pop = "depr_pop_allages", ind_id = 4136)
-######################*******************************#############################
 
 ##END
