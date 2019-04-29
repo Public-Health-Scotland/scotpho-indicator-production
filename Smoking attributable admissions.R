@@ -7,6 +7,8 @@
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
+# check differences in results compared with SPSS method
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -117,7 +119,6 @@ smoking_adm <- smoking_adm %>%
     sex_grp == 2 & diag == "J44" ~ 13.08,
     sex_grp == 1 & diag %in% c("K25", "K26", "K27") ~ 5.40, #Stomach / duodenal ulcer
     sex_grp == 2 & diag %in% c("K25", "K26", "K27") ~ 5.50,
-    # check these three diseases, why they have same value across sexes
     diag == "K50" ~ 2.10, #Crohns disease
     diag == "K05" ~ 3.97, #Periodontal disease / Periodonitis
     diag == "H25" & age_grp >= 10 ~ 1.54, #Age related cataract
@@ -146,9 +147,9 @@ smoking_adm <- smoking_adm %>%
     sex_grp == 1 & diag %in% c("C64", "C65", "C66", "C68") ~ 1.70, #Kidney, renal pelvis cancers
     sex_grp == 2 & diag %in% c("C64", "C65", "C66", "C68") ~ 1.10,
     sex_grp == 1 & diag == "C67" ~ 2.09, #Bladder cancers
-    sex_grp == 2 & diag == "C67" ~ 1.10,
+    sex_grp == 2 & diag == "C67" ~ 1.89,
     sex_grp == 1 & diag == "C80" ~ 2.50, #Unspecified site cancers
-    sex_grp == 2 & diag == "C80" ~ 1.89,
+    sex_grp == 2 & diag == "C80" ~ 1.30,
     sex_grp == 1 & diag == "C92" ~ 1.40, #Myeloid leukaemia
     sex_grp == 2 & diag == "C92" ~ 1.30,
     sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp <= 11 ~ 2.00, #Ischaemic heart disease
@@ -163,13 +164,8 @@ smoking_adm <- smoking_adm %>%
                       (diag >= "I26" & diag <= "I51")) ~ 1.22,
     sex_grp == 2 & ((diag >= "I00" & diag <= "I09") |
                       (diag >= "I26" & diag <= "I51")) ~ 1.14,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp <= 11 ~ 1.10, #Cerebrovascular disease
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp %in% c(12, 13) ~ 1.10,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp %in% c(14, 15) ~ 1.10,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp >= 16 ~ 1.10,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp <= 11 ~ 1.30,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp %in% c(12, 13) ~ 1.30,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp %in% c(14, 15) ~ 1.30,
+    sex_grp == 1 & diag >= "I60" & diag <= "I69" ~ 1.10, #Cerebrovascular disease
+    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp <= 15 ~ 1.30,
     sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp >= 16 ~ 1,
     sex_grp == 1 & diag == "I70" ~ 1.33, #Atherosclerosis.
     sex_grp == 2 & diag == "I70" ~ 1,
@@ -177,8 +173,8 @@ smoking_adm <- smoking_adm %>%
     sex_grp == 2 & diag == "I71" ~ 2.07,
     sex_grp == 1 & diag >= "I72" & diag <= "I78" ~ 1.01, #Other arterial disease
     sex_grp == 2 & diag >= "I72" & diag <= "I78" ~ 1.12,
-    diag >= "J10" & diag <= "J18" & age_grp <=13 ~ 1.40, #Pneumonia, influenza
-    diag >= "J10" & diag <= "J18" & age_grp >= 14 ~ 1.40,
+    sex_grp == 1 & diag >= "J10" & diag <= "J18"~ 1.40, #Pneumonia, influenza
+    sex_grp == 2 & diag >= "J10" & diag <= "J18" ~ 1.10,
     sex_grp == 1 & diag %in% c("J40", "J41", "J42", "J43") ~ 15.64, #Chronic obstructive lung disease
     sex_grp == 2 & diag %in% c("J40", "J41", "J42", "J43")  ~ 11.77,
     sex_grp == 1 & diag == "J44" ~ 6.80, #Chronic airway obstruction
