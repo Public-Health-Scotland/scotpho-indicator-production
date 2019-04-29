@@ -466,17 +466,31 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       mutate(trend_axis=paste0(year-time_fix, "-", year+time_fix),  
              def_period=paste0(year-time_fix, " to ", year+time_fix, " ", year_type, 
                                " years; ", time_agg, "-year aggregates")) 
+    #Calendar two-year aggregates 
+  } else if (year_type == "calendar" & time_agg==2){ 
+    data_indicator <- data_indicator %>% 
+      mutate(trend_axis=paste0(year-1, "-", year),  
+             def_period=paste0(year-1, " to ", year, " ", year_type, 
+                               " years; 2-year aggregates")) 
     #Calendar single years
-  } else if (year_type == "calendar" & time_fix==0){ 
+  } else if (year_type == "calendar" & time_fix==0 & time_agg!=2){ 
     data_depr <- data_depr %>% 
       mutate(trend_axis=year,  
              def_period=paste0(year, " ", year_type, " year"))
     #Financial single years
-  } else if (year_type %in% c("financial", "school") & time_fix == 0){
+  } else if (year_type %in% c("financial", "school") & time_fix == 0 & time_agg!=2){
     
     data_depr <- data_depr %>% 
       mutate(trend_axis = paste0(year, "/", substr(year+1, 3, 4)),
              def_period = paste0(trend_axis, " ", year_type, " year"))
+    #Financial two-year aggregates 
+  } else if (year_type %in% c("financial", "school") & time_agg==2){ 
+    data_indicator <- data_indicator %>% 
+      mutate(trend_axis=paste0(year-1,  "/", substr(year, 3, 4),
+                               "-", year, "/",substr((year+1), 3, 4)),  
+             def_period = paste0(year-1, "/", substr(year, 3, 4), " to ",
+                                 year, "/", substr((year+1), 3, 4),
+                                 " ", year_type, " years; 2-year aggregates"))
     #Financial aggregate years
   } else if (year_type %in% c("financial", "school") & time_fix>0){
     
