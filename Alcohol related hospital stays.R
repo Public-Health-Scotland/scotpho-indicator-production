@@ -82,22 +82,16 @@ data_alcoholstays <- data_alcoholstays %>%
     TRUE ~ as.numeric(age)
   ))
 
-# Bringing  LA and datazone info.
-# postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
-#   setNames(tolower(names(.)))  #variables to lower case
-
+# # Bringing  LA and datazone info.
 postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>%
- setNames(tolower(names(.)))  #variables to lower case
+  setNames(tolower(names(.)))  #variables to lower case
 
 # Match geography information (datazone) to stays data
 data_alcoholstays <- left_join(data_alcoholstays, postcode_lookup, "pc7")
 
 # Select out unmatched rows and keep required fields
-
-###################should move to select ca2018 when population lookup updated???
-
 data_alcoholstays <- data_alcoholstays %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% 
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% # will need to change to new ca codes once new dz populations available
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
@@ -113,7 +107,9 @@ dz11 <- data_alcoholstays %>%
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/alcohol_stays_dz11_raw.rds'))
-datadz <- readRDS(paste0(data_folder, 'Prepared Data/alcohol_stays_dz11_raw.rds'))
+datadz <- readRDS(paste0(data_folder, 'Prepared Data/alcohol_stays_dz11_raw.rds')) %>%
+  mutate_if(is.character, factor)
+
 
 
 ###############################################.
@@ -132,7 +128,6 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stay_depr_raw.
 
 ###############################################.
 # CA (council area) file for separate indicator in CYP profile for those aged 11 to 25 years
-# Do we also want this indicator for ADPs?
 
 alcoholstays_11to25 <- data_alcoholstays %>%
   subset(age>=11 & age<=25) %>% 
