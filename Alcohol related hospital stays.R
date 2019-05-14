@@ -123,7 +123,7 @@ dz01_dep <- data_alcoholstays %>%
 
 dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joing dz01 and dz11
 
-saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stay_depr_raw.rds'))
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stays_depr_raw.rds'))
 
 
 ###############################################.
