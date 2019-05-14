@@ -1,5 +1,5 @@
 # ScotPHO indicators: 
-# Alcohol specific mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP, HSCP Partnership & Locality)
+# Alcohol specific mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP, HSCP Partnership & Locality - IZ data generated but not included in shiny tool to reduce disclosure risk)
 # Alcohol specific mortality by Deprivation (5 year aggregate)
 # Female alcohol related mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP  only)
 # Male alcohol related mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP only)
@@ -52,15 +52,11 @@ data_deaths <- data_deaths %>% mutate(age_grp = case_when(
 ))
 
 # Open LA and datazone info.
-# Pc 2017_2 used even though 2018 available to avoid issues with changing codes (but no diff to geographies) of fife/tayside LA/NHS board
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
-# postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>%
-#   setNames(tolower(names(.)))  #variables to lower case
-
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% 
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% #ca2019 to be used once dz populations updated and move to using new GSS codes.
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
