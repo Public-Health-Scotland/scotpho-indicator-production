@@ -1,10 +1,9 @@
 # ScotPHO indicators: 
-# Alcohol specific mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP, HSCP Partnership & Locality - IZ data generated but not included in shiny tool to reduce disclosure risk)
+# Alcohol specific mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP, HSCP Partnership 
+# & Locality - IZ data generated but not included in shiny tool to reduce disclosure risk)
 # Alcohol specific mortality by Deprivation (5 year aggregate)
 # Female alcohol related mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP  only)
 # Male alcohol related mortality (5 year aggregate) (Scotland, NHS Board, CA, ADP only)
-
-# Alcohol related mortality by deprivation (5 year aggregate)
 
 #   Part 1 - Extract data from SMRA - Deaths file.
 #   Part 2 - Create the different geographies basefiles
@@ -13,15 +12,16 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
 ###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
-                                      uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
 
 # Select alcohol specific deaths from SMRA
 # Select only deaths for scottish residents (COR=XS)
@@ -60,12 +60,10 @@ data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>%
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
-
 ###############################################.
 ## Part 2 - Create denominator files for the different geographies basefiles ----
 ###############################################.
 ###############################################.
-
 # Datazone2011
 dz11 <- data_deaths %>% 
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
@@ -74,18 +72,14 @@ dz11 <- data_deaths %>%
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/alcohol_deaths_dz11_raw.rds'))
 datadz <- readRDS(paste0(data_folder, 'Prepared Data/alcohol_deaths_dz11_raw.rds'))
 
-
 # Datazone2001. Only used for IRs
 dz01 <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% subset(year<2011) %>% rename(datazone = datazone2001)
 
 saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/alchohol_deaths_dz01_raw.rds'))
 
-
 ###############################################.
 #Deprivation indicator numerator file
-
-##deprivation script not yet finished so dep macro may fail.
 
 # Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 dz01_dep <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
@@ -123,8 +117,6 @@ alcohol_deaths_male <- data_deaths %>%
 
 saveRDS(alcohol_deaths_male, file=paste0(data_folder, 'Prepared Data/alcohol_deaths_male_raw.rds'))
 
-
-
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
@@ -145,16 +137,11 @@ analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=
                     year_type = "calendar", pop = "depr_pop_allages", 
                     epop_age="normal", epop_total =200000, ind_id = 20204)
 
-
 ###############################################.
 #FEMALE Alcohol mortality indicator functions
-
-#epop? half or does it not matter
-# also no female/male only population base file? maybe not required 
-
-analyze_first(filename = "alcohol_deaths_female", geography = "council", adp=TRUE, measure = "stdrate", 
+analyze_first(filename = "alcohol_deaths_female", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
-              time_agg = 5, epop_age = "normal")
+              adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "alcohol_deaths_female", measure = "stdrate", time_agg = 5, 
@@ -163,16 +150,13 @@ analyze_second(filename = "alcohol_deaths_female", measure = "stdrate", time_agg
 
 ###############################################.
 #MALE Alcohol mortality indicator functions
-analyze_first(filename = "alcohol_deaths_male", geography = "council", adp=TRUE, measure = "stdrate", 
+analyze_first(filename = "alcohol_deaths_male", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
-              time_agg = 5, epop_age = "normal")
+              adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only male half population
 analyze_second(filename = "alcohol_deaths_male", measure = "stdrate", time_agg = 5, 
                epop_total = 100000, ind_id = 12536, year_type = "calendar", 
                profile = "MH", min_opt = 1245385)
-
-
-
 
 #END
