@@ -8,15 +8,16 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
 ###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
-            uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
+            uid=.rs.askForPassword("SMRA Username:"), 
+            pwd=.rs.askForPassword("SMRA Password:")))
 
 #Looking to admissions with a main diagnosis of asthma, excluding unknown sex, by financial year. 
 #Creates one record per CIS and selects only one case per patient/year.
@@ -101,7 +102,7 @@ analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3,
 #############################################.
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "LA_pop_under16", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2017,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 
