@@ -52,14 +52,15 @@ saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds'))
   analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
                 yearstart = 2002, yearend = 2017, time_agg = 3 )
   
-  
+## spss program includes some exclusions at this point where denominator <=5 for an area  
+
   
   analyze_second(filename = "breastfed", measure = "percent", time_agg = 3, 
                  ind_id = 21004, year_type = "financial", Profile = "HN", min_opt = 1423811) 
   
   
 #These exclusions need to be applied somewhere in the program
-#assuming that if NHS boards are excluded then all sub geographies should also be exclusded
+#assuming that if NHS boards are excluded then all sub geographies should also be excluded?
   
 #   *Excluding years/areas where the data is incomplete during 3 year average (year before through to year after).
 #   *Western Isles (S08000028, S12000013) data available from 2006/07
@@ -68,4 +69,5 @@ saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds'))
 #   *Grampian (S08000020, S12000020, S12000033, S12000034) & Orkney (S08000025, S12000023) data available  from 2010/11.
 #   
   
+
   
