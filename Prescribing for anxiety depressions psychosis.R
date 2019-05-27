@@ -18,6 +18,7 @@ presc_anx <- read_csv(file=paste0(data_folder, 'Received Data/prescribing_anxiet
   ungroup() %>% rename(datazone = datazone2011)
 
 saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety_raw.rds'))
+saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety_depr_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
@@ -29,7 +30,7 @@ analyze_second(filename = "prescriptions_anxiety", measure = "percent", time_agg
                ind_id = 20401, year_type = "financial", profile = "HN", min_opt = 1497994)
 
 #Deprivation analysis function
-analyze_deprivation(filename="prescriptions_anxiety", measure="percent", time_agg=1, 
+analyze_deprivation(filename="prescriptions_anxiety_depr", measure="percent", time_agg=1, 
                     yearstart= 2014, yearend=2017,   year_type = "calendar", 
                     pop= "depr_pop_allages", ind_id = 20401)
 
