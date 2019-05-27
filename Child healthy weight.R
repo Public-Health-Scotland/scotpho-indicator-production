@@ -71,7 +71,43 @@ analyze_second(filename = "child_healthyweight", measure = "perc_pcf", time_agg 
                pop="DZ11_pop_5", ind_id = 21106, year_type = "financial", 
                profile = "HN", min_opt = 1471290)
 
-#Deprivation analysis function 
+# Excluding data for boards, hscps, las, localities and izs with incomplete data
+# Merging final data with parent geographies lookup and then filtering
+geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.rds")) %>% 
+  #TEMPORARY FIX. dealing with change in ca, hb and hscp codes
+  mutate(hscp_partnership = recode(hscp_partnership, "S37000014"='S37000032', 
+                                   "S37000023"='S37000033')) %>% 
+  gather(geotype, code, c(intzone2011, hscp_locality)) %>% distinct() %>% 
+  select(-geotype) %>% rename(parent_area = hscp_partnership)
+
+data_shiny <- left_join(readRDS(file = paste0(data_folder, "Shiny Data/child_healthyweight_shiny.rds")),
+                        geo_parents, by = "code") %>%
+  subset(!(((code %in% c('S37000001', 'S37000002', "S12000033", "S12000034", 'S12000020',
+                         'S37000019', 'S08000020') | # Moray, Aberdeen, Aberdeenshire
+               parent_area %in% c('S37000001', 'S37000002', 'S37000019')) & year <2009) |
+             ((code %in% c('S12000035', 'S37000004', 'S12000017', 'S37000016', "S12000027", 'S37000026',
+                           'S12000040', 'S37000030', 'S08000022', 'S08000026')  |
+                 # "Argyll & Bute", 'Shetland Islands', 'West Lothian', 'Highland'
+                 parent_area %in% c("S37000004", 'S37000016', 'S37000026', 'S37000030')) & 
+                year %in% c('2007') ) |
+             ((code %in% c('S12000039', 'S37000029', 'S12000011', 'S37000011', 'S12000046', 'S37000015') |
+                 #"East Renfrewshire", 'Glasgow City', 'West Dunbartonshire'
+                 parent_area %in% c("S37000029", 'S37000011', 'S37000015')) & 
+                year %in% c('2007', "2008", "2010")) | # East Dunbartonshire
+             ((code %in% c('S12000045', 'S37000009') | parent_area %in% c("S37000009")) & 
+                year %in% c('2007', "2008", "2010", "2016")) | # "Inverclyde"
+             ((code %in% c('S12000018', 'S37000017') | parent_area %in% c('S37000017')) & 
+                year %in% c('2007', "2008", "2009", "2010")) |
+             ((code %in% c('S12000023', 'S37000022', 'S08000025') |#Orkney Islands
+                 parent_area %in% c("S37000022") ) & year %in% c('2007', "2008", "2009"))
+           ) #negation
+  )#subset
+
+saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/child_healthyweight_shiny.rds"))
+write_csv(data_shiny, path = paste0(data_folder, "Shiny Data/child_healthyweight_shiny.csv"))
+
+###############################################.
+# Deprivation analysis function 
 # analyze_deprivation(filename="child_healthyweight_depr", measure="perc_pcf", time_agg=1,
 #                     yearstart= 2002, yearend=2017,   year_type = "financial",
 #                     pop = "depr_pop_allages", pop_pcf = pop="DZ11_pop_5", ind_id = 21106)
