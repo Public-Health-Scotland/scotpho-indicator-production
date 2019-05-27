@@ -7,8 +7,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
@@ -18,14 +18,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
 ###############################################.
-# Extracting cancer registry records with  a diagnosis of cancer (ICD10 codes C, excluding C44).
-# excluding records with unknown sex, 
-# It counts tumours, not different patients, e.g. a patient can have several tumours over the years.
+# Extracting cancer registry records with a diagnosis of cancer(ICD10 codes C, excluding C44).
+# excluding records with unknown sex. It counts tumours, not different patients,
+#  e.g. a patient can have several tumours over the years.
 cancer_reg <- tbl_df(dbGetQuery(channel, statement=
-           "SELECT count(*), extract (year from incidence_date) year, sex sex_grp, 
+           "SELECT count(*) count, extract (year from incidence_date) year, sex sex_grp, 
                    postcode pc7, floor(((incidence_date-date_of_birth)/365)) age 
             FROM ANALYSIS.SMR06_PI
-            WHERE incidence_date between '1 January 2002' and '31 December 2016'
+            WHERE incidence_date between '1 January 2002' and '31 December 2017'
                 AND regexp_like(ICD10S_CANCER_SITE, 'C') 
                 AND not (regexp_like(ICD10S_CANCER_SITE, 'C44')) 
                 AND sex <> 9
@@ -34,7 +34,7 @@ cancer_reg <- tbl_df(dbGetQuery(channel, statement=
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing  LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -54,7 +54,7 @@ cancer_reg <- left_join(cancer_reg, postcode_lookup, by = "pc7") %>% #merging wi
 ###############################################.
 # Datazone2011
 canreg_dz11 <- cancer_reg %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
+  summarize(numerator = sum(count)) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(canreg_dz11, file=paste0(data_folder, 'Prepared Data/cancer_reg_dz11_raw.rds'))
 
@@ -62,10 +62,10 @@ saveRDS(canreg_dz11, file=paste0(data_folder, 'Prepared Data/cancer_reg_dz11_raw
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 canreg_dz01 <- cancer_reg %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+  summarize(numerator = sum(count)) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-canreg_depr <- rbind(canreg_dz01, cancer_reg %>% subset(year>=2014)) 
+canreg_depr <- rbind(canreg_dz01, canreg_dz11 %>% subset(year>=2014)) 
 
 saveRDS(canreg_depr, file=paste0(data_folder, 'Prepared Data/cancer_reg_depr_raw.rds'))
 
@@ -73,7 +73,7 @@ saveRDS(canreg_depr, file=paste0(data_folder, 'Prepared Data/cancer_reg_depr_raw
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "cancer_reg_dz11", geography = "datazone11", 
-              measure = "stdrate", yearstart = 2002, yearend = 2016, time_agg = 3,
+              measure = "stdrate", yearstart = 2002, yearend = 2017, time_agg = 3,
               epop_age = "normal", pop = "DZ11_pop_allages")
 
 analyze_second(filename = "cancer_reg_dz11", measure = "stdrate", time_agg = 3, 
@@ -82,10 +82,8 @@ analyze_second(filename = "cancer_reg_dz11", measure = "stdrate", time_agg = 3,
 
 #Deprivation analysis function
 analyze_deprivation(filename="cancer_reg_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2016, year_type = "calendar", 
+                    yearstart= 2002, yearend=2017, year_type = "calendar", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20301)
-
-odbcClose(channel) # closing connection to SMRA
 
 ##END
