@@ -6,12 +6,12 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
 
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
-                                      uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -21,19 +21,19 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # It counts tumours, not different patients, e.g. a patient can have several tumours over the years.
 # If we were to use SMRA geographical information, the code could be simplified.
 lung_reg <- tbl_df(dbGetQuery(channel, statement=
-  "SELECT count(*), extract (year from INCIDENCE_DATE) year, SEX sex_grp, 
-    POSTCODE pc7, floor(((incidence_date-date_of_birth)/365)) age 
+  "SELECT count(*) count, extract (year from INCIDENCE_DATE) year, SEX sex_grp, 
+      POSTCODE pc7, floor(((incidence_date-date_of_birth)/365)) age 
    FROM ANALYSIS.SMR06_PI
    WHERE incidence_date between '1 January 2002' and '31 December 2017'
-    AND ((incidence_date-date_of_birth)/365)>=16 
-    AND regexp_like(ICD10S_CANCER_SITE, 'C3[34]')
-    AND sex <> 9
+      AND ((incidence_date-date_of_birth)/365)>=16 
+      AND regexp_like(ICD10S_CANCER_SITE, 'C3[34]')
+      AND sex <> 9
   GROUP BY extract (year from incidence_date), sex, postcode, 
-  floor(((incidence_date-date_of_birth)/365))")) %>% 
+      floor(((incidence_date-date_of_birth)/365))")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing  LA info.
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
   setNames(tolower(names(.))) %>% select(pc7, ca2011) #variables to lower case
 
 lung_reg <- left_join(lung_reg, postcode_lookup, by = "pc7") %>% #merging with lookup
@@ -45,8 +45,8 @@ lung_reg <- left_join(lung_reg, postcode_lookup, by = "pc7") %>% #merging with l
     age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
     age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19,  TRUE ~ NA_real_)) %>% 
   # aggregating by council area
-  group_by(year, ca2011, sex_grp, age_grp) %>% count() %>% ungroup() %>% 
-  rename(ca = ca2011, numerator = n) %>% 
+  group_by(year, ca2011, sex_grp, age_grp) %>% summarize(numerator = sum(count)) %>% 
+  ungroup() %>% rename(ca = ca2011) %>% 
   filter(!is.na(ca)) # excluding non-Scottish residents
 
 saveRDS(lung_reg, file=paste0(data_folder, 'Prepared Data/lungcancer_reg_raw.rds'))
