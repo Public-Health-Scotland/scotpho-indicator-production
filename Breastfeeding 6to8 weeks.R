@@ -20,7 +20,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
 
-library(stringi)
+library(stringi) #for manipulation of string text to generate year field
 
 
 ###############################################.
@@ -29,38 +29,42 @@ library(stringi)
 breastfed <- read_csv(paste0(data_folder, "Received Data/IR2018-01997_6to8_breastfeeding.csv")) %>%
   setNames(tolower(names(.))) %>%
   filter(!is.na(datazone2011)) %>% # exclude rows with no datazone.
-  rename(datazone = datazone2011)
+  mutate(datazone = as.factor(datazone2011))
 
 
 #fin year is financial year - needs reformatting 203 = 2002/03 recode to 2002 
   breastfed <- breastfed %>%
-    mutate(length=stri_length(fin_year),
-           year1=as.character(fin_year),
+    mutate(length=stri_length(fin_year), #find lenght of year field, if length 3 then year period prior to 2010
+           year1=as.character(fin_year), 
            year=case_when(length==3 ~ paste0("200",substr(year1,1,1)), TRUE ~ paste0("20",substr(year1,1,2)))) %>%
     group_by(year, datazone) %>%
     summarise(numerator = sum(excbf_6to8wk),
               denominator = sum(tot_6to8wk))
   
-  
 saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds')) 
   
   
-  
-  ###############################################.
-  ## Part 2 - Run analysis functions ----
-  ###############################################.
-  analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
-                yearstart = 2002, yearend = 2017, time_agg = 3 )
-  
-## spss program includes some exclusions at this point where denominator <=5 for an area  
+###############################################.
+## Part 2 - Run analysis functions ----
+###############################################.
+analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
+              yearstart = 2002, yearend = 2017, time_agg = 3 )
 
-  
-  analyze_second(filename = "breastfed", measure = "percent", time_agg = 3, 
-                 ind_id = 21004, year_type = "financial", Profile = "HN", min_opt = 1423811) 
-  
+## Exclusions at this point for geographies where denominator <=5 for an area  
+data_indicator <- readRDS(file=paste0(data_folder, "Temporary/breastfed", "_formatted.rds"))%>%
+  subset(denominator>5)
+
+saveRDS(data_indicator, file=paste0(data_folder, "Temporary/breastfed", "_formatted.rds"))
+
+
+analyze_second(filename = "breastfed", measure = "percent", time_agg = 3, 
+               ind_id = 21004, year_type = "financial", min_opt = 1423811, profile="HN") 
+
+
+##Exclusion section incomplete- 
   
 #These exclusions need to be applied somewhere in the program
-#assuming that if NHS boards are excluded then all sub geographies should also be excluded?
+#assuming that if NHS boards & council are excluded then all sub geographies should also be excluded - currrent spss program not doing this?
   
 #   *Excluding years/areas where the data is incomplete during 3 year average (year before through to year after).
 #   *Western Isles (S08000028, S12000013) data available from 2006/07
@@ -68,6 +72,17 @@ saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds'))
 #   *Shetland (S08000026, S12000027) data available from 2008/09
 #   *Grampian (S08000020, S12000020, S12000033, S12000034) & Orkney (S08000025, S12000023) data available  from 2010/11.
 #   
+
+data_shiny <- readRDS(file = paste0(data_folder, "Shiny Data/breastfed", "_shiny.rds")) %>%
+  filter(!(code %in% c('S08000028','S12000013') & year == 2005|2006)) %>%
+  filter(!(code %in% c('S08000022','S12000017') & year <= 2008)) %>%
+  filter(!(code %in% c('S08000026','S12000027') & year  == 2007|2008)) %>%
+  filter(!(code %in% c('S08000020', 'S08000025', 'S12000020', 'S12000023', 'S12000033', 'S12000034') & year  == 2009|2010))
+         
+
+# Resave both rds and csv files with exclusions
+saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/breastfed", "_shiny.rds"))
+write_csv(data_shiny, path = paste0(data_folder, "Shiny Data/breastfed", "_shiny.csv"))
   
 
   
