@@ -9,7 +9,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
+source("1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
@@ -37,9 +37,17 @@ saveRDS(sdmd_follow, file=paste0(data_folder, 'Temporary/sdmd_followcompl_format
 analyze_second(filename = "sdmd_initialcompl", measure = "percent", time_agg = 1, 
                ind_id = 4137, year_type = "financial", profile = "DU", min_opt = 160720)
 
-#Follow-up completeness
+# Merging with old adp data that it has not been produced in latest years because 
+# of data quality issues
+sdmd_shiny_initial <- rbind(readRDS(paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.rds")),
+                      readRDS(paste0(data_folder, "Prepared Data/sdmd_adp_initial_donotdelete.rds")))
+
+saveRDS(sdmd_shiny_initial, paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.rds"))
+write_csv(sdmd_shiny_initial, paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.csv"))
+
+###############################################.
+# Follow-up completeness
 analyze_second(filename = "sdmd_followcompl", measure = "percent", time_agg = 1, 
                ind_id = 4138, year_type = "financial", profile = "DU", min_opt = 160450)
-
 
 ##END
