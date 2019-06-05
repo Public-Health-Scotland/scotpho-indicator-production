@@ -6,6 +6,7 @@
 #How to simplify epop, lookup?
 #Dealing with incomplete aggregation periods needs improvement, package roll might be
 # the solution but it doesn't work in the server
+# Do automatic checks at the end (e.g. CA and HSCP are the same)
 
 ## HOW TO USE THESE FUNCTIONS
 # FUNCTION ONE: ANALYZE_FIRST
@@ -206,8 +207,11 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       }
     }
     
+    analysis_first_result <<- data_indicator
+    
     saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
 }
+
 ##################################################.
 ##  Second analysis function ----
 ##################################################.
