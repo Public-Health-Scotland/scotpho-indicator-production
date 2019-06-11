@@ -372,8 +372,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     data_shiny <- data_indicator %>% select(c(code, ind_id, year, numerator, rate, lowci,
                                     upci, def_period, trend_axis))
     #Including both rds and csv file for now
-    saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
-    write_csv(data_shiny, path = paste0(data_folder, "Shiny Data/", filename, "_shiny.csv"))
+    saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+    write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
   
     #Preparing data for old OPT tool
     #Excluding HSC locality and partnership.
