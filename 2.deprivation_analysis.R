@@ -512,7 +512,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
               least_rate, par_rr, count))
 
   #Saving file
-  saveRDS(data_shiny, file = paste0(data_folder, "Shiny Data/", filename, "_ineq.rds"))
+  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_ineq.rds"))
 
   #Making final dataset available outside the function
   final_result <<- data_shiny
