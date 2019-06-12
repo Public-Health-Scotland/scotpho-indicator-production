@@ -94,9 +94,9 @@ analyze_first(filename = "crime_rate_dz11", geography = "datazone11", measure = 
               yearstart = 2014, yearend = 2017, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
-all_data <- rbind(readRDS(paste0(data_folder, "Temporal/crime_rate_dz11_formatted.rds")),
-                  readRDS(paste0(data_folder, "Temporal/crime_rate_ca_formatted.rds")))
-saveRDS(all_data, file = paste0(data_folder, "Temporal/crime_rate_all_formatted.rds"))
+all_data <- rbind(readRDS(paste0(data_folder, "Temporary/crime_rate_dz11_formatted.rds")),
+                  readRDS(paste0(data_folder, "Temporary/crime_rate_ca_formatted.rds")))
+saveRDS(all_data, file = paste0(data_folder, "Temporary/crime_rate_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "crime_rate_all", measure = "crude", time_agg = 1, crude_rate = 1000,

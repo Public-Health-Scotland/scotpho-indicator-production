@@ -7,10 +7,6 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-library(readxl) #for reading excel
-
-server_desktop <- "server" # change depending if you are using R server or R desktop
-
 source("./1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.

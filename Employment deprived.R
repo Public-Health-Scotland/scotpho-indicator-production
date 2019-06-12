@@ -94,9 +94,9 @@ analyze_first(filename = "employment_deprived_dz11", geography = "datazone11", m
               yearstart = 2014, yearend = 2017, time_agg = 1, pop = "DZ11_working_pop")
 
 #Merging CA and DZ11 together
-all_data <- rbind(readRDS(paste0(data_folder, "Temporal/employment_deprived_dz11_formatted.rds")),
-                  readRDS(paste0(data_folder, "Temporal/employment_deprived_ca_formatted.rds")))
-saveRDS(all_data, file = paste0(data_folder, "Temporal/employment_deprived_all_formatted.rds"))
+all_data <- rbind(readRDS(paste0(data_folder, "Temporary/employment_deprived_dz11_formatted.rds")),
+                  readRDS(paste0(data_folder, "Temporary/employment_deprived_ca_formatted.rds")))
+saveRDS(all_data, file = paste0(data_folder, "Temporary/employment_deprived_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "employment_deprived_all", measure = "percent", time_agg = 1, 

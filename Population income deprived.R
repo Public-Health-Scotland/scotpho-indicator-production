@@ -13,8 +13,8 @@ if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
   cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
 }
 
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 #Small function to standarize each years info. Function parameters:
 #Data is for what basefile to use, Datazone is for what dz type using, 
@@ -94,9 +94,9 @@ analyze_first(filename = "income_deprived_dz11", geography = "datazone11", measu
               yearstart = 2014, yearend = 2017, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
-all_data <- rbind(readRDS(paste0(data_folder, "Temporal/income_deprived_dz11_formatted.rds")),
-                  readRDS(paste0(data_folder, "Temporal/income_deprived_ca_formatted.rds")))
-saveRDS(all_data, file = paste0(data_folder, "Temporal/income_deprived_all_formatted.rds"))
+all_data <- rbind(readRDS(paste0(data_folder, "Temporary/income_deprived_dz11_formatted.rds")),
+                  readRDS(paste0(data_folder, "Temporary/income_deprived_ca_formatted.rds")))
+saveRDS(all_data, file = paste0(data_folder, "Temporary/income_deprived_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "income_deprived_all", measure = "percent", time_agg = 1,
