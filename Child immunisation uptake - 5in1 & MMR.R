@@ -45,7 +45,8 @@ saveRDS(five11_data, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1_d
 
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-five_dep_file <- rbind(five01_data %>% subset(year<=2013), five11_data %>% subset(year>=2014)) 
+five_dep_file <- rbind(five01_data %>% subset(year<=2013), five11_data %>% subset(year>=2014)) %>% 
+  filter(datazone !="         ")
 
 saveRDS(five_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1_depr_raw.rds'))
 
