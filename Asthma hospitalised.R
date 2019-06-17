@@ -45,7 +45,7 @@ data_asthma <- data_asthma %>% mutate(age_grp = case_when(
 ))
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2018)
 
@@ -73,13 +73,13 @@ saveRDS(asthma_ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under1
 ###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-astham_dz01_dep <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+asthma_dz01_dep <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-dep_file <- rbind(astham_dz01_dep, asthma_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+dep_file <- rbind(asthma_dz01_dep, asthma_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
 
-saveRDS(astham_dz01_dep, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
