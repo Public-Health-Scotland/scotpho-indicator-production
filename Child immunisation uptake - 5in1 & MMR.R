@@ -14,9 +14,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile: 5 in 1 ----
 ###############################################.
-
 # Datazone2001 - Read data (Immunisation uptake at 24 month) provided by child health team and aggregate 
-
 five01_data <- read.spss(paste0(data_folder, "Received Data/2003_2018_Scotpho_ChildhoodImms_DZ_DZ2001.zsav"), 
                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>% rename(datazone = datazone2001) %>% 
@@ -45,8 +43,7 @@ saveRDS(five11_data, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1_d
 
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-five_dep_file <- rbind(five01_data %>% subset(year<=2013), five11_data %>% subset(year>=2014)) %>% 
-  filter(datazone !="         ")
+five_dep_file <- rbind(five01_data %>% subset(year<=2013), five11_data %>% subset(year>=2014)) 
 
 saveRDS(five_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1_depr_raw.rds'))
 

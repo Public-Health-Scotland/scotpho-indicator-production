@@ -169,7 +169,10 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   }
   
   #And merging them with the rest of the data
-  data_depr <- rbind(data_depr, data_depr_totals)
+  data_depr <- rbind(data_depr, data_depr_totals) %>% 
+    # To exclude cases without quintile or code. Caused when raw files have 
+    # records withoout datazone needed for get the right Scotland level
+    filter(!(is.na(code) | is.na(quintile)))
   
   ###############################################.
   ## Part 3 - Matching with population lookup----
