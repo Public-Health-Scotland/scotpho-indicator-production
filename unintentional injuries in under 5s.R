@@ -53,16 +53,16 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
    summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2011)
  
  # save file
- saveRDS(unintentionalunder5_ca2011, file=paste0(data_folder, 'Prepared Data/unintentionalunder5_ca2011_raw.rds'))
+ saveRDS(unintentional_under5, file=paste0(data_folder, 'Prepared Data/unintentional_under5_raw.rds'))
  
  ###############################################.
  ## - Run analysis functions ----
  ###############################################.
  
-analyze_first(filename = "unintentionalunder5_ca2011", geography = "council", measure = "stdrate", 
+analyze_first(filename = "unintentional_under5", geography = "council", measure = "stdrate", 
                pop = "CA_pop_under5", yearstart = 2005, yearend = 2017,
-               time_agg = 3, epop_age = 'under5')
+               time_agg = 3, epop_age = 'normal')
  
-analyze_second(filename = "unintentionalunder5_ca2011", measure = "stdrate", time_agg = 3, 
+analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3, 
                 epop_total = 10000, ind_id = 13050, year_type = "financial", 
                 profile = "CP", min_opt = 234388)
