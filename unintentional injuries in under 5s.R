@@ -17,7 +17,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 # Extract data from SMRA
 unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
- "SELECT distinct link_no linkno, cis_marker cis, min(admission_type), min(AGE_IN_YEARS) age, min(SEX) sex, min(DR_POSTCODE) pc7,
+ "SELECT distinct link_no linkno, cis_marker cis, min(admission_type), min(AGE_IN_YEARS) age, min(SEX) sex_grp, min(DR_POSTCODE) pc7,
   CASE WHEN extract(month from admission_date) > 3 
   THEN extract(year from admission_date) 
     ELSE extract(year from admission_date) -1 END as year
@@ -38,29 +38,18 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
  setNames(tolower(names(.)))  #variables to lower case
  
  #compute age group
- unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = case_when( 
-    age <5 ~ 1, TRUE ~ as.numeric(age)
- ))
- 
- #assign sex labels
- unintentional_under5 <- unintentional_under5 %>% 
-   mutate(sex_grp = if_else(sex == 1, "male", "female"))
+ unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = 1)
  
  # Bringing council area info.
  postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2011)
  
- # aggregate the data with healthboard info
+ # aggregate the data by council are
  unintentional_under5 <- left_join(unintentional_under5, postcode_lookup, "pc7") %>% 
    subset(!(is.na(ca2011))) %>%  # exclude records with no ca2011 
-   mutate_if(is.character, factor) # converting variables into factors
- 
- # save file
- saveRDS(unintentional_under5, file=paste0(data_folder, 'Prepared Data/unintentional_under5_raw.rds'))
- 
- # group by year, ca2011, sex, age
- unintentionalunder5_ca2011 <- unintentional_under5 %>% group_by(year, ca2011, sex_grp, age_grp) %>%  
+   mutate_if(is.character, factor) %>%  # converting variables into factors
+   group_by(year, ca2011, sex_grp, age_grp) %>%  
    summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2011)
  
  # save file
@@ -69,7 +58,6 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
  ###############################################.
  ## - Run analysis functions ----
  ###############################################.
- 
  
 analyze_first(filename = "unintentionalunder5_ca2011", geography = "council", measure = "stdrate", 
                pop = "CA_pop_under5", yearstart = 2005, yearend = 2017,
