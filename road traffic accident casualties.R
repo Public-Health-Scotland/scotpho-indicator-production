@@ -36,12 +36,12 @@ road_accidents <- tbl_df(dbGetQuery(channel, statement=
       AND exists(select * from ANALYSIS.SMR01_PI 
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
             AND admission_type=32
-            AND admission_date between '1 January 2002' and '31 December 2018')")) %>% 
+            AND admission_date between '1 January 2002' and '31 December 2018')
+  ORDER BY link_no, cis_marker, year")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Aggregating to select only one case per admission and year
 road_accidents <- road_accidents %>% 
-  arrange(link_no, cis_marker, year) %>% 
   group_by(link_no, cis_marker, year) %>% 
   summarise_at(c("age", "sex_grp", "pc7"), funs(first)) %>% 
   ungroup()
@@ -57,7 +57,7 @@ road_accidents <- road_accidents %>% mutate(age_grp = case_when(
   TRUE ~ as.numeric(age)
 ))
 
-# Bringing  LA and datazone info.
+# Bringing datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
@@ -75,8 +75,6 @@ roadaccidents_dz11 <- road_accidents %>% group_by(year, datazone2011, sex_grp, a
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(roadaccidents_dz11, file=paste0(data_folder, 'Prepared Data/roadaccidents_dz11_raw.rds'))
-###############################################.
-
 
 ###############################################.
 #Deprivation basefile
@@ -108,6 +106,4 @@ analyze_deprivation(filename="roadaccidents_depr", measure="stdrate", time_agg=3
                     epop_total =200000, ind_id = 20307)
 
 #############################################.
-
-
 ##END
