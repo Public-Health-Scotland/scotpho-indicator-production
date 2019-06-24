@@ -62,11 +62,11 @@ saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca20
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-analyze_first(filename = "young_assault", geography = "council", measure = "stdrate", 
+analyze_first(filename = "youngassault_ca2011", geography = "council", measure = "stdrate", 
               pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018,
               time_agg = 3, epop_age = '15to25')
 
-analyze_second(filename = "young_assault", measure = "stdrate", time_agg = 3, 
+analyze_second(filename = "youngassault_ca2011", measure = "stdrate", time_agg = 3, 
                epop_total = 25400, ind_id = 13049, year_type = "financial", 
                profile = "CP", min_opt = 179196)
 
