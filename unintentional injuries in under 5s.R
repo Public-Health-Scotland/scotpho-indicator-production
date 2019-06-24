@@ -41,7 +41,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
  unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = 1)
  
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2011)
  
@@ -60,7 +60,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=
  ###############################################.
  
 analyze_first(filename = "unintentional_under5", geography = "council", measure = "stdrate", 
-               pop = "CA_pop_under5", yearstart = 2005, yearend = 2017,
+               pop = "CA_pop_under5", yearstart = 2005, yearend = 2018,
                time_agg = 3, epop_age = 'normal')
  
 analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3, 

@@ -55,7 +55,7 @@ deaths_suicide <- deaths_suicide %>% mutate(age_grp = case_when(
 ))
 
 # Bringing  LA and datazone info.
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
@@ -99,4 +99,47 @@ analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg =
                profile = "HN", min_opt = 1295131)
 
 
+###############################################
+# FEMALE
+
+suicides_female <- deaths_suicide %>%
+  subset(sex_grp==2) %>% 
+  group_by(year, age_grp, age, sex_grp, ca2011) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>%   
+  rename(ca = ca2011)
+
+saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female_raw.rds'))
+
+
+analyze_first(filename = "suicides_female", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              time_agg = 5, epop_age = "normal")
+
+#epop is only 100000 as only female half population
+analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
+               epop_total = 100000, ind_id = 12539, year_type = "calendar", 
+               profile = "MH", min_opt = 7658)
                                       
+
+###############################################
+# MALE
+
+suicides_male <- deaths_suicide %>%
+  subset(sex_grp==1) %>% 
+  group_by(year, age_grp, age, sex_grp, ca2011) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>%   
+  rename(ca = ca2011)
+
+saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw.rds'))
+
+
+analyze_first(filename = "suicides_male", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              time_agg = 5, epop_age = "normal")
+
+#epop is only 100000 as only male half population
+analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5, 
+               epop_total = 100000, ind_id = 12538, year_type = "calendar", 
+               profile = "MH", min_opt = 7262)

@@ -41,7 +41,7 @@ young_assault <- young_assault %>%
 
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, ca2011)
 
@@ -66,7 +66,7 @@ saveRDS(youngassault_ca2011, file=paste0(data_folder, 'Prepared Data/youngassaul
 
 
 analyze_first(filename = "youngassault_ca2011", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2017,
+              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018,
               time_agg = 3, epop_age = '15to25')
 
 analyze_second(filename = "youngassault_ca2011", measure = "stdrate", time_agg = 3, 
