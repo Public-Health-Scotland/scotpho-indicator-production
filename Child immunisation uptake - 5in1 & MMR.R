@@ -82,6 +82,12 @@ mmr11_data <- mmr11_data %>% rename(denominator = total24, numerator = mmr24)
 
 saveRDS(mmr11_data, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_dz11_raw.rds'))
 
+# #Deprivation basefile
+# # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+# mmr_dep_file <- rbind(mmr01_data %>% subset(year<=2013), mmr11_data %>% subset(year>=2014)) 
+# 
+# saveRDS(mmr_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_depr_raw.rds'))
+
 ###############################################.
 ## Part 3 - Call analysis macros: 5 in 1 ----
 ###############################################.
@@ -108,7 +114,7 @@ analyze_second(filename = "Immunisation_MMR_dz11", measure = "percent", time_agg
                ind_id = 21104, year_type = "calendar", profile = "HN", min_opt = 1106333)
 
 #Deprivation analysis function
-analyze_deprivation(filename="Immunisation_MMR_dz11_depr", measure="percent", time_agg=3, 
+analyze_deprivation(filename="Immunisation_MMR_dz11", measure="percent", time_agg=3, 
                     yearstart= 2014, yearend=2018,   year_type = "calendar", 
                     ind_id = 21104)
 
