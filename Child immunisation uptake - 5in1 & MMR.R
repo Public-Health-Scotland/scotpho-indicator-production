@@ -52,20 +52,15 @@ saveRDS(five_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1
 ###############################################.
 
 # Datazone2001 - Read data (Immunisation uptake at 24 month) provided by child health team and aggregate 
-
 mmr01_data <- read.spss( paste0(data_folder, "Received Data/2003_2018_Scotpho_ChildhoodImms_DZ_DZ2001.zsav"), 
                           to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>% rename(datazone = datazone2001) %>% 
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>% 
-  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup()
-
-# Rename variables into numerator and denominator
-mmr01_data <- mmr01_data %>% rename(denominator = total24, numerator = mmr24)
-
-saveRDS(mmr01_data, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_dz01_raw.rds'))
-
+  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup() %>%
+  # Rename variables into numerator and denominator
+  rename(denominator = total24, numerator = mmr24)
 
 # Datazone2011 - Read data (Immunisation uptake at 24 month) provided by child health team and aggregate
 
@@ -75,18 +70,17 @@ mmr11_data <- read.spss( paste0(data_folder, "Received Data/2004_2018_Scotpho_Ch
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>% 
-  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup()
-
-# Rename variables into numerator and denominator
-mmr11_data <- mmr11_data %>% rename(denominator = total24, numerator = mmr24)
+  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup()  %>% 
+  # Rename variables into numerator and denominator
+  rename(denominator = total24, numerator = mmr24)
 
 saveRDS(mmr11_data, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_dz11_raw.rds'))
 
-# #Deprivation basefile
-# # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-# mmr_dep_file <- rbind(mmr01_data %>% subset(year<=2013), mmr11_data %>% subset(year>=2014)) 
-# 
-# saveRDS(mmr_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_depr_raw.rds'))
+#Deprivation basefile
+# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+mmr_dep_file <- rbind(mmr01_data %>% subset(year<=2013), mmr11_data %>% subset(year>=2014))
+
+saveRDS(mmr_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Call analysis macros: 5 in 1 ----
@@ -114,8 +108,8 @@ analyze_second(filename = "Immunisation_MMR_dz11", measure = "percent", time_agg
                ind_id = 21104, year_type = "calendar", profile = "HN", min_opt = 1106333)
 
 #Deprivation analysis function
-analyze_deprivation(filename="Immunisation_MMR_dz11", measure="percent", time_agg=3, 
-                    yearstart= 2014, yearend=2018,   year_type = "calendar", 
+analyze_deprivation(filename="Immunisation_MMR_depr", measure="percent", time_agg=3, 
+                    yearstart= 2003, yearend=2018,   year_type = "calendar", 
                     ind_id = 21104)
 
 ##END
