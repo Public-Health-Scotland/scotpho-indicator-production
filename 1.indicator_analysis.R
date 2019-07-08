@@ -27,7 +27,8 @@
 #           percentage with finite population correction factor (perc_pcf)
 # time_agg - Aggregation period used expressed in year, e.g. 3 
 # ind_id - indicator code/number
-# year_type - calendar, financial or school
+# year_type - calendar, financial, school or annual snapshot. This last one should
+#           be used like "Month snapshot" e.g. "August snapshot"
 # crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
 # min_opt - Only relevant for old OPT. First serial OPT number to include.
@@ -339,6 +340,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
       data_indicator <- data_indicator %>% 
         mutate(trend_axis=year,  
                def_period=paste0(year, " ", year_type, " year"))
+      #Annual snapshot 
+    } else if (grepl("snapshot", year_type, fixed=TRUE) ==  TRUE) { 
+      data_indicator <- data_indicator %>% 
+        mutate(trend_axis=year,  
+               def_period=paste0(year, " ", year_type))
       #Financial single years
     } else if (year_type %in% c("financial", "school") & time_fix == 0 & time_agg!=2){
       
