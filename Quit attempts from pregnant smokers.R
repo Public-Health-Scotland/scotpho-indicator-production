@@ -1,7 +1,5 @@
 # ScotPHO indicators: Quit attempts from pregnant smokers
-# Denominator data - Number of all women recoded as a 'current smoker' 
-# at antenatal booking appointment (maternity team).
-# 
+
 #   Part 1 - Create basefile
 #   Part 2 - Run analysis functions
 
