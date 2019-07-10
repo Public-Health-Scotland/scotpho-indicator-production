@@ -31,8 +31,7 @@ quit_pregnant_den <- read_csv(file=paste0(data_folder, 'Received Data/IR2019-002
 # Bring ca lookup
 ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(datazone2011, ca2011) %>% distinct() %>% 
-  rename(c)
+  select(datazone2011, ca2011) %>% distinct()
 
 # Merging with CA lookup and aggregating denominator
 quit_pregnant_den <- left_join(quit_pregnant_den, ca_lookup, 
