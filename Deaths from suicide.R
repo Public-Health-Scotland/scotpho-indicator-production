@@ -76,15 +76,6 @@ suicides_dz11 <- deaths_suicide %>% group_by(year, datazone2011, sex_grp, age_gr
 saveRDS(suicides_dz11, file=paste0(data_folder, 'Prepared Data/deaths_suicide_dz11_raw.rds'))
 suicidedz <- readRDS(paste0(data_folder, 'Prepared Data/deaths_suicide_dz11_raw.rds'))
 
-# ca2011 - confusion over the SPSS syntax which seems to include this, but my end analysis (without this) matches
-# the ScotPHO profile data exactly - possibly not needed?
-
-suicides_ca2011 <- deaths_suicide %>% group_by(year, ca2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2011)
-
-saveRDS(suicides_ca2011, file=paste0(data_folder, 'Prepared Data/deaths_suicide_ca2011_raw.rds'))
-suicideca <- readRDS(paste0(data_folder, 'Prepared Data/deaths_suicide_ca2011_raw.rds'))
-
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
@@ -104,7 +95,7 @@ analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg =
 
 suicides_female <- deaths_suicide %>%
   subset(sex_grp==2) %>% 
-  group_by(year, age_grp, age, sex_grp, ca2011) %>%  
+  group_by(year, age_grp, sex_grp, ca2011) %>%  
   summarize(numerator = n()) %>% 
   ungroup() %>%   
   rename(ca = ca2011)
@@ -127,7 +118,7 @@ analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5,
 
 suicides_male <- deaths_suicide %>%
   subset(sex_grp==1) %>% 
-  group_by(year, age_grp, age, sex_grp, ca2011) %>%  
+  group_by(year, age_grp, sex_grp, ca2011) %>%  
   summarize(numerator = n()) %>% 
   ungroup() %>%   
   rename(ca = ca2011)
@@ -142,4 +133,24 @@ analyze_first(filename = "suicides_male", geography = "council", measure = "stdr
 #epop is only 100000 as only male half population
 analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5, 
                epop_total = 100000, ind_id = 12538, year_type = "calendar", 
+               profile = "MH", min_opt = 7262)
+
+###############################################
+# YOUNG PEOPLE
+
+suicides_young <- deaths_suicide %>%
+  subset(age > 10 & age < 26) %>% 
+  group_by(year, age_grp, sex_grp, ca2011) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>%   
+  rename(ca = ca2011)
+
+saveRDS(suicides_young, file=paste0(data_folder, 'Prepared Data/suicides_young_raw.rds'))
+
+analyze_first(filename = "suicides_young", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_11to25", yearstart = 2011, yearend = 2017,
+              time_agg = 5, epop_age = "11to25")
+
+analyze_second(filename = "suicides_young", measure = "stdrate", time_agg = 5, 
+               epop_total = 34200, ind_id = 13033, year_type = "calendar", 
                profile = "MH", min_opt = 7262)
