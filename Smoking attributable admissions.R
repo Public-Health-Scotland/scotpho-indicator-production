@@ -39,6 +39,8 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement=
      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
+# cases: 975,179, SPSS some extra cases, but different timing, need to check again
+
 smoking_adm <- smoking_adm %>% #adding council codes
   mutate(ca = recode(ca, '01'='S12000033', '02'='S12000034', '03'='S12000041', 
                      '04'='S12000035', '05'='S12000026', '06'='S12000005', 
@@ -199,16 +201,20 @@ smoking_adm <- smoking_adm %>%
   # selecting first value of an admission for all variables, including the risks 
   # to follow PHE methodology
   summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
+  # 937,252  records here. 
   # Excluding cases where young people has a disease for which only risk for older people.
   filter(current > 0) %>% ungroup() %>% 
+  # 932,292 records here SPSS 936,877, different timing of extract needs to check
+  # Are the differences caused by "current >0" vs "current ne 0"
   mutate(scotland = "S00000001") %>%  # creating variable for Scotland
   #creating code variable with all geos and then aggregating to get totals
   gather(geolevel, code, ca:scotland) %>% 
   ungroup() %>% select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
+#  98,966 records here
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
-smoking_adm <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 ## Part 4 - Add in prevalence info ----
@@ -216,7 +222,7 @@ smoking_adm <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds
 # Create raw data on smoking prevalence 
 # Uses raw data requested from Scottish Household Survey on current and ex smoker 
 # prevalence, by age, sex and area.
-smok_prev_area <- read_excel(paste0(data_folder, "Received Data/SHOS Prevalence_formatted.xlsx"), 
+smok_prev_area <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prevalence_formatted.xlsx"), 
                              sheet = "Area prev") %>% mutate(code = NA) %>% 
   setNames(tolower(names(.)))   #variables to lower case
 
@@ -253,7 +259,7 @@ smok_prev_area <- smok_prev_area %>% rename(sex_grp = sex) %>% select(-area, -ty
 
 ###############################################.
 # Format current and ex smoker data for age groups
-smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS Prevalence_formatted.xlsx"), 
+smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prevalence_formatted.xlsx"), 
                             sheet = "Age prev") %>% rename(sex_grp = sex) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
@@ -290,6 +296,8 @@ smoking_adm <- smoking_adm %>%
 # sum up safs to get total deaths attributable to smoking.
   group_by(code, year, sex_grp, age_grp) %>% 
   summarise(numerator = sum(numerator)) %>% ungroup()
+
+#6762 records here
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds'))
 

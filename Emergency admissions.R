@@ -6,20 +6,19 @@
 #   Part 3 - Run analysis functions
 
 # TODO
-#NEED to be checked
 #how to deal with deprivation
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 #Function to create data for different geography levels
 create_geo_levels <- function(geography, type) {
   #If there are multiple admissions in one year it selects one.
-  data_agg <- data_adm %>% rename_(code = geography) %>% #renames using NSE
-    arrange(year, link_no, doadm) %>% 
+  data_agg <- data_adm %>% rename(code = geography) %>% #renames using NSE
+    # arrange(year, link_no, doadm) %>% 
     group_by(link_no, year, code) %>% 
     summarise(sex_grp = first(sex_grp), age_grp = first(age_grp), admissions = n()) %>%
     ungroup()
@@ -95,6 +94,7 @@ data_adm <- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency_basefile.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
 #creating file for emergency admissions
+timestamp()
 data_ea <- rbind(create_geo_levels(geography = "scotland", type = "ea"), 
   create_geo_levels(geography = "hb2014", type = "ea"),
   create_geo_levels(geography = "ca2011", type = "ea"), 
@@ -102,7 +102,7 @@ data_ea <- rbind(create_geo_levels(geography = "scotland", type = "ea"),
   create_geo_levels(geography = "hscp_locality", type = "ea"), 
   create_geo_levels(geography = "intzone2011", type = "ea")
 )
-
+timestamp()
 saveRDS(data_ea, paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 data_ea <- readRDS(paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 
