@@ -7,8 +7,6 @@
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
-# check differences in results compared with SPSS method
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -38,8 +36,6 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement=
      GROUP BY link_no || '-' || cis_marker, main_condition
      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
-
-# cases: 975,179, SPSS some extra cases, but different timing, need to check again
 
 smoking_adm <- smoking_adm %>% #adding council codes
   mutate(ca = recode(ca, '01'='S12000033', '02'='S12000034', '03'='S12000041', 
@@ -71,8 +67,8 @@ smoking_adm <- smoking_adm %>%
     sex_grp == 2 & diag == "C16" ~ 1.36,
     sex_grp == 1 & diag == "C25" ~ 2.31, #Panchreas cancers
     sex_grp == 2 & diag == "C25" ~ 2.25,
-    sex_grp == 1 & diag == "C15" ~ 14.60, #Larynx cancers
-    sex_grp == 2 & diag == "C15" ~ 13.02,
+    sex_grp == 1 & diag == "C32" ~ 14.60, #Larynx cancers
+    sex_grp == 2 & diag == "C32" ~ 13.02,
     sex_grp == 1 & diag %in% c("C33", "C34") ~ 23.26, #Trachea, lung, bronchus cancers
     sex_grp == 2 & diag %in% c("C33", "C34") ~ 12.69,
     sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
@@ -140,8 +136,8 @@ smoking_adm <- smoking_adm %>%
     sex_grp == 2 & diag == "C16" ~ 1.32,
     sex_grp == 1 & diag == "C25" ~ 1.15, #Panchreas cancers
     sex_grp == 2 & diag == "C25" ~ 1.55,
-    sex_grp == 1 & diag == "C15" ~ 6.34, #Larynx cancers
-    sex_grp == 2 & diag == "C15" ~ 5.16,
+    sex_grp == 1 & diag == "C32" ~ 6.34, #Larynx cancers
+    sex_grp == 2 & diag == "C32" ~ 5.16,
     sex_grp == 1 & diag %in% c("C33", "C34") ~ 8.70, #Trachea, lung, bronchus cancers
     sex_grp == 2 & diag %in% c("C33", "C34") ~ 4.53,
     sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
@@ -196,32 +192,25 @@ smoking_adm <- smoking_adm %>%
 ###############################################.
 ## Part 3 - Keeping only one record per CIS and aggregating geographic areas ----
 ###############################################.
-smoking_adm <- smoking_adm %>% 
-  group_by(admission_id) %>% 
+smoking_adm <- smoking_adm %>% group_by(admission_id) %>% 
   # selecting first value of an admission for all variables, including the risks 
   # to follow PHE methodology
   summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
-  # 937,252  records here. 
   # Excluding cases where young people has a disease for which only risk for older people.
   filter(current > 0) %>% ungroup() %>% 
-  # 932,292 records here SPSS 936,877, different timing of extract needs to check
-  # Are the differences caused by "current >0" vs "current ne 0"
   mutate(scotland = "S00000001") %>%  # creating variable for Scotland
   #creating code variable with all geos and then aggregating to get totals
   gather(geolevel, code, ca:scotland) %>% 
   ungroup() %>% select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
-#  98,966 records here
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
-smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 ## Part 4 - Add in prevalence info ----
 ###############################################.
-# Create raw data on smoking prevalence 
-# Uses raw data requested from Scottish Household Survey on current and ex smoker 
-# prevalence, by age, sex and area.
+# Create raw data on smoking prevalence. Uses raw data requested from Scottish 
+# Household Survey on current and ex smoker prevalence, by age, sex and area.
 smok_prev_area <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prevalence_formatted.xlsx"), 
                              sheet = "Area prev") %>% mutate(code = NA) %>% 
   setNames(tolower(names(.)))   #variables to lower case
@@ -297,14 +286,11 @@ smoking_adm <- smoking_adm %>%
   group_by(code, year, sex_grp, age_grp) %>% 
   summarise(numerator = sum(numerator)) %>% ungroup()
 
-#6762 records here
-
 saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds'))
 
 ###############################################.
 ## Part 6 - Run analysis functions ----
 ###############################################.
-#All patients asthma
 analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
               pop = "CA_pop_allages", yearstart = 2012, yearend = 2017,
               time_agg = 2, epop_age = "normal")

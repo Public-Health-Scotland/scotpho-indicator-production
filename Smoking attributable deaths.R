@@ -2,7 +2,7 @@
 
 # Part 1 - Extract data from SMRA
 # Part 2 - add in relative risks of each disease as a result of smoking
-# Part 3 - Keeping only one record per CIS and aggregating geographic areas
+# Part 3 - Aggregating geographic areas
 # Part 4 - Add in prevalence info
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
@@ -39,8 +39,6 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
          AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[1-8]|K2[567]')")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
-# cases here: 169,336
-
 # Bringing  LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
@@ -68,8 +66,8 @@ smoking_deaths <- smoking_deaths %>%
     sex_grp == 2 & diag == "C16" ~ 1.36,
     sex_grp == 1 & diag == "C25" ~ 2.31, #Panchreas cancers
     sex_grp == 2 & diag == "C25" ~ 2.25,
-    sex_grp == 1 & diag == "C15" ~ 14.60, #Larynx cancers
-    sex_grp == 2 & diag == "C15" ~ 13.02,
+    sex_grp == 1 & diag == "C32" ~ 14.60, #Larynx cancers
+    sex_grp == 2 & diag == "C32" ~ 13.02,
     sex_grp == 1 & diag %in% c("C33", "C34") ~ 23.26, #Trachea, lung, bronchus cancers
     sex_grp == 2 & diag %in% c("C33", "C34") ~ 12.69,
     sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
@@ -129,8 +127,8 @@ smoking_deaths <- smoking_deaths %>%
     sex_grp == 2 & diag == "C16" ~ 1.32,
     sex_grp == 1 & diag == "C25" ~ 1.15, #Panchreas cancers
     sex_grp == 2 & diag == "C25" ~ 1.55,
-    sex_grp == 1 & diag == "C15" ~ 6.34, #Larynx cancers
-    sex_grp == 2 & diag == "C15" ~ 5.16,
+    sex_grp == 1 & diag == "C32" ~ 6.34, #Larynx cancers
+    sex_grp == 2 & diag == "C32" ~ 5.16,
     sex_grp == 1 & diag %in% c("C33", "C34") ~ 8.70, #Trachea, lung, bronchus cancers
     sex_grp == 2 & diag %in% c("C33", "C34") ~ 4.53,
     sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
@@ -184,9 +182,8 @@ smoking_deaths <- smoking_deaths %>%
   gather(geolevel, code, ca2011:scotland) %>% 
   select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
- # 58,897 records here 
 
-saveRDS(smoking_deaths, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+saveRDS(smoking_deaths, file=paste0(data_folder, 'Temporary/smoking_deaths_part3.rds'))
 
 ###############################################.
 ## Part 4 - Add in prevalence info ----
@@ -198,7 +195,7 @@ smok_prev_area <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_pre
                              sheet = "Area prev") %>% mutate(code = NA) %>% 
   setNames(tolower(names(.)))   #variables to lower case
 
-# Recoding names into codes. Firs councils and then HBs and Scotland
+# Recoding names into codes. First councils and then HBs and Scotland
 smok_prev_area$code[which(smok_prev_area$type=="ca")] <- recode(smok_prev_area$area[which(smok_prev_area$type=="ca")],
                                                                 'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
                                                                 'Angus' = 'S12000041', 'Argyll & Bute' = 'S12000035',
@@ -240,8 +237,8 @@ smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prev
   mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
 
 ###############################################.
-# Merging prevalence with smoking admissions basefile 
-smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "sex_grp")) %>% 
+# Merging prevalence with smoking deaths basefile 
+smoking_deaths <- left_join(smoking_deaths, smok_prev_area, by = c("code", "year", "sex_grp")) %>% 
   #recode age groups to match prevalence by age file
   mutate(age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
                               age_grp>=12 & age_grp<=13 ~ 3,
@@ -249,40 +246,38 @@ smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "se
                               age_grp>=16 ~ 5))
   
 #And now merging with the file with prevalence by age and sex 
-smoking_adm <- left_join(smoking_adm, smok_prev_age, by = c("age_grp2", "year", "sex_grp")) 
+smoking_deaths <- left_join(smoking_deaths, smok_prev_age, by = c("age_grp2", "year", "sex_grp")) 
 
 ###############################################.
 ## Part 5 - Calculate smoking attributable fractions ----
 ###############################################.
 # Calculate age, sex and area specific esimtated prevalence info using 
 # Public Health England formula. divide by 100 to get a proportion.
-smoking_adm <- smoking_adm %>% 
+smoking_deaths <- smoking_deaths %>% 
   mutate(# current and ex smoker prevalence specific to area, age and sex group.
     prev_current = (current_area/scot_current)*current_age/100,
     prev_ex=(ex_area/scot_ex)*ex_age/100,
     # Calculating smoking attributable fraction
     saf = (prev_current*(current-1) + prev_ex*(ex-1))/ 
       (1 + prev_current*(current-1) + prev_ex*(ex-1)),
-    # compute total number of admissions attributable to smoking, using SAF
+    # compute total number of deaths attributable to smoking, using SAF
     numerator = n * saf) %>% 
 # sum up safs to get total deaths attributable to smoking.
   group_by(code, year, sex_grp, age_grp) %>% 
   summarise(numerator = sum(numerator)) %>% ungroup()
 
-#6762 records here
-
-saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds'))
+saveRDS(smoking_deaths, file=paste0(data_folder, 'Prepared Data/smoking_deaths_raw.rds'))
 
 ###############################################.
 ## Part 6 - Run analysis functions ----
 ###############################################.
 #All patients asthma
-analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
+analyze_first(filename = "smoking_deaths",  measure = "stdrate", geography = "all",
               pop = "CA_pop_allages", yearstart = 2012, yearend = 2017,
               time_agg = 2, epop_age = "normal")
 
-analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
-               epop_total = 120000, ind_id = 1548, year_type = "calendar", 
+analyze_second(filename = "smoking_deaths", measure = "stdrate", time_agg = 2, 
+               epop_total = 120000, ind_id = 20201, year_type = "calendar", 
                profile = "HN", min_opt = 2999)
 
 ##END
