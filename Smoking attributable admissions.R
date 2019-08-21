@@ -32,7 +32,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement=
          AND age_in_years > 34 
          AND hbres_currentdate between 'S08000015' AND 'S08000028' 
          AND council_area is not null 
-         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[1-8]|K2[567]|K50|K05|H25|O03|S700|S72[12]') 
+         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S700|S72[12]') 
      GROUP BY link_no || '-' || cis_marker, main_condition
      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
   setNames(tolower(names(.)))  #variables to lower case

@@ -36,7 +36,7 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
          AND age > 34 
          AND country_of_residence='XS' 
          AND council_area is not null 
-         AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[1-8]|K2[567]')")) %>% 
+         AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]')")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing  LA and datazone info.
