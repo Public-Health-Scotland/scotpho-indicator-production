@@ -47,7 +47,7 @@ library(purrr) #for the models
 library(binom)
 
 # Varies filepaths depending on if using server or not.
-if (sessionInfo()$platform == "x86_64-redhat-linux-gnu (64-bit)") {
+if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
   data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
   lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
 } else {
