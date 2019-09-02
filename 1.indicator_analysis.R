@@ -83,9 +83,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         mutate(scotland = as.factor("S00000001")) # adding Scotland
       
     } else if (geography == "council") {
-      geo_lookup <- read.spss( '/conf/linkage/output/lookups/geography/other_ref_files/CA_HB2014.sav', 
-                               to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-        setNames(tolower(names(.)))   #variables to lower case
+      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) %>% 
+        select(ca2019, hb2019) %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
       
       ## Matching with geography lookup.
       data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) %>% 
@@ -103,7 +102,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
 
     } else if (measure == "stdrate" & geography == "council") {
-      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
@@ -111,7 +110,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         ungroup() %>% select(-c(geolevel, datazone)) %>% 
         group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "council") {
-      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb2014, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
     }

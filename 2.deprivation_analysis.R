@@ -125,17 +125,17 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     create_quintile_data(geo = "scotland", quint = "sc_quin", 
                          group_vars =  c("scotland", "year", "sc_quin")),
     #Health boards using national quintiles
-    create_quintile_data(geo = "hb2014", quint = "sc_quin", 
-                         group_vars =  c("hb2014", "year", "sc_quin")),
+    create_quintile_data(geo = "hb2019", quint = "sc_quin", 
+                         group_vars =  c("hb2019", "year", "sc_quin")),
     #Health boards using health board quintiles
-    create_quintile_data(geo = "hb2014", quint = "hb_quin", 
-                         group_vars =  c("hb2014", "year", "hb_quin")),
+    create_quintile_data(geo = "hb2019", quint = "hb_quin", 
+                         group_vars =  c("hb2019", "year", "hb_quin")),
     #Council area using national quintiles
-    create_quintile_data(geo = "ca2011", quint = "sc_quin", 
-                         group_vars =  c("ca2011", "year", "sc_quin")),
+    create_quintile_data(geo = "ca2019", quint = "sc_quin", 
+                         group_vars =  c("ca2019", "year", "sc_quin")),
     #Council area using council quintiles
-    create_quintile_data(geo = "ca2011", quint = "ca_quin",
-                         group_vars =  c("ca2011", "year", "ca_quin")))
+    create_quintile_data(geo = "ca2019", quint = "ca_quin",
+                         group_vars =  c("ca2019", "year", "ca_quin")))
   
   #Creating combined totals
   if ("denominator" %in% names(data_depr)) { #if denominator included
