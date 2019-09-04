@@ -46,13 +46,20 @@ library(broom) #for the models
 library(purrr) #for the models
 library(binom)
 
-# Varies filepaths depending on if using server or not.
-if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-  data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-  lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-} else {
-  data_folder <- "//stats/ScotPHO/Profiles/Data/"
-  lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
+# Varies filepaths depending on if using server or not and what organisation uses it.
+if (exists("organisation") == TRUE) { #Health Scotland
+  if (organisation == "HS") { 
+    data_folder <- "X:/ScotPHO Profiles/Data/" 
+    lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
+  }
+} else  { #ISD, first server then desktop
+  if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
+    data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+    lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
+  } else {
+    data_folder <- "//stats/ScotPHO/Profiles/Data/"
+    lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
+  }
 }
 
 ##################################################.
