@@ -66,9 +66,6 @@ if (exists("organisation") == TRUE) { #Health Scotland
 ###############################################.
 ## Analysis function one ----
 ###############################################.
-
-#203 lines in R vs 778 (74% less ) 1 script vs 5
-#With 260 lines in R I replaced the 8 major macros we used, plus the two auxilliary ones
 analyze_first <- function(filename, geography = c("council", "datazone11"), 
                           measure = c("percent", "crude", "stdrate"), time_agg, 
                           pop = NULL, yearstart, yearend, epop_age = NULL, adp = FALSE) {

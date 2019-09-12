@@ -80,11 +80,9 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
   # read in deprivation lookup. 
   depr_lookup <- readRDS(paste0(lookups, "Geography/deprivation_geography.rds"))
 
-  #merging them
-  data_depr <- left_join(data_depr, depr_lookup, by = c("datazone", "year"))
-  
-  #Adding Scotland
-  data_depr <- data_depr %>% mutate(scotland = "S00000001")
+  #merging them and adding Scotland
+  data_depr <- left_join(data_depr, depr_lookup, by = c("datazone", "year"))  %>% 
+    mutate(scotland = "S00000001") #Adding Scotland
   
   ###############################################.
   ## Part 2 - Aggregate up to get figures for each area. ----
@@ -95,36 +93,31 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     if ("denominator" %in% names(data_depr)) { #if denominator included
       
       if (measure %in% c("crude", "percent", "perc_pcf")) {
-        data_depr %>% select(c("numerator", "denominator", group_vars)) %>% 
-          group_by_at(group_vars) %>% 
-          summarise(numerator = sum(numerator, na.rm =T),
-                    denominator = sum(denominator, na.rm =T)) %>% 
-          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-          mutate(quint_type = quint)
+        data_depr <- data_depr %>% select(numerator, denominator, {{group_vars}} ) %>% 
+          group_by_at({{group_vars}}) 
+
       } else if (measure == "stdrate") {
-        data_depr %>% select(c("numerator", "denominator", "age_grp", "sex_grp", group_vars)) %>% 
-          group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
-          summarise(numerator = sum(numerator, na.rm =T),
-                    denominator = sum(denominator, na.rm =T)) %>% 
-          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-          mutate(quint_type = quint)
+        data_depr <- data_depr %>% 
+          select(numerator, denominator, age_grp, sex_grp, {{group_vars}}) %>% 
+          group_by_at(age_grp, sex_grp, {{group_vars}}) 
       }
       
     } else if (!("denominator" %in% names(data_depr))) { #if denominator not included
       
       if (measure %in% c("crude", "percent", "perc_pcf")) {
-        data_depr %>% select(c("numerator", group_vars)) %>% 
-          group_by_at(group_vars) %>% summarise(numerator= sum(numerator, na.rm =T)) %>% 
-          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-          mutate(quint_type = quint)
+        data_depr <- data_depr %>% select(numerator, {{group_vars}}) %>% 
+          group_by_at({{group_vars}})
       } else if (measure == "stdrate") {
-        data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
-          group_by_at(c("age_grp", "sex_grp", group_vars)) %>% 
-          summarise(numerator= sum(numerator, na.rm =T)) %>% 
-          rename_(code = geo, quintile = quint) %>% ungroup() %>% 
-          mutate(quint_type = quint)
+        data_depr <- data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
+          group_by_at(age_grp, sex_grp, {{group_vars}}) 
       }
     }
+    
+    # Aggegatingrenaming and creating quint_type common to all cases
+    data_depr %>% summarise_all(sum, na.rm = T) %>% 
+      rename(code = {{geo}}, quintile = {{quint}}) %>% ungroup() %>% 
+      mutate(quint_type = quint)
+    
   }
   
   data_depr <- rbind( 
@@ -132,50 +125,30 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     create_quintile_data(geo = "scotland", quint = "sc_quin", 
                          group_vars =  c("scotland", "year", "sc_quin")),
     #Health boards using national quintiles
-    create_quintile_data(geo = "hb2019", quint = "sc_quin", 
-                         group_vars =  c("hb2019", "year", "sc_quin")),
+    create_quintile_data(geo = "hb", quint = "sc_quin", 
+                         group_vars =  c("hb", "year", "sc_quin")),
     #Health boards using health board quintiles
-    create_quintile_data(geo = "hb2019", quint = "hb_quin", 
-                         group_vars =  c("hb2019", "year", "hb_quin")),
+    create_quintile_data(geo = "hb", quint = "hb_quin", 
+                         group_vars =  c("hb", "year", "hb_quin")),
     #Council area using national quintiles
-    create_quintile_data(geo = "ca2019", quint = "sc_quin", 
-                         group_vars =  c("ca2019", "year", "sc_quin")),
+    create_quintile_data(geo = "ca", quint = "sc_quin", 
+                         group_vars =  c("ca", "year", "sc_quin")),
     #Council area using council quintiles
-    create_quintile_data(geo = "ca2019", quint = "ca_quin",
-                         group_vars =  c("ca2019", "year", "ca_quin")))
+    create_quintile_data(geo = "ca", quint = "ca_quin",
+                         group_vars =  c("ca", "year", "ca_quin")))
   
   #Creating combined totals
-  if ("denominator" %in% names(data_depr)) { #if denominator included
     if (measure %in% c("crude", "percent", "perc_pcf")) {
-    
-      data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
-        summarise(numerator = sum(numerator, na.rm =T),
-                  denominator = sum(denominator, na.rm =T)) %>% 
-        mutate(quintile = "Total") %>% ungroup()
+      data_depr_totals <- data_depr %>% group_by(code, year, quint_type)
     
     } else if (measure == "stdrate") {
-    
-      data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
-        summarise(numerator = sum(numerator, na.rm =T),
-                  denominator = sum(denominator, na.rm =T)) %>% 
-        mutate(quintile = "Total") %>% ungroup()
+      data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) 
     }
-  } else if (!("denominator" %in% names(data_depr))) { #if denominator not included
+  } 
   
-    if (measure %in% c("crude", "percent", "perc_pcf")) {
-      
-      data_depr_totals <- data_depr %>% group_by(code, year, quint_type) %>% 
-        summarise(numerator= sum(numerator)) %>% 
-        mutate(quintile = "Total") %>% ungroup()
-      
-    } else if (measure == "stdrate") {
-      
-      data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) %>% 
-        summarise(numerator= sum(numerator)) %>% 
-        mutate(quintile = "Total") %>% ungroup()
-    }
-  }
-  
+data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>% 
+  mutate(quintile = "Total") %>% ungroup()
+
   #And merging them with the rest of the data
   data_depr <- rbind(data_depr, data_depr_totals) %>% 
     # To exclude cases without quintile or code. Caused when raw files have 
