@@ -31,8 +31,6 @@
 #           be used like "Month snapshot" e.g. "August snapshot"
 # crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
-# min_opt - Only relevant for old OPT. First serial OPT number to include.
-# profile - Only relevant for old OPT. Profile initials that will be combined with opt number.
 # pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
 ###############################################.
@@ -221,7 +219,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
 ##################################################.
 analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf", "stdrate"), 
                            time_agg,  ind_id, year_type = c("calendar", "financial", "school"),
-                           min_opt, crude_rate = 0, epop_total = NULL, profile, pop = NULL) {   
+                           crude_rate = 0, epop_total = NULL, pop = NULL) {   
   
   ##################################################.
   ##  Part 4 - Create rates or percentages ----
@@ -384,24 +382,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
     write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
   
-    #Preparing data for old OPT tool
-    #Excluding HSC locality and partnership.
-    data_oldopt <- data_indicator %>% subset(!(substr(code, 1, 3) %in% c('S37', 'S99'))) %>% 
-      mutate(uni_id = paste0(profile, (seq_len(nrow(.)) + min_opt - 1))) #OPT number
-    
-    # Reorder by column index: uni_id code ind_id year numerator rate lowci upci def_period trend_axis.
-    data_oldopt <- data_oldopt[c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
-                   "upci", "def_period", "trend_axis")] 
-    
-    write_csv(data_oldopt, path = paste0(data_folder, "OPT Data/", filename, "_OPT.csv"),
-              col_names = FALSE, na="")
-    
     #Making final dataset available outside the function
     final_result <<- data_indicator
-    data_oldopt <<- data_oldopt
-    
-    # To know which one is the last OPT
-    print(paste0("Maximum OPT number: ", max(data_oldopt$uni_id)))
     
     ##################################################.
     ##  Part 6 - Checking results ----
