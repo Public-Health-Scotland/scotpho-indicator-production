@@ -7,8 +7,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -23,11 +23,11 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 cancer_deaths <- tbl_df(dbGetQuery(channel, statement=
     "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
      FROM ANALYSIS.GRO_DEATHS_C 
-     WHERE date_of_registration between '1 January 2002' AND '31 December 2017'
+     WHERE date_of_registration between '1 January 2002' AND '31 December 2018'
            AND country_of_residence ='XS'
            AND age < 75
-           AND regexp_like(PRIMARY_CAUSE_OF_DEATH, 'C') 
-           AND not (regexp_like(PRIMARY_CAUSE_OF_DEATH, 'C44'))
+           AND regexp_like(underlying_cause_of_death, 'C') 
+           AND not (regexp_like(underlying_cause_of_death, 'C44'))
            AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
 
@@ -41,7 +41,7 @@ cancer_deaths <- cancer_deaths %>% mutate(age_grp = case_when(
   age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19,  TRUE ~ NA_real_))
 
 # Open LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -74,16 +74,15 @@ saveRDS(candeath_depr, file=paste0(data_folder, 'Prepared Data/early_cancer_deat
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "early_cancer_deaths_dz11", geography = "datazone11", 
-              measure = "stdrate", yearstart = 2002, yearend = 2017, time_agg = 3,
+              measure = "stdrate", yearstart = 2002, yearend = 2018, time_agg = 3,
               epop_age = "normal", pop = "DZ11_pop_under75")
 
 analyze_second(filename = "early_cancer_deaths_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 182000, ind_id = 20106, year_type = "calendar", 
-               profile = "HN", min_opt = 1260149)
+               epop_total = 182000, ind_id = 20106, year_type = "calendar")
 
 #Deprivation analysis function
 analyze_deprivation(filename="early_cancer_deaths_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2017, year_type = "calendar", 
+                    yearstart= 2002, yearend=2018, year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age="normal",
                     epop_total =182000, ind_id = 20106)
 
