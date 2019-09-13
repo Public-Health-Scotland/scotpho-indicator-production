@@ -94,22 +94,22 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       
       if (measure %in% c("crude", "percent", "perc_pcf")) {
         data_depr <- data_depr %>% select(numerator, denominator, {{group_vars}} ) %>% 
-          group_by_at({{group_vars}}) 
+          group_by_at(group_vars) 
 
       } else if (measure == "stdrate") {
         data_depr <- data_depr %>% 
           select(numerator, denominator, age_grp, sex_grp, {{group_vars}}) %>% 
-          group_by_at(age_grp, sex_grp, {{group_vars}}) 
+          group_by_at(c("age_grp", "sex_grp", group_vars ) )
       }
       
     } else if (!("denominator" %in% names(data_depr))) { #if denominator not included
       
       if (measure %in% c("crude", "percent", "perc_pcf")) {
         data_depr <- data_depr %>% select(numerator, {{group_vars}}) %>% 
-          group_by_at({{group_vars}})
+          group_by_at(group_vars)
       } else if (measure == "stdrate") {
-        data_depr <- data_depr %>% select(c("numerator", "age_grp", "sex_grp", group_vars)) %>% 
-          group_by_at(age_grp, sex_grp, {{group_vars}}) 
+        data_depr <- data_depr %>% select(numerator, age_grp, sex_grp, {{group_vars}} ) %>% 
+          group_by_at(c("age_grp", "sex_grp", group_vars ) )
       }
     }
     
@@ -119,7 +119,7 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
       mutate(quint_type = quint)
     
   }
-  
+
   data_depr <- rbind( 
     #Scotland 
     create_quintile_data(geo = "scotland", quint = "sc_quin", 
@@ -144,7 +144,6 @@ analyze_deprivation <- function(filename, yearstart, yearend, time_agg,
     } else if (measure == "stdrate") {
       data_depr_totals <- data_depr %>% group_by(code, year, age_grp, sex_grp, quint_type) 
     }
-  } 
   
 data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>% 
   mutate(quintile = "Total") %>% ungroup()
@@ -258,11 +257,11 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
       # Converting Infinites to NA and NA's to 0s to allow proper functioning
       na_if(Inf) %>% #Caused by a denominator of 0 in an age group with numerator >0
-      mutate_at(c("easr_first", "var_dsr"), funs(replace(., is.na(.), 0)))  
+      mutate_at(c("easr_first", "var_dsr"), ~replace(., is.na(.), 0)) 
     
     # aggregating by year, code and time
     data_depr <- data_depr %>% subset(select= -c(age_grp, sex_grp)) %>%
-      group_by(year, code, quintile, quint_type) %>% summarise_all(funs(sum)) %>% ungroup()
+      group_by(year, code, quintile, quint_type) %>% summarise_all(sum) %>% ungroup()
     
     #Calculating rates and confidence intervals
     data_depr <- data_depr %>%
@@ -379,7 +378,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
     mutate(lowci_sii = -1 * conf.high, #fixing interpretation
            upci_sii = -1 * conf.low) %>% 
     select(-conf.low, -conf.high) %>% 
-  mutate_at(c("sii", "lowci_sii", "upci_sii"), funs(replace(., is.na(.), NA_real_))) #recoding NAs
+  mutate_at(c("sii", "lowci_sii", "upci_sii"), ~replace(., is.na(.), NA_real_)) #recoding NAs
   
   #Merging sii with main data set
   data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
@@ -441,7 +440,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
   #Indicator code
   data_depr <- data_depr %>% mutate(ind_id = ind_id) %>% 
     # fill in missing values and if any have negative lower CI change that to zero.
-    mutate_at(c("rate", "lowci", "upci"), funs(replace(., is.na(.), 0))) 
+    mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0)) 
   data_depr$lowci <- ifelse(data_depr$lowci<0, 0, data_depr$lowci)
   
   #Calendar aggregate years
