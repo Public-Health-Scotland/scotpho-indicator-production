@@ -17,7 +17,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
 #Small function to standarize each years info. Function parameters:
-#Data is for what basefile to use, Datazone is for what dz type using, 
+#Data is for what basefile to use, list_pos is for the position of the data frame
 #simd for which simd variables-year to look at, year for what year is the data created.
 read_simd <- function(data, simd, year, list_pos) {
   
@@ -36,7 +36,6 @@ read_simd <- function(data, simd, year, list_pos) {
 ###############################################.
 ## Part 1 - Format raw data ready for analysis functions ----
 ###############################################.
-# Creating a data frame with all ranks for each year
 data_crime <- list() #creating empty list for placing data created by function
 
 # The function creates the dataset and assigns it to the list
