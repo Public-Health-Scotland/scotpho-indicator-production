@@ -15,26 +15,27 @@ source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
 #Function to create data for different geography levels
-create_geo_levels <- function(geography, type) {
+create_geo_levels <- function(geography, list_pos) {
   #If there are multiple admissions in one year it selects one.
-  data_agg <- data_adm %>% rename(code = geography) %>% #renames using NSE
-    # arrange(year, link_no, doadm) %>% 
+  data_agg <- data_adm %>% rename(code = {{geography}} ) %>% 
     group_by(link_no, year, code) %>% 
     summarise(sex_grp = first(sex_grp), age_grp = first(age_grp), admissions = n()) %>%
     ungroup()
 
-  if (type == "ea") { #if emergency admissions just count
     #And now it aggregates total count of patients.
-    data_agg <- data_agg %>% group_by(year, code, sex_grp, age_grp) %>% 
+    data_ea <- data_agg %>% group_by(year, code, sex_grp, age_grp) %>% 
       count() %>% ungroup() %>% rename(numerator = n)
       
-  } else if (type == "ma") {
+    data_ea_list[[list_pos]] <<- data_ea #assigning to list
+    
     #select only patients who have had 2 or more admissions and 65+.
-    data_agg <- data_agg %>% 
+    data_ma <- data_agg %>% 
       filter(age_grp >= 14 & admissions >= 2 ) %>% 
       group_by(year, code, sex_grp, age_grp) %>% 
       count() %>% ungroup() %>% rename(numerator = n)
-  }
+  
+    data_ma_list[[list_pos]] <<- data_ma #assigning to list
+    
 }
 
 ###############################################.
@@ -42,17 +43,18 @@ create_geo_levels <- function(geography, type) {
 ###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
-                                      uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
 
 #read in SMR01 data. Following Secondary Care Team definitions.
-#people with no valid sex or age.
+#Excluding people with no valid sex or age.
 #Only emergency or urgent admissions. Selecting one record per admission.
 data_adm <- tbl_df(dbGetQuery(channel, statement=
    "SELECT distinct link_no, cis_marker, min(AGE_IN_YEARS) age, min(SEX) sex_grp, 
       min(dr_postcode) pc7, max(extract(year from discharge_date)) year,
       min(admission_date) doadm
    FROM ANALYSIS.SMR01_PI 
-   WHERE discharge_date between '1 January 2002' and '31 December 2017'
+   WHERE discharge_date between '1 January 2002' and '31 December 2018'
       AND sex not in ('9', '0')
       AND AGE_IN_YEARS is not null 
       AND (admission_type between '20' and '22' or admission_type between '30' and '40') 
@@ -61,9 +63,9 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing geography info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2018_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(pc7, datazone2001, datazone2011, intzone2011, ca2011, hb2014, hscp2016)
+  select(pc7, datazone2001, datazone2011, intzone2011, ca2019, hb2019, hscp2019)
 
 geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) %>% 
   select(datazone2011, hscp_locality) #as locality not present in the postcode one
@@ -93,74 +95,38 @@ data_adm <- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency_basefile.
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
-#creating file for emergency admissions
-timestamp()
-data_ea <- rbind(create_geo_levels(geography = "scotland", type = "ea"), 
-  create_geo_levels(geography = "hb2014", type = "ea"),
-  create_geo_levels(geography = "ca2011", type = "ea"), 
-  create_geo_levels(geography = "hscp2016", type = "ea"),
-  create_geo_levels(geography = "hscp_locality", type = "ea"), 
-  create_geo_levels(geography = "intzone2011", type = "ea")
-)
-timestamp()
+#creating file for emergency admissions and multiple admissions
+data_ea_list <- list() #creating empty lists for placing data created by function
+data_ma_list <- list() 
+
+# This will run the function for all those columns and for both indicators
+mapply(create_geo_levels, geography = c("scotland", "hb2019", "ca2019", "hscp2019",
+                                        "hscp_locality", "intzone2011"), list_pos = 1:6)
+
+data_ea <- do.call("rbind", data_ea_list) # converting from list into dataframe
+data_ma <- do.call("rbind", data_ma_list) # converting from list into dataframe
+
 saveRDS(data_ea, paste0(data_folder, 'Prepared Data/ea_raw.rds'))
-data_ea <- readRDS(paste0(data_folder, 'Prepared Data/ea_raw.rds'))
-
-#creating file for ea deprivation
-# data_ea_depr <- data_adm %>% mutate(datazone = case_when(year <= 2013 ~ datazone2001,
-#                                                          year >= 2014 ~ datazone2011))
-
-###############################################.
-#creating file for multiple admissions
-data_ma <- rbind(create_geo_levels(geography = "scotland", type = "ma"), 
-  create_geo_levels(geography = "hb2014", type = "ma"),
-  create_geo_levels(geography = "ca2011", type = "ma"), 
-  create_geo_levels(geography = "hscp2016", type = "ma"),
-  create_geo_levels(geography = "hscp_locality", type = "ma"), 
-  create_geo_levels(geography = "intzone2011", type = "ma")
-)
-
 saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
 
-#creating file for ma deprivation
-# data_ma_depr <- data_ma %>% mutate(datazone = case_when(year <= 2013 ~ datazone2001,
-#                                                          year >= 2014 ~ datazone2011))
+data_ea <- readRDS(paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 # The function call uses a different geogrpahy to datazone11 or council as this way,
 # it skips the parts of the function that bring the geographical info.
+mapply(analyze_first, filename = c("ea", "ma"), geography = "all", measure = "stdrate", 
+       pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2018,
+       time_agg = 3, epop_age = "normal")
+
 #Emergency admissions
-analyze_first(filename = "ea", geography = "all", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
-              time_agg = 3, epop_age = "normal")
-
 analyze_second(filename = "ea", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20305, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 200000, ind_id = 20305, year_type = "calendar")
 
-#Deprivation analysis function
-# analyze_deprivation(filename="ea_depr", measure="stdrate", time_agg=3, 
-#                     yearstart= 2002, yearend=2017,   year_type = "calendar", 
-#                     pop = "depr_pop_allages", epop_age="normal",
-#                     epop_total =200000, ind_id = 20305)
-
-###############################################.
 #Multiple emergency admissions for 65+
-analyze_first(filename = "ma", geography = "all", measure = "stdrate", 
-              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2017,
-              time_agg = 3, epop_age = "normal")
-
 analyze_second(filename = "ma", measure = "stdrate", time_agg = 3, 
-               epop_total = 39000, ind_id = 20306, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
-
-#Deprivation analysis function
-# analyze_deprivation(filename="ma_depr", measure="stdrate", time_agg=3, 
-#                     yearstart= 2002, yearend=2017,   year_type = "calendar", 
-#                     pop = "depr_pop_allages", epop_age="normal",
-#                     epop_total =39000, ind_id = 20306)
+               epop_total = 39000, ind_id = 20306, year_type = "calendar")
 
 ##END
 
