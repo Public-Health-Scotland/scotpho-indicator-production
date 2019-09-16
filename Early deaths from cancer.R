@@ -40,7 +40,7 @@ cancer_deaths <- cancer_deaths %>% mutate(age_grp = case_when(
   age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
   age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19,  TRUE ~ NA_real_))
 
-# Open LA and datazone info.
+# Bringing datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)

@@ -6,12 +6,13 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") # deprivation function
 
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
-                                      uid=.rs.askForPassword("SMRA Username:"), pwd=.rs.askForPassword("SMRA Password:")))
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -23,16 +24,16 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 lung_deaths <- tbl_df(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, AGE, SEX sex_grp, POSTCODE pc7 
        FROM ANALYSIS.GRO_DEATHS_C
-       WHERE date_of_registration between '1 January 2002' and '31 December 2017'
+       WHERE date_of_registration between '1 January 2002' and '31 December 2018'
           AND country_of_residence= 'XS' 
-          AND regexp_like(PRIMARY_CAUSE_OF_DEATH, 'C3[34]')
+          AND regexp_like(underlying_cause_of_death, 'C3[34]')
           AND age >= 16
           AND sex <> 9")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing  LA info.
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
-  setNames(tolower(names(.))) %>% select(pc7, ca2011) #variables to lower case
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+  setNames(tolower(names(.))) %>% select(pc7, ca2019)
   
 lung_deaths <- left_join(lung_deaths, postcode_lookup, by = "pc7") %>% #merging with lookup
   mutate(age_grp = case_when( # recoding ages into age groups
@@ -43,8 +44,8 @@ lung_deaths <- left_join(lung_deaths, postcode_lookup, by = "pc7") %>% #merging 
     age > 74 & age <80 ~ 16, age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, 
     age > 89 ~ 19, TRUE ~ NA_real_)) %>% 
   # aggregating by council area
-  group_by(year, ca2011, sex_grp, age_grp) %>% count() %>% ungroup() %>% 
-  rename(ca = ca2011, numerator = n)
+  group_by(year, ca2019, sex_grp, age_grp) %>% count() %>% ungroup() %>% 
+  rename(ca = ca2019, numerator = n)
 
 saveRDS(lung_deaths, file=paste0(data_folder, 'Prepared Data/lungcancer_deaths_raw.rds'))
 
@@ -52,13 +53,10 @@ saveRDS(lung_deaths, file=paste0(data_folder, 'Prepared Data/lungcancer_deaths_r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "lungcancer_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "lungcancer_deaths", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 1546, year_type = "calendar", 
-               profile = "TP", min_opt = 1007426)
-
-odbcClose(channel) # closing connection to SMRA
+               epop_total = 165800, ind_id = 1546, year_type = "calendar")
 
 ##END
