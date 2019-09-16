@@ -22,22 +22,9 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # and age and with any icd10 code of suicide in any cause.
 
 deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
-  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7,
-    CASE WHEN (year_of_registration >2010
-      AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'Y1')
-      AND (regexp_like(CAUSE_OF_DEATH_CODE_0, 'F1[123456789]')
-      OR regexp_like(CAUSE_OF_DEATH_CODE_1, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_2, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_3, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_4, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_5, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_6, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_7, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_8, 'F1[123456789]') 
-      OR regexp_like(CAUSE_OF_DEATH_CODE_9, 'F1[123456789]'))) 
-    THEN '1' else '0' END added_new_coding
+  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
-      WHERE  year_of_registration between '2002' and '2017'
+      WHERE  year_of_registration between '2002' and '2018'
       AND country_of_residence = 'XS' 
       AND sex <> 9
       AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'X[67]|X8[01234]|Y1|Y2|Y3[01234]|Y870|Y872')" )) %>% 
@@ -55,7 +42,7 @@ deaths_suicide <- deaths_suicide %>% mutate(age_grp = case_when(
 ))
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
@@ -82,12 +69,11 @@ suicidedz <- readRDS(paste0(data_folder, 'Prepared Data/deaths_suicide_dz11_raw.
 ###############################################.
 
 analyze_first(filename = "deaths_suicide_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 5, epop_age = "normal")
 
 analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg = 5, 
-               epop_total = 200000, ind_id = 20403, year_type = "calendar", 
-               profile = "HN", min_opt = 1295131)
+               epop_total = 200000, ind_id = 20403, year_type = "calendar")
 
 
 ###############################################
@@ -104,13 +90,12 @@ saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female
 
 
 analyze_first(filename = "suicides_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12539, year_type = "calendar", 
-               profile = "MH", min_opt = 7658)
+               epop_total = 100000, ind_id = 12539, year_type = "calendar")
                                       
 
 ###############################################
@@ -127,13 +112,12 @@ saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw
 
 
 analyze_first(filename = "suicides_male", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only male half population
 analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12538, year_type = "calendar", 
-               profile = "MH", min_opt = 7262)
+               epop_total = 100000, ind_id = 12538, year_type = "calendar")
 
 ###############################################
 # YOUNG PEOPLE
@@ -148,9 +132,8 @@ suicides_young <- deaths_suicide %>%
 saveRDS(suicides_young, file=paste0(data_folder, 'Prepared Data/suicides_young_raw.rds'))
 
 analyze_first(filename = "suicides_young", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2011, yearend = 2017,
+              pop = "CA_pop_11to25", yearstart = 2011, yearend = 2018,
               time_agg = 5, epop_age = "11to25")
 
 analyze_second(filename = "suicides_young", measure = "stdrate", time_agg = 5, 
-               epop_total = 34200, ind_id = 13033, year_type = "calendar", 
-               profile = "MH", min_opt = 7262)
+               epop_total = 34200, ind_id = 13033, year_type = "calendar")
