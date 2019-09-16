@@ -97,7 +97,7 @@ analyze_second(filename = "crime_rate_all", measure = "crude", time_agg = 1,
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="crime_rate_depr", measure="crude", time_agg=1, 
-                    crude_rate = 1000, yearstart= 2004, yearend=2017,  
+                    crude_rate = 1000, yearstart= 2004, yearend=2018,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20801)
 
 #END IS THE BEST
