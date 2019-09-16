@@ -101,20 +101,20 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     if (measure == "stdrate" & geography == "datazone11" ) {
     data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
       ungroup() %>% select(-c(geolevel, datazone)) %>% 
-      group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
+      group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
 
     } else if (measure == "stdrate" & geography == "council") {
       data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
         select(-c(geolevel)) %>% 
-        group_by(code, year, sex_grp, age_grp) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
+        group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
       data_indicator <- data_indicator %>% gather(geolevel, code, intzone2011:scotland) %>% 
         ungroup() %>% select(-c(geolevel, datazone)) %>% 
-        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
+        group_by(code, year) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "council") {
       data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
         select(-c(geolevel)) %>% 
-        group_by(code, year) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
+        group_by(code, year) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     }
 
     # Matching with population lookup
@@ -237,11 +237,11 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
       # Converting Infinites to NA and NA's to 0s to allow proper functioning
       na_if(Inf) %>% #Caused by a denominator of 0 in an age group with numerator >0
-      mutate_at(c("easr_first", "var_dsr"), funs(replace(., is.na(.), 0)))  
+      mutate_at(c("easr_first", "var_dsr"), ~replace(., is.na(.), 0))  
       
     # aggregating by year, code and time
     data_indicator <- data_indicator %>% subset(select= -c(age_grp, sex_grp)) %>%
-      group_by(year, code) %>% summarise_all(funs(sum), na.rm =T) %>% ungroup()
+      group_by(year, code) %>% summarise_all(sum, na.rm =T) %>% ungroup()
 
     #Calculating rates and confidence intervals
     data_indicator <- data_indicator %>%
@@ -320,7 +320,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     #Indicator code 
     data_indicator <- data_indicator %>% mutate(ind_id = ind_id) %>% 
       # fill in missing values and if any have negative lower CI change that to zero.
-      mutate_at(c("rate", "lowci", "upci"), funs(replace(., is.na(.), 0))) 
+      mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0))
     data_indicator$lowci <- ifelse(data_indicator$lowci<0, 0, data_indicator$lowci)
     
     # add in the definition period and trend axis labels
