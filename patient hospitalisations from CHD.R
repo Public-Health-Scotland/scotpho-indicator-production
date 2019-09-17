@@ -1,4 +1,5 @@
-# ScotPHO indicators: patients hospitalised with CHD
+# ScotPHO indicators: patients hospitalised with coronary heart disease
+
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run analysis functions
@@ -17,18 +18,22 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
-#Looking to admissions with a main diagnosis of CHD (ICD-10: I20-I25), excluding unknown sex, by financial year. 
+#Looking to admissions with a main diagnosis of CHD (ICD-10: I20-I25), 
+# excluding unknown sex, by financial year. 
 #Creates one record per CIS and selects only one case per patient/year.
-
 hospitalisation_CHD <- tbl_df(dbGetQuery(channel, statement=
   "SELECT distinct link_no linkno, min(AGE_IN_YEARS) age, min(SEX) sex_grp, min(DR_POSTCODE) pc7,
-    CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) ELSE extract(year from admission_date) -1 END as year
+    CASE WHEN extract(month from admission_date) > 3 
+        THEN extract(year from admission_date) 
+        ELSE extract(year from admission_date) -1 END as year
     FROM ANALYSIS.SMR01_PI z 
       WHERE admission_date between  '1 April 2002' and '31 March 2019'
       AND sex <> 0 
       AND regexp_like(main_condition, 'I2[0-5]')
     GROUP BY link_no,
-      CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) ELSE extract(year from admission_date) -1 END" )) %>% 
+      CASE WHEN extract(month from admission_date) > 3 
+          THEN extract(year from admission_date) 
+          ELSE extract(year from admission_date) -1 END" )) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Creating age groups for standardization.
@@ -51,18 +56,14 @@ hospitalisation_CHD <- left_join(hospitalisation_CHD, postcode_lookup, "pc7") %>
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
-
-
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
-###############################################.
 ###############################################.
 # Datazone2011
 hospitalisation_CHD_dz11 <- hospitalisation_CHD %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(hospitalisation_CHD_dz11, file=paste0(data_folder, 'Prepared Data/hospitalisation_CHD_dz11_raw.rds'))
-###############################################.
 
 ###############################################.
 #Deprivation basefile
@@ -74,12 +75,10 @@ hospitalisation_CHD_dz01 <- hospitalisation_CHD %>% group_by(year, datazone2001,
 dep_file <- rbind(hospitalisation_CHD_dz01, hospitalisation_CHD_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/hospitalisation_CHD_depr_raw.rds'))
-###############################################.
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-
 analyze_first(filename = "hospitalisation_CHD_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "normal")
@@ -92,3 +91,5 @@ analyze_deprivation(filename="hospitalisation_CHD_depr", measure="stdrate", time
                     yearstart= 2002, yearend=2018,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age= "normal",
                     epop_total = 200000, ind_id = 20303)
+
+##END
