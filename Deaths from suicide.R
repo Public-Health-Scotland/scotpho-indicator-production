@@ -18,9 +18,8 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
-# Extracting data on deaths of Scottish residents by excluding records with unknown sex 
-# and age and with any icd10 code of suicide in any cause.
-
+# Extracting data on deaths by excluding records with unknown sex and
+#  with any icd10 code of suicide in any cause (includes non-Scottish residents).
 deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
@@ -46,7 +45,7 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
 
 # join the data sets with postcode info
 deaths_suicide <- left_join(deaths_suicide, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2011, ca2011) %>% 
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>% 
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
@@ -58,7 +57,17 @@ suicides_dz11 <- deaths_suicide %>% group_by(year, datazone2011, sex_grp, age_gr
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(suicides_dz11, file=paste0(data_folder, 'Prepared Data/deaths_suicide_dz11_raw.rds'))
-suicidedz <- readRDS(paste0(data_folder, 'Prepared Data/deaths_suicide_dz11_raw.rds'))
+
+###############################################.
+# Deprivation basefile
+# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+suicides_dz01 <- deaths_suicide %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+  subset(year<=2013)
+
+dep_file <- rbind(suicides_dz01, suicides_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+
+saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/suicide_depr_raw.rds'))
 
 ###############################################.
 # FEMALE
@@ -86,10 +95,8 @@ saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw
 # YOUNG PEOPLE
 suicides_young <- deaths_suicide %>%
   subset(age > 10 & age < 26) %>% 
-  group_by(year, age_grp, sex_grp, ca2011) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2011)
+  group_by(year, ca2019) %>% summarize(numerator = n()) %>% ungroup() %>%   
+  rename(ca = ca2019)
 
 saveRDS(suicides_young, file=paste0(data_folder, 'Prepared Data/suicides_young_raw.rds'))
 
@@ -103,6 +110,11 @@ analyze_first(filename = "deaths_suicide_dz11", geography = "datazone11", measur
 
 analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg = 5, 
                epop_total = 200000, ind_id = 20403, year_type = "calendar")
+
+#Deprivation analysis function
+analyze_deprivation(filename="suicide_depr", measure="stdrate", time_agg=5,
+                    pop = "depr_pop_allages", epop_total =200000, epop_age="normal",
+                    yearstart= 2002, yearend=2018, year_type = "financial", ind_id = 20403)
 
 ###############################################.
 # Female and male suicides
@@ -120,11 +132,12 @@ analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5,
 
 ###############################################.
 # Young people suicides
-analyze_first(filename = "suicides_young", geography = "council", measure = "stdrate", 
+# Crude rates as numbers are too small for standardization.
+analyze_first(filename = "suicides_young", geography = "council", measure = "crude", 
               pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
               time_agg = 5, epop_age = "11to25")
 
-analyze_second(filename = "suicides_young", measure = "stdrate", time_agg = 5, 
+analyze_second(filename = "suicides_young", measure = "crude", time_agg = 5, crude_rate = 100000,
                epop_total = 34200, ind_id = 13033, year_type = "calendar")
 
 ##END
