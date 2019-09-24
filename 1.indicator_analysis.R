@@ -219,7 +219,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
 ##################################################.
 analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf", "stdrate"), 
                            time_agg,  ind_id, year_type = c("calendar", "financial", "school"),
-                           epop_total = NULL, pop = NULL) {   
+                           epop_total = NULL, pop = NULL, crude_rate) {   
   
   ##################################################.
   ##  Part 4 - Create rates or percentages ----

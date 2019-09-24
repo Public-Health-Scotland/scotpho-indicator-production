@@ -68,7 +68,7 @@ if (exists("organisation") == TRUE) { #Health Scotland
 analyze_deprivation <- function(filename, yearstart, yearend, time_agg, 
                                 measure = c("percent", "crude", "stdrate", "perc_pcf"),
                                 epop_age = NULL, epop_total = NULL, pop = NULL, 
-                                pop_pcf = NULL, crude_rate = 0, ind_id, year_type) {
+                                pop_pcf = NULL, crude_rate, ind_id, year_type) {
   
   ###############################################.
   ## Part 1 - Read in raw data and add in lookup info ----
