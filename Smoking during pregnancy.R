@@ -76,11 +76,11 @@ analyze_first(filename = "smoking_preg", geography = "datazone11", measure = "pe
               yearstart = 2003, yearend = 2017, time_agg = 3)
 
 analyze_second(filename = "smoking_preg", measure = "percent", time_agg = 3, 
-               ind_id = 13021, year_type = "financial")
+               ind_id = 21002, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="smoking_preg_depr", measure="percent", time_agg=3, 
-                    yearstart= 2003, yearend=2017, year_type = "financial", ind_id = 13021)
+                    yearstart= 2003, yearend=2017, year_type = "financial", ind_id = 21002)
 
 ###############################################.
 # For deprivation quintile indicators 
