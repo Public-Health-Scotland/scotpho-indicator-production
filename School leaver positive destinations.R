@@ -101,6 +101,23 @@ analyze_first(filename = "school_leaver_destinations", geography = "council",
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "financial")
 
+# convert zeroes back to NA for supressed data
+final_result[final_result == 0] <- NA
+
+# convert numertaor into integar
+final_result$numerator <- as.integer(final_result$numerator)
+
+# re-check test chart
+ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                        & year== max(year)), aes(code, rate) ) +
+  geom_point(stat = "identity") +
+  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+
+
+#resave both rds and csv files
+saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
+write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
+
 
 
 
