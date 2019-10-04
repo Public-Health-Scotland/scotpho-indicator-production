@@ -51,17 +51,21 @@ head(school_leaver)
 names(school_leaver) <- tolower(names(school_leaver)) # make lower case
 school_leaver <- school_leaver %>% rename(areaname = la.name,
                                           denominator = number.of.leavers, 
-                         pc_temp = positive.destination)
+                         pc_temp = positive.destination) %>% 
+  filter(areaname != "Scotland") # drop Scotland rows
+
 
 school_leaver$pc_temp[school_leaver$pc_temp == "*"] <- NA # for supressed data
 school_leaver$pc_temp <- as.double(school_leaver$pc_temp, digits=15) # numeric for calculations
 
 # calcuate numerator
 school_leaver <- school_leaver %>% 
-  mutate(numerator = denominator*(pc_temp/100)) %>% 
-  select(-pc_temp) %>% # drop for now will be recalcuate in analysis function
-  filter(areaname != "Scotland")
-school_leaver$numerator <- as.integer(school_leaver$numerator)
+  mutate(numerator = denominator*(pc_temp/100))
+
+school_leaver %>% filter(numerator>denominator) # check numerator makes sense (ie <denominator)
+
+school_leaver <- school_leaver %>% 
+  select(-pc_temp) # drop for now will be recalcuate in analysis function
 
 # geog codes 
 geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
@@ -94,8 +98,9 @@ analyze_first(filename = "school_leaver_destinations", geography = "council",
 
 
 # then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "school_leaver_destinations", measure = "percent", time_agg = 1,
-              ind_id = "",year_type = "financial")
+analyze_second(filename = "school_leaver_destinations", measure = "percent", 
+               time_agg = 1, ind_id = "13010",year_type = "financial")
+
 
 
 
