@@ -80,5 +80,8 @@ analyze_first(filename = "looked_after_SCQF4", geography = "council",
 analyze_second(filename = "looked_after_SCQF4", measure = "percent", time_agg = 1,
               ind_id = 13007, year_type = "school")
 
+#for QA
+looked_after_SCQF4_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.rds")
 
+write.csv (looked_after_SCQF4_denom, "X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.csv")
 

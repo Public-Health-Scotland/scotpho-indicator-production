@@ -79,5 +79,9 @@ analyze_first(filename = "looked_after_positive_dest", geography = "council",
 analyze_second(filename = "looked_after_positive_dest", measure = "percent", time_agg = 1,
               ind_id = 13011, year_type = "school")
 
+#for QA
+looked_after_dest_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_positive_dest_formatted.rds")
+
+write.csv (looked_after_dest_denom, "X:/ScotPHO Profiles/Data/Temporary/looked_after_positive_dest_formatted.csv")
 
 
