@@ -77,15 +77,6 @@ saveRDS(looked_after_SCQF4, file=paste0(data_folder, "Prepared Data/looked_after
 analyze_first(filename = "looked_after_SCQF4", geography = "council", 
               measure = "percent", yearstart = 2009, yearend = 2017, time_agg = 1)
 
-looked_after_SCQF4_temp <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_raw.rds")
-
-write.csv (looked_after_SCQF4_temp, "X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.csv")
-
-looked_after_SCQF4_formatted <- read.csv(paste0(data_folder, "Temporary/looked_after_SCQF4_formatted.csv"))
-
-saveRDS(looked_after_SCQF4_formatted, file=paste0(data_folder, "Temporary/looked_afterSCQF4_formatted.rds"))
-
-# then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "looked_after_SCQF4", measure = "percent", time_agg = 1,
               ind_id = 13007, year_type = "school")
 
