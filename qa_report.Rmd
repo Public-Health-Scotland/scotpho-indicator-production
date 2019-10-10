@@ -1,5 +1,5 @@
 ---
-title: "ScotPHO Profiles QA report"
+title: "ScotPHO Profiles QA report - in development"
 subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
 date: "09/10/2019"
@@ -72,11 +72,20 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 * Aggregation is by `r tech$aggregation`
 * Check for missing fields:  
 `r knitr::kable(na[,1:2])`
-* Check aggragation of numebrtors up to higher geographies:  
+* Check aggragation of numerators up to higher geographies:  
 `r knitr::kable(num_check)`
+* Check LA to HB aggregation:
+add example - A&A?
+* rate/percantage calculation check - manual against raw data?
+* Minimum and maximum CI ranges:
+* Check no rates/percentages sit outsie of CI range
+* Compare Scotland to median LA or HB rate/percentage
+* Plt chart as per analysis script
 
 #First person QA notes  
 * year type does not match - check if this can be fixed in production script  
 * two rows with supressed data  
+* numerators look fine - slight difference due to suppression
+
 #Second person QA notes  
 <add here>  
