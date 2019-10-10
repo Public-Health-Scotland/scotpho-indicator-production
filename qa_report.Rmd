@@ -1,0 +1,82 @@
+---
+title: "ScotPHO Profiles QA report"
+subtitle: "School leavers in positive destinations"
+author: "Andy Pulford"
+date: "09/10/2019"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r, message=FALSE, warning=FALSE}
+# packages
+#library(googlesheets) # work out how to load straight from google docs
+library(tidyverse)
+
+# load technical document
+tech <- read_csv("./Technical Document - Raw.csv") %>% 
+  filter(indicator_name == "School leavers in positive destinations") # copy from title
+
+# load or link to raw data = to be added ----------------------------------
+
+# load indicator data
+data <- read_csv("X:/ScotPHO Profiles/Data/Data to be checked/school_leaver_destinations_shiny.csv")
+
+# define variable names as they shoudl appea in OPT file
+sop_names <- c("code", "year", "numerator", "denominator", 
+               "rate", "lowci", "upci", "ind_id", "trend_axis", "def_period" )
+
+# create dataframe to summarise missing vars
+na <- sapply(data, function(x) sum(is.na(x)))
+na <- data.frame(sop_names, na) %>% as_tibble() %>% 
+  rename(
+    var = sop_names,
+    missing = na
+  )
+
+# create dataframe to check numerators add up to higher geogs
+sc_num <- data %>% filter(code == "S00000001") %>% 
+group_by(year) %>% 
+  summarise(sc = sum(numerator, na.rm = TRUE))
+
+hb_num <- data %>% filter(substr(code, 1, 3) == "S08")%>% 
+  group_by(year) %>% 
+  summarise(hb = sum(numerator, na.rm = TRUE))
+
+la_num <- data %>% filter(substr(code, 1, 3) == "S12")%>% 
+  group_by(year) %>% 
+  summarise(la = sum(numerator, na.rm = TRUE))
+
+num_check <- sc_num %>% full_join(by = "year", hb_num)
+num_check <- num_check %>% full_join(by = "year", la_num)
+
+```
+
+#Profile details
+**Indicator ID:** `r tech$indicator_number`  
+**Profile:** `r tech$profile`  
+**Indicator type:**	`r tech$measure`  
+**Year type:**	`r tech$year_type`  
+**Aggregation:** `r tech$aggregation`  
+**Trend period:** `r tech$trends_from`  
+**Geographies:** `r tech$available_geographies`  
+
+#Check OPT file
+* Data `r ifelse(sum(names(data) == sop_names) == 10, "", "**do not** ")` match the format in the SOP.  
+* The indicator ID  `r ifelse(first(data$ind_id) == tech$indicator_number, "matches", "**does not match**")` the technical document.  
+* Compare year type in OPT file against technical document:
+    + **`r first(data$def_period)`** vs. **`r tech$year_type`**  
+* The current published time trend is for **`r tech$trends_from`**:
+    + Start year in data: `r min(data$trend_axis)`
+    + End year in data: `r max(data$trend_axis)`
+* Aggregation is by `r tech$aggregation`
+* Check for missing fields:  
+`r knitr::kable(na[,1:2])`
+* Check aggragation of numebrtors up to higher geographies:  
+`r knitr::kable(num_check)`
+
+#First person QA notes  
+* year type does not match - check if this can be fixed in production script  
+* two rows with supressed data  
+#Second person QA notes  
+<add here>  
