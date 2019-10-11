@@ -75,6 +75,8 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 * Check aggragation of numerators up to higher geographies:  
 `r knitr::kable(num_check)`
 * Check LA to HB aggregation:
+
+
 add example - A&A?
 * rate/percantage calculation check - manual against raw data?
 * Minimum and maximum CI ranges:
