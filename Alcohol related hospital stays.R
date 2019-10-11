@@ -3,7 +3,7 @@
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
-#   Part 3 - Run analysis functions
+#   Part 3 - Run analysis functions 
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -12,6 +12,8 @@ library(lubridate) #requires lubridate to derive financial year of stay
 
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
+source("//PHI_conf/ScotPHO/Profiles/Code/stat_disclosure_alcohol_stays.R") # statistical disclosure methodology - confidential - do not share
+
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -152,15 +154,20 @@ analyze_first(filename = "alcohol_stays_dz11", geography = "datazone11", measure
 analyze_second(filename = "alcohol_stays_dz11", measure = "stdrate", time_agg = 1, 
                epop_total = 200000, ind_id = 20203, year_type = "financial")
 
+apply_stats_disc("alcohol_stays_dz11_shiny") # statistical disclosure applied to final values
+
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1, 
                     yearstart= 2002, yearend=2018,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
+apply_stats_disc("alcohol_stays_depr_ineq")  # statistical disclosure applied to final values
+
 ###############################################.
 ##Run macros again to generate CYP indicator data
-#Alcohol related stays in 11 to 25 year olds 
+# Alcohol related stays in 11 to 25 year olds
+
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
               pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = '11to25')
@@ -168,6 +175,7 @@ analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 
                epop_total = 34200, ind_id = 13024, year_type = "financial")
 
+apply_stats_disc("alcohol_stays_11to25_shiny") # statistical disclosure applied to final values
 
 rm(channel) # closing connection to SMRA
 
