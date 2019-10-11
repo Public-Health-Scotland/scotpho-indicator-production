@@ -44,13 +44,13 @@ data_alcohol_episodes <- tbl_df(dbGetQuery(channel, statement= paste0(
   "SELECT link_no linkno, cis_marker cis, AGE_IN_YEARS age, admission_date, 
       discharge_date, DR_POSTCODE pc7, SEX sex_grp, ADMISSION, DISCHARGE, URI
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2001' and '31 March 2018'
+  WHERE discharge_date between  '1 April 2001' and '31 March 2019'
       and sex <> 9
       and exists (
           select * 
           from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and discharge_date between '1 April 2001' and '31 March 2018'
+            and discharge_date between '1 April 2001' and '31 March 2019'
             and (regexp_like(main_condition, '", alc_diag ,"')
               or regexp_like(other_condition_1,'", alc_diag ,"')
               or regexp_like(other_condition_2,'", alc_diag ,"')
@@ -87,7 +87,7 @@ data_alcoholstays <- data_alcoholstays %>%
   ))
 
 # # Bringing  LA and datazone info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Match geography information (datazone) to stays data
@@ -95,9 +95,10 @@ data_alcoholstays <- left_join(data_alcoholstays, postcode_lookup, "pc7")
 
 # Select out unmatched rows and keep required fields
 data_alcoholstays <- data_alcoholstays %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% # will need to change to new ca codes once new dz populations available
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>%
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
+
 
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
@@ -130,10 +131,10 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stays_depr_raw
 
 alcoholstays_11to25 <- data_alcoholstays %>%
   subset(age>=11 & age<=25) %>% 
-  group_by(year, ca2011, sex_grp, age_grp) %>%  
+  group_by(year, ca2019, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% 
   ungroup() %>%   
-  rename(ca = ca2011)
+  rename(ca = ca2019)
 
 saveRDS(alcoholstays_11to25, file=paste0(data_folder, 'Prepared Data/alcohol_stays_11to25_raw.rds'))
 
@@ -144,16 +145,16 @@ saveRDS(alcoholstays_11to25, file=paste0(data_folder, 'Prepared Data/alcohol_sta
 ##Run macros to generate HWB and Alcohol Profile indicator data
 # All ages alcohol related hospital stays 
 analyze_first(filename = "alcohol_stays_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
-              adp = TRUE, time_agg = 1, epop_age = "normal")
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              time_agg = 1, epop_age = "normal",  adp = TRUE)
+
 
 analyze_second(filename = "alcohol_stays_dz11", measure = "stdrate", time_agg = 1, 
-               epop_total = 200000, ind_id = 20203, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 200000, ind_id = 20203, year_type = "financial")
 
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1, 
-                    yearstart= 2002, yearend=2017,   year_type = "financial", 
+                    yearstart= 2002, yearend=2018,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
@@ -161,12 +162,11 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
 ##Run macros again to generate CYP indicator data
 #Alcohol related stays in 11 to 25 year olds 
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = '11to25')
 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 
-               epop_total = 34200, ind_id = 13024, year_type = "financial", 
-               profile = "CP", min_opt = 2999)
+               epop_total = 34200, ind_id = 13024, year_type = "financial")
 
 
 rm(channel) # closing connection to SMRA
