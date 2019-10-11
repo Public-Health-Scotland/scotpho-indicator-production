@@ -37,15 +37,18 @@ na <- data.frame(sop_names, na) %>% as_tibble() %>%
 # create dataframe to check numerators add up to higher geogs
 sc_num <- data %>% filter(code == "S00000001") %>% 
 group_by(year) %>% 
-  summarise(sc = sum(numerator, na.rm = TRUE))
+  summarise(sc = sum(numerator, na.rm = TRUE)) %>% 
+  ungroup()
 
 hb_num <- data %>% filter(substr(code, 1, 3) == "S08")%>% 
   group_by(year) %>% 
-  summarise(hb = sum(numerator, na.rm = TRUE))
+  summarise(hb = sum(numerator, na.rm = TRUE))%>% 
+  ungroup()
 
 la_num <- data %>% filter(substr(code, 1, 3) == "S12")%>% 
   group_by(year) %>% 
-  summarise(la = sum(numerator, na.rm = TRUE))
+  summarise(la = sum(numerator, na.rm = TRUE))%>% 
+  ungroup()
 
 num_check <- sc_num %>% full_join(by = "year", hb_num)
 num_check <- num_check %>% full_join(by = "year", la_num)
@@ -74,20 +77,37 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 `r knitr::kable(na[,1:2])`
 * Check aggragation of numerators up to higher geographies:  
 `r knitr::kable(num_check)`
+
+```{r, message=FALSE, warning=FALSE}
+# create df for checking that LAs aggregate to HBs
+aa_hb <- data %>% filter(code == "S08000015") %>% 
+  select(year, code, numerator)
+  
+aa_la <- data %>% filter(code %in% c("S12000008",
+                            "S12000021",
+                            "S12000028")) %>% 
+  group_by(year) %>% 
+  summarise(hb = sum(numerator, na.rm = TRUE)) %>% 
+  ungroup()
+
+aa_check <- aa_hb %>% full_join(by = "year", aa_la)
+
+
+```
 * Check LA to HB aggregation:
+`r knitr::kable(aa_check)`
 
-
-add example - A&A?
-* rate/percantage calculation check - manual against raw data?
-* Minimum and maximum CI ranges:
-* Check no rates/percentages sit outsie of CI range
-* Compare Scotland to median LA or HB rate/percentage
-* Plt chart as per analysis script
+* rate/percantage calculation check - manual against raw data?  
+* Minimum and maximum CI ranges:  
+* Check no rates/percentages sit outsie of CI range  
+* Compare Scotland to median LA or HB rate/percentage  
+* Plt chart as per analysis script  
 
 #First person QA notes  
 * year type does not match - check if this can be fixed in production script  
 * two rows with supressed data  
-* numerators look fine - slight difference due to suppression
+* numerators look fine - slight difference due to suppression  
+* A&A LA to HB looks fine too
 
 #Second person QA notes  
 <add here>  
