@@ -118,7 +118,6 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 ```
 
 #First person QA notes  
-* year type does not match - check if this can be fixed in production script  
 * two rows with supressed data  
 * numerators look fine - slight difference due to suppression  
 * A&A LA to HB looks fine too
