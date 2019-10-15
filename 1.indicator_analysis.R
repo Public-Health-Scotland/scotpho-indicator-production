@@ -27,7 +27,7 @@
 #           percentage with finite population correction factor (perc_pcf)
 # time_agg - Aggregation period used expressed in year, e.g. 3 
 # ind_id - indicator code/number
-# year_type - calendar, financial, school or annual snapshot. This last one should
+# year_type - calendar, financial, school, survey or annual snapshot. This last one should
 #           be used like "Month snapshot" e.g. "August snapshot"
 # crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
@@ -218,7 +218,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
 ##  Second analysis function ----
 ##################################################.
 analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf", "stdrate"), 
-                           time_agg,  ind_id, year_type = c("calendar", "financial", "school"),
+                           time_agg,  ind_id, year_type,
                            epop_total = NULL, pop = NULL, crude_rate) {   
   
   ##################################################.
@@ -336,8 +336,9 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
         mutate(trend_axis=paste0(year-1, "-", year),  
                def_period=paste0(year-1, " to ", year, " ", year_type, 
                                  " years; 2-year aggregates")) 
-      #Calendar single years
-    } else if (year_type == "calendar" & time_fix==0 & time_agg!=2){ 
+      #Calendar single years or single survey years
+    } else if ((year_type == "calendar" & time_fix==0 & time_agg!=2) |
+               year_type == "survey"){ 
       data_indicator <- data_indicator %>% 
         mutate(trend_axis=year,  
                def_period=paste0(year, " ", year_type, " year"))
