@@ -44,6 +44,8 @@ library(RcppRoll) #for moving averages
 library(readr) # writing csv's
 library(odbc) # for reading oracle databases
 library(readxl) #for reading excel
+library(rmarkdown) #for data quality checking
+library(shiny) #for data quailty checking
 
 # Varies filepaths depending on if using server or not and what organisation uses it.
 if (exists("organisation") == TRUE) { #Health Scotland
