@@ -391,12 +391,19 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     ##################################################.
     ##  Part 6 - Checking results ----
     ##################################################.
-    #Selecting Health boards and Scotland for latest year in dataset
-    ggplot(data = data_indicator %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                              & year== max(year)), aes(code, rate) ) +
-      geom_point(stat = "identity") +
-      geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+    # This is a parameter the rmarkdown needs
+    # If aggregated from datazone, there is IZ, if not no
+    iz <- ifelse(as.numeric(count(final_result %>% filter(substr(code,1,3) == "S02"))) > 0, 
+                 TRUE, FALSE)
     
+    # Creating the html file rendering the Rmarkdown document
+    render("Data Quality Checks.Rmd", 
+           params=list(data_ind= filename, iz = iz), "html_document",
+           output_dir = paste0(data_folder, "Temporary/"),
+           output_file = paste0(filename, "-checks.html"))
+    
+    # Opening the html
+    browseURL(paste0('file://', data_folder, "Temporary/", filename, "-checks.html"))
     
     } 
 
