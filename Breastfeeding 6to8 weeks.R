@@ -12,9 +12,6 @@
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
-source("Data Quality Checks.Rmd") # Data checks rmarkdown
-
-
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
@@ -93,10 +90,3 @@ saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/breastfed_shi
 write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/breastfed_shiny.csv"))
   
 ##END
-
-
-
-render("Data Quality Checks.Rmd", 
-       params=list(data="breastfed",IZ= TRUE),"html_document")
-
-
