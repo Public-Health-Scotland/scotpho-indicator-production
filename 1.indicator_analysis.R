@@ -45,7 +45,9 @@ library(readr) # writing csv's
 library(odbc) # for reading oracle databases
 library(readxl) #for reading excel
 library(rmarkdown) #for data quality checking
-library(shiny) #for data quailty checking
+library(shiny) #for data quality checking
+library(flextable) # for output tables
+library(plotly) #for data quality checking
 
 # Varies filepaths depending on if using server or not and what organisation uses it.
 if (exists("organisation") == TRUE) { #Health Scotland
@@ -397,13 +399,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                  TRUE, FALSE)
     
     # Creating the html file rendering the Rmarkdown document
-    render("Data Quality Checks.Rmd", 
-           params=list(data_ind= filename, iz = iz), "html_document",
-           output_dir = paste0(data_folder, "Temporary/"),
-           output_file = paste0(filename, "-checks.html"))
-    
-    # Opening the html
-    browseURL(paste0('file://', data_folder, "Temporary/", filename, "-checks.html"))
+    run("Data Quality Checks.Rmd") 
     
     } 
 

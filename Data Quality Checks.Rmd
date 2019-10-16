@@ -2,9 +2,7 @@
 title: "ScotPHO Profile indicator Data Quality Checks"
 output: html_document
 runtime: shiny
-params:
-  data_ind: "test"
-  iz: FALSE
+
 ---
 
 ```{r setup, include=FALSE}
@@ -13,42 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 
-##Packages & set up (maybe don't need to load all of these if data checks are incorporated to main indicator production script?)**
-
-library(dplyr) # for data manipulation
-library(ggplot2) # for plotting
-library(tidyr) # for data manipulation
-library(readr) # writing csv's
-library(readxl) #for reading excel
-library(flextable) # for output tables
-library(rmarkdown)
-library(plotly)
-library(shiny)
-
-# Varies filepaths depending on if using server or not and what organisation uses it.
-if (exists("organisation") == TRUE) { #Health Scotland
-  if (organisation == "HS") { 
-    data_folder <- "X:/ScotPHO Profiles/Data/" 
-    lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-  }
-} else  { #ISD, first server then desktop
-  if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-    data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-    lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-  } else {
-    data_folder <- "//stats/ScotPHO/Profiles/Data/"
-    lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
-  }
-}
-
-#Set parameters
-filename <- params$data_ind #setting parameter to file name makes subsequent code neater 
-
 #Pre-defined geographies that will be used in 'Check 3' comparing old & new file - maybe wants to use parameters?
 check_codes <- c("S00000001","S08000015","S12000010","S02001236") 
-
-#Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
@@ -84,14 +48,14 @@ geo_checks <- data_indicator %>%
 # Not sure how many localities there are supposed to be?
 # Not sure how to handle indicators with ADP or only Council area - need to think about this...
 
-  if (params$iz == TRUE) {
+  if (iz == TRUE) {
     ft_geo_check <- flextable(geo_checks) %>%
       color(~ S08!=14, ~S08, color = "red") %>% #NHS board should be 14
       color(~ S12!=32, ~S12, color = "red") %>% #S12 council should be 32
       color(~ S37!=31, ~S37, color = "red") %>% #HSCP should be 31
       color(~ S02!=1279,~S02, color = "red") %>% #There should be 1279 IZ
       autofit()
-  } else if (params$iz==FALSE) {
+  } else if (iz==FALSE) {
      ft_geo_check <- flextable(geo_checks) %>%
        color(~ S08!=14, ~S08, color = "red") %>% #NHS board should be 14
        color(~ S12!=32, ~S12, color = "red") %>% #S12 council should be 32
@@ -290,6 +254,7 @@ flextable(small_count_data)
 Small shiny app to view data trends for one or more geography
 
 ```{r, echo=FALSE}
+
 shinyApp(
 
   ui = fluidPage(
@@ -301,23 +266,20 @@ shinyApp(
     ),
 
   server = function(input, output) {
+    
+      # Creating plot for ui side
+  output$trend_plot <- renderPlotly({ 
+    
+    trend_data <- data_indicator %>% subset(code %in% input$code_selected)
+    
+        #Text for tooltip
+    tooltip_trend <- c(paste0(trend_data$code, "<br>",
+                              "Rate: ", round(trend_data$rate,2), "<br>",
+                              "Numerator: ", round(trend_data$numerator, 1)))
 
-    trend_data <- reactive({
-         data <- data_indicator %>%
-           subset(code %in% input$code_selected)
-      })
-
-
-    plot_trend_chart <- function() {
-
-    #Text for tooltip
-    tooltip_trend <- c(paste0(trend_data()$code, "<br>",
-                              "Rate: ", round(trend_data()$rate,2), "<br>",
-                              "Numerator: ", round(trend_data()$numerator, 1)))
-
-    trend_plot <- plot_ly(data=trend_data(), x=~trend_axis,  y = ~get(input$var_plot_trend),
+    trend_plot <- plot_ly(data=trend_data, x=~trend_axis,  y = ~get(input$var_plot_trend),
                           text=tooltip_trend, height = 600) %>%
-        add_trace(type = 'scatter', mode = 'lines+markers',symbol = ~trend_data()$code) %>%
+        add_trace(type = 'scatter', mode = 'lines+markers', symbol = ~trend_data$code) %>%
         #Layout
         layout(annotations = list(), #It needs this because of a buggy behaviour of Plotly
                yaxis = list(title = input$var_plot_trend, rangemode="tozero", fixedrange=TRUE,
@@ -326,11 +288,8 @@ shinyApp(
                showlegend = TRUE,
                legend = list(orientation = 'h', x = 0, y = 1.18)) %>%  #legend on top
         config(displayModeBar = FALSE, displaylogo = F) # taking out plotly logo button
-          }
-
-      # Creating plot for ui side
-  output$trend_plot <- renderPlotly({ plot_trend_chart()
     })
+  
     },# server close
   options = list(height = 800)
 )
