@@ -99,7 +99,7 @@ analyze_first(filename = "school_leaver_destinations", geography = "council",
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
-               time_agg = 1, ind_id = "13010",year_type = "financial")
+               time_agg = 1, ind_id = "13010",year_type = "school")
 
 # convert zeroes back to NA for supressed data
 final_result[final_result == 0] <- NA

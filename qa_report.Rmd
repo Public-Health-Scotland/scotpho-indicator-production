@@ -1,5 +1,5 @@
 ---
-title: "ScotPHO Profiles QA report"
+title: "ScotPHO Profiles QA report - in development"
 subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
 date: "09/10/2019"
@@ -37,15 +37,18 @@ na <- data.frame(sop_names, na) %>% as_tibble() %>%
 # create dataframe to check numerators add up to higher geogs
 sc_num <- data %>% filter(code == "S00000001") %>% 
 group_by(year) %>% 
-  summarise(sc = sum(numerator, na.rm = TRUE))
+  summarise(sc = sum(numerator, na.rm = TRUE)) %>% 
+  ungroup()
 
 hb_num <- data %>% filter(substr(code, 1, 3) == "S08")%>% 
   group_by(year) %>% 
-  summarise(hb = sum(numerator, na.rm = TRUE))
+  summarise(hb = sum(numerator, na.rm = TRUE))%>% 
+  ungroup()
 
 la_num <- data %>% filter(substr(code, 1, 3) == "S12")%>% 
   group_by(year) %>% 
-  summarise(la = sum(numerator, na.rm = TRUE))
+  summarise(la = sum(numerator, na.rm = TRUE))%>% 
+  ungroup()
 
 num_check <- sc_num %>% full_join(by = "year", hb_num)
 num_check <- num_check %>% full_join(by = "year", la_num)
@@ -72,11 +75,53 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 * Aggregation is by `r tech$aggregation`
 * Check for missing fields:  
 `r knitr::kable(na[,1:2])`
-* Check aggragation of numebrtors up to higher geographies:  
+* Check aggregation of numerators up to higher geographies:  
 `r knitr::kable(num_check)`
 
+```{r, message=FALSE, warning=FALSE}
+# create df for checking that LAs aggregate to HBs
+aa_hb <- data %>% filter(code == "S08000015") %>% 
+  select(year, code, numerator)
+  
+aa_la <- data %>% filter(code %in% c("S12000008",
+                            "S12000021",
+                            "S12000028")) %>% 
+  group_by(year) %>% 
+  summarise(hb = sum(numerator, na.rm = TRUE)) %>% 
+  ungroup()
+
+aa_check <- aa_hb %>% full_join(by = "year", aa_la)
+
+
+```
+* Check LA to HB aggregation:
+`r knitr::kable(aa_check)`
+
+* rate/percantage calculation check - manual against raw data?  
+* Minimum and maximum CI ranges:  
+    + Min: `r data %>% mutate(ci_range = upci-lowci) %>% 
+    summarise(min_ci_range = min(ci_range, na.rm = TRUE))`  
+    + Max: `r data %>% mutate(ci_range = upci-lowci) %>% 
+    summarise(min_ci_range = max(ci_range, na.rm = TRUE))`
+* Check no rates/percentages sit outside of CI range  
+    + `r  data %>% mutate(ci_error = ifelse(rate<lowci | rate>upci, TRUE, FALSE)) %>% 
+                  summarise(ci_error_totoal = sum(ci_error, na.rm = TRUE))` rows with rate outside of CI range
+* Compare Scotland to median LA or HB rate/percentage  
+* Plot chart as per analysis script:  
+```{r, echo = TRUE, message=FALSE, warning=FALSE}   
+#Selecting Health boards and Scotland for latest year in dataset
+    ggplot(data = data %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                              & year== max(year)), aes(code, rate) ) +
+      geom_point(stat = "identity") +
+      geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5) + 
+  theme(axis.text.x = element_text(angle = 90)) 
+```
+
 #First person QA notes  
-* year type does not match - check if this can be fixed in production script  
 * two rows with supressed data  
+* numerators look fine - slight difference due to suppression  
+* A&A LA to HB looks fine too
+* chart looks fine
+
 #Second person QA notes  
 <add here>  
