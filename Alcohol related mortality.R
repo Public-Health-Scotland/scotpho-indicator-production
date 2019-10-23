@@ -33,9 +33,9 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 data_deaths <- tbl_df(dbGetQuery(channel, statement=
  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
   FROM ANALYSIS.GRO_DEATHS_C 
-  WHERE date_of_registration between '1 January 2002' AND '31 December 2017'
+  WHERE date_of_registration between '1 January 2002' AND '31 December 2018'
         AND country_of_residence ='XS'
-        AND regexp_like(PRIMARY_CAUSE_OF_DEATH,'E244|F10|G312|G621|G721|I426|K292|K70|K852|K860|Q860|R78|X45|X65|Y15|E860') 
+        AND regexp_like(underlying_cause_of_death,'E244|F10|G312|G621|G721|I426|K292|K70|K852|K860|Q860|R78|X45|X65|Y15|E860') 
         AND age is not NULL
         AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
@@ -52,7 +52,7 @@ data_deaths <- data_deaths %>% mutate(age_grp = case_when(
 ))
 
 # Open LA and datazone info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
@@ -123,40 +123,37 @@ saveRDS(alcohol_deaths_male, file=paste0(data_folder, 'Prepared Data/alcohol_dea
 
 #Alcohol mortality indicator functions
 analyze_first(filename = "alcohol_deaths_dz11", geography = "datazone11", adp=TRUE, measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 5, epop_age = "normal")
 
 analyze_second(filename = "alcohol_deaths_dz11", measure = "stdrate", time_agg = 5, 
-               epop_total = 200000, ind_id = 20204, year_type = "calendar", 
-               profile = "HN", min_opt = 1245385)
+               epop_total = 200000, ind_id = 20204, year_type = "calendar")
 
 ###############################################.
 #Alcohol mortality by deprivation indicator functions
 analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=5, 
-                    yearstart= 2002, yearend=2017,  
+                    yearstart= 2002, yearend=2018,  
                     year_type = "calendar", pop = "depr_pop_allages", 
                     epop_age="normal", epop_total =200000, ind_id = 20204)
 
 ###############################################.
 #FEMALE Alcohol mortality indicator functions
 analyze_first(filename = "alcohol_deaths_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2018,
               adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "alcohol_deaths_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12537, year_type = "calendar", 
-               profile = "MH", min_opt = 1245385)
+               epop_total = 100000, ind_id = 12537, year_type = "calendar")
 
 ###############################################.
 #MALE Alcohol mortality indicator functions
 analyze_first(filename = "alcohol_deaths_male", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2018,
               adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only male half population
 analyze_second(filename = "alcohol_deaths_male", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12536, year_type = "calendar", 
-               profile = "MH", min_opt = 1245385)
+               epop_total = 100000, ind_id = 12536, year_type = "calendar")
 
 #END
