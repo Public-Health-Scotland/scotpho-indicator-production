@@ -11,7 +11,8 @@
 ## The latest data (Sept 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/SchoolMealsDatasets
 
-## NOTE: in development: Part 1 updated, change paramters in Part 2
+## NOTE: in development: Part 1 updated, changed parameters in Part 2
+## error in analyse first call
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -73,7 +74,7 @@ school_meals <- school_meals_old %>%
   rbind(school_meals_new)
 
 # save rds raw file for use in analysis funtions
-saveRDS(school_meals, file=paste0(data_folder, "Prepared Data/school_meals_destinations_raw.rds"))
+saveRDS(school_meals, file=paste0(data_folder, "Prepared Data/school_meals_raw.rds"))
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -86,13 +87,13 @@ source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R")
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "school_meals_destinations", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2017, 
+analyze_first(filename = "school_meals", geography = "council", 
+              measure = "percent", yearstart = 2015, yearend = 2019, 
               time_agg = 1)
 
 
 # then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "school_meals_destinations", measure = "percent", 
+analyze_second(filename = "school_meals", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "school")
 
 # convert zeroes back to NA for supressed data
@@ -109,8 +110,8 @@ ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000
 
 
 #resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_meals_destinations_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_meals_destinations_shiny.csv"))
+saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_meals_shiny.rds"))
+write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_meals_shiny.csv"))
 
 
 
