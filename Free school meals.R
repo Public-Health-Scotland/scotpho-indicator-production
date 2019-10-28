@@ -11,8 +11,7 @@
 ## The latest data (Sept 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/SchoolMealsDatasets
 
-## NOTE: in development: Part 1 updated, changed parameters in Part 2
-## error in analyse first call
+## NOTE: errors fixed - ready for 1st person QA
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -54,6 +53,13 @@ head(school_meals_new)
 names(school_meals_new) <- tolower(names(school_meals_new))# make lower case
 school_meals_new <- school_meals_new %>%   rename(areaname = la)
 
+## remove commas from numeric vars
+school_meals_new$numerator <- gsub(",", "", school_meals_new$numerator, fixed = TRUE)
+school_meals_new$denominator <- gsub(",", "", school_meals_new$denominator, fixed = TRUE)
+
+## change numerator and denomitaior col type to numeric
+school_meals_new$numerator <- as.numeric(school_meals_new$numerator)
+school_meals_new$denominator <- as.numeric(school_meals_new$denominator)
 
 
 # geog codes 
@@ -97,16 +103,16 @@ analyze_second(filename = "school_meals", measure = "percent",
                time_agg = 1, ind_id = "13010",year_type = "school")
 
 # convert zeroes back to NA for supressed data
-final_result[final_result == 0] <- NA
+#final_result[final_result == 0] <- NA
 
 # convert numertaor into integar
-final_result$numerator <- as.integer(final_result$numerator)
+#final_result$numerator <- as.integer(final_result$numerator)
 
 # re-check test chart
-ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                        & year== max(year)), aes(code, rate) ) +
-  geom_point(stat = "identity") +
-  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+#ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
+#                                        & year== max(year)), aes(code, rate) ) +
+#  geom_point(stat = "identity") +
+#  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
 
 
 #resave both rds and csv files
