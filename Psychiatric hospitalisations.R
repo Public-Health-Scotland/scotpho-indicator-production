@@ -38,18 +38,8 @@ data_psychiatric <- tbl_df(dbGetQuery(channel, statement=
          AND datazone_2011 is not null 
    GROUP BY link_no, CASE WHEN extract(month from discharge_date) > 3 THEN
       extract(year from discharge_date) ELSE extract(year from discharge_date) -1 END")) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
-
-# Creating age groups for standardization.
-# mutate add new column for age_grp
-data_psychiatric <- data_psychiatric %>% mutate(age_grp = case_when( 
-  age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-  age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-  age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-  age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-  age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-  TRUE ~ as.numeric(age) ))
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Datazone2001 - Equivalent of aggregate
 dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>%  
@@ -62,7 +52,6 @@ dz01 <- dz01 %>% subset(year<2011)
 
 saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz01_raw.rds'))
 datadz01 <- readRDS(paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz01_raw.rds'))
-
 
 # Datazone2011 - Equivalent of aggregate
 dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>%  
@@ -86,7 +75,6 @@ dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014))
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_depr_raw.rds'))
 
-
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
@@ -96,15 +84,12 @@ analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11"
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20402, year_type = "financial", 
-               profile = "HN", min_opt = 1347346)
+               epop_total = 200000, ind_id = 20402, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2017,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20402)
-
-odbcClose(channel) # closing connection to SMRA
 
 ##END
