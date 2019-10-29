@@ -26,31 +26,21 @@ data_asthma <- tbl_df(dbGetQuery(channel, statement=
       CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 April 2002' and '31 March 2018'
+   WHERE admission_date between '1 April 2002' and '31 March 2019'
       AND sex <> 0 
       AND regexp_like(main_condition, 'J4[5-6]') 
    GROUP BY link_no, CASE WHEN extract(month from admission_date) > 3 THEN
       extract(year from admission_date) ELSE extract(year from admission_date) -1 END")) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
-
-# Creating age groups for standardization.
-data_asthma <- data_asthma %>% mutate(age_grp = case_when( 
-  age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-  age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-  age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-  age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-  age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-  TRUE ~ as.numeric(age)
-))
+  setNames(tolower(names(.))) %>%   #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(pc7, datazone2001, datazone2011, ca2018)
+  select(pc7, datazone2001, datazone2011, ca2019)
 
 data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2018) %>% 
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>% 
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
@@ -65,8 +55,8 @@ asthma_dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>
 saveRDS(asthma_dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
 ###############################################.
 # CA file for under 16 cases 
-asthma_ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2018, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2018)
+asthma_ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2019, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2019)
 
 saveRDS(asthma_ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
 
@@ -86,29 +76,25 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 ###############################################.
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2017,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20304, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 200000, ind_id = 20304, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2017,   year_type = "financial", 
+                    yearstart= 2002, yearend=2018,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20304)
 
 #############################################.
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2017,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 
-               epop_total = 34200, ind_id = 13051, year_type = "financial", 
-               profile = "CP", min_opt = 2999)
-
-odbcClose(channel) # closing connection to SMRA
+               epop_total = 34200, ind_id = 13051, year_type = "financial")
 
 ##END
