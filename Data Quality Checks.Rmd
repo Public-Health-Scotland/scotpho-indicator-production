@@ -283,10 +283,21 @@ small_count_data <- data_indicator  %>%
 ```
 
 ```{r, echo=FALSE}
-ifelse(all(data_indicator$numerator != ""),
-flextable(small_count_data), "No numerators available in dataset")
+##if numerator column is available (i.e. not all blank) produce flextable summarising counts of small numbers
+if(all(data_indicator$numerator != "")){
+  flextable(small_count_data)
+}
 
 ```
+
+```{r, echo=FALSE}
+##if numerator column is not available (i.e. all blank) skip check and notify user
+if(all(data_indicator$numerator == "")){
+  "No numerators available in dataset"
+}
+
+```
+
 
 ------------------------------------------------------------------------------------  
 
