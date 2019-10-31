@@ -9,9 +9,8 @@
 ## This script analyses SG education data on the free school meals measure
 
 ## The latest data (Sept 2019) is available here:
-#    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/SchoolMealsDatasets
-
-## NOTE: errors fixed - ready for 1st person QA
+#  https://www2.gov.scot/Topics/Statistics/Browse/School-Education/MealsSD/mealspesd/mealspesd2019
+# 2018 data uses same URL but with year changed
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -100,7 +99,7 @@ analyze_first(filename = "school_meals", geography = "council",
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "school_meals", measure = "percent", 
-               time_agg = 1, ind_id = "13010",year_type = "school")
+               time_agg = 1, ind_id = "13012",year_type = "school")
 
 # convert zeroes back to NA for supressed data
 #final_result[final_result == 0] <- NA
