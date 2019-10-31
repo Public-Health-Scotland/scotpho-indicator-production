@@ -1,6 +1,5 @@
 ---
 title: "ScotPHO Profiles QA report - in development"
-#here's a comment
 subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
 date: "09/10/2019"
