@@ -18,11 +18,11 @@ data_products <- read_excel(paste0(data_folder, "Received Data/IR2018-01479-smok
   rename_all(funs(gsub("\\s","_",.))) # changing spaces for underscores
 
 # Bringing code information for LA.
-ca_lookup <- read_csv("/conf/linkage/output/lookups/geography/Codes_and_Names/Council Area 2011 Lookup.csv") %>% 
-  setNames(tolower(names(.))) %>% rename(ca = councilarea2011code)
+ca_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds") %>% 
+  setNames(tolower(names(.))) %>% rename(ca=code)
 
 data_products <- left_join(data_products, ca_lookup, #Merging both
-                           by = c("dispensing_council_area" = "councilarea2011name")) %>% 
+                           by = c("dispensing_council_area" = "areaname")) %>% 
   filter(!(is.na(ca))) #excluding values without a valid ca
 
 # aggregate to get total DDDs for each datazone/year.
@@ -40,7 +40,6 @@ analyze_first(filename = "cessation_products", geography = "council", measure = 
               yearstart = 2002, yearend = 2017, time_agg = 1, pop="CA_pop_12+")
 
 analyze_second(filename = "cessation_products", measure = "crude", time_agg = 1,
-               crude_rate = 1000, ind_id = 1544, year_type = "financial", 
-               profile = "TP", min_opt = 1006439)
+               crude_rate = 1000, ind_id = 1544, year_type = "financial")
 
 ##END
