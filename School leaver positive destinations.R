@@ -51,21 +51,8 @@ head(school_leaver)
 names(school_leaver) <- tolower(names(school_leaver)) # make lower case
 school_leaver <- school_leaver %>% rename(areaname = la.name,
                                           denominator = number.of.leavers, 
-                         pc_temp = positive.destination) %>% 
+                                          numerator = positive.destination) %>% 
   filter(areaname != "Scotland") # drop Scotland rows
-
-
-school_leaver$pc_temp[school_leaver$pc_temp == "*"] <- NA # for supressed data
-school_leaver$pc_temp <- as.double(school_leaver$pc_temp, digits=15) # numeric for calculations
-
-# calcuate numerator
-school_leaver <- school_leaver %>% 
-  mutate(numerator = denominator*(pc_temp/100))
-
-school_leaver %>% filter(numerator>denominator) # check numerator makes sense (ie <denominator)
-
-school_leaver <- school_leaver %>% 
-  select(-pc_temp) # drop for now will be recalcuate in analysis function
 
 # geog codes 
 geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
