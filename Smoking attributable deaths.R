@@ -37,7 +37,8 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
          AND country_of_residence='XS' 
          AND council_area is not null 
          AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]')")) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
@@ -45,12 +46,7 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   select(pc7, ca2011, hb2014)
 
 smoking_deaths <- left_join(smoking_deaths, postcode_lookup, "pc7") %>% 
-  mutate(scotland = "S00000001", # creating variable for Scotland
-         age_grp = case_when( #creating age group bands matching European standard pop
-           age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-           age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-           age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-           age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, TRUE ~ NA_real_))
+  mutate(scotland = "S00000001") # creating variable for Scotland
 
 ###############################################.
 ## Part 2 - add in relative risks of each disease as a result of smoking ----
@@ -277,7 +273,6 @@ analyze_first(filename = "smoking_deaths",  measure = "stdrate", geography = "al
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_deaths", measure = "stdrate", time_agg = 2, 
-               epop_total = 120000, ind_id = 20201, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 120000, ind_id = 20201, year_type = "calendar")
 
 ##END

@@ -35,13 +35,8 @@ young_assault <- tbl_df(dbGetQuery(channel, statement=
       or other_condition_5 between 'X850' and 'Y099')
    AND AGE_IN_YEARS between 15 and 25
    GROUP BY link_no, cis_marker" )) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
-
-# recoding age; age standardisation uses specific age grouping.
-young_assault <- young_assault %>% mutate(age_grp = case_when( 
-  age >14 & age <20 ~ 4, age >19 & age <25 ~ 5, age >24 & age <26 ~ 6, 
-  TRUE ~ as.numeric(age)
-))
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
