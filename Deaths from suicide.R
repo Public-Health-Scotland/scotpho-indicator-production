@@ -26,18 +26,8 @@ deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
       WHERE  year_of_registration between '2002' and '2018'
       AND sex <> 9
       AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'X[67]|X8[01234]|Y1|Y2|Y3[01234]|Y870|Y872')" )) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
-
-# Creating age groups for standardization.
-deaths_suicide <- deaths_suicide %>% mutate(age_grp = case_when( 
-  age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-  age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-  age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-  age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-  age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-  TRUE ~ as.numeric(age)
-))
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 

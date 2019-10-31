@@ -6,27 +6,26 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
+source("1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-data_products <- read_excel(paste0(data_folder, "Received Data/IR2018-01479-smoking cessation products.xlsx"), 
+data_products <- read_excel(paste0(data_folder, "Received Data/IR2019-01231-smoking cessation products.xlsx"), 
                             sheet = "Output", range = cell_limits(c(8, 2), c(NA, 10))) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  rename_all(funs(gsub("\\s","_",.))) # changing spaces for underscores
+  rename_all(list(~gsub("\\s","_",.))) # changing spaces for underscores
 
 # Bringing code information for LA.
-ca_lookup <- read_csv("/conf/linkage/output/lookups/geography/Codes_and_Names/Council Area 2011 Lookup.csv") %>% 
-  setNames(tolower(names(.))) %>% rename(ca = councilarea2011code)
+ca_lookup <- readRDS(paste0(data_folder, "Lookups/Geography/CAdictionary.rds"))
 
 data_products <- left_join(data_products, ca_lookup, #Merging both
-                           by = c("dispensing_council_area" = "councilarea2011name")) %>% 
-  filter(!(is.na(ca))) #excluding values without a valid ca
+                           by = c("dispensing_council_area" = "areaname")) %>% 
+  filter(!(is.na(code))) #excluding values without a valid ca
 
 # aggregate to get total DDDs for each datazone/year.
-data_products <- data_products %>% rename(year = financial_year) %>% 
+data_products <- data_products %>% rename(year = financial_year, ca = code) %>% 
   group_by(ca, year) %>% summarize(numerator = sum(defined_daily_doses, na.rm = T)) %>%  
   mutate(numerator = numerator/365) %>%  # value is defined daily doses, so needs to be divided by 365.
   ungroup() %>% select(ca, year, numerator) 
@@ -37,10 +36,9 @@ saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_product
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "cessation_products", geography = "council", measure = "crude", 
-              yearstart = 2002, yearend = 2017, time_agg = 1, pop="CA_pop_12+")
+              yearstart = 2002, yearend = 2018, time_agg = 1, pop="CA_pop_12+")
 
 analyze_second(filename = "cessation_products", measure = "crude", time_agg = 1,
-               crude_rate = 1000, ind_id = 1544, year_type = "financial", 
-               profile = "TP", min_opt = 1006439)
+               crude_rate = 1000, ind_id = 1544, year_type = "financial")
 
 ##END
