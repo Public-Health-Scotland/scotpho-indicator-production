@@ -120,7 +120,7 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 
 #First person QA notes  
 * two rows with supressed data  
-* numerators look fine - slight difference due to suppression  
+* numerators look fine
 * A&A LA to HB looks fine too
 * chart looks fine
 
