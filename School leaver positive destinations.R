@@ -11,7 +11,6 @@
 ## The latest data (Feb 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/leavedestla
 
-## Numerators not provided so have to back calculate
 ## Data in statistics.scot.gov but not currently in useable state
  # request for additional data sent to SG - keep eye out for future years.  
 ## Need to add in geog codes for LAs as SG Ed Stats use their own ones.
