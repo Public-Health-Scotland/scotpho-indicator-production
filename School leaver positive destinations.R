@@ -8,7 +8,7 @@
 
 ## This script analyses SG education data on the School leaver positive destinations measure
 
-## The latest data (August 2016) is available here:
+## The latest data (Feb 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/leavedestla
 
 ## Numerators not provided so have to back calculate
