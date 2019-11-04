@@ -1,11 +1,10 @@
 ---
 title: "ScotPHO Profiles QA report - in development"
-#subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 params:
-  id: 13012
-  name: school_meals
+  id: 13012 # user to set
+  name: school_meals # user to set
 output: 
   html_document:
     code_folding: hide
