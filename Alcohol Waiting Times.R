@@ -12,7 +12,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
-#Reading data provided by Prescribing team
+#Reading data provided by AWT team
 awt_data_raw <- read_excel(paste0(data_folder, "Received Data/Alcohol_waiting_times_2019.xlsx"), 
                                sheet = "Alcohol_waiting_times") %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case

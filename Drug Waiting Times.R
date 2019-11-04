@@ -12,7 +12,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
-#Reading data provided by Prescribing team
+#Reading data provided by DWT team
 dwt_data_raw <- read_excel(paste0(data_folder, "Received Data/Drug_waiting_times_2019.xlsx"), 
                                sheet = "Drug_waiting_times") %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
@@ -24,15 +24,12 @@ saveRDS(dwt_data_raw, file=paste0(data_folder, 'Prepared Data/Drug_waiting_times
 ###############################################.
 ## Part 2 - Format  Basefile for macro ----
 ###############################################.
-
 # Compute Scotland numerator denominator
 dwt_data_scotland <- dwt_data_raw %>% filter(substr(code, 1, 3) == "S08") %>% 
-  mutate(code = "S00000001") %>%  group_by(year, code) %>%
+  mutate(code = "S00000001") %>% group_by(year, code) %>%
   summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) %>% ungroup() 
                                
 dwt_data_formatted <- rbind(dwt_data_raw, dwt_data_scotland) 
-
-test <- readRDS(paste0(data_folder, "Temporary/drug_stays_dz11_formatted.rds"))
 
 saveRDS(dwt_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_times_formatted.rds'))
 
@@ -41,5 +38,6 @@ saveRDS(dwt_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_tim
 ###############################################.
 analyze_second(filename = "Drug_waiting_times", measure = "percent", 
                time_agg = 1, ind_id = 4136, year_type = "financial")
+
 
 ##END
