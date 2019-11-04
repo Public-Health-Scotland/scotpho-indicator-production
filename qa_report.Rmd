@@ -22,7 +22,7 @@ tech <- read_csv("./Technical Document - Raw.csv") %>%
 # load indicator data
 data <- read_csv("X:/ScotPHO Profiles/Data/Data to be checked/school_leaver_destinations_shiny.csv")
 
-# define variable names as they shoudl appea in OPT file
+# define variable names as they should appear in OPT file
 sop_names <- c("code", "year", "numerator", "denominator", 
                "rate", "lowci", "upci", "ind_id", "trend_axis", "def_period" )
 
