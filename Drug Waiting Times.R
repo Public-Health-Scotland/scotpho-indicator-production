@@ -7,38 +7,38 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
+source("1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-DWT_data_raw <- read_excel(paste0(data_folder, "Received Data/Drug_waiting_times_2019.xlsx"), 
+dwt_data_raw <- read_excel(paste0(data_folder, "Received Data/Drug_waiting_times_2019.xlsx"), 
                                sheet = "Drug_waiting_times") %>% 
-  setNames(tolower(names(.)))   #variables to lower case
+  setNames(tolower(names(.))) %>%   #variables to lower case
+  select(-area) %>% #variable not needed
+  mutate(year = as.numeric(year)) #converting to numeric as needed for functions
 
-saveRDS(DWT_data_raw, file=paste0(data_folder, 'Prepared Data/Drug_waiting_times_raw.rds'))
+saveRDS(dwt_data_raw, file=paste0(data_folder, 'Prepared Data/Drug_waiting_times_raw.rds'))
 
 ###############################################.
 ## Part 2 - Format  Basefile for macro ----
 ###############################################.
 
 # Compute Scotland numerator denominator
-DWT_data_scotland <- DWT_data_raw %>% filter(str_detect(code, "S08")) %>% mutate(code_s = "S00000001") %>% 
-  select(area, denominator, numerator, year, code_s) %>% mutate(area = "Scotland") %>% rename("code" = "code_s") %>%  group_by(area, year, code) %>%
-  summarise_at(c("numerator", "denominator"), funs(sum), na.rm =T) %>% ungroup() 
+dwt_data_scotland <- dwt_data_raw %>% filter(substr(code, 1, 3) == "S08") %>% 
+  mutate(code = "S00000001") %>%  group_by(year, code) %>%
+  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) %>% ungroup() 
                                
-DWT_data_formatted <- full_join(DWT_data_raw, DWT_data_scotland) %>% mutate(type = "percent", time = "single years")
+dwt_data_formatted <- rbind(dwt_data_raw, dwt_data_scotland) 
 
-saveRDS(DWT_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_times_formatted.rds'))
+test <- readRDS(paste0(data_folder, "Temporary/drug_stays_dz11_formatted.rds"))
+
+saveRDS(dwt_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_times_formatted.rds'))
 
 ###############################################.
 ## Part 3 - Call analysis macros ----
 ###############################################.
-
-#analyze_second(filename = "Drug_waiting_times", measure = "percent", time_agg = 1, 
-#               ind_id = 4136, year_type = "financial", profile = "DU", min_opt = 162970)
-
 analyze_second(filename = "Drug_waiting_times", measure = "percent", 
                time_agg = 1, ind_id = 4136, year_type = "financial")
 
