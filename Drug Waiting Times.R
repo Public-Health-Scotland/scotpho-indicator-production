@@ -36,7 +36,10 @@ saveRDS(DWT_data_formatted, file=paste0(data_folder, 'Temporary/Drug_waiting_tim
 ## Part 3 - Call analysis macros ----
 ###############################################.
 
-analyze_second(filename = "Drug_waiting_times", measure = "percent", time_agg = 1, 
-               ind_id = 4136, year_type = "financial", profile = "DU", min_opt = 162970)
+#analyze_second(filename = "Drug_waiting_times", measure = "percent", time_agg = 1, 
+#               ind_id = 4136, year_type = "financial", profile = "DU", min_opt = 162970)
+
+analyze_second(filename = "Drug_waiting_times", measure = "percent", 
+               time_agg = 1, ind_id = 4136, year_type = "financial")
 
 ##END

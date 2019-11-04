@@ -3,7 +3,7 @@
 #   Part 1 - Create basefile
 #   Part 2 - Format  Basefile for macro
 #   Part 3 - Call analysis macros
-
+library(tidyverse)
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -36,7 +36,11 @@ saveRDS(AWT_data_formatted, file=paste0(data_folder, 'Temporary/Alcohol_waiting_
 ## Part 3 - Call analysis macros ----
 ###############################################.
 
-analyze_second(filename = "Alcohol_waiting_times", measure = "percent", time_agg = 1, 
-               ind_id = 4119, year_type = "financial", profile = "AL", min_opt = 1005872)
+#analyze_second(filename = "Alcohol_waiting_times", measure = "percent", time_agg = 1, 
+#               ind_id = 4119, year_type = "financial", profile = "AL", min_opt = 1005872)
+
+
+analyze_second(filename = "Alcohol_waiting_times", measure = "percent", 
+               time_agg = 1, ind_id = 4119, year_type = "financial")
 
 ##END
