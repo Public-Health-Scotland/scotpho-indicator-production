@@ -2,7 +2,7 @@
 title: "ScotPHO Profiles QA report - in development"
 subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
-date: "09/10/2019"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
 output: 
   html_document:
     code_folding: hide
@@ -125,3 +125,4 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 
 #Second person QA notes  
 <add here>  
+
