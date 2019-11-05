@@ -110,13 +110,13 @@ old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
 # Calculate percentage differences between old and new figures
 # Need to adjust this merge to cope with some indicators that don't have numerator (e.g. life expectancy - this causes a fail)
 matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
-  mutate(rate_match = (rate.x-rate.y)/rate.x) %>% #all indicators have rate
+  mutate(rate_match = round((rate.x-rate.y)/rate.x,3)) %>% #all indicators have rate
   mutate(numerator_match = ifelse((numerator.x ==""||numerator.y ==""),
-                                  0,(numerator.x-numerator.y)/numerator.x),
+                                  0,round((numerator.x-numerator.y)/numerator.x,3)),
   lowci_match =ifelse((lowci.x ==""||lowci.y ==""),
-                                  0,(lowci.x-lowci.y)/lowci.x),
+                                  0,round((lowci.x-lowci.y)/lowci.x,3)),
   upci_match =ifelse((upci.x ==""||upci.y ==""),
-                                  0,(upci.x-upci.y)/upci.x))
+                                  0,round((upci.x-upci.y)/upci.x,3)))
 
 ```
 
@@ -160,7 +160,7 @@ Do any rates fall outwith the confidence limits - they shouldn't!?
 ```
 
 ```{r, echo=FALSE}
-ifelse(confidence_check$ci_error_total ==0, "No rates outwith confidence limits :-)",
+ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits :-)",
 "Uh-oh looks like there are some rates outwith confidence limits :(")
 
 ```
@@ -205,28 +205,17 @@ HSC locality rates seem consistent with partnership data (i.e partnership rate s
 ```{r, include=FALSE}
 
 #Selecting Council area, HSCP and its localities for latest year in dataset
-#Test case
 #city of edinburgh council = S1200036
 #city of edinburgh partnership = S37000012
 #Edinburgh localities = S99000044,45,46,47
-if(all(data_indicator$numerator != "")){
-edinburgh_data <- data_indicator %>% 
-  filter(code =="S12000036" | code=="S37000012" | code=="S99000044"| 
-           code=="S99000045"|code=="S99000046"|code=="S99000047") %>%
-  mutate(geotype=substr(code,1,3)) %>%
-  group_by(year, geotype) %>%
-  summarise(numerator=sum(numerator)) %>%
-  spread(geotype, numerator) %>%
-  mutate(ca_partnership=round(S12-S37,2),
-         partnership_localities=round(S99-S37,2),
-         localities_ca=round(S99-S12,2),
-         check_tot=sum(ca_partnership,partnership_localities,localities_ca))}
 
-#Filter Scotland value for use in chart
+
+#Filter City of Edinburgh value central line in chart below
 ed_value <- data_indicator %>% 
   filter((code=="S12000036") & year==max(year)) %>% 
   select(rate)
 
+#Generate chart showing rates for all edinburgh geographies for latest year
 edinburgh_chart <- ggplot(data = data_indicator %>% 
          filter((code =="S12000036" | code=="S37000012"
                 |code=="S99000044"|code=="S99000045"|code=="S99000046"|code=="S99000047") 
@@ -236,7 +225,44 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+# Additional check of numerators (where present) to test if all numerators agree
+
+if(all(data_indicator$numerator != "")){    #if numerator column is not blank
+edinburgh_data <- data_indicator %>%        # create data frame filtered for edinburgh geographies
+  filter(code =="S12000036" | code=="S37000012" | code=="S99000044"| 
+           code=="S99000045"|code=="S99000046"|code=="S99000047") %>%
+  mutate(geotype=substr(code,1,3)) %>%
+  group_by(year, geotype) %>%
+  summarise(numerator=sum(numerator)) %>%
+  spread(geotype, numerator) %>%
+  mutate(ca_partnership=round(S12-S37,2),  # create fields that test for differences - use rounded figures
+         partnership_localities=round(S99-S37,2),
+         localities_ca=round(S99-S12,2),
+         check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
+
+# if(all(data_indicator$numerator != "") && check_tot !=0){
+#   ed_flex <- flextable(edinburgh_data) %>%
+#              add_header_lines("uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally") %>%
+#              fontsize(part = "header", size = 16) %>%
+#              color(~ check_tot!=0, ~check_tot, color = "red") %>%
+#              color(~ ca_partnership!=0, ~ca_partnership, color = "red") %>%
+#              color(~ partnership_localities!=0, ~partnership_localities, color = "red") %>%
+#              color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
+#              autofit()
+# }
+if(all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
+    ed_flex <- flextable(edinburgh_data) %>%
+      fontsize(part = "header", size = 16) %>%
+      color(~ check_tot!=0, ~check_tot, color = "red") %>%
+      color(~ ca_partnership!=0, ~ca_partnership, color = "red") %>%
+      color(~ partnership_localities!=0, ~partnership_localities, color = "red") %>%
+      color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
+      autofit()
+  }
+
+
 ```
+
 
 ```{r, echo=FALSE}
 
@@ -247,18 +273,19 @@ edinburgh_chart
 If numerators are present in the dataset check if the numerators agree
 
 ```{r, echo=FALSE}
-  
-  ifelse(all(data_indicator$numerator != ""),
-         ifelse(sum(edinburgh_data$check_tot!=0),
-         flextable(edinburgh_data) %>%
-             add_header_lines("uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally") %>%
-             fontsize(part = "header", size = 16) %>%
-             color(~ check_tot!=0, ~check_tot, color = "red") %>%
-             color(~ ca_partnership!=0, ~ca_partnership, color = "red") %>%
-             color(~ partnership_localities!=0, ~partnership_localities, color = "red") %>%
-             color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
-             autofit(), "Numerators for Edinburgh council, HSCP and localities all agree :-)"),
-         "No numerator data available for CA/HSCP/Locality checking")
+
+# Print statement regarding 
+case_when((all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)==0) ~ 
+              "Numerators for Edinburgh council, HSCP and localities all agree :-)",
+            (all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)!=0) ~
+              "uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally",
+             TRUE ~
+              "No numerator data")  
+
+# If there is any disagreement between numerators then print flextable detailing differences
+if(sum(edinburgh_data$check_tot)!=0) {
+   ed_flex
+}
 
 ```
 
