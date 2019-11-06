@@ -1,9 +1,10 @@
 ---
 title: "ScotPHO Profiles QA report - in development"
-#here's a comment
-subtitle: "School leavers in positive destinations"
 author: "Andy Pulford"
-date: "09/10/2019"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+params:
+  id: 13012 # user to set
+  name: school_meals # user to set
 output: 
   html_document:
     code_folding: hide
@@ -16,14 +17,14 @@ library(tidyverse)
 
 # load technical document
 tech <- read_csv("./Technical Document - Raw.csv") %>% 
-  filter(indicator_name == "School leavers in positive destinations") # copy from title
+  filter(indicator_number == params$id) # copy from title
 
 # load or link to raw data = to be added ----------------------------------
 
 # load indicator data
-data <- read_csv("X:/ScotPHO Profiles/Data/Data to be checked/school_leaver_destinations_shiny.csv")
+data <- read_csv(paste0("X:/ScotPHO Profiles/Data/Data to be checked/",params$name,"_shiny.csv"))
 
-# define variable names as they shoudl appea in OPT file
+# define variable names as they should appear in OPT file
 sop_names <- c("code", "year", "numerator", "denominator", 
                "rate", "lowci", "upci", "ind_id", "trend_axis", "def_period" )
 
@@ -57,6 +58,7 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 ```
 
 #Profile details
+**Indictaor name:** `r tech$indicator_name`  
 **Indicator ID:** `r tech$indicator_number`  
 **Profile:** `r tech$profile`  
 **Indicator type:**	`r tech$measure`  
@@ -71,8 +73,8 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 * Compare year type in OPT file against technical document:
     + **`r first(data$def_period)`** vs. **`r tech$year_type`**  
 * The current published time trend is for **`r tech$trends_from`**:
-    + Start year in data: `r min(data$trend_axis)`
-    + End year in data: `r max(data$trend_axis)`
+    + Start year in data: `r min(data$year)`
+    + End year in data: `r max(data$year)`
 * Aggregation is by `r tech$aggregation`
 * Check for missing fields:  
 `r knitr::kable(na[,1:2])`
@@ -119,10 +121,16 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 ```
 
 #First person QA notes  
-* two rows with supressed data  
-* numerators look fine - slight difference due to suppression  
-* A&A LA to HB looks fine too
-* chart looks fine
+<add here>  
 
 #Second person QA notes  
 <add here>  
+
+```{r}
+## create indictaor specific hmtl doc
+render_name <- eval(paste0(params$id,"_",params$name,"_qa.html"))
+rend_doc <- function(render_name) {
+  rmarkdown::render("qa_report.Rmd", 
+                  output_file = render_name)
+}
+```

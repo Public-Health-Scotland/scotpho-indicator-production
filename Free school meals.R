@@ -9,9 +9,8 @@
 ## This script analyses SG education data on the free school meals measure
 
 ## The latest data (Sept 2019) is available here:
-#    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/SchoolMealsDatasets
-
-## NOTE: errors fixed - ready for 1st person QA
+#  https://www2.gov.scot/Topics/Statistics/Browse/School-Education/MealsSD/mealspesd/mealspesd2019
+# 2018 data uses same URL but with year changed
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -77,8 +76,23 @@ names(school_meals_new)== names(school_meals_old)
 
 # merge old and new dataframes
 school_meals <- school_meals_old %>% 
-  rbind(school_meals_new)
+  rbind(school_meals_new) %>% 
+  filter(ca != "")  # drop any empty rows
 
+## check geog codes consistent across time period
+school_meals %>% group_by(ca) %>% summarise(count=n()) %>% filter(count != 5)
+
+# recode old council codes
+school_meals$ca[school_meals$ca == "S12000015"] <- "S12000047" # Fife
+school_meals$ca[school_meals$ca == "S12000024"] <- "S12000048" # P&K
+school_meals$ca[school_meals$ca == "S12000044"] <- "S12000050" # N Lan
+school_meals$ca[school_meals$ca == "S12000046"] <- "S12000049" # Glasgow City
+
+## recheck geog codes consistent across time period
+school_meals %>% group_by(ca) %>% summarise(count=n()) %>% filter(count != 5)
+
+
+  
 # save rds raw file for use in analysis funtions
 saveRDS(school_meals, file=paste0(data_folder, "Prepared Data/school_meals_raw.rds"))
 
@@ -100,25 +114,17 @@ analyze_first(filename = "school_meals", geography = "council",
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "school_meals", measure = "percent", 
-               time_agg = 1, ind_id = "13010",year_type = "school")
+               time_agg = 1, ind_id = "13012",year_type = "school")
 
-# convert zeroes back to NA for supressed data
-#final_result[final_result == 0] <- NA
 
-# convert numertaor into integar
-#final_result$numerator <- as.integer(final_result$numerator)
-
-# re-check test chart
-#ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-#                                        & year== max(year)), aes(code, rate) ) +
-#  geom_point(stat = "identity") +
-#  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
-
+## Check correct number of HB and LA per year
+final_result %>%
+  mutate(geo_type=substr(code,1,3)) %>%
+  group_by(geo_type, trend_axis) %>%
+  summarise(count=n()) 
 
 #resave both rds and csv files
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_meals_shiny.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_meals_shiny.csv"))
-
-
 
 
