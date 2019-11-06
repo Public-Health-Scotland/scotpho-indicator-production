@@ -7,10 +7,8 @@
 ################################################################################
 
 ############## IN DEVELOPMENT ############## 
-<<<<<<< HEAD
+
 ### need to add pop look up into function call
-=======
->>>>>>> 2e8b0a7e8f15470059b430c454a7635b316741b9
 
 ## This script prepares SG recorded crime profile indicators:
 ##      Breach of the Peace
@@ -114,7 +112,7 @@ saveRDS(drugs, paste0(data_folder,"Prepared Data/drugs_raw.rds"))
 saveRDS(violence, paste0(data_folder,"Prepared Data/violence_raw.rds"))
 saveRDS(vandalism, paste0(data_folder,"Prepared Data/vandalism_raw.rds"))
 
-<<<<<<< HEAD
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -216,5 +214,4 @@ analyze(id = 1566, age_range = "35-64", min_opt = 1005123)
 
 ## 65+, both sexes
 analyze(id = 1567, age_range = "65 And Over", min_opt = 1003008)   
->>>>>>> 2e8b0a7e8f15470059b430c454a7635b316741b9
 
