@@ -17,9 +17,14 @@ data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "
 #Pre-defined geographies that will be used in 'Check 3' comparing old & new file - maybe wants to use parameters?
 check_codes <- c("S00000001","S08000015","S12000010","S02001236") 
 
+
+if(!is.null(old_filename)) {old_filename <- filename}
+
+
+
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds")) 
+#old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
 
 ```
 
