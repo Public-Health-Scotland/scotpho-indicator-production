@@ -160,3 +160,10 @@ analyze_second(filename = "alcohol_deaths_male", measure = "stdrate", time_agg =
                profile = "MH", min_opt = 1245385)
 
 #END
+source("1.indicator_analysis.R") #Normal indicator functions
+
+
+qa_function(filename = "alcohol_deaths_dz11", iz=TRUE)
+
+
+qa_function(filename = "alcohol_deaths_male", iz=FALSE)

@@ -404,7 +404,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     } 
 
 
-qa_function <- function(filename, iz, old_filename){
+qa_function <- function(filename, iz){
    run("Data Quality Checks.Rmd") 
   
 }

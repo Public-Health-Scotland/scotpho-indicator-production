@@ -15,16 +15,16 @@ knitr::opts_chunk$set(echo = TRUE)
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
 #Pre-defined geographies that will be used in 'Check 3' comparing old & new file - maybe wants to use parameters?
-check_codes <- c("S00000001","S08000015","S12000010","S02001236") 
+check_codes <- c("S00000001","S08000015","S12000010","S12000038","S02001236") 
 
-
-if(!is.null(old_filename)) {old_filename <- filename}
+#working on optional token for old indicator name
+#if(!is.null(old_filename)) {old_filename <- filename}
 
 
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-#old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
+old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds")) 
 
 ```
 
@@ -90,6 +90,9 @@ ft_geo_check
 ###Data check 2:
 ####How many new rows added in latest update?
 
+**Note** some indicators generate data for geographies that are not available in live tool
+(e.g. alcohol mortality we generate IZ data but this is not routinely published to avoid secondary disclosure)
+
 ```{r, include=FALSE}
 new_row <- nrow(data_indicator)
 old_row <- nrow(old_data_indicator)
@@ -102,7 +105,7 @@ old_row <- nrow(old_data_indicator)
 ------------------------------------------------------------------------------------  
 
 ###Data check 3:
-####How does new data compare to figures live profile data?
+####How does new data compare to figures prepared last time (ie those in Shiny data folder)?
 
 ```{r, include=FALSE}
 
@@ -125,9 +128,11 @@ matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
 
 ```
 
-The table below compares the numerator, measure and CI of the latest file against those in the live shiny data file. <br>
-Conditional formatting will highlight when figures do not match, tolerance is zero so any difference will be highlighted. <br>
-Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences.Use your judgement to decide if any differences are acceptable.
+The table below compares the numerator, measure and CI of the latest file against the last shiny data file prepared.<br>
+Conditional formatting will highlight when figures do not match, tolerance is to 3 decimal places <br>
+New rows of data (e.g. the latest year of data) cannot be compared if it wasn't available in last year <br>
+Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences. <br>
+Use your judgement to decide if any differences are acceptable.
 
 ```{r, echo=FALSE}
 flextable(matched,
@@ -329,7 +334,6 @@ if(all(data_indicator$numerator == "")){
 }
 
 ```
-
 
 ------------------------------------------------------------------------------------  
 
