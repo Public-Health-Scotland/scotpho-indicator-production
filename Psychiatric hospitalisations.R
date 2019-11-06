@@ -23,8 +23,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 #Selects last value as its mh team methodology and potentially more accurate.
 #Also using smra geo variables as mh team approach
 data_psychiatric <- tbl_df(dbGetQuery(channel, statement= 
-    "SELECT distinct link_no linkno, max(AGE_IN_YEARS) age, max(SEX) sex_grp, 
-        max(DATAZONE_2001) datazone_2001, max(DATAZONE_2011) datazone_2011,
+    "SELECT distinct link_no linkno,
         CASE WHEN extract(month from discharge_date) > 3 THEN extract(year from discharge_date) 
             ELSE extract(year from discharge_date) -1 END as year,
         MAX(age_in_years ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as age, 
@@ -41,35 +40,35 @@ data_psychiatric <- tbl_df(dbGetQuery(channel, statement=
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
-# Datazone2001 - Equivalent of aggregate
-dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
+###############################################.
+## Part 2 - Prepare geography basefiles ----
+###############################################.
 
-dz01_dep <- dz01 # to user later for deprivation basefile
+###############################################.
+# Datazone2001
+dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>% 
+  subset(year<2011) %>% summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
 
-#equivalent of select if
-dz01 <- dz01 %>% subset(year<2011) 
+dz01_dep <- dz01 # to use later for deprivation basefile
 
 saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz01_raw.rds'))
-datadz01 <- readRDS(paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz01_raw.rds'))
 
-# Datazone2011 - Equivalent of aggregate
-dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>%  
+###############################################.
+# Datazone2011
+dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>% 
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2011)
 
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
-datadz11 <- readRDS(paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
 
 ###############################################.
 # IR basefile
-#equivalent of select if
 ir_file <- dz11 %>% subset(year>2010) %>% subset(datazone>'S01006505')
 ir_file <- rbind(dz01, ir_file) #joining together
 
 saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_psychistric_discharges_IR_raw.rds'))
 
 ###############################################.
-#Deprivation basefile
+# Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
 
@@ -78,17 +77,17 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-#All patients psychiatric discharge
+# All patients psychiatric discharge
 analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
                epop_total = 200000, ind_id = 20402, year_type = "financial")
 
-#Deprivation analysis function
+# Deprivation analysis function
 analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2018,   year_type = "financial", 
+                    yearstart= 2002, yearend=2019,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20402)
 
