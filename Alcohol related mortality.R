@@ -159,11 +159,18 @@ analyze_second(filename = "alcohol_deaths_male", measure = "stdrate", time_agg =
                epop_total = 100000, ind_id = 12536, year_type = "calendar", 
                profile = "MH", min_opt = 1245385)
 
-#END
+
+###############################################.
+## Call QA function to check results of 
+
 source("1.indicator_analysis.R") #Normal indicator functions
 
+qa_function(filename = "alcohol_deaths_dz11",check_extras = c("S12000013","S02001255") )
 
-qa_function(filename = "alcohol_deaths_dz11", iz=TRUE)
+qa_function(filename = "alcohol_deaths_male", iz=FALSE, adp=TRUE, locality=FALSE)
+
+qa_function(filename = "alcohol_deaths_female", iz=FALSE, adp=TRUE, locality=FALSE)
 
 
-qa_function(filename = "alcohol_deaths_male", iz=FALSE)
+#END
+

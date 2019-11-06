@@ -11,20 +11,41 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 
+#read in geography code names dictionary
+code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
+
 #Read in indicator file being checked
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
-#Pre-defined geographies that will be used in 'Check 3' comparing old & new file - maybe wants to use parameters?
-check_codes <- c("S00000001","S08000015","S12000010","S12000038","S02001236") 
+#Add geography code names
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
+  
+# Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
+# All indicators include Scotland, NHS board, Council Area data so at least one geography included as    default.
+# check_extras is an optional parameter that can be used to supply additional bespoke geography codes to check
+check_codes <- c("S00000001","S08000015","S12000010",check_extras) 
 
-#working on optional token for old indicator name
-#if(!is.null(old_filename)) {old_filename <- filename}
+##If IZ true add IZ geography to check codes
+if(iz==TRUE){
+  check_codes <- c(check_codes,"S02001236")
+}
 
+##If ADP true add ADP geography to check codes
+if(adp==TRUE){
+  check_codes <- c(check_codes,"S11000006")
+}
+
+#Optional parament allows for old indicator name to be different to current name.
+if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
+  old_filename <- {{filename}} 
+} else if (old_file != "default") {
+  old_filename <- {{old_file}}
+}
 
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds")) 
+old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
 
 ```
 
@@ -36,7 +57,7 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 ------------------------------------------------------------------------------------
 
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
-**Old** indicator file (for comparisons):  /`r (paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))`
+**Old** indicator file (for comparisons):  /`r (paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds"))`
 
 ------------------------------------------------------------------------------------
 
@@ -219,7 +240,6 @@ HSC locality rates seem consistent with partnership data (i.e partnership rate s
 #city of edinburgh partnership = S37000012
 #Edinburgh localities = S99000044,45,46,47
 
-
 #Filter City of Edinburgh value central line in chart below
 ed_value <- data_indicator %>% 
   filter((code=="S12000036") & year==max(year)) %>% 
@@ -229,7 +249,7 @@ ed_value <- data_indicator %>%
 edinburgh_chart <- ggplot(data = data_indicator %>% 
          filter((code =="S12000036" | code=="S37000012"
                 |code=="S99000044"|code=="S99000045"|code=="S99000046"|code=="S99000047") 
-                & year== max(year)), aes(code, rate)) +
+                & year== max(year)), aes(areaname, rate)) +
   geom_point(stat = "identity") +
   geom_hline(yintercept= ed_value$rate, linetype="dashed", color = "red")+
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5) +
@@ -245,22 +265,12 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
   group_by(year, geotype) %>%
   summarise(numerator=sum(numerator)) %>%
   spread(geotype, numerator) %>%
-  mutate(ca_partnership=round(S12-S37,2),  # create fields that test for differences - use rounded figures
-         partnership_localities=round(S99-S37,2),
-         localities_ca=round(S99-S12,2),
+  mutate(ca_partnership=round(S12-S37,2),  #create fields that test for differences - use rounded figures
+         partnership_localities=ifelse(locality==TRUE,(round(S99-S37,2)),0), #if dataset includes localities check sum
+         localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
          check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
 
-# if(all(data_indicator$numerator != "") && check_tot !=0){
-#   ed_flex <- flextable(edinburgh_data) %>%
-#              add_header_lines("uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally") %>%
-#              fontsize(part = "header", size = 16) %>%
-#              color(~ check_tot!=0, ~check_tot, color = "red") %>%
-#              color(~ ca_partnership!=0, ~ca_partnership, color = "red") %>%
-#              color(~ partnership_localities!=0, ~partnership_localities, color = "red") %>%
-#              color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
-#              autofit()
-# }
-if(all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
+if(locality==TRUE && all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
     ed_flex <- flextable(edinburgh_data) %>%
       fontsize(part = "header", size = 16) %>%
       color(~ check_tot!=0, ~check_tot, color = "red") %>%
@@ -269,7 +279,6 @@ if(all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #
       color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
       autofit()
   }
-
 
 ```
 
@@ -280,17 +289,16 @@ edinburgh_chart
 
 ```
 
-If numerators are present in the dataset check if the numerators agree
+If dataset contains numerators check if for agreement between geography types. <br>
 
 ```{r, echo=FALSE}
 
-# Print statement regarding 
+# Print statement summarising
 case_when((all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)==0) ~ 
-              "Numerators for Edinburgh council, HSCP and localities all agree :-)",
+              "Numerators for Edinburgh council, HSCP and (if present) localities all agree :-)",
             (all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)!=0) ~
               "uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally",
-             TRUE ~
-              "No numerator data")  
+             TRUE ~ "No numerator data")  
 
 # If there is any disagreement between numerators then print flextable detailing differences
 if(sum(edinburgh_data$check_tot)!=0) {
@@ -304,11 +312,15 @@ if(sum(edinburgh_data$check_tot)!=0) {
 ###Data check 7:
 ####Are numerators likely to generate a robust indicator?
 
-The table below allows you to assess how many rows contain cell with numerator is <5 or <10 by geography type & year. There is not definite point at which an indicator is no longer robust but if a large proportion of your data is small numbers then consider whether the data is worth publishing.
+The table below shows area types where more than 10% of the rows contain numerators <5.
+Use this table to assess if a particular geography type is likely to be robust and useful.
+There is no definite point at which an indicator is no longer robust but if a large proportion of your data is small numbers then consider whether the data is worth publishing. <br>
+**note** this table doesn't seem to have issues printing in rmarkdown if it is very long.  If you find the table is truncated and the report does not complete too many rows with counts <5 maybe be the cause.
 
 ```{r, include=FALSE}
-ifelse(all(data_indicator$numerator != ""),
-small_count_data <- data_indicator  %>% 
+ifelse(all(data_indicator$numerator == ""),
+       "No numerator available",        #if no numerator data available print statement
+small_count_data <- data_indicator  %>% # if numerator is available generate flextable data
   mutate(geo_type=substr(code,1,3)) %>%
   group_by(geo_type, year) %>%
   summarise(count=n(),
@@ -316,7 +328,9 @@ small_count_data <- data_indicator  %>%
             u10=sum(numerator<10)) %>%
   mutate(percent_U5=u5/count*100,
          percent_U10=u10/count*100) %>%
-  subset(percent_U5>0), "No numerator")
+  subset(percent_U5>10) %>%
+  ungroup())
+
 ```
 
 ```{r, echo=FALSE}
@@ -353,14 +367,14 @@ shinyApp(
     ),
 
   server = function(input, output) {
-    
+
       # Creating plot for ui side
-  output$trend_plot <- renderPlotly({ 
-    
+  output$trend_plot <- renderPlotly({
+
     trend_data <- data_indicator %>% subset(code %in% input$code_selected)
-    
+
         #Text for tooltip
-    tooltip_trend <- c(paste0(trend_data$code, "<br>",
+    tooltip_trend <- c(paste0(trend_data$code,"-",trend_data$areaname, "<br>",
                               "Rate: ", round(trend_data$rate,2), "<br>",
                               "Numerator: ", trend_data$numerator))  ##can't round numerator without issues with app when no numerator
 
@@ -376,14 +390,15 @@ shinyApp(
                legend = list(orientation = 'h', x = 0, y = 1.18)) %>%  #legend on top
         config(displayModeBar = FALSE, displaylogo = F) # taking out plotly logo button
     })
-  
+
     },# server close
   options = list(height = 800)
 )
 
 ```
 
-
+###End of checks:
 <br>
+###yay!
 <br>
-End of checks....Hurray!
+**Don't forget to update Googledocs planning sheet once checks are complete**

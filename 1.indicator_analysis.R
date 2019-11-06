@@ -404,7 +404,22 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     } 
 
 
-qa_function <- function(filename, iz){
-   run("Data Quality Checks.Rmd") 
+############################################################.
+## Function Three: Indicator Quality Assurance ----
+############################################################.
+
+
+# filename - required - determines which indicator_data file is used for checking
+# old_file - (optional - if the indicator has changed name and you want to compare old and new files which have different names)
+#                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
+# iz - (default true) set to false if no IZ data for checking
+# adp - (default false) set to true for checks of ADP level data
+# locality - (default TRUE) set to false if no locality data present in file for checking
+# check_extras - (default empty) parameter can be used to add bespoke geographies of any geo type to Data Check 3 (comparing old and new figures)
+
+
+qa_function <- function(filename, old_file="default", iz=TRUE, adp=FALSE, 
+                        locality=TRUE, check_extras=c()){
   
+   run("Data Quality Checks.Rmd") #runs rmarkdown report (output includes shiny app therefore must be run not render) 
 }
