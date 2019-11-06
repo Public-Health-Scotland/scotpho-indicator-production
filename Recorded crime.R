@@ -7,7 +7,10 @@
 ################################################################################
 
 ############## IN DEVELOPMENT ############## 
+<<<<<<< HEAD
 ### need to add pop look up into function call
+=======
+>>>>>>> 2e8b0a7e8f15470059b430c454a7635b316741b9
 
 ## This script prepares SG recorded crime profile indicators:
 ##      Breach of the Peace
@@ -111,6 +114,7 @@ saveRDS(drugs, paste0(data_folder,"Prepared Data/drugs_raw.rds"))
 saveRDS(violence, paste0(data_folder,"Prepared Data/violence_raw.rds"))
 saveRDS(vandalism, paste0(data_folder,"Prepared Data/vandalism_raw.rds"))
 
+<<<<<<< HEAD
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -144,4 +148,73 @@ final_result %>%
 #resave both rds and csv files
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/########################.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/#######################.csv"))
+=======
+###### up to here completed
+
+
+
+################################################################################
+#####                          Analysis function                           #####
+################################################################################
+
+# This function filters the spcific age-sex groupings required for the 
+# smoking prevalence indictaors, formats for saving to final datafile and saves
+# datafiles for upload to the profiles platform
+analyze <- function(id, profile = "tx", topic = "Smoking", age_range = "All", 
+                    sex = "All", min_opt){
+  df_indicator <- df_wide %>% 
+    # filter specific age-sex groups
+    filter(age_grp == age_range & sex_grp == sex) %>% 
+    # add ind_id
+    mutate(ind_id = id) %>% 
+    # reorder columns and deselect unneeded variables
+    select(c(code, ind_id, year, numerator, rate, lowci,
+      upci, def_period, trend_axis)) %>% 
+    arrange(year, code) %>% 
+    # save shiny file
+    write_csv(paste0(data_folder, "Shiny Data/",id, "_smoking_prev_", age_range, "_", sex, "_shiny.csv"))  
+    
+  df_oldopt <- df_indicator %>% 
+    mutate(uni_id = paste0(profile, (seq_len(nrow(.)) + min_opt - 1))) %>% #OPT number
+    # reorder 
+    select(c("uni_id", "code", "ind_id", "year", "numerator", "rate", "lowci" ,
+             "upci", "def_period", "trend_axis")) %>% 
+  # save opt file
+  write_csv(paste0(data_folder, "OPT Data/",id, "_smoking_prev_", age_range, "_", sex, "_OPT.csv"),
+            col_names = FALSE, na="")  
+
+  } # end of function
+
+
+################################################################################
+#####                             Function calls                           #####
+################################################################################
+
+# these call the above function to create indictaor data files
+
+##  all ages, both sexes - H&W
+analyze(id = 20202, profile = "hh", min_opt = 1041710)
+
+##  all ages, both sexes - Tobacco
+analyze(id = 1563, min_opt = 1003713
+)
+
+## all ages, male
+analyze(id = 1568, sex = "Male", min_opt = 1003995)
+
+## all ages, female
+analyze(id = 1569, sex = "Female", min_opt = 1004277)
+
+## 16-34, both sexes
+analyze(id = 1564, age_range = "16-34", min_opt = 1004559)   
+
+## 16-64, both sexes
+analyze(id = 1565, age_range = "16-64", min_opt = 1004841)   
+
+## 35-64, both sexes
+analyze(id = 1566, age_range = "35-64", min_opt = 1005123)   
+
+## 65+, both sexes
+analyze(id = 1567, age_range = "65 And Over", min_opt = 1003008)   
+>>>>>>> 2e8b0a7e8f15470059b430c454a7635b316741b9
 
