@@ -399,7 +399,12 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                  TRUE, FALSE)
     
     # Creating the html file rendering the Rmarkdown document
-    run("Data Quality Checks.Rmd") 
+    #run("Data Quality Checks.Rmd") 
     
     } 
 
+
+qa_function <- function(filename, iz, old_filename){
+   run("Data Quality Checks.Rmd") 
+  
+}
