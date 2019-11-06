@@ -43,16 +43,6 @@ data_psychiatric <- tbl_df(dbGetQuery(channel, statement=
 ###############################################.
 ## Part 2 - Prepare geography basefiles ----
 ###############################################.
-
-###############################################.
-# Datazone2001
-dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>% 
-  subset(year<2011) %>% summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
-
-dz01_dep <- dz01 # to use later for deprivation basefile
-
-saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz01_raw.rds'))
-
 ###############################################.
 # Datazone2011
 dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>% 
@@ -61,16 +51,12 @@ dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>%
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
 
 ###############################################.
-# IR basefile
-ir_file <- dz11 %>% subset(year>2010) %>% subset(datazone>'S01006505')
-ir_file <- rbind(dz01, ir_file) #joining together
-
-saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_psychistric_discharges_IR_raw.rds'))
-
-###############################################.
 # Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-dep_file <- rbind(dz01_dep %>% subset(year<=2013), dz11 %>% subset(year>=2014)) 
+dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>% 
+  subset(year<=2013) %>% summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
+
+dep_file <- rbind(dz01, dz11 %>% subset(year>=2014)) 
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_depr_raw.rds'))
 
@@ -79,7 +65,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges
 ###############################################.
 # All patients psychiatric discharge
 analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
@@ -87,7 +73,7 @@ analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", ti
 
 # Deprivation analysis function
 analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2019,   year_type = "financial", 
+                    yearstart= 2002, yearend=2018,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20402)
 
