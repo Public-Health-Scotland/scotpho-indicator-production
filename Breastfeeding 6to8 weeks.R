@@ -90,3 +90,10 @@ saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/breastfed_shi
 write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/breastfed_shiny.csv"))
   
 ##END
+
+qa_function(filename = "breastfed", iz=TRUE)
+
+
+qa_function(filename = "life_expectancy_female", iz=TRUE)
+
+
