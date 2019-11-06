@@ -18,20 +18,11 @@ data_products <- read_excel(paste0(data_folder, "Received Data/IR2019-01231-smok
   rename_all(list(~gsub("\\s","_",.))) # changing spaces for underscores
 
 # Bringing code information for LA.
-<<<<<<< HEAD
-ca_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds") %>% 
-  setNames(tolower(names(.))) %>% rename(ca=code)
-
-data_products <- left_join(data_products, ca_lookup, #Merging both
-                           by = c("dispensing_council_area" = "areaname")) %>% 
-  filter(!(is.na(ca))) #excluding values without a valid ca
-=======
 ca_lookup <- readRDS(paste0(data_folder, "Lookups/Geography/CAdictionary.rds"))
 
 data_products <- left_join(data_products, ca_lookup, #Merging both
                            by = c("dispensing_council_area" = "areaname")) %>% 
   filter(!(is.na(code))) #excluding values without a valid ca
->>>>>>> 6c4c397e2316dc6fd787841242bc086b8e0a6e03
 
 # aggregate to get total DDDs for each datazone/year.
 data_products <- data_products %>% rename(year = financial_year, ca = code) %>% 
