@@ -395,8 +395,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     ##################################################.
     # This is a parameter the rmarkdown needs
     # If aggregated from datazone, there is IZ, if not no
-    iz <- ifelse(as.numeric(count(final_result %>% filter(substr(code,1,3) == "S02"))) > 0, 
-                 TRUE, FALSE)
+    #iz <- ifelse(as.numeric(count(final_result %>% filter(substr(code,1,3) == "S02"))) > 0, 
+    #             TRUE, FALSE)
     
     # Creating the html file rendering the Rmarkdown document
     #run("Data Quality Checks.Rmd") 
@@ -408,18 +408,18 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 ## Function Three: Indicator Quality Assurance ----
 ############################################################.
 
+# Function below runs an rmarkdown report (.Rmd) that runs through standard checks of indicator data
+# The report requires one manadatory parameter (the indicator filename) to run but there are several optional
+#  parameters to adjust 
+
 
 # filename - required - determines which indicator_data file is used for checking
 # old_file - (optional - if the indicator has changed name and you want to compare old and new files which have different names)
 #                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
-# iz - (default true) set to false if no IZ data for checking
-# adp - (default false) set to true for checks of ADP level data
-# locality - (default TRUE) set to false if no locality data present in file for checking
 # check_extras - (default empty) parameter can be used to add bespoke geographies of any geo type to Data Check 3 (comparing old and new figures)
 
 
-qa_function <- function(filename, old_file="default", iz=TRUE, adp=FALSE, 
-                        locality=TRUE, check_extras=c()){
+qa_function <- function(filename, old_file="default", check_extras=c()){
   
    run("Data Quality Checks.Rmd") #runs rmarkdown report (output includes shiny app therefore must be run not render) 
 }

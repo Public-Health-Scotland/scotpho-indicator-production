@@ -167,9 +167,9 @@ source("1.indicator_analysis.R") #Normal indicator functions
 
 qa_function(filename = "alcohol_deaths_dz11",check_extras = c("S12000013","S02001255") )
 
-qa_function(filename = "alcohol_deaths_male", iz=FALSE, adp=TRUE, locality=FALSE)
+qa_function(filename = "alcohol_deaths_male")
 
-qa_function(filename = "alcohol_deaths_female", iz=FALSE, adp=TRUE, locality=FALSE)
+qa_function(filename = "alcohol_deaths_female")
 
 
 #END
