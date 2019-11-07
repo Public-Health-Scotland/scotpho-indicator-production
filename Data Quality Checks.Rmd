@@ -418,7 +418,7 @@ shinyApp(
       }})
          
     },# server close
-  options = list(height = 800)
+  options = list(height = 1000)
 )
 
 ```
