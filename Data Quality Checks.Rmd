@@ -366,9 +366,11 @@ shinyApp(
      radioButtons("var_plot_trend", label =NULL,
                                        choices = c("Rate/Percentage"="rate",
                                                    "Numerator"="numerator")),
+     radioButtons("ci_trend", label = "95% confidence intervals", choices = c("on","off"),selected = "off"),
     plotlyOutput("trend_plot")
     ),
-
+  
+  
   server = function(input, output) {
 
       # Creating plot for ui side
@@ -376,13 +378,20 @@ shinyApp(
 
     trend_data <- data_indicator %>% subset(code %in% input$code_selected)
 
+    trend_palette <- c("#000000", "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99",
+                         "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#b15928")
+    
+    #set colours based on areaname - this required to keep lines and CI consistent colours
+    trend_scale <- c(setNames(trend_palette, unique(trend_data$areaname)))
+    trend_col <- trend_scale
+    
         #Text for tooltip
     tooltip_trend <- c(paste0(trend_data$code,"-",trend_data$areaname, "<br>",
                               "Rate: ", round(trend_data$rate,2), "<br>",
                               "Numerator: ", trend_data$numerator))  ##can't round numerator without issues with app when no numerator
 
     trend_plot <- plot_ly(data=trend_data, x=~trend_axis,  y = ~get(input$var_plot_trend),
-                          text=tooltip_trend, height = 600) %>%
+                          color = ~areaname,colors = trend_col,text=tooltip_trend, height = 600) %>%
         add_trace(type = 'scatter', mode = 'lines+markers', symbol = ~trend_data$code) %>%
         #Layout
         layout(annotations = list(), #It needs this because of a buggy behaviour of Plotly
@@ -392,15 +401,23 @@ shinyApp(
                showlegend = TRUE,
                legend = list(orientation = 'h', x = 0, y = 1.18)) %>%  #legend on top
         config(displayModeBar = FALSE, displaylogo = F) # taking out plotly logo button
-    })
-
+    
+        #Adding confidence intervals depending on user input
+       if (input$ci_trend == "on" & input$var_plot_trend != "Numerator") {
+         trend_plot %>% 
+           add_ribbons(data = trend_data, ymin = ~lowci, ymax = ~upci, showlegend = F,
+                   opacity = 0.2) 
+      } else if (input$ci_trend == "off") {
+        trend_plot
+      }})
+         
     },# server close
   options = list(height = 800)
 )
 
 ```
 
-###End of checks:
+###End of checks
 ###Yay!
 <br>
 **Don't forget to update Googledocs planning sheet once checks are complete**
