@@ -393,13 +393,9 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     ##################################################.
     ##  Part 6 - Checking results ----
     ##################################################.
-    # This is a parameter the rmarkdown needs
-    # If aggregated from datazone, there is IZ, if not no
-    #iz <- ifelse(as.numeric(count(final_result %>% filter(substr(code,1,3) == "S02"))) > 0, 
-    #             TRUE, FALSE)
+    # Call indicator checking function?
     
-    # Creating the html file rendering the Rmarkdown document
-    #run("Data Quality Checks.Rmd") 
+    qa_function(filename=={{filename}})
     
     } 
 
