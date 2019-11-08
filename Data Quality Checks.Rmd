@@ -278,12 +278,17 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
          localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
          check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
 
-if(all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
-    ed_flex <- flextable(edinburgh_data) %>%
-      fontsize(part = "header", size = 16) %>%
-      color(~ check_tot!=0, ~check_tot, color = "red") %>%
-      autofit()
-  }
+if(all(data_indicator$numerator == "")){
+  ed_flex <- "No numerator to cross reference totals"
+} else if (sum(edinburgh_data$check_tot) !=0){
+  ed_flex <- flextable(edinburgh_data) %>%
+    fontsize(part = "header", size = 16) %>%
+    color(~ check_tot!=0, ~check_tot, color = "red") %>%
+    autofit()
+} else if (sum(edinburgh_data$check_tot) ==0){
+  ed_flex <- "Numerators for Edinburgh council, HSCP and localities (if present) all agree :-)"
+}
+
 
 ```
 
@@ -298,17 +303,7 @@ If dataset contains numerators check if for agreement between geography types. <
 
 ```{r, echo=FALSE}
 
-# Print statement summarising
-case_when((all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)==0) ~ 
-              "Numerators for Edinburgh council, HSCP and (if present) localities all agree :-)",
-            (all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot)!=0) ~
-              "uh-oh. Doesn't look like the numerators for Edinburgh localities, hscp &/or council areas tally",
-             TRUE ~ "No numerator data")  
-
-# If there is any disagreement between numerators then print flextable detailing differences
-if(sum(edinburgh_data$check_tot)!=0) {
-   ed_flex
-}
+ed_flex
 
 ```
 
