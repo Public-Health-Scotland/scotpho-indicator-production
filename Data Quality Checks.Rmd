@@ -65,6 +65,12 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
 **Old** indicator file (for comparisons):  /`r (paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds"))`
 
+**Check extras** (optional parameter) `r check_extras` <br>
+**Geography parameters** <br>
+iz: `r iz` <br>
+locality: `r locality`<br>
+adp: `r adp`<br>
+
 ------------------------------------------------------------------------------------
 
 ###Data check 1:
