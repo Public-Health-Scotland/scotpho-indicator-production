@@ -278,13 +278,10 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
          localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
          check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
 
-if(locality==TRUE && all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
+if(all(data_indicator$numerator != "") && sum(edinburgh_data$check_tot) !=0){  #if numerator column not blank and sum of check column is not zero create a flextable showing where differences occur
     ed_flex <- flextable(edinburgh_data) %>%
       fontsize(part = "header", size = 16) %>%
       color(~ check_tot!=0, ~check_tot, color = "red") %>%
-      color(~ ca_partnership!=0, ~ca_partnership, color = "red") %>%
-      color(~ partnership_localities!=0, ~partnership_localities, color = "red") %>%
-      color(~ localities_ca!=0, ~localities_ca, color = "red") %>%
       autofit()
   }
 
