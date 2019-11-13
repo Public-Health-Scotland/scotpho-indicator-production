@@ -37,7 +37,7 @@ analyze_first(filename = "hpv_uptake", geography = "datazone11", measure = "perc
               yearstart = 2009, yearend = 2017, time_agg = 3)
 
 analyze_second(filename = "hpv_uptake", measure = "percent", time_agg = 3, 
-               ind_id = 21102, year_type = "school")
+               ind_id = 13032, year_type = "school")
 
 #Deprivation analysis function
 analyze_deprivation(filename="hpv_uptake", measure="percent", time_agg=3, 
