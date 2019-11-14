@@ -24,30 +24,30 @@ data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
 iz <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S02"))) > 0,TRUE, FALSE)
 adp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S11"))) > 0,TRUE, FALSE)
 locality <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S99"))) > 0,TRUE, FALSE)
-
+ca <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S12"))) > 0,TRUE, FALSE)
   
 # Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
 # All indicators include Scotland, NHS board, Council Area data so at least one geography included as    default.
 # check_extras is an optional parameter that can be used to supply additional bespoke geography codes to check
-check_codes <- c("S00000001","S08000015","S12000010",check_extras) 
+check_codes <- c("S00000001","S08000015",check_extras) 
+
+##If ca true add ca geography to check codes
+if(ca==TRUE){
+  check_codes <- c(check_codes,"S12000010")}
 
 ##If IZ true add IZ geography to check codes
 if(iz==TRUE){
-  check_codes <- c(check_codes,"S02001236")
-}
+  check_codes <- c(check_codes,"S02001236")}
 
 ##If ADP true add ADP geography to check codes
 if(adp==TRUE){
-  check_codes <- c(check_codes,"S11000006")
-}
+  check_codes <- c(check_codes,"S11000006")}
 
 #Optional parament allows for old indicator name to be different to current name.
 if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
-  old_filename <- {{filename}} 
+  old_filename <- {{filename}}
 } else if (old_file != "default") {
-  old_filename <- {{old_file}}
-}
-
+  old_filename <- {{old_file}}}
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
@@ -76,7 +76,7 @@ adp: `r adp`<br>
 ###Data check 1:
 ####What geographical levels & years are present, how many unique geographies appear?
 
-```{r, include=FALSE}
+```{r include=FALSE}
 #Aggegrate file to detect which geographies and years are present.
 geo_checks <- data_indicator %>%
   mutate(geo_type=substr(code,1,3)) %>%
@@ -149,7 +149,7 @@ old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
 
 
 # Calculate percentage differences between old and new figures
-# Need to adjust this merge to cope with some indicators that don't have numerator (e.g. life expectancy - this causes a fail)
+# Need to adjust this merge to cope with some indicators that don't have numerator (e.g. life expectancy - this #causes a fail)
 matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
   mutate(rate_match = round((rate.x-rate.y)/rate.x,3)) %>% #all indicators have rate
   mutate(numerator_match = ifelse((numerator.x ==""||numerator.y ==""),
@@ -298,7 +298,6 @@ if(all(data_indicator$numerator == "")){
 
 ```
 
-
 ```{r, echo=FALSE}
 
 edinburgh_chart
@@ -318,30 +317,27 @@ ed_flex
 ###Data check 7:
 ####Are numerators likely to generate a robust indicator?
 
-The table below shows area types where more than 10% of the rows contain numerators <5.
+The table below shows area types where more than 40% of the rows contain numerators <5.
 Use this table to assess if a particular geography type is likely to be robust and useful.
 There is no definite point at which an indicator is no longer robust but if a large proportion of your data is small numbers then consider whether the data is worth publishing. <br>
-**note** this table doesn't seem to have issues printing in rmarkdown if it is very long.  If you find the table is truncated and the report does not complete too many rows with counts <5 maybe be the cause.
 
-```{r, include=FALSE}
+```{r include=FALSE}
 ifelse(all(data_indicator$numerator == ""),
        "No numerator available",        #if no numerator data available print statement
-small_count_data <- data_indicator  %>% # if numerator is available generate flextable data
+small_count_data <- data_indicator  %>%# if numerator is available generate flextable data
   mutate(geo_type=substr(code,1,3)) %>%
   group_by(geo_type, year) %>%
   summarise(count=n(),
-            u5=sum(numerator<5),
-            u10=sum(numerator<10)) %>%
+            u5=sum(numerator<5)) %>%
   mutate(percent_U5=u5/count*100,
-         percent_U10=u10/count*100,
-         year =as.factor(year)) %>% 
-  subset(percent_U5>10) %>%
-  ungroup())
+         year =as.factor(year)) %>%
+   filter(percent_U5>40) %>%
+   ungroup())
 
 ```
 
-```{r, echo=FALSE}
-##if numerator column is available (i.e. not all blank) produce flextable summarising counts of small numbers
+```{r echo=FALSE}
+#if numerator column is available (i.e. not all blank) produce flextable summarising counts of small numbers
 if(all(data_indicator$numerator != "")){
   flextable(small_count_data)
 }
