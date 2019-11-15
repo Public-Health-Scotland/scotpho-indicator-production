@@ -169,20 +169,19 @@ saveRDS(final_result, file = paste0(data_folder, "Data to be checked/breach.rds"
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/breach.csv"))
 
 ###### common assault --------
-#### problem readinf file....
-analyze_first(filename = "com_assault", geography = "council", adp = TRUE,
+analyze_first(filename = "comm_assault", geography = "council", adp = TRUE,
               measure = "crude", yearstart = 2004, yearend = 2018, 
               pop = "CA_pop_allages", time_agg = 1)
 
 
 # then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "com_assault", measure = "crude", crude_rate = 10000,
+analyze_second(filename = "comm_assault", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "4154", year_type = "financial", pop = "CA_pop_allages")
 
 
 #resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/com_assault.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/com_assault.csv"))
+saveRDS(final_result, file = paste0(data_folder, "Data to be checked/comm_assault.rds"))
+write_csv(final_result, path = paste0(data_folder, "Data to be checked/comm_assault.csv"))
 
 
 ###### drugs --------
