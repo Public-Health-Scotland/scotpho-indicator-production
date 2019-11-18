@@ -142,15 +142,10 @@ analyze_first(filename = "att_murder", geography = "council", adp = TRUE,
               measure = "crude", yearstart = 2004, yearend = 2018, 
               pop = "CA_pop_allages", time_agg = 1)
 
-
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "att_murder", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "4111", year_type = "financial", pop = "CA_pop_allages")
 
-
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/att_murder.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/att_murder.csv"))
 
 ###### breach of the peace --------
 
@@ -158,15 +153,10 @@ analyze_first(filename = "breach", geography = "council", adp = TRUE,
               measure = "crude", yearstart = 2004, yearend = 2018, 
               pop = "CA_pop_allages", time_agg = 1)
 
-
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "breach", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "4156", year_type = "financial", pop = "CA_pop_allages")
 
-
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/breach.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/breach.csv"))
 
 ###### common assault --------
 analyze_first(filename = "comm_assault", geography = "council", adp = TRUE,
@@ -177,11 +167,6 @@ analyze_first(filename = "comm_assault", geography = "council", adp = TRUE,
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "comm_assault", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "4154", year_type = "financial", pop = "CA_pop_allages")
-
-
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/comm_assault.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/comm_assault.csv"))
 
 
 ###### drugs --------
@@ -196,11 +181,6 @@ analyze_second(filename = "drugs", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "20806", year_type = "financial", pop = "CA_pop_allages")
 
 
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/drugs.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/drugs.csv"))
-
-
 ###### vandalism --------
 
 analyze_first(filename = "vandalism", geography = "council", adp = TRUE,
@@ -213,10 +193,6 @@ analyze_second(filename = "vandalism", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "4155", year_type = "financial", pop = "CA_pop_allages")
 
 
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/vandalism.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/vandalism.csv"))
-
 ###### violent crime --------
 
 analyze_first(filename = "violence", geography = "council", adp = TRUE,
@@ -228,7 +204,3 @@ analyze_first(filename = "violence", geography = "council", adp = TRUE,
 analyze_second(filename = "violence", measure = "crude", crude_rate = 10000,
                time_agg = 1, ind_id = "20805", year_type = "financial", pop = "CA_pop_allages")
 
-
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/violence.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/violence.csv"))
