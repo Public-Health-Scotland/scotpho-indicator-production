@@ -3,8 +3,8 @@ title: "ScotPHO Profiles QA report - in development"
 author: "Andy Pulford"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 params:
-  id: 13010 # user to set
-  name: school_leaver_destinations # user to set
+  id: 4156 # user to set
+  name: breach # user to set
 output: word_document
 ---
 
@@ -12,7 +12,7 @@ output: word_document
 # packages
 #library(googlesheets) # work out how to load straight from google docs
 library(tidyverse)
-library(tinytex)
+#library(tinytex)
 
 # load technical document
 tech <- read_csv("./Technical Document - Raw.csv") %>% 
@@ -24,8 +24,8 @@ tech <- read_csv("./Technical Document - Raw.csv") %>%
 data <- read_csv(paste0("X:/ScotPHO Profiles/Data/Data to be checked/",params$name,"_shiny.csv"))
 
 # define variable names as they should appear in OPT file
-sop_names <- c("code", "year", "numerator", "denominator", 
-               "rate", "lowci", "upci", "ind_id", "trend_axis", "def_period" )
+sop_names <- c("code", "ind_id", "year", "numerator", "rate", "lowci", "upci", 
+               "def_period", "trend_axis")
 
 # create dataframe to summarise missing vars
 na <- sapply(data, function(x) sum(is.na(x)))
@@ -67,7 +67,7 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 **Geographies:** `r tech$available_geographies`  
 
 #Check OPT file
-* Data `r ifelse(sum(names(data) == sop_names) == 10, "", "**do not** ")` match the format in the SOP.  
+* Data `r ifelse(sum(names(data) == sop_names) == 9, "", "**do not** ")` match the format in the SOP.  
 * The indicator ID  `r ifelse(first(data$ind_id) == tech$indicator_number, "matches", "**does not match**")` the technical document.  
 * Compare year type in OPT file against technical document:
     + **`r first(data$def_period)`** vs. **`r tech$year_type`**  
