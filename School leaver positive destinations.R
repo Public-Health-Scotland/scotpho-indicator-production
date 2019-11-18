@@ -101,6 +101,8 @@ ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000
 
 
 #resave both rds and csv files
+final_result <- final_result %>% select(c(code, ind_id, year, numerator, rate, lowci,
+                                          upci, def_period, trend_axis))
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
 
