@@ -23,6 +23,7 @@ data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
 #Test which optional geographies are present in dataset
 iz <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S02"))) > 0,TRUE, FALSE)
 adp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S11"))) > 0,TRUE, FALSE)
+hscp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S37"))) > 0,TRUE, FALSE)
 locality <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S99"))) > 0,TRUE, FALSE)
 ca <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S12"))) > 0,TRUE, FALSE)
   
@@ -32,16 +33,13 @@ ca <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S12
 check_codes <- c("S00000001","S08000015",check_extras) 
 
 ##If ca true add ca geography to check codes
-if(ca==TRUE){
-  check_codes <- c(check_codes,"S12000010")}
+if(ca==TRUE){check_codes <- c(check_codes,"S12000010")}
 
 ##If IZ true add IZ geography to check codes
-if(iz==TRUE){
-  check_codes <- c(check_codes,"S02001236")}
+if(iz==TRUE){check_codes <- c(check_codes,"S02001236")}
 
 ##If ADP true add ADP geography to check codes
-if(adp==TRUE){
-  check_codes <- c(check_codes,"S11000006")}
+if(adp==TRUE){check_codes <- c(check_codes,"S11000006")}
 
 #Optional parament allows for old indicator name to be different to current name.
 if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
@@ -89,20 +87,17 @@ geo_checks <- data_indicator %>%
 # Not sure how many localities there are supposed to be?
 # Not sure how to handle indicators with ADP or only Council area - need to think about this...
 
-  if (iz == TRUE) {
-    ft_geo_check <- flextable(geo_checks) %>%
-      color(~ S08!=14, ~S08, color = "red") %>% #NHS board should be 14
-      color(~ S12!=32, ~S12, color = "red") %>% #S12 council should be 32
-      color(~ S37!=31, ~S37, color = "red") %>% #HSCP should be 31
-      color(~ S02!=1279,~S02, color = "red") %>% #There should be 1279 IZ
-      autofit()
-  } else if (iz == FALSE) {
-     ft_geo_check <- flextable(geo_checks) %>%
-       color(~ S08!=14, ~S08, color = "red") %>% #NHS board should be 14
-       color(~ S12!=32, ~S12, color = "red") %>% #S12 council should be 32
-       color(~ S37!=31, ~S37, color = "red") %>%  #HSCP should be 31
-       autofit()
-  }
+ft_geo_check <- flextable(geo_checks) %>%
+  color(~ S08!=14, ~S08, color = "red") # Should be 14 NHS board
+
+if(ca == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S12!=32, ~S12, color = "red")}    #should be 32 councils
+if(adp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S11!=30, ~S11, color = "red")}   #should be 30 ADP
+if(hscp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S37!=31, ~S37, color = "red")}  #should be 31 hscp
+if(iz == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S02!=1279, ~S02, color = "red")}  #should be 1279 2011 IZ
+
+ft_geo_check <- ft_geo_check %>%
+  autofit()
+
 ```  
 
 Are the expected geographies appearing for all expected years?<br>
@@ -279,7 +274,7 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
   group_by(year, geotype) %>%
   summarise(numerator=sum(numerator)) %>%
   spread(geotype, numerator) %>%
-  mutate(ca_partnership=round(S12-S37,2),  #create fields that test for differences - use rounded figures
+  mutate(ca_partnership=ifelse((hscp==TRUE && ca==TRUE),(round(S12-S37,2)),0),  #create fields that test for differences - use rounded figures
          partnership_localities=ifelse(locality==TRUE,(round(S99-S37,2)),0), #if dataset includes localities check sum
          localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
          check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
