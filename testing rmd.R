@@ -15,6 +15,9 @@ run_qa(filename = "alcohol_deaths_male", old_file = "alcohol_deaths_male")
 run_qa(filename = "copd_hospital_dz11")
 run_qa(filename = "alcohol_deaths_female")
 run_qa(filename = "alcohol_deaths_dz11")
+run_qa(filename = "copd_hospital_dz11")
+run_qa(filename = "copd_deaths")
+run_qa(filename = "copd_incidence")
 
 #no numerator (works fine)
 run_qa(filename = "life_expectancy_male")
@@ -35,6 +38,4 @@ run_qa(filename = "ABIs_delivered_final")
 
 
 
-run_qa(filename = "copd_hospital_dz11", check_extras = c(), old_file ="default")
-run_qa(filename = "copd_deaths")
-run_qa(filename = "copd_incidence")
+
