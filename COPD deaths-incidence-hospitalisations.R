@@ -21,7 +21,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 ###############################################.
 ## Part 1 - Deaths data basefiles ----
 ###############################################.
-#Extracting deaths with a main cause of copd, excluding unknown sex, for over 16, 
+#Extracting deaths with a main cause of copd, excluding unknown sex, for 16 and over, 
 # Scottish residents by financial and calendar year. 
 copd_deaths <- tbl_df(dbGetQuery(channel, statement=
   "SELECT LINK_NO linkno, YEAR_OF_REGISTRATION year, AGE, SEX sex_grp, 
