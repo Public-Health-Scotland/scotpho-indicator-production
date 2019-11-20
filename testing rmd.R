@@ -33,7 +33,7 @@ run_qa(filename = "alcohol_deaths_dz11",check_extras = c("S02001255","S12000014"
 ##no confidence intervals 
 # abi or active travel - files in shiny data folder don't seem to have usual naming conventions
 # abi don't have council data which causes report checking to fail at the moment.
-run_qa(filename = "ABIs_delivered_final")
+run_qa(filename = "ABIs_delivered",check_extras = c(), old_file = "default")
 
 
 

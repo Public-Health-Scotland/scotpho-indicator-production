@@ -21,6 +21,7 @@ data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "
 data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
 
 #Test which optional geographies are present in dataset
+board <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S08"))) > 0,TRUE, FALSE)
 iz <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S02"))) > 0,TRUE, FALSE)
 adp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S11"))) > 0,TRUE, FALSE)
 hscp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S37"))) > 0,TRUE, FALSE)
@@ -47,6 +48,11 @@ if (old_file == "default") {  #if no old_filename supplied default to new filena
 } else if (old_file != "default") {
   old_filename <- {{old_file}}}
 
+#Recode missing CI to zeros rather than NA to allow report to run
+data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
+data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
+  
+
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
 old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
@@ -65,10 +71,12 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 
 **Check extras** (optional parameter) `r check_extras` <br>
 **Geography parameters** <br>
+NHS board: `r board` <br>
 iz: `r iz` <br>
+hscp `r hscp` <br>
 locality: `r locality`<br>
 adp: `r adp`<br>
-
+ca: `r ca` <br>
 ------------------------------------------------------------------------------------
 
 ###Data check 1:
@@ -239,8 +247,7 @@ scot_check
 ### Data check 6:
 #### Are geographies that ought to be the same matching?
 Most council areas are the same as HSC Partnerships.
-Use the chart to look at whether the rates for council are and HSCP match. Also check if
-HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
+If these geographies are available, use the chart to look at whether the rates for council are and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
 
 ```{r, include=FALSE}
 
@@ -294,16 +301,24 @@ if(all(data_indicator$numerator == "")){
 ```
 
 ```{r, echo=FALSE}
+if(ca==TRUE & hscp==TRUE){ #only include chart when either ca or hscp data available
+edinburgh_chart}
 
-edinburgh_chart
+if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data available
+"No ca or hscp rates to check"
+}
 
 ```
 
 If dataset contains numerators check if for agreement between geography types. <br>
 
 ```{r, echo=FALSE}
+if(ca==TRUE & hscp==TRUE){ #only include if ca and hscp data available
+ed_flex}
 
-ed_flex
+if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data available
+"No ca or hscp numerators to check"
+}
 
 ```
 
