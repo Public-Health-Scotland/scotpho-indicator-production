@@ -43,8 +43,8 @@ quit_total <- readRDS(file=paste0(data_folder, "Temporary/quitattempts_total_for
   #creating labels and indicator id
   mutate(trend_axis = paste0(year, "/", substr(year+1, 3, 4)),
          def_period = paste0(trend_axis, " financial year"),
-         ind_id = 1505) %>% 
-  mutate_at(c("lowci", "upci", "rate"),  ~NA_real_) %>% #empty for tool
+         ind_id = 1505, lowci = NA_real_, upci = NA_real_, rate = NA_real_) %>% 
+  # mutate_at(c("lowci", "upci", "rate"),  ~NA_real_) %>% #empty for tool
   select(-denominator) %>% 
   filter(!is.na(code)) #taking out empty rows
 
