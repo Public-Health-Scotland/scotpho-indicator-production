@@ -377,7 +377,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
     filter(row_number() %% 2 == 0) %>% 
     mutate(lowci_sii = -1 * conf.high, #fixing interpretation
            upci_sii = -1 * conf.low) %>% 
-    select(-conf.low, -conf.high) %>% 
+    select(-conf.low, -conf.high, -model, -data) %>% #taking out results as not needed anymore
   mutate_at(c("sii", "lowci_sii", "upci_sii"), ~replace(., is.na(.), NA_real_)) #recoding NAs
   
   #Merging sii with main data set
