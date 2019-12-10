@@ -32,7 +32,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement=
          AND age_in_years > 34 
          AND hbres_currentdate between 'S08000015' AND 'S08000028' 
          AND council_area is not null 
-         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S700|S72[12]') 
+         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]') 
      GROUP BY link_no || '-' || cis_marker, main_condition
      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
@@ -116,10 +116,10 @@ smoking_adm <- smoking_adm %>%
     diag == "K50" ~ 2.10, #Crohns disease
     diag == "K05" ~ 3.97, #Periodontal disease / Periodonitis
     diag == "H25" & age_grp >= 10 ~ 1.54, #Age related cataract
-    diag %in% c("S70", "S72") & age_grp %in% c(12, 13) ~ 1.17, #Hip fracture
-    diag %in% c("S70", "S72") & age_grp %in% c(14, 15) ~ 1.41,
-    sex_grp == 1 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.76,
-    sex_grp == 2 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.85,
+    diag == "S72" & age_grp %in% c(12, 13) ~ 1.17, #Hip fracture
+    diag == "S72" & age_grp %in% c(14, 15) ~ 1.41,
+    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.76,
+    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.85,
     sex_grp == 2 & diag == "O03" ~ 1.28, #Spontaneous abortion
     TRUE ~ 0
 )) %>% 
@@ -178,10 +178,10 @@ smoking_adm <- smoking_adm %>%
     diag == "K50" ~ 1, #Crohns disease
     diag == "K05" ~ 1.68, #Periodontal disease / Periodonitis
     diag == "H25" & age_grp >= 10 ~ 1.11, #Age related cataract
-    diag %in% c("S70", "S72") & age_grp %in% c(12, 13) ~ 1.02, #Hip fracture
-    diag %in% c("S70", "S72") & age_grp %in% c(14, 15) ~ 1.08,
-    sex_grp == 1 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.14,
-    sex_grp == 2 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.22,
+    diag == "S72" & age_grp %in% c(12, 13) ~ 1.02, #Hip fracture
+    diag == "S72" & age_grp %in% c(14, 15) ~ 1.08,
+    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.14,
+    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.22,
     sex_grp == 2 & diag == "O03" ~ 1, #Spontaneous abortion
     TRUE ~ 0))
 
@@ -292,7 +292,6 @@ analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
-               epop_total = 120000, ind_id = 1548, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 120000, ind_id = 1548, year_type = "calendar")
 
 ##END
