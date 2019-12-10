@@ -23,7 +23,7 @@ ca_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictio
   setNames(tolower(names(.))) %>% rename(ca=code)
 
 quit_total <- left_join(quit_total, ca_lookup, 
-                          by = c("la_name" = "areaname")) %>% 
+                        by = c("la_name" = "areaname")) %>% 
   select(-la_name) %>% 
   mutate(denominator = NA_integer_) # needed for the function
 

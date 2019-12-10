@@ -40,7 +40,7 @@ saveRDS(quit_4weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_4weeks
 ## Part 2 - Create basefiles for quintile indicators ----
 ###############################################.
 # Reading council quintile data requested to smoking cessation team
-quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_4weeks_ Council_SIMD_FY2009-FY2017.sav"),
+quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_Council_SIMD_FY2009-10 to FY2018-19.sav"),
                           to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   filter(scsimdquintile != 99) %>% #excluding unknown values
@@ -53,7 +53,7 @@ for (quint in 1:5) { #creating files for each one of the quintiles
   
   saveRDS(quit4w_quint_raw, 
           paste0(data_folder, "Prepared Data/quitattempts_4weeks_quint", quint, "_raw.rds"))
-    
+  
 }
 
 ###############################################.
@@ -73,10 +73,10 @@ filenames <- c("quitattempts_4weeks_quint1", "quitattempts_4weeks_quint2",
                "quitattempts_4weeks_quint5") 
 
 mapply(analyze_first, filename = filenames, geography = "council", 
-       measure = "percent", yearstart = 2009, yearend = 2017, time_agg = 1)
+       measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
 
 mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, 
-       ind_id = c(1539:1543), year_type = "financial", profile = "TB", min_opt = 105773)
+       ind_id = c(1539:1543), year_type = "financial")
 
 
 ##END
