@@ -78,24 +78,30 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
       subset(year >= yearstart) #selecting only years of interest
     
-    # Lookup with geographical information.
+    geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+    
+    # Merging data with lookup depending on geography base
     if(geography == "datazone11") {
-      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
       
       ## Matching with geography lookup.
       data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) %>% 
         mutate(scotland = as.factor("S00000001")) # adding Scotland
       
-    } else if (geography == "council") {
-      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) %>% 
-        select(ca2019, hb2019) %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
+    } else if (geography == "council" ) {
+      
+      if (adp == FALSE) { #different variables required if ADP included
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019) 
+      } else if (adp==TRUE) {
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019, adp)
+      }
+      
+      geo_lookup <- geo_lookup %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
       
       ## Matching with geography lookup.
       data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) %>% 
         mutate(scotland = as.factor("S00000001")) # adding Scotland
-      
     }
-
+    
     ##################################################.
     ## Part 2 - Aggregate up to get figures for each area. ----
     ##################################################.
@@ -106,7 +112,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
 
     } else if (measure == "stdrate" & geography == "council") {
-      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb:scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
