@@ -29,7 +29,6 @@ geography_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/co
   rename(hb2019name = areaname)
   
 sdmd_initial <- left_join(sdmd_initial, geography_codes, "hb2019name") %>%
-  select(code, hb2019name, year, numerator, denominator) %>%
   mutate(year = as.numeric(substr(year,1,4))) %>%
   select(year, code, numerator, denominator)
 
@@ -46,7 +45,6 @@ sdmd_follow <- read_csv(paste0(data_folder, "Received Data/IR2019-00925_SDMD_fol
 
 #adding geography codes
 sdmd_follow <- left_join(sdmd_follow, geography_codes, "hb2019name") %>%
-  select(code, hb2019name, year, numerator, denominator) %>%
   mutate(year = as.numeric(substr(year,1,4))) %>%
   select(year, code, numerator, denominator)
   
@@ -59,11 +57,6 @@ saveRDS(sdmd_follow, file=paste0(data_folder, 'Temporary/sdmd_follow_formatted.r
 analyze_second(filename = "sdmd_initialcompl", measure = "percent", time_agg = 1, 
                ind_id = 4137, year_type = "financial")
 
-# Merging with old adp data that it has not been produced in latest years because 
-# of data quality issues
-sdmd_shiny_initial <- rbind(readRDS(paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.rds")),
-                      readRDS(paste0(data_folder, "Prepared Data/sdmd_adp_initial_donotdelete.rds")))
-
 saveRDS(sdmd_shiny_initial, paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.rds"))
 write_csv(sdmd_shiny_initial, paste0(data_folder, "Shiny Data/sdmd_initialcompl_shiny.csv"))
 
@@ -71,4 +64,7 @@ write_csv(sdmd_shiny_initial, paste0(data_folder, "Shiny Data/sdmd_initialcompl_
 # Follow-up completeness
 analyze_second(filename = "sdmd_follow", measure = "percent", time_agg = 1, 
                ind_id = 4138, year_type = "financial")
+
+saveRDS(sdmd_shiny_follow, paste0(data_folder, "Shiny Data/sdmd_follow_shiny.rds"))
+write_csv(sdmd_shiny_follow, paste0(data_folder, "Shiny Data/sdmd_follow_shiny.csv"))
 ##END
