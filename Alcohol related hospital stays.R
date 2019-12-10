@@ -37,8 +37,9 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # related ICD10 diagnosis codes (in any position)
 # Date restrictions are based on financial year of hospital discharge (not episode discharge) 
 # therefore date filters in extract are set to the 
-# year before desired data (eg if period for reporting is 2002/2003 then request 
-# data from 2001 if you want to be sure to capture all CIS that end in 2002/03)
+# year before & year after desired data (eg if period for reporting is 2002/2003 then request 
+# data from 2001 if you want to be sure to capture all CIS that end in 2002/03 and year after required period
+# to ensure capture episode when CIS ends)
 
 alc_diag <- "E244|E512|F10|G312|G621|G721|I426|K292|K70|K852|K860|O354|P043|Q860|R780|T510|T511|T519|X45|X65|Y15|Y573|Y90|Y91|Z502|Z714|Z721"
 
@@ -46,13 +47,13 @@ data_alcohol_episodes <- tbl_df(dbGetQuery(channel, statement= paste0(
   "SELECT link_no linkno, cis_marker cis, AGE_IN_YEARS age, admission_date, 
       discharge_date, DR_POSTCODE pc7, SEX sex_grp, ADMISSION, DISCHARGE, URI
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2001' and '31 March 2019'
+  WHERE discharge_date between  '1 April 2001' and '31 March 2020'
       and sex <> 9
       and exists (
           select * 
           from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and discharge_date between '1 April 2001' and '31 March 2019'
+            and discharge_date between '1 April 2001' and '31 March 2020'
             and (regexp_like(main_condition, '", alc_diag ,"')
               or regexp_like(other_condition_1,'", alc_diag ,"')
               or regexp_like(other_condition_2,'", alc_diag ,"')
@@ -73,8 +74,12 @@ data_alcoholstays <- data_alcohol_episodes  %>%
             ddisch=last(discharge_date),
             staymonth=month(ddisch),
             year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0)) %>% # generate financial year of stay field
-  subset(year>=2002) %>% # profiles only require figures from fye 2002/03 onwards
+  subset(year>=2002 & year <2019) %>% # profiles only require figures from fye 2002/03 tp latest fye 2018/19
   ungroup()
+
+#freq on years
+xtabs(~data_alcoholstays$year)
+
 
 # Creating age groups for standardization.
 data_alcoholstays <- data_alcoholstays %>%
@@ -124,7 +129,7 @@ dz01_dep <- data_alcoholstays %>%
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joining dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stays_depr_raw.rds'))
 
@@ -162,7 +167,7 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
-apply_stats_disc("alcohol_stays_depr_ineq")  # statistical disclosure applied to final values
+# No statistical disclosure applied to inequalities final values
 
 ###############################################.
 ##Run macros again to generate CYP indicator data

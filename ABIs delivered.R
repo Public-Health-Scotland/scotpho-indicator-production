@@ -21,7 +21,7 @@ abis_delivered <- read_csv(paste0(data_folder, "Received Data/2019-06-25_Alcohol
          def_period = paste0(trend_axis, " financial year"),
          lowci = NA, upci = NA)
 
-saveRDS(abis_delivered, file=paste0(data_folder, 'Data to be checked/ABIs_delivered_final.rds'))
-write_csv(abis_delivered, paste0(data_folder, 'Data to be checked/ABIs_delivered_final.csv'))
+saveRDS(abis_delivered, file=paste0(data_folder, 'Data to be checked/ABIs_delivered_shiny.rds'))
+write_csv(abis_delivered, paste0(data_folder, 'Data to be checked/ABIs_delivered_shiny.csv'))
 
 ## END

@@ -57,7 +57,7 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=
    WHERE discharge_date between '1 January 2002' and '31 December 2018'
       AND sex not in ('9', '0')
       AND AGE_IN_YEARS is not null 
-      AND (admission_type between '20' and '22' or admission_type between '30' and '40') 
+      AND (admission_type between '20' and '22' or admission_type between '30' and '39') 
    GROUP BY link_no, cis_marker
    ORDER BY link_no, cis_marker, min(admission_date) ")) %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -77,7 +77,7 @@ data_adm <- left_join(x=data_adm, y=geo_lookup, c("datazone2011")) %>%
   mutate(scotland = "S00000001") %>% 
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) %>% # converting variables into factors
-  create_agegroups() # Creating age groups for standardization.
+  create_agegroups() %>% # Creating age groups for standardization.
   arrange(year, link_no, doadm) %>% #sorting needed for part 2
   select(-pc7, -cis_marker, -age)
 
@@ -100,8 +100,6 @@ data_ma <- do.call("rbind", data_ma_list) # converting from list into dataframe
 
 saveRDS(data_ea, paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
-
-data_ea <- readRDS(paste0(data_folder, 'Prepared Data/ea_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----

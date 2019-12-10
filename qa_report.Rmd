@@ -3,17 +3,16 @@ title: "ScotPHO Profiles QA report - in development"
 author: "Andy Pulford"
 date: '`r format(Sys.Date(), "%d %B %Y")`'
 params:
-  id: 13012 # user to set
-  name: school_meals # user to set
-output: 
-  html_document:
-    code_folding: hide
+  id: 4156 # user to set
+  name: breach # user to set
+output: word_document
 ---
 
-```{r, message=FALSE, warning=FALSE}
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
 # packages
 #library(googlesheets) # work out how to load straight from google docs
 library(tidyverse)
+#library(tinytex)
 
 # load technical document
 tech <- read_csv("./Technical Document - Raw.csv") %>% 
@@ -25,8 +24,8 @@ tech <- read_csv("./Technical Document - Raw.csv") %>%
 data <- read_csv(paste0("X:/ScotPHO Profiles/Data/Data to be checked/",params$name,"_shiny.csv"))
 
 # define variable names as they should appear in OPT file
-sop_names <- c("code", "year", "numerator", "denominator", 
-               "rate", "lowci", "upci", "ind_id", "trend_axis", "def_period" )
+sop_names <- c("code", "ind_id", "year", "numerator", "rate", "lowci", "upci", 
+               "def_period", "trend_axis")
 
 # create dataframe to summarise missing vars
 na <- sapply(data, function(x) sum(is.na(x)))
@@ -68,20 +67,23 @@ num_check <- num_check %>% full_join(by = "year", la_num)
 **Geographies:** `r tech$available_geographies`  
 
 #Check OPT file
-* Data `r ifelse(sum(names(data) == sop_names) == 10, "", "**do not** ")` match the format in the SOP.  
+* Data `r ifelse(sum(names(data) == sop_names) == 9, "", "**do not** ")` match the format in the SOP.  
 * The indicator ID  `r ifelse(first(data$ind_id) == tech$indicator_number, "matches", "**does not match**")` the technical document.  
 * Compare year type in OPT file against technical document:
     + **`r first(data$def_period)`** vs. **`r tech$year_type`**  
 * The current published time trend is for **`r tech$trends_from`**:
-    + Start year in data: `r min(data$year)`
-    + End year in data: `r max(data$year)`
-* Aggregation is by `r tech$aggregation`
-* Check for missing fields:  
-`r knitr::kable(na[,1:2])`
-* Check aggregation of numerators up to higher geographies:  
-`r knitr::kable(num_check)`
+    + Start year in data: `r min(data$year)`  
+    + End year in data: `r max(data$year)`  
+* Aggregation is by `r tech$aggregation`  
+* Check for missing fields:    
+`r knitr::kable(na[,1:2])`  
 
-```{r, message=FALSE, warning=FALSE}
+\newline
+
+* Check aggregation of numerators up to higher geographies:  
+`r knitr::kable(num_check)`  
+  
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
 # create df for checking that LAs aggregate to HBs
 aa_hb <- data %>% filter(code == "S08000015") %>% 
   select(year, code, numerator)
@@ -97,21 +99,26 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 
 
 ```
+
+\newline  
+
 * Check LA to HB aggregation:
 `r knitr::kable(aa_check)`
+
+\newline
 
 * rate/percantage calculation check - manual against raw data?  
 * Minimum and maximum CI ranges:  
     + Min: `r data %>% mutate(ci_range = upci-lowci) %>% 
     summarise(min_ci_range = min(ci_range, na.rm = TRUE))`  
     + Max: `r data %>% mutate(ci_range = upci-lowci) %>% 
-    summarise(min_ci_range = max(ci_range, na.rm = TRUE))`
+    summarise(min_ci_range = max(ci_range, na.rm = TRUE))`  
 * Check no rates/percentages sit outside of CI range  
     + `r  data %>% mutate(ci_error = ifelse(rate<lowci | rate>upci, TRUE, FALSE)) %>% 
-                  summarise(ci_error_totoal = sum(ci_error, na.rm = TRUE))` rows with rate outside of CI range
+                  summarise(ci_error_totoal = sum(ci_error, na.rm = TRUE))` rows with rate outside of CI range  
 * Compare Scotland to median LA or HB rate/percentage  
 * Plot chart as per analysis script:  
-```{r, echo = TRUE, message=FALSE, warning=FALSE}   
+```{r, echo = FALSE, message=FALSE, warning=FALSE}   
 #Selecting Health boards and Scotland for latest year in dataset
     ggplot(data = data %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
                                               & year== max(year)), aes(code, rate) ) +
@@ -126,11 +133,3 @@ aa_check <- aa_hb %>% full_join(by = "year", aa_la)
 #Second person QA notes  
 <add here>  
 
-```{r}
-## create indictaor specific hmtl doc
-render_name <- eval(paste0(params$id,"_",params$name,"_qa.html"))
-rend_doc <- function(render_name) {
-  rmarkdown::render("qa_report.Rmd", 
-                  output_file = render_name)
-}
-```
