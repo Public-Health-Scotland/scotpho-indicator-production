@@ -129,7 +129,7 @@ dz01_dep <- data_alcoholstays %>%
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joining dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/alcohol_stays_depr_raw.rds'))
 
@@ -167,7 +167,7 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
-apply_stats_disc("alcohol_stays_depr_ineq")  # statistical disclosure applied to final values
+# No statistical disclosure applied to inequalities final values
 
 ###############################################.
 ##Run macros again to generate CYP indicator data
