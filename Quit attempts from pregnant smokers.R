@@ -22,14 +22,14 @@ quit_pregnant_num <- read.spss( paste0(data_folder, "Received Data/Smoking_Cessa
          ca = na_if(ca, "S12000099")) %>% select(-finyear)
 
 # Reading population file provided by mataernity team (also used for smoking during pregnancies numerator). 
-quit_pregnant_den <- read_csv(file=paste0(data_folder, 'Received Data/IR2019-00231_smoking_pregnancy.csv')) %>% 
+quit_pregnant_den <- read_csv(file=paste0(data_folder, 'Received Data/IR2019-01566(smoking).csv')) %>% 
   setNames(tolower(names(.))) %>% 
 # the year variable refers to the year end e.g. 2004 = 2003/2004.
 # Change this to fit the method used for profiles 
   mutate(year = finyear - 1) %>% select(-finyear, known_status)
 
 # Bring ca lookup
-ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
+ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(datazone2011, ca2011) %>% distinct()
 
@@ -51,9 +51,9 @@ saveRDS(quit_pregnant, file=paste0(data_folder, 'Prepared Data/quitattempts_preg
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "quitattempts_pregnant", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2017, time_agg = 3)
+              measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 3)
 
 analyze_second(filename = "quitattempts_pregnant", measure = "percent", time_agg = 1, 
-               ind_id = 1526, year_type = "financial", profile = "TB", min_opt = 105773)
+               ind_id = 1526, year_type = "financial")
 
 ##END
