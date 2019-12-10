@@ -174,8 +174,8 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
 # Alcohol related stays in 11 to 25 year olds
 
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
-              time_agg = 3, epop_age = '11to25')
+              pop = "ADP_pop_11to25", yearstart = 2002, yearend = 2018,
+              time_agg = 3, epop_age = '11to25', adp=TRUE)
 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 
                epop_total = 34200, ind_id = 13024, year_type = "financial")
