@@ -12,7 +12,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 # Reading Quit attempts from pregnant smokers data provided by smoking team
-quit_pregnant_num <- read.spss( paste0(data_folder, "Received Data/Smoking_Cessation_Pregnant_women_FY2009-FY2017.sav"), 
+quit_pregnant_num <- read.spss( paste0(data_folder, "Received Data/Smoking_Cessation_Pregnant_women_FY2009-10 to FY2018-19.sav"), 
                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>% 
   rename(ca = ca2011, numerator = pregnant_quit_attempt) %>% 
@@ -53,7 +53,7 @@ saveRDS(quit_pregnant, file=paste0(data_folder, 'Prepared Data/quitattempts_preg
 analyze_first(filename = "quitattempts_pregnant", geography = "council", 
               measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 3)
 
-analyze_second(filename = "quitattempts_pregnant", measure = "percent", time_agg = 1, 
+analyze_second(filename = "quitattempts_pregnant", measure = "percent", time_agg = 3, 
                ind_id = 1526, year_type = "financial")
 
 ##END
