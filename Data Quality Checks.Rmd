@@ -155,11 +155,11 @@ old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
 # Need to adjust this merge to cope with some indicators that don't have numerator (e.g. life expectancy - this #causes a fail)
 matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
   mutate(rate_match = round((rate.x-rate.y)/rate.x,3)) %>% #all indicators have rate
-  mutate(numerator_match = ifelse((numerator.x ==""||numerator.y ==""),
+  mutate(numerator_match = ifelse((numerator.x ==""|numerator.y ==""),
                                   0,round((numerator.x-numerator.y)/numerator.x,3)),
-  lowci_match =ifelse((lowci.x ==""||lowci.y ==""),
+  lowci_match =ifelse((lowci.x ==""|lowci.y ==""),
                                   0,round((lowci.x-lowci.y)/lowci.x,3)),
-  upci_match =ifelse((upci.x ==""||upci.y ==""),
+  upci_match =ifelse((upci.x ==""|upci.y ==""),
                                   0,round((upci.x-upci.y)/upci.x,3)),
   year=as.factor(year))
   
