@@ -48,7 +48,7 @@ copd_deaths <- left_join(copd_deaths, postcode_lookup, by = "pc7") %>%
 
 #Creating basefile for COPD deaths indicator by calendar year.
 copd_deaths_cal <- copd_deaths %>% 
-  filter(year<2018) %>% #excluding incomplete year 
+  filter(year<=2018) %>% #excluding incomplete year 
   group_by(year, age_grp, sex_grp, ca2019) %>% count() %>% #aggregating
   ungroup() %>% rename(ca = ca2019, numerator = n)
 
