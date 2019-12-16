@@ -48,7 +48,7 @@ copd_deaths <- left_join(copd_deaths, postcode_lookup, by = "pc7") %>%
 
 #Creating basefile for COPD deaths indicator by calendar year.
 copd_deaths_cal <- copd_deaths %>% 
-  filter(year<2018) %>% #excluding incomplete year 
+  filter(year<=2018) %>% #excluding incomplete year 
   group_by(year, age_grp, sex_grp, ca2019) %>% count() %>% #aggregating
   ungroup() %>% rename(ca = ca2019, numerator = n)
 
@@ -107,7 +107,8 @@ copd_adm <- left_join(copd_adm, postcode_lookup, by = "pc7") %>%
   
 ###############################################.
 # Preparing stays indicator raw files 
-copd_adm_indicator <- copd_adm %>% filter(year>2001) %>% 
+copd_adm_indicator <- copd_adm %>% filter(year>2001) %>%
+  filter(age>15) %>% #select 16 and over
 # select the first stay within each year.
   arrange(year, linkno, doadm) %>% group_by(year, linkno) %>% 
   filter(row_number()==1 ) %>% ungroup() 
@@ -173,16 +174,16 @@ analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3,
 ###############################################.
 # COPD hospitalisations 
 analyze_first(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20302, year_type = "financial")
+               epop_total = 165800, ind_id = 20302, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="copd_hospital_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2018,   year_type = "financial", 
-                    pop = "depr_pop_allages", epop_age="normal",
-                    epop_total =200000, ind_id = 20302)
+                    pop = "depr_pop_16+", epop_age="normal",
+                    epop_total =165800, ind_id = 20302)
 
 ##END
