@@ -13,16 +13,17 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 #Data comes from child health team
 postpartum <- read_csv(file=paste0(data_folder, 'Received Data/Smokingatfirstvisist_DZ_postpartum.csv')) %>% 
-  setNames(tolower(names(.))) %>% 
-  mutate(year = paste0("20", substr(fin_year, 1, 2))) %>% select(-fin_year)
+  setNames(tolower(names(.))) %>%
+  mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
+                   TRUE ~ paste0("20",substr(fin_year,1,2))))
 
 # bringing lookup to match with council
 ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(datazone2011, ca2018) %>% distinct()
+  select(datazone2011, ca2019) %>% distinct()
 
 postpartum <- left_join(postpartum, ca_lookup, by = "datazone2011") %>% 
-  rename(ca = ca2018 ) %>% group_by(ca, year) %>% 
+  rename(ca = ca2019 ) %>% group_by(ca, year) %>% 
   summarise(numerator = sum(smoker), denominator = sum(total_valid_status)) %>% 
   ungroup() %>% 
   # Selecting out a few cases from early years in Highland CA before the system was 
