@@ -1,5 +1,4 @@
-## work in progress script ##
-## previously a health scotland indicator - data from child health team ##
+# ScotPHO indicator:Exposure to secondhand smoke
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -9,7 +8,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-#Initial completeness file from drugs team
+#data from child health team
 exposure_smoking <- read_csv(paste0(data_folder, "Received Data/secondhandsmoke_valid.csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(datazone2011 = datazone) %>%
@@ -24,6 +23,8 @@ exposure_geography <- left_join(exposure_smoking, ca_lookup, by = "datazone2011"
   rename(ca = ca2019 ) %>% group_by(ca, year) %>% 
   summarise(numerator = sum(numerator), denominator = sum(denominator)) %>% 
   ungroup() %>% 
+  # Selecting out a few cases from early years in Highland CA before the system was 
+  # properly in place that would cause confusion.
   filter(!(ca == "S12000017" & year<2007))
 
 saveRDS(exposure_geography, file=paste0(data_folder, 'Prepared Data/exposure_smoking_raw.rds'))
