@@ -64,7 +64,6 @@ data_alcohol_episodes <- tbl_df(dbGetQuery(channel, statement= paste0(
 
 # Group episode level alcohol data into hospital stays (number of rows will reduce)
 # Keep age, sex, postcode on admission data but take date of discharge from last episode in a hospital stay. 
-
 data_alcoholstays <- data_alcohol_episodes  %>%
   arrange(linkno,admission_date, discharge_date, admission, discharge, uri) %>%
   group_by (linkno,cis) %>%
@@ -75,25 +74,14 @@ data_alcoholstays <- data_alcohol_episodes  %>%
             staymonth=month(ddisch),
             year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0)) %>% # generate financial year of stay field
   subset(year>=2002 & year <2019) %>% # profiles only require figures from fye 2002/03 tp latest fye 2018/19
-  ungroup()
+  ungroup() %>% 
+  # Creating age groups for standardization.
+  create_agegroups()
 
 #freq on years
 xtabs(~data_alcoholstays$year)
 
-
-# Creating age groups for standardization.
-data_alcoholstays <- data_alcoholstays %>%
-  mutate(age_grp = case_when( 
-    age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-    age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-    age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-    age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-    age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-    age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-    TRUE ~ as.numeric(age)
-  ))
-
-# # Bringing  LA and datazone info.
+# Bringing CA and datazone info.
 postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
@@ -105,7 +93,6 @@ data_alcoholstays <- data_alcoholstays %>%
   select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>%
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
-
 
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
@@ -155,7 +142,6 @@ analyze_first(filename = "alcohol_stays_dz11", geography = "datazone11", measure
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
               time_agg = 1, epop_age = "normal",  adp = TRUE)
 
-
 analyze_second(filename = "alcohol_stays_dz11", measure = "stdrate", time_agg = 1, 
                epop_total = 200000, ind_id = 20203, year_type = "financial")
 
@@ -172,7 +158,6 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
 ###############################################.
 ##Run macros again to generate CYP indicator data
 # Alcohol related stays in 11 to 25 year olds
-
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
               pop = "ADP_pop_11to25", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = '11to25', adp=TRUE)
@@ -181,7 +166,5 @@ analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg 
                epop_total = 34200, ind_id = 13024, year_type = "financial")
 
 apply_stats_disc("alcohol_stays_11to25_shiny") # statistical disclosure applied to final values
-
-rm(channel) # closing connection to SMRA
 
 ##END
