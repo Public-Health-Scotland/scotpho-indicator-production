@@ -31,7 +31,7 @@ analyze_second(filename = "prescriptions_anxiety", measure = "percent", time_agg
 
 #Deprivation analysis function
 analyze_deprivation(filename="prescriptions_anxiety_depr", measure="percent", time_agg=1, 
-                    yearstart= 2014, yearend=2017,   year_type = "calendar", 
+                    yearstart= 2014, yearend=2018,   year_type = "financial", 
                     pop= "depr_pop_allages", ind_id = 20401)
 
 ##END
