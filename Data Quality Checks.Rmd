@@ -22,11 +22,11 @@ data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
 
 #Test which optional geographies are present in dataset
 board <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S08"))) > 0,TRUE, FALSE)
-iz <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S02"))) > 0,TRUE, FALSE)
-adp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S11"))) > 0,TRUE, FALSE)
-hscp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S37"))) > 0,TRUE, FALSE)
-locality <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S99"))) > 0,TRUE, FALSE)
 ca <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S12"))) > 0,TRUE, FALSE)
+hscp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S37"))) > 0,TRUE, FALSE)
+adp <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S11"))) > 0,TRUE, FALSE)
+locality <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S99"))) > 0,TRUE, FALSE)
+iz <- ifelse(as.numeric(count(data_indicator %>% filter(substr(code,1,3) == "S02"))) > 0,TRUE, FALSE)
   
 # Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
 # All indicators include Scotland, NHS board, Council Area data so at least one geography included as    default.
@@ -72,15 +72,15 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 **Check extras** (optional parameter) `r check_extras` <br>
 **Geography parameters** <br>
 NHS board: `r board` <br>
-iz: `r iz` <br>
-hscp `r hscp` <br>
-locality: `r locality`<br>
-adp: `r adp`<br>
-ca: `r ca` <br>
+Council area: `r ca` <br>
+Health and Social Care Partnership: `r hscp` <br>
+Alcohol and Drugs Partnership: `r adp`<br>
+HSC locality: `r locality`<br>
+Intermediate zone: `r iz` <br>
 ------------------------------------------------------------------------------------
 
 ###Data check 1:
-####What geographical levels & years are present, how many unique geographies appear?
+####What geographical levels and years are present, how many unique geographies appear?
 
 ```{r include=FALSE}
 #Aggegrate file to detect which geographies and years are present.
@@ -230,11 +230,12 @@ scot_value <-data_indicator %>%
 #Selecting Health boards and Scotland for latest year in dataset
 scot_check <- ggplot(data = data_indicator %>% 
                        filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                        & year== max(year)), aes(code, rate)) +
+                                        & year== max(year)), aes(areaname, rate)) +
   geom_point(stat = "identity") +
   geom_hline(yintercept= scot_value$rate[1], linetype="dashed", color = "red")+
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "", y =  "Measure")
 
 ```
 
@@ -269,7 +270,8 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
   geom_point(stat = "identity") +
   geom_hline(yintercept= ed_value$rate, linetype="dashed", color = "red")+
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  labs(x = "", y =  "Measure")
 
 # Additional check of numerators (where present) to test if all numerators agree
 
@@ -430,4 +432,7 @@ shinyApp(
 ###End of checks
 ###Yay!
 <br>
-**Don't forget to update Googledocs planning sheet once checks are complete**
+**Don't forget to update Googledocs technical document once checks are complete**
+<br>
+<br>
+
