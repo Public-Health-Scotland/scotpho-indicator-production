@@ -25,7 +25,8 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 smoking_adm <- tbl_df(dbGetQuery(channel, statement=
     "SELECT distinct link_no || '-' || cis_marker admission_id, substr(main_condition,1,3) diag, 
             min(council_area) ca, min(hbres_currentdate) hb, min(sex) sex_grp,
-            max(extract (year from discharge_date)) year, min(age_in_years) age, max(discharge_date) 
+            max(extract (year from discharge_date)) year, min(age_in_years) age, 
+            max(discharge_date) disch_date, min(admission_date) adm_date
     FROM ANALYSIS.SMR01_PI  
     WHERE discharge_date between '1 January 2012' and '31 December 2017'  
          AND sex <> 0 
@@ -188,7 +189,10 @@ smoking_adm <- smoking_adm %>%
 ###############################################.
 ## Part 3 - Keeping only one record per CIS and aggregating geographic areas ----
 ###############################################.
-smoking_adm <- smoking_adm %>% group_by(admission_id) %>% 
+smoking_adm <- smoking_adm %>% 
+  arrange(admission_id, adm_date
+          ) %>% 
+  group_by(admission_id) %>% 
   # selecting first value of an admission for all variables, including the risks 
   # to follow PHE methodology
   summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
