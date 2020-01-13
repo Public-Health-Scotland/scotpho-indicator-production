@@ -1,4 +1,5 @@
-# ScotPHO indicators: Early deaths from CHD <75
+# ScotPHO indicators: Early deaths from CHD <75 #
+
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run analysis functions
@@ -43,15 +44,13 @@ deaths_CHD <- left_join(deaths_CHD, postcode_lookup, "pc7") %>%
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
-###############################################.
+
 # Datazone2011
 deaths_CHD_dz11 <- deaths_CHD %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(deaths_CHD_dz11, file=paste0(data_folder, 'Prepared Data/deaths_CHD_dz11_raw.rds'))
-###############################################.
 
-###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 deaths_CHD_dz01 <- deaths_CHD %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  

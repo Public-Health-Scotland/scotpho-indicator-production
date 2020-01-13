@@ -1,4 +1,4 @@
-# ScotPHO indicators: unintentional injuries in under 5s
+# ScotPHO indicators: unintentional injuries in under 5s #
 
 #   Part 1 - Extract data from SMRA
 #   Part 2 - Run analysis functions
@@ -73,7 +73,6 @@ analyze_first(filename = "unintentional_under5", geography = "council", measure 
                time_agg = 3, epop_age = 'normal')
  
 analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3, 
-                epop_total = 10000, ind_id = 13050, year_type = "financial", 
-                profile = "CP", min_opt = 234388)
+                epop_total = 10000, ind_id = 13050, year_type = "financial")
 
 ##END

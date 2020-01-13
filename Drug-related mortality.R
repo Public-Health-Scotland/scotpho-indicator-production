@@ -1,4 +1,8 @@
-# WORK N PROGRESS - Drug-related mortality indicator code - WORK IN PROGRESS
+# WORK N PROGRESS - Drug-related mortality indicator code
+
+#   Part 1 - Extract data from SMRA
+#   Part 2 - Prepare geographies
+#   Part 3 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -58,11 +62,11 @@ drug_deaths <- left_join(drug_deaths, postcode_lookup, "pc7") %>%
 
 saveRDS(drug_deaths, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw.rds'))
 
+###############################################.
+## Part 2 - Geography basefiles ----
+###############################################.
 
-####################################
-## ADP LEVEL #######################
-####################################
-
+##### ADP level
 ADP_lookup <- read_rds(paste0(data_folder, "Lookups/Geography/ADP_CA_lookup.rds")) %>%
   setNames(tolower(names(.))) %>% #variables to lower case
   rename(ca = ca2011)
@@ -74,8 +78,7 @@ drug_deaths_ADP <- left_join(drug_deaths, ADP_lookup, "ca") %>%
 
 saveRDS(drug_deaths_ADP, file=paste0(data_folder, 'Prepared Data/drug_deaths_ADP_raw.rds'))
 
-##SELECT CA DATA##
-
+##### SELECT CA 
 drug_deaths_ADP2 <- left_join(drug_deaths, ADP_lookup, "ca") %>%
   select(year, ca, sex_grp, age_grp) %>%
   subset(!(is.na(ca))) %>%  #select out non-scottish
@@ -85,20 +88,20 @@ drug_deaths_ADP2 <- left_join(drug_deaths, ADP_lookup, "ca") %>%
 
 saveRDS(drug_deaths_ADP2, file=paste0(data_folder, 'Prepared Data/drug_deaths_ADP2_raw.rds'))
 
-#analyse by CA#
+###############################################.
+## Part 3 - Run analysis functions ----
+###############################################.
 
+# Analysis by CA
 analyze_first(filename = "drug_deaths_ADP2", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017,
               time_agg = 1, epop_age = "normal")
 
 analyze_second(filename = "drug_deaths_ADP2", measure = "stdrate", time_agg = 1, 
-               epop_total = 200000, ind_id = 4121, year_type = "calendar", 
-               profile = "HN", min_opt = 1295131)
+               epop_total = 200000, ind_id = 4121, year_type = "calendar")
 
-###############################################.
 # CA (council area) file for gender specific indicators in drug profile
-# Female drug mortality
-
+#########Female drug mortality
 drug_deaths_female <- drug_deaths_ADP2 %>%
   subset(sex_grp==2) %>% 
   group_by(year, ca, sex_grp, age_grp) %>%  
@@ -107,19 +110,16 @@ drug_deaths_female <- drug_deaths_ADP2 %>%
  
 saveRDS(drug_deaths_female, file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw.rds'))
 
-###############################################.
-#FEMALE drug mortality indicator functions
+# Analysis
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017, 
               time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12535, year_type = "calendar", 
-               profile = "HN", min_opt = 1245385)
+               epop_total = 100000, ind_id = 12535, year_type = "calendar")
 
-# Male drug mortality
-
+#########Male drug mortality
 drug_deaths_male <- drug_deaths_ADP2 %>%
   subset(sex_grp==1) %>% 
   group_by(year, ca, sex_grp, age_grp) %>%  
@@ -128,13 +128,11 @@ drug_deaths_male <- drug_deaths_ADP2 %>%
 
 saveRDS(drug_deaths_male, file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw.rds'))
 
-###############################################.
-#FEMALE drug mortality indicator functions
+# Analysis
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017, 
               time_agg = 5, epop_age = "normal")
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12534, year_type = "calendar", 
-               profile = "HN", min_opt = 1245385)
+               epop_total = 100000, ind_id = 12534, year_type = "calendar")

@@ -16,11 +16,12 @@ source("1.indicator_analysis.R") #Normal indicator functions
 quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2019.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   gather("year", "numerator", -la_name) %>% #from wide to long format
-  mutate(year = substr(year,1,4))
+  mutate(year = substr(year,1,4)) #fin year
 
 # converting council names into codes. First bring lookup.
 ca_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds") %>% 
-  setNames(tolower(names(.))) %>% rename(ca=code)
+  setNames(tolower(names(.))) %>% #set variables to lower case
+  rename(ca=code)
 
 quit_total <- left_join(quit_total, ca_lookup, 
                         by = c("la_name" = "areaname")) %>% 

@@ -1,4 +1,4 @@
-# ScotPHO indicators: Road traffic accident casualties
+# ScotPHO indicators: Road traffic accident casualties #
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
@@ -59,14 +59,13 @@ road_accidents <- left_join(road_accidents, postcode_lookup, "pc7") %>%
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
-###############################################.
+
 # Datazone2011
 roadaccidents_dz11 <- road_accidents %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(roadaccidents_dz11, file=paste0(data_folder, 'Prepared Data/roadaccidents_dz11_raw.rds'))
 
-###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 roadaccidents_dz01_dep <- road_accidents %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
@@ -80,6 +79,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/roadaccidents_depr_raw
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
+
 #All patients asthma
 analyze_first(filename = "roadaccidents_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
@@ -94,5 +94,4 @@ analyze_deprivation(filename="roadaccidents_depr", measure="stdrate", time_agg=3
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20307)
 
-#############################################.
 ##END

@@ -47,21 +47,20 @@ data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>%
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
-###############################################.
+
 # Datazone2011
 asthma_dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(asthma_dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
-###############################################.
+
 # CA file for under 16 cases 
 asthma_ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2019, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2019)
 
 saveRDS(asthma_ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
 
-###############################################.
-#Deprivation basefile
+# Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 asthma_dz01_dep <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
@@ -74,6 +73,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
+
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
@@ -88,7 +88,6 @@ analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3,
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20304)
 
-#############################################.
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
               pop = "CA_pop_under16", yearstart = 2002, yearend = 2018,

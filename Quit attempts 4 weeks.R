@@ -2,7 +2,7 @@
 
 #   Part 1 - Create basefile for general indicator
 #   Part 2 - Create basefiles for quintile indicators
-#   Part 2 - Run analysis functions
+#   Part 3 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -12,6 +12,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Create basefile for general indicator ----
 ###############################################.
+
 #Reading data extracted from table from Smoking cessation annual publication
 quit_4weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2019.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
@@ -39,6 +40,7 @@ saveRDS(quit_4weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_4weeks
 ###############################################.
 ## Part 2 - Create basefiles for quintile indicators ----
 ###############################################.
+
 # Reading council quintile data requested to smoking cessation team
 quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_Council_SIMD_FY2009-10 to FY2018-19.sav"),
                           to.data.frame=TRUE, use.value.labels=FALSE) %>% 
@@ -65,7 +67,6 @@ analyze_first(filename = "quitattempts_4weeks", geography = "council",
 analyze_second(filename = "quitattempts_4weeks", measure = "percent", time_agg = 1, 
                ind_id = 1536, year_type = "financial")
 
-###############################################.
 # For quintile indicators 
 # Names of the files used in the next two functions
 filenames <- c("quitattempts_4weeks_quint1", "quitattempts_4weeks_quint2",

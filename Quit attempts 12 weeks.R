@@ -13,7 +13,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 #Reading data extracted from table from Smoking cessation annual publication
 quit_12weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_12weeks_2019.csv")) %>% 
-  setNames(tolower(names(.))) %>%    #variables to lower case
+  setNames(tolower(names(.))) %>%  #variables to lower case
   gather("year", "numerator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
 

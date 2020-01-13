@@ -14,7 +14,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 # Reading Quit attempts from pregnant smokers data provided by smoking team
 quit_pregnant_num <- read.spss( paste0(data_folder, "Received Data/Smoking_Cessation_Pregnant_women_FY2009-10 to FY2018-19.sav"), 
                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% 
+  setNames(tolower(names(.))) %>% #variables set to lower case
   rename(ca = ca2011, numerator = pregnant_quit_attempt) %>% 
   # formatting year as needed
   mutate(year = as.numeric(substr(finyear, 1, 4)),

@@ -21,6 +21,7 @@ create_quintile_data <- function(quint_number) {
 ###############################################.
 ## Part 1 - Format raw data ready for analysis functions ----
 ###############################################.
+
 # Bringing both dz01 and dz11 data as we use dz01 for period before 2014 and dz11 onwards
 smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2019-01566(smoking).csv")) %>%
   setNames(tolower(names(.))) %>%

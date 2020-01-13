@@ -1,4 +1,4 @@
-# ScotPHO indicators: Deaths from suicide
+# ScotPHO indicators: Deaths from suicide #
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
@@ -13,13 +13,14 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
 ###############################################.
+
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
 # Extracting data on deaths by excluding records with unknown sex and
-#  with any icd10 code of suicide in any cause (includes non-Scottish residents).
+# with any icd10 code of suicide in any cause (includes non-Scottish residents).
 deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
@@ -29,7 +30,7 @@ deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
-# Bringing  LA and datazone info.
+# Bringing LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
@@ -55,7 +56,7 @@ suicides_dz01 <- deaths_suicide %>% group_by(year, datazone2001, sex_grp, age_gr
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-dep_file <- rbind(suicides_dz01, suicides_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+dep_file <- rbind(suicides_dz01, suicides_dz11 %>% subset(year>=2014)) #joining dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/suicide_depr_raw.rds'))
 

@@ -1,5 +1,8 @@
 # ScotPHO indicator:Exposure to secondhand smoke
 
+#   Part 1 - Prepare basefiles
+#   Part 2 - Run analysis functions
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -10,10 +13,10 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 #data from child health team
 exposure_smoking <- read_csv(paste0(data_folder, "Received Data/secondhandsmoke_valid.csv")) %>%
-  setNames(tolower(names(.))) %>%
+  setNames(tolower(names(.))) %>% #set names to lower case
   rename(datazone2011 = datazone) %>%
   mutate(year=case_when(nchar(year)==3 ~ paste0("200",substr(year,1,1)), 
-                        TRUE ~ paste0("20",substr(year,1,2))))
+                        TRUE ~ paste0("20",substr(year,1,2)))) # fin year
 
 ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
