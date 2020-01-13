@@ -44,18 +44,8 @@ road_accidents <- tbl_df(dbGetQuery(channel, statement=
 road_accidents <- road_accidents %>% 
   group_by(link_no, cis_marker, year) %>% 
   summarise_at(c("age", "sex_grp", "pc7"), funs(first)) %>% 
-  ungroup()
-
-# Creating age groups for standardization.
-road_accidents <- road_accidents %>% mutate(age_grp = case_when( 
-  age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-  age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-  age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-  age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-  age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-  TRUE ~ as.numeric(age)
-))
+  ungroup() %>% 
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
@@ -96,8 +86,7 @@ analyze_first(filename = "roadaccidents_dz11", geography = "datazone11", measure
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "roadaccidents_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20307, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 200000, ind_id = 20307, year_type = "calendar")
 
 #Deprivation analysis function
 analyze_deprivation(filename="roadaccidents_depr", measure="stdrate", time_agg=3, 

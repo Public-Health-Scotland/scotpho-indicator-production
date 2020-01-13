@@ -90,24 +90,30 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
       subset(year >= yearstart) #selecting only years of interest
     
-    # Lookup with geographical information.
+    geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+    
+    # Merging data with lookup depending on geography base
     if(geography == "datazone11") {
-      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) 
       
       ## Matching with geography lookup.
       data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("datazone" = "datazone2011")) %>% 
         mutate(scotland = as.factor("S00000001")) # adding Scotland
       
-    } else if (geography == "council") {
-      geo_lookup <- readRDS(paste0(lookups, 'Geography/DataZone11_All_Geographies_Lookup.rds')) %>% 
-        select(ca2019, hb2019) %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
+    } else if (geography == "council" ) {
+      
+      if (adp == FALSE) { #different variables required if ADP included
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019) 
+      } else if (adp==TRUE) {
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019, adp)
+      }
+      
+      geo_lookup <- geo_lookup %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
       
       ## Matching with geography lookup.
       data_indicator <- left_join(x=data_indicator, y=geo_lookup, c("ca")) %>% 
         mutate(scotland = as.factor("S00000001")) # adding Scotland
-      
     }
-
+    
     ##################################################.
     ## Part 2 - Aggregate up to get figures for each area. ----
     ##################################################.
@@ -118,7 +124,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
 
     } else if (measure == "stdrate" & geography == "council") {
-      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb:scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year, sex_grp, age_grp) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "datazone11" ) {
@@ -403,7 +409,6 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
     ##################################################.
     ##  Part 6 - Checking results ----
     ##################################################.
-
     # Varies data checks depending on what organisation running code.
     if (exists("organisation") == TRUE) { #Health Scotland
       if (organisation == "HS") { 
@@ -419,20 +424,30 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 ############################################################.
 ## Function Three: Run Quality Assurance ----
 ############################################################.
-
 # Function below runs an rmarkdown report (.Rmd) that runs through standard checks of indicator data
 # The report requires one manadatory parameter (the indicator filename) to run but there are several optional
-#  parameters to adjust 
-
-
+#  parameters to adjust
 # filename - required - determines which indicator_data file is used for checking
 # old_file - (optional - if the indicator has changed name and you want to compare old and new files which have different names)
 #                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
 # check_extras - (default empty) parameter can be used to add bespoke geographies of any geo type to Data Check 3 (comparing old and new figures)
 
-
 run_qa <- function(filename, old_file="default", check_extras=c()){
    run("Data Quality Checks.Rmd")
 }  
+
+############################################################.
+## Function to create age groups ----
+############################################################.
+# recode age groups
+create_agegroups <- function(dataset) {
+    dataset %>% mutate(age_grp = case_when(between(age, 0, 4) ~ 1,
+      between(age, 5, 9) ~ 2, between(age, 10, 14) ~ 3, between(age, 15, 19) ~ 4, 
+      between(age, 20, 24) ~ 5, between(age, 25, 29) ~ 6, between(age, 30, 34) ~ 7, 
+      between(age, 35, 39) ~ 8, between(age, 40, 44) ~ 9, between(age, 45, 49) ~ 10, 
+      between(age, 50, 54) ~ 11, between(age, 55, 59) ~ 12, between(age, 60, 64) ~ 13,
+      between(age, 65, 69) ~ 14, between(age, 70, 74) ~ 15,  between(age, 75, 79) ~ 16,
+      between(age, 80, 84) ~ 17, between(age, 85, 89) ~ 18, between(age, 90, 200) ~ 19))
+  }
 
 ##END

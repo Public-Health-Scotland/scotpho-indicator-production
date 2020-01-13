@@ -25,17 +25,19 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 smoking_adm <- tbl_df(dbGetQuery(channel, statement=
     "SELECT distinct link_no || '-' || cis_marker admission_id, substr(main_condition,1,3) diag, 
             min(council_area) ca, min(hbres_currentdate) hb, min(sex) sex_grp,
-            max(extract (year from discharge_date)) year, min(age_in_years) age, max(discharge_date) 
+            max(extract (year from discharge_date)) year, min(age_in_years) age, 
+            max(discharge_date) disch_date, min(admission_date) adm_date
     FROM ANALYSIS.SMR01_PI  
     WHERE discharge_date between '1 January 2012' and '31 December 2017'  
          AND sex <> 0 
          AND age_in_years > 34 
          AND hbres_currentdate between 'S08000015' AND 'S08000028' 
          AND council_area is not null 
-         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S700|S72[12]') 
+         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]') 
      GROUP BY link_no || '-' || cis_marker, main_condition
      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 smoking_adm <- smoking_adm %>% #adding council codes
   mutate(ca = recode(ca, '01'='S12000033', '02'='S12000034', '03'='S12000041', 
@@ -46,12 +48,7 @@ smoking_adm <- smoking_adm %>% #adding council codes
                      '19'='S12000018', '20'='S12000019', '21'='S12000020', '22'='S12000021', 
                      '23'='S12000044', '24'='S12000023', '25'='S12000024', '26'='S12000038', 
                      '27'='S12000027', '28'='S12000028', '29'='S12000029', '30'='S12000030',  
-                     '31'='S12000040', '32'='S12000013'),
-         age_grp = case_when( #creating age group bands matching European standard pop
-           age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-           age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-           age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-           age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, TRUE ~ NA_real_))
+                     '31'='S12000040', '32'='S12000013'))
 
 ###############################################.
 ## Part 2 - add in relative risks of each disease as a result of smoking ----
@@ -120,10 +117,10 @@ smoking_adm <- smoking_adm %>%
     diag == "K50" ~ 2.10, #Crohns disease
     diag == "K05" ~ 3.97, #Periodontal disease / Periodonitis
     diag == "H25" & age_grp >= 10 ~ 1.54, #Age related cataract
-    diag %in% c("S70", "S72") & age_grp %in% c(12, 13) ~ 1.17, #Hip fracture
-    diag %in% c("S70", "S72") & age_grp %in% c(14, 15) ~ 1.41,
-    sex_grp == 1 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.76,
-    sex_grp == 2 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.85,
+    diag == "S72" & age_grp %in% c(12, 13) ~ 1.17, #Hip fracture
+    diag == "S72" & age_grp %in% c(14, 15) ~ 1.41,
+    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.76,
+    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.85,
     sex_grp == 2 & diag == "O03" ~ 1.28, #Spontaneous abortion
     TRUE ~ 0
 )) %>% 
@@ -182,17 +179,20 @@ smoking_adm <- smoking_adm %>%
     diag == "K50" ~ 1, #Crohns disease
     diag == "K05" ~ 1.68, #Periodontal disease / Periodonitis
     diag == "H25" & age_grp >= 10 ~ 1.11, #Age related cataract
-    diag %in% c("S70", "S72") & age_grp %in% c(12, 13) ~ 1.02, #Hip fracture
-    diag %in% c("S70", "S72") & age_grp %in% c(14, 15) ~ 1.08,
-    sex_grp == 1 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.14,
-    sex_grp == 2 & diag %in% c("S70", "S72") & age_grp >= 16 ~ 1.22,
+    diag == "S72" & age_grp %in% c(12, 13) ~ 1.02, #Hip fracture
+    diag == "S72" & age_grp %in% c(14, 15) ~ 1.08,
+    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.14,
+    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.22,
     sex_grp == 2 & diag == "O03" ~ 1, #Spontaneous abortion
     TRUE ~ 0))
 
 ###############################################.
 ## Part 3 - Keeping only one record per CIS and aggregating geographic areas ----
 ###############################################.
-smoking_adm <- smoking_adm %>% group_by(admission_id) %>% 
+smoking_adm <- smoking_adm %>% 
+  arrange(admission_id, adm_date
+          ) %>% 
+  group_by(admission_id) %>% 
   # selecting first value of an admission for all variables, including the risks 
   # to follow PHE methodology
   summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
@@ -296,7 +296,6 @@ analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
-               epop_total = 120000, ind_id = 1548, year_type = "calendar", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 120000, ind_id = 1548, year_type = "calendar")
 
 ##END

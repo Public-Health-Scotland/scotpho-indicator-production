@@ -25,28 +25,15 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 data_deaths_15to44 <- tbl_df(dbGetQuery(channel, statement=
                                           "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
                                  FROM ANALYSIS.GRO_DEATHS_C 
-                                 WHERE date_of_registration between '1 January 2002' AND '31 December 2017'
+                                 WHERE date_of_registration between '1 January 2002' AND '31 December 2018'
                                  AND country_of_residence ='XS'
                                  AND age >=15 AND age<=44
                                  AND sex <> 9")) %>%
-  setNames(tolower(names(.)))  #variables to lower case
-
-
-# Creating age groups for standardization (this indicator is for 15-44 year old so only groups 4 to 9 should be present)
-data_deaths_15to44 <- data_deaths_15to44 %>% mutate(age_grp = case_when( 
-  age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-  age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-  age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-  age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-  age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-  age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19, 
-  TRUE ~ as.numeric(age)
-))
+  setNames(tolower(names(.))) %>%   #variables to lower case
+  create_agegroups() # Creating age groups for standardization. (this indicator is for 15-44 year old so only groups 4 to 9 should be present)
 
 # Open LA and datazone info.
-# Pc 2017_2 used even though 2018 available to avoid issues with changing codes (but no diff to geographies) of fife/tayside LA/NHS board
-
-postcode_lookup <- read_csv('/conf/linkage/output/lookups/geography/Scottish_Postcode_Directory_2017_2.csv') %>% 
+postcode_lookup <- read_csv('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.csv') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths_15to44 <- left_join(data_deaths_15to44, postcode_lookup, "pc7") %>% 
@@ -72,13 +59,6 @@ dz01 <- data_deaths_15to44 %>% group_by(year, datazone2001, sex_grp, age_grp) %>
 saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/deaths_15to44_dz01_raw.rds'))
 
 ###############################################.
-# IR basefile
-ir_file <- dz11 %>% subset(year>2010)
-ir_file <- rbind(dz01, ir_file) #joining together
-
-saveRDS(ir_file, file=paste0(data_folder, 'Prepared Data/DZ_deaths_15to44_IR_raw.rds'))
-
-###############################################.
 #Deprivation indicator numerator file
 
 # Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -94,26 +74,23 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/deaths_15to44_depr_raw
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-#Deaths all ages
+#Deaths ages 15 to 44 ages
+#epop_age can set to normal even though a subset of whole pop (since only matches on pop which are present in file)
 
 analyze_first(filename = "deaths_15to44_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_15to44", yearstart = 2002, yearend = 2017,
+              pop = "DZ11_pop_15to44", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = "normal")
 
-#epop_age can set to normal (only matches on pop which are present in file)
-
 analyze_second(filename = "deaths_15to44_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 76000, ind_id = 20104, year_type = "calendar", 
-               profile = "HN", min_opt = 1252438)
+               epop_total = 76000, ind_id = 20104, year_type = "calendar")
 
 #############################################.
 #Deprivation analysis function
 
 analyze_deprivation(filename="deaths_15to44_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2017,  
+                    yearstart= 2002, yearend=2018,  
                     year_type = "calendar", pop = "depr_pop_15to44", 
                     epop_age="normal", epop_total =200000, ind_id = 20104)
-
 
 
 #END

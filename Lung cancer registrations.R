@@ -30,20 +30,14 @@ lung_reg <- tbl_df(dbGetQuery(channel, statement=
       AND sex <> 9
   GROUP BY extract (year from incidence_date), sex, postcode, 
       floor(((incidence_date-date_of_birth)/365))")) %>% 
-  setNames(tolower(names(.)))  #variables to lower case
+  setNames(tolower(names(.))) %>%  #variables to lower case
+  create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.rds') %>% 
   setNames(tolower(names(.))) %>% select(pc7, ca2011) #variables to lower case
 
 lung_reg <- left_join(lung_reg, postcode_lookup, by = "pc7") %>% #merging with lookup
-  mutate(age_grp = case_when( # recoding age into age groups
-    age < 5 ~ 1, age > 4 & age <10 ~ 2, age > 9 & age <15 ~ 3, age > 14 & age <20 ~ 4,
-    age > 19 & age <25 ~ 5, age > 24 & age <30 ~ 6, age > 29 & age <35 ~ 7, 
-    age > 34 & age <40 ~ 8, age > 39 & age <45 ~ 9, age > 44 & age <50 ~ 10,
-    age > 49 & age <55 ~ 11, age > 54 & age <60 ~ 12, age > 59 & age <65 ~ 13, 
-    age > 64 & age <70 ~ 14, age > 69 & age <75 ~ 15, age > 74 & age <80 ~ 16,
-    age > 79 & age <85 ~ 17, age > 84 & age <90 ~ 18, age > 89 ~ 19,  TRUE ~ NA_real_)) %>% 
   # aggregating by council area
   group_by(year, ca2011, sex_grp, age_grp) %>% summarize(numerator = sum(count)) %>% 
   ungroup() %>% rename(ca = ca2011) %>% 
@@ -59,9 +53,6 @@ analyze_first(filename = "lungcancer_reg", geography = "council", measure = "std
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "lungcancer_reg", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 1549, year_type = "calendar", 
-               profile = "TP", min_opt = 1002068)
-
-odbcClose(channel) # closing connection to SMRA
+               epop_total = 165800, ind_id = 1549, year_type = "calendar")
 
 ##END

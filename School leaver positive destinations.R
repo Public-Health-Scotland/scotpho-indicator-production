@@ -8,10 +8,9 @@
 
 ## This script analyses SG education data on the School leaver positive destinations measure
 
-## The latest data (August 2016) is available here:
+## The latest data (Feb 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/leavedestla
 
-## Numerators not provided so have to back calculate
 ## Data in statistics.scot.gov but not currently in useable state
  # request for additional data sent to SG - keep eye out for future years.  
 ## Need to add in geog codes for LAs as SG Ed Stats use their own ones.
@@ -51,21 +50,8 @@ head(school_leaver)
 names(school_leaver) <- tolower(names(school_leaver)) # make lower case
 school_leaver <- school_leaver %>% rename(areaname = la.name,
                                           denominator = number.of.leavers, 
-                         pc_temp = positive.destination) %>% 
+                                          numerator = positive.destination) %>% 
   filter(areaname != "Scotland") # drop Scotland rows
-
-
-school_leaver$pc_temp[school_leaver$pc_temp == "*"] <- NA # for supressed data
-school_leaver$pc_temp <- as.double(school_leaver$pc_temp, digits=15) # numeric for calculations
-
-# calcuate numerator
-school_leaver <- school_leaver %>% 
-  mutate(numerator = denominator*(pc_temp/100))
-
-school_leaver %>% filter(numerator>denominator) # check numerator makes sense (ie <denominator)
-
-school_leaver <- school_leaver %>% 
-  select(-pc_temp) # drop for now will be recalcuate in analysis function
 
 # geog codes 
 geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
@@ -115,6 +101,8 @@ ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000
 
 
 #resave both rds and csv files
+final_result <- final_result %>% select(c(code, ind_id, year, numerator, rate, lowci,
+                                          upci, def_period, trend_axis))
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
 

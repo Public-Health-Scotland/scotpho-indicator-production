@@ -97,7 +97,7 @@ analyze_second(filename = "drug_deaths_ADP2", measure = "stdrate", time_agg = 1,
 
 ###############################################.
 # CA (council area) file for gender specific indicators in drug profile
-# Female alcohol mortality
+# Female drug mortality
 
 drug_deaths_female <- drug_deaths_ADP2 %>%
   subset(sex_grp==2) %>% 
@@ -108,7 +108,7 @@ drug_deaths_female <- drug_deaths_ADP2 %>%
 saveRDS(drug_deaths_female, file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw.rds'))
 
 ###############################################.
-#FEMALE Alcohol mortality indicator functions
+#FEMALE drug mortality indicator functions
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017, 
               time_agg = 5, epop_age = "normal")
@@ -118,7 +118,7 @@ analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 
                epop_total = 100000, ind_id = 12535, year_type = "calendar", 
                profile = "HN", min_opt = 1245385)
 
-# Male alcohol mortality
+# Male drug mortality
 
 drug_deaths_male <- drug_deaths_ADP2 %>%
   subset(sex_grp==1) %>% 
@@ -129,7 +129,7 @@ drug_deaths_male <- drug_deaths_ADP2 %>%
 saveRDS(drug_deaths_male, file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw.rds'))
 
 ###############################################.
-#FEMALE Alcohol mortality indicator functions
+#FEMALE drug mortality indicator functions
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2017, 
               time_agg = 5, epop_age = "normal")

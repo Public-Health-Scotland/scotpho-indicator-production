@@ -7,6 +7,7 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") #Deprivation functions
 
 #Function to create files for each quintile
 create_quintile_data <- function(quint_number) {
@@ -21,15 +22,13 @@ create_quintile_data <- function(quint_number) {
 ## Part 1 - Format raw data ready for analysis functions ----
 ###############################################.
 # Bringing both dz01 and dz11 data as we use dz01 for period before 2014 and dz11 onwards
-smoking_pregnant_dz11 <- read_excel(paste0(data_folder, "Received Data/IR2019-00231_smoking_pregnancy.xlsx"), 
-                          sheet = "IR2019-00231_smoking_pregnancy") %>%
+smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2019-01566(smoking).csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(year = finyear, datazone = datazone2011, numerator = smoker, 
          denominator = known_status) %>%
 # As mentioned by the maternity team when receiving the data, the year variable refers to the year end e.g. 2004 = 2003/04.
 # Change this to fit the method used for profiles i.e year=start of financial year.
-  mutate(year = year-1) %>% 
-  filter(!is.na(datazone)) # exclude rows with no datazone.
+  mutate(year = year-1) 
 
 # Saving file used for all women
 saveRDS(smoking_pregnant_dz11, file=paste0(data_folder, 'Prepared Data/smoking_preg_raw.rds'))
@@ -42,12 +41,11 @@ smoking_pregnant_dz01 <- read_excel(paste0(data_folder, "Received Data/smoking p
          denominator = total) %>%
   # As mentioned by the maternity team when receiving the data, the year variable refers to the year end e.g. 2004 = 2003/04.
   # Change this to fit the method used for profiles i.e year=start of financial year.
-  mutate(year = year-1) %>% 
-  filter(!is.na(datazone)) # exclude rows with no datazone.
+  mutate(year = year-1) 
 
 # Joining them together
 smok_preg_depr <- rbind(smoking_pregnant_dz11 %>% filter(year>2013),
-                        smoking_pregnant_dz01 %>% filter(year<2014))
+                        smoking_pregnant_dz01 %>% filter(year<2014)) 
 
 # Reading deprivation lookup
 dep_lookup <- read_rds(paste0(data_folder, "Lookups/Geography/deprivation_geography.rds")) %>%
@@ -73,14 +71,14 @@ mapply(create_quintile_data, quint_number = c(1,2,3,4,5))
 ###############################################.
 # For all quintiles analysis
 analyze_first(filename = "smoking_preg", geography = "datazone11", measure = "percent", 
-              yearstart = 2003, yearend = 2017, time_agg = 3)
+              yearstart = 2003, yearend = 2018, time_agg = 3)
 
 analyze_second(filename = "smoking_preg", measure = "percent", time_agg = 3, 
                ind_id = 21002, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="smoking_preg_depr", measure="percent", time_agg=3, 
-                    yearstart= 2003, yearend=2017, year_type = "financial", ind_id = 21002)
+                    yearstart= 2003, yearend=2018, year_type = "financial", ind_id = 21002)
 
 ###############################################.
 # For deprivation quintile indicators 
@@ -88,7 +86,7 @@ quint_files <- c("smoking_preg_q1", "smoking_preg_q2", "smoking_preg_q3",
                  "smoking_preg_q4", "smoking_preg_q5")
 
 mapply(analyze_first, filename = quint_files, geography = "datazone11", 
-       measure = "percent", yearstart = 2003, yearend = 2017, time_agg = 3)
+       measure = "percent", yearstart = 2003, yearend = 2018, time_agg = 3)
 
 mapply(analyze_second, filename = quint_files, measure = "percent", time_agg = 3, 
        year_type = "financial", ind_id = c(1521, 1522, 1523, 1524, 1525))
