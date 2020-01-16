@@ -58,7 +58,7 @@ mapply(format_pops, file_list) #formatting all files
 ## Part 2 - Running analysis function for each indicator ----
 ###############################################.
 mapply(analyze_second, filename = file_list, measure = "percent", 
-       year_type = "calendar", time_agg = 1, 
+       year_type = "calendar", time_agg = 1, qa = F,
        ind_id = c(20002, 4162, 20003, 20005, 1504, 20006, 20007, 20004, 4161, 
                   13101, 13105, 13102, 13103, 13104, 1502, 1503))
 
