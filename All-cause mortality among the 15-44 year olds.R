@@ -90,7 +90,7 @@ analyze_second(filename = "deaths_15to44_dz11", measure = "stdrate", time_agg = 
 analyze_deprivation(filename="deaths_15to44_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2018,  
                     year_type = "calendar", pop = "depr_pop_15to44", 
-                    epop_age="normal", epop_total =200000, ind_id = 20104)
+                    epop_age="normal", epop_total = 76000, ind_id = 20104)
 
 
 #END
