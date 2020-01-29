@@ -153,7 +153,7 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
-# No statistical disclosure applied to inequalities final values
+apply_stats_disc("alcohol_stays_depr") # statistical disclosure applied to final values to ensure consistency with other profile indicators
 
 ###############################################.
 ##Run macros again to generate CYP indicator data
