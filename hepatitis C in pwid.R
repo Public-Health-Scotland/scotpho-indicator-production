@@ -33,12 +33,12 @@ hepc_pwid <- left_join(hepc_pwid, geography_codes, "areaname") %>%
 hepc_pwid2 <- hepc_pwid %>%
   select(year, code, numerator, denominator)
 
-saveRDS(hepc_pwid2, file=paste0(data_folder, 'Temporary/hepc_pwid_formatted.rds'))
+saveRDS(hepc_pwid2, file=paste0(data_folder, 'Temporary/hepc_pwid2_formatted.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-analyze_second(filename = "hepc_pwid", measure = "percent", time_agg = 1, 
+analyze_second(filename = "hepc_pwid2", measure = "percent", time_agg = 1, 
                ind_id = 4122, year_type = "financial")
 
