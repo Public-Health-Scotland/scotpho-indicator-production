@@ -14,6 +14,7 @@
 # filename -  Name of the raw file the function reads without the "_raw.sav" at the end
 # geography - what is the base geography of the raw file: council or datazone2011
 # adp - To calculate the data for ADP level as well change it to TRUE, default is false.
+# hscp - To calculate the data for HSCP too when data is at CA level change it to TRUE, default is false.
 # measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
 # time_agg - Aggregation period used expressed in year, e.g. 3
 # pop - Name of the population file. Only used for those that need a denominator.  
@@ -81,7 +82,8 @@ if (exists("organisation") == TRUE) { #Health Scotland
 ###############################################.
 analyze_first <- function(filename, geography = c("council", "datazone11"), 
                           measure = c("percent", "crude", "stdrate"), time_agg, 
-                          pop = NULL, yearstart, yearend, epop_age = NULL, adp = FALSE) {
+                          pop = NULL, yearstart, yearend, epop_age = NULL, 
+                          adp = FALSE, hscp = FALSE) {
   
   ##################################################.
   ## Part 1 - Read in raw data and add in lookup info ----
@@ -102,10 +104,14 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       
     } else if (geography == "council" ) {
       
-      if (adp == FALSE) { #different variables required if ADP included
+      if (adp == FALSE & hscp == FALSE) { #different variables required if ADP/HSCP included
         geo_lookup <- geo_lookup %>% select(ca2019, hb2019) 
-      } else if (adp==TRUE) {
+      } else if (adp==TRUE & hscp == FALSE) {
         geo_lookup <- geo_lookup %>% select(ca2019, hb2019, adp)
+      } else if (adp==FALSE & hscp == TRUE) {
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019, hscp2019)
+      } else if (adp==TRUE & hscp == TRUE) {
+        geo_lookup <- geo_lookup %>% select(ca2019, hb2019, adp, hscp2019)
       }
       
       geo_lookup <- geo_lookup %>% distinct %>%  rename(ca = ca2019, hb = hb2019)
@@ -133,7 +139,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         ungroup() %>% select(-c(geolevel, datazone)) %>% 
         group_by(code, year) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     } else if (measure %in% c("crude", "percent") & geography == "council") {
-      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb, scotland) %>% 
+      data_indicator <- data_indicator %>% gather(geolevel, code, ca, hb:scotland) %>% 
         select(-c(geolevel)) %>% 
         group_by(code, year) %>% summarise_all(sum, na.rm =T) %>% ungroup()
     }
@@ -143,17 +149,38 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       if (measure == "stdrate") {
         pop_lookup <- readRDS(paste0(lookups, "Population/", pop,'_SR.rds')) %>% 
           subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
-          mutate_at(c("sex_grp", "age_grp", "code"), as.factor)
+          mutate_at(c("sex_grp", "age_grp"), as.character)
         
-        data_indicator$age_grp <-as.factor(data_indicator$age_grp)
-        data_indicator <- full_join(x=data_indicator, y=pop_lookup, # Matching population with data
+        # Excludes ADP level if not wanted
+        if (adp == FALSE) {
+          pop_lookup <- pop_lookup %>% subset(substr(code,1,3) != "S11")
+        }
+        
+        # Excludes HSCP level if not wanted
+        if (hscp == FALSE) {
+          pop_lookup <- pop_lookup %>% subset(substr(code,1,3) != "S37")
+        }
+        
+        # Merging pop with indicator data
+        data_indicator$age_grp <- as.character(data_indicator$age_grp)
+        data_indicator2 <- full_join(x=data_indicator, y=pop_lookup, # Matching population with data
                       by = c("year", "code", "sex_grp", "age_grp"))
         
       } else if (measure %in% c("crude", "percent")){
         
         pop_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
           subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
-          mutate(code = as.factor(code))
+          mutate(code = as.character(code))
+        
+        # Excludes ADP level if not wanted
+        if (adp == FALSE) {
+          pop_lookup <- pop_lookup %>% subset(substr(code,1,3) != "S11")
+        }
+        
+        # Excludes HSCP level if not wanted
+        if (hscp == FALSE) {
+          pop_lookup <- pop_lookup %>% subset(substr(code,1,3) != "S37")
+        }
         
         # Matching population with data
         data_indicator <- full_join(x=data_indicator, y=pop_lookup, by = c("year", "code"))
@@ -168,6 +195,11 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     # Excludes ADP level if not wanted
     if (adp == FALSE) {
       data_indicator <- data_indicator %>% subset(substr(code,1,3) != "S11")
+    }
+    
+    # Excludes HSCP level if not wanted
+    if (hscp == FALSE) {
+      data_indicator <- data_indicator %>% subset(substr(code,1,3) != "S37")
     }
     
     ##################################################.
@@ -451,13 +483,13 @@ run_qa <- function(filename, old_file="default", check_extras=c()){
 ############################################################.
 # recode age groups
 create_agegroups <- function(dataset) {
-    dataset %>% mutate(age_grp = case_when(between(age, 0, 4) ~ 1,
+    dataset %>% mutate(age_grp = as.character(case_when(between(age, 0, 4) ~ 1,
       between(age, 5, 9) ~ 2, between(age, 10, 14) ~ 3, between(age, 15, 19) ~ 4, 
       between(age, 20, 24) ~ 5, between(age, 25, 29) ~ 6, between(age, 30, 34) ~ 7, 
       between(age, 35, 39) ~ 8, between(age, 40, 44) ~ 9, between(age, 45, 49) ~ 10, 
       between(age, 50, 54) ~ 11, between(age, 55, 59) ~ 12, between(age, 60, 64) ~ 13,
       between(age, 65, 69) ~ 14, between(age, 70, 74) ~ 15,  between(age, 75, 79) ~ 16,
-      between(age, 80, 84) ~ 17, between(age, 85, 89) ~ 18, between(age, 90, 200) ~ 19))
+      between(age, 80, 84) ~ 17, between(age, 85, 89) ~ 18, between(age, 90, 200) ~ 19)))
   }
 
 ##END
