@@ -57,40 +57,47 @@ drug_deaths_smr <- tbl_df(dbGetQuery(channel, statement=
          ")) %>%
   setNames(tolower(names(.)))  #variables to lower case
 
+# Adding padding to the entry_no variable so it matches NRS format
 drug_deaths_smr <- drug_deaths_smr %>% 
   mutate(entry_no = case_when(nchar(entry_no) == 2 ~ paste0("0", entry_no),
                               nchar(entry_no) == 1 ~ paste0("00", entry_no),
                               TRUE ~paste0(entry_no)))
 
-drug_deaths_smr <- drug_deaths_smr %>% mutate(rdno_entry_no_yr = paste0(rdno, entry_no, year)) %>%
-  create_agegroups() 
+drug_deaths_smr <- drug_deaths_smr %>% 
+# Creating identifier used to match NRS and SMR data
+  mutate(rdno_entry_no_yr = paste0(rdno, entry_no, year)) %>%
+  create_agegroups() # 5 year age-bands grop
 
 drug_deaths <- left_join(drug_deaths_NRS, drug_deaths_smr, "rdno_entry_no_yr")
            
-#8480 records
+# checking if totals match with NRS publication
 drug_deaths %>% group_by(year) %>% count() %>% View()
 
 ###############################################.
-## Part 2 - Geography basefiles ----
+## Part 2 - Creating basefiles ----
 ###############################################.
-
-# Open LA and datazone info.
+# Bring council area info.
 postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
+# Aggregating data by CA
 drug_deaths <- left_join(drug_deaths, postcode_lookup, "pc7") %>% 
-  select(year, hb2019, ca2019, datazone2011, pc7, sex_grp, age_grp, rdno_entry_no_yr) %>% 
-  # subset(!(is.na(datazone2011))) %>%  #select out non-scottish
-  mutate_if(is.character, factor) %>% # converting variables into factors
   rename(datazone = datazone2011, ca = ca2019) %>%
   group_by(year, ca, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup()
 
 saveRDS(drug_deaths, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw.rds'))
-drug_deaths %>% group_by(year) %>% summarise(num=sum(numerator)) %>% View()
+
+# Females
+saveRDS(drug_deaths %>% subset(sex_grp==2), 
+        file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw.rds'))
+
+# Males 
+saveRDS(drug_deaths %>% subset(sex_grp==1),
+        file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw.rds'))
 
 ###############################################.
-## Part 3 - Run analysis functions ----
+## Part 3 - All drug-related mortality analysis functions ----
 ###############################################.
 
 # Analysis by CA
@@ -103,24 +110,13 @@ analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1,
 
 all_drug_deaths <- rbind(final_result, drug_deaths_02_05)
 
-saveRDS(all_drug_deaths, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw.rds'))
-
 #work out how to save this for shiny
 saveRDS(all_drug_deaths, file = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.rds"))
 write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.csv"))
 
 ###############################################.
-## Part 4 - Female drug related mortality ----
+## Part 4 - Female drug related mortality analysis functions ----
 ###############################################.
-
-drug_deaths_female <- drug_deaths %>% 
-  # subset(!(is.na(datazone2011))) %>%  #select out non-scottish
-  subset(sex_grp==2) %>%
-  mutate_if(is.character, factor)  # converting variables into factors
-
-saveRDS(drug_deaths_female, file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw.rds'))
-
-# Analysis
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2006, yearend = 2018, 
               time_agg = 5, epop_age = "normal")
@@ -136,22 +132,13 @@ saveRDS(all_female_drug_deaths, file = paste0(data_folder, "Data to be checked/a
 write_csv(all_female_drug_deaths, path = paste0(data_folder, "Data to be checked/all_female_drug_deaths_shiny.csv"))
 
 ###############################################.
-## Part 5 - Male drug related mortality ----
+## Part 5 - Male drug related mortality analysis functions ----
 ###############################################.
-
-drug_deaths_male <- drug_deaths %>% 
-  # subset(!(is.na(datazone2011))) %>%  #select out non-scottish
-  subset(sex_grp==1) %>%
-  mutate_if(is.character, factor)  # converting variables into factors
-
-saveRDS(drug_deaths_male, file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw.rds'))
-
-# Analysis
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2006, yearend = 2018, 
               time_agg = 5, epop_age = "normal")
 
-#epop is only 100000 as only female half population
+#epop is only 100000 as only male half population
 analyze_second(filename = "drug_deaths_male", measure = "stdrate", time_agg = 5, 
                epop_total = 100000, ind_id = 12534, year_type = "calendar")
 
