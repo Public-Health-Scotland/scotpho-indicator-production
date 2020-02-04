@@ -163,7 +163,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
         
         # Merging pop with indicator data
         data_indicator$age_grp <- as.character(data_indicator$age_grp)
-        data_indicator2 <- full_join(x=data_indicator, y=pop_lookup, # Matching population with data
+        data_indicator <- full_join(x=data_indicator, y=pop_lookup, # Matching population with data
                       by = c("year", "code", "sex_grp", "age_grp"))
         
       } else if (measure %in% c("crude", "percent")){

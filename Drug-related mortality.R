@@ -103,14 +103,14 @@ saveRDS(drug_deaths %>% subset(sex_grp==1),
 # Analysis by CA
 analyze_first(filename = "drug_deaths", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2006, yearend = 2018,
-              time_agg = 1, epop_age = "normal")
+              time_agg = 1, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1, 
                epop_total = 200000, ind_id = 4121, year_type = "calendar")
 
 all_drug_deaths <- rbind(final_result, drug_deaths_02_05)
 
-#work out how to save this for shiny
+# save this for shiny
 saveRDS(all_drug_deaths, file = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.rds"))
 write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.csv"))
 
@@ -118,8 +118,8 @@ write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_dr
 ## Part 4 - Female drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2018, 
-              time_agg = 5, epop_age = "normal")
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2018,
+              time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 5, 
@@ -136,7 +136,7 @@ write_csv(all_female_drug_deaths, path = paste0(data_folder, "Data to be checked
 ###############################################.
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
               pop = "CA_pop_allages", yearstart = 2006, yearend = 2018, 
-              time_agg = 5, epop_age = "normal")
+              time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only male half population
 analyze_second(filename = "drug_deaths_male", measure = "stdrate", time_agg = 5, 
