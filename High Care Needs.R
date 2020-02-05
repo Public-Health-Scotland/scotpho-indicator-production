@@ -109,9 +109,9 @@ df_old <- readWorkbook(xlsxFile = "N:/All/ScotPHO Profiles/Rolling Updates/Socia
                        sheet = "EXPORT") %>% 
   as_tibble() %>% 
   rename(ca2019 = LA) %>% 
-  filter(year < 2009) # select only years not in current data
+  filter(Year < 2009) # select only years not in current data
 
-df_old$ca <- as_factor(df_old$ca) # change ca to factor
+df_old$ca2019 <- as_factor(df_old$ca2019) # change ca2019 to factor
 
 names(df_old) <- tolower(names(df_old)) # lowercase var names
 
@@ -120,15 +120,27 @@ df_old <- df_old %>% left_join(ca_lookup, by = "ca2019") # attach ca2019 names
 unique(df_old$ca2019[is.na(df_old$ca)]) # print unmatched codes 
 
 ## sort out these ca2011 codes
-#  S12000015	"Fife"
-#  S12000046	"Glasgow City"
-#  S12000044	"North Lanarkshire"
-#  S12000024	"Perth and Kinross"
+#  S12000015	"Fife" - "S12000047"
+df_old$ca2019[df_old$ca2019 == "S12000015"] <- "S12000047"
+#  S12000046	"Glasgow City"  - "S12000049"
+df_old$ca2019[df_old$ca2019 == "S12000046"] <- "S12000049"
+#  S12000044	"North Lanarkshire"  - "S12000050"
+df_old$ca2019[df_old$ca2019 == "S12000044"] <- "S12000050"
+#  S12000024	"Perth and Kinross"  - "S12000048"
+df_old$ca2019[df_old$ca2019 == "S12000024"] <- "S12000048"
 
+# recheck ca codes
+df_old <- df_old %>% select(-ca) %>% left_join(ca_lookup, by = "ca2019") # attach ca2019 names
+unique(df_old$ca2019[is.na(df_old$ca)]) # print unmatched codes 
 
+# append to prepared data
+df_old <- df_old %>% select(-ca) %>% rename(ca = ca2019)
+df_old$year <- as.character(df_old$year)
+df_prepared <- df_prepared %>%  
+  bind_rows(df_old) %>% arrange(year, ca)
 
 ## save raw file
-#saveRDS(df_prepared, paste0(data_folder,"Prepared Data/high_care_needs_raw.rds"))
+saveRDS(df_prepared, paste0(data_folder,"Prepared Data/high_care_needs_raw.rds"))
 
 
 ###############################################.
@@ -145,13 +157,13 @@ source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R")
 
 ###### high level care needs at home --------
 
-#analyze_first(filename = "", geography = "council", 
-#              measure = "", yearstart = , yearend = , 
-#              time_agg = 1)
+analyze_first(filename = "high_care_needs", geography = "council", 
+              measure = "percent", yearstart = 2006, yearend = 2018, 
+              time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
-#analyze_second(filename = "", measure = "", crude_rate = ,
-#               time_agg = 1, ind_id = "", year_type = "")
+analyze_second(filename = "high_care_needs", measure = "percent", 
+               time_agg = 1, ind_id = "20502", year_type = "financial")
 
 
 
