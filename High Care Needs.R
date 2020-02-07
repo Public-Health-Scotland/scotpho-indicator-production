@@ -147,7 +147,7 @@ saveRDS(df_prepared, paste0(data_folder,"Prepared Data/high_care_needs_raw.rds")
 ## Packages/Filepaths/Functions ----
 ###############################################.
 organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
+source("./1.indicator_analysis.R") #Normal indicator functions
 #source("./2.deprivation_analysis.R") # deprivation function - not required
 
 
