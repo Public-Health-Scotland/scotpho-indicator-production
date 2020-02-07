@@ -6,7 +6,7 @@
 ################################################################################
 ################################################################################
 
-
+# AP
 
 ## This script prepares SG Liquor Licensing in Scotland profile indicators:
 ##      Personal licences in force
