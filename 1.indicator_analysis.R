@@ -59,7 +59,8 @@ library(rmarkdown) #for data quality checking
 library(shiny) #for data quality checking
 library(flextable) # for output tables
 library(plotly) #for data quality checking
-library(htmltools)
+library(htmltools) #for data quality checking
+library(magrittr) #for other pipe operators
 
 # Varies filepaths depending on if using server or not and what organisation uses it.
 if (exists("organisation") == TRUE) { #Health Scotland

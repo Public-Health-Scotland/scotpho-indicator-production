@@ -31,7 +31,7 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
     "SELECT year_of_registration year, substr(UNDERLYING_CAUSE_OF_DEATH,1,3) diag, age, 
             sex sex_grp, postcode pc7 
     FROM ANALYSIS.GRO_DEATHS_C
-    WHERE date_of_registration between '1 January 2012' and '31 December 2017'  
+    WHERE date_of_registration between '1 January 2012' and '31 December 2018'  
          AND sex <> 9 
          AND age > 34 
          AND country_of_residence='XS' 
@@ -41,9 +41,9 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(pc7, ca2011, hb2014)
+  select(pc7, ca2019, hb2019)
 
 smoking_deaths <- left_join(smoking_deaths, postcode_lookup, "pc7") %>% 
   mutate(scotland = "S00000001") # creating variable for Scotland
@@ -52,7 +52,7 @@ smoking_deaths <- left_join(smoking_deaths, postcode_lookup, "pc7") %>%
 ## Part 2 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 # Taken from Public Health England profiles
-smoking_deaths <- smoking_deaths %>% 
+smoking_deaths %<>% 
   mutate(current = case_when( #Current smokers risk
     sex_grp == 1 & diag >= "C00" & diag <= "C14" ~ 10.89, #Upper respiratory sites cancers
     sex_grp == 2 & diag >= "C00" & diag <= "C14" ~ 5.08,
@@ -171,11 +171,11 @@ smoking_deaths <- smoking_deaths %>%
 ###############################################.
 ## Part 3 - Aggregating geographic areas ----
 ###############################################.
-smoking_deaths <- smoking_deaths %>% 
+smoking_deaths %<>% 
   # Excluding cases where young people has a disease for which only risk for older people.
   filter(current > 0) %>% 
   #creating code variable with all geos and then aggregating to get totals
-  gather(geolevel, code, ca2011:scotland) %>% 
+  gather(geolevel, code, ca2019:scotland) %>% 
   select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
 
@@ -200,11 +200,11 @@ smok_prev_area$code[which(smok_prev_area$type=="ca")] <- recode(smok_prev_area$a
                                                                 'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
                                                                 'East Renfrewshire' = 'S12000011', 'Edinburgh, City of' = 'S12000036',
                                                                 'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
-                                                                'Fife' = 'S12000015', 'Glasgow City' = 'S12000046',
+                                                                'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
                                                                 'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
                                                                 'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
-                                                                'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000044',  
-                                                                'Orkney Islands' = 'S12000023', 'Perth & Kinross' = 'S12000024',
+                                                                'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
+                                                                'Orkney Islands' = 'S12000023', 'Perth & Kinross' = 'S12000048',
                                                                 'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
                                                                 'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
                                                                 'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
@@ -212,12 +212,12 @@ smok_prev_area$code[which(smok_prev_area$type=="ca")] <- recode(smok_prev_area$a
 
 smok_prev_area$code[which(smok_prev_area$type=="hb")] <- recode(smok_prev_area$area[which(smok_prev_area$type=="hb")],
                                                                 'Ayrshire & Arran' = 'S08000015', 'Borders' = 'S08000016',
-                                                                'Dumfries & Galloway' = 'S08000017','Fife' = 'S08000018',
+                                                                'Dumfries & Galloway' = 'S08000017', 'Fife' = 'S08000029',
                                                                 'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
-                                                                'Greater Glasgow & Clyde' = 'S08000021','Highland' = 'S08000022',
-                                                                'Lanarkshire' = 'S08000023', 'Lothian' = 'S08000024',
+                                                                'Greater Glasgow & Clyde' = 'S08000031','Highland' = 'S08000022',
+                                                                'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
                                                                 'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
-                                                                'Tayside' = 'S08000027','Western Isles' = 'S08000028','Scotland' = 'S00000001')
+                                                                'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
 
 smok_prev_area <- smok_prev_area %>% rename(sex_grp = sex) %>% select(-area, -type) %>% 
   mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
@@ -236,7 +236,8 @@ smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prev
 # Merging prevalence with smoking deaths basefile 
 smoking_deaths <- left_join(smoking_deaths, smok_prev_area, by = c("code", "year", "sex_grp")) %>% 
   #recode age groups to match prevalence by age file
-  mutate(age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
+  mutate(age_grp = as.numeric(age_grp),
+         age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
                               age_grp>=12 & age_grp<=13 ~ 3,
                               age_grp>=14 & age_grp<=15 ~ 4,
                               age_grp>=16 ~ 5))
@@ -249,7 +250,7 @@ smoking_deaths <- left_join(smoking_deaths, smok_prev_age, by = c("age_grp2", "y
 ###############################################.
 # Calculate age, sex and area specific esimtated prevalence info using 
 # Public Health England formula. divide by 100 to get a proportion.
-smoking_deaths <- smoking_deaths %>% 
+smoking_deaths %<>% 
   mutate(# current and ex smoker prevalence specific to area, age and sex group.
     prev_current = (current_area/scot_current)*current_age/100,
     prev_ex=(ex_area/scot_ex)*ex_age/100,
@@ -269,7 +270,7 @@ saveRDS(smoking_deaths, file=paste0(data_folder, 'Prepared Data/smoking_deaths_r
 ###############################################.
 #All patients asthma
 analyze_first(filename = "smoking_deaths",  measure = "stdrate", geography = "all",
-              pop = "CA_pop_allages", yearstart = 2012, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2012, yearend = 2018,
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_deaths", measure = "stdrate", time_agg = 2, 
