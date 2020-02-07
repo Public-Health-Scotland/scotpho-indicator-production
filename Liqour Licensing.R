@@ -127,7 +127,7 @@ saveRDS(personal, paste0(data_folder,"Prepared Data/personal_raw.rds"))
 ## Packages/Filepaths/Functions ----
 ###############################################.
 organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
+source("./1.indicator_analysis.R") #Normal indicator functions
 #source("./2.deprivation_analysis.R") # deprivation function - not required
 
 
@@ -139,11 +139,39 @@ source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R")
 
 analyze_first(filename = "premises_total", geography = "council", adp = TRUE,
               measure = "crude", yearstart = 2011, yearend = 2018, 
-              pop = "ADP_pop_18+", time_agg = 1)
+              pop = "CA_pop_18+", time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "premises_total", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "4144", year_type = "financial", pop = "ADP_pop_18+")
+               time_agg = 1, ind_id = "4144", year_type = "financial", pop = "CA_pop_18+")
+
+###### premises licenses on trade --------
+analyze_first(filename = "premises_on", geography = "council", adp = TRUE,
+              measure = "crude", yearstart = 2011, yearend = 2018, 
+              pop = "CA_pop_18+", time_agg = 1)
+
+# then complete analysis with the updated '_formatted.rds' file
+analyze_second(filename = "premises_on", measure = "crude", crude_rate = 10000,
+               time_agg = 1, ind_id = "4114", year_type = "financial", pop = "CA_pop_18+")
+
+
+###### premises licenses off trade --------
+analyze_first(filename = "premises_off", geography = "council", adp = TRUE,
+              measure = "crude", yearstart = 2011, yearend = 2018, 
+              pop = "CA_pop_18+", time_agg = 1)
+
+# then complete analysis with the updated '_formatted.rds' file
+analyze_second(filename = "premises_off", measure = "crude", crude_rate = 10000,
+               time_agg = 1, ind_id = "4139", year_type = "financial", pop = "CA_pop_18+")
+
+###### personal licenses --------
+analyze_first(filename = "personal", geography = "council", adp = TRUE,
+              measure = "crude", yearstart = 2011, yearend = 2018, 
+              pop = "CA_pop_18+", time_agg = 1)
+
+# then complete analysis with the updated '_formatted.rds' file
+analyze_second(filename = "personal", measure = "crude", crude_rate = 10000,
+               time_agg = 1, ind_id = "4140", year_type = "financial", pop = "CA_pop_18+")
 
 
 #### ----------------
