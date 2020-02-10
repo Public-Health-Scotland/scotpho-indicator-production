@@ -7,6 +7,10 @@
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
+# tidy old code
+# need of admissiond/end dates in final sql query?
+# Recode hbs too to 2019 versions
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -20,23 +24,63 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
+# Smoking attributable diagnosis
+smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
+                       "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
+
 # Extracting admissions from Scottish residents 35 and over with a smoking 
 # attributable diagnosis code within the main diagnosis field. 
-smoking_adm <- tbl_df(dbGetQuery(channel, statement=
-    "SELECT distinct link_no || '-' || cis_marker admission_id, substr(main_condition,1,3) diag, 
-            min(council_area) ca, min(hbres_currentdate) hb, min(sex) sex_grp,
-            max(extract (year from discharge_date)) year, min(age_in_years) age, 
-            max(discharge_date) disch_date, min(admission_date) adm_date
-    FROM ANALYSIS.SMR01_PI  
-    WHERE discharge_date between '1 January 2012' and '31 December 2018'  
-         AND sex <> 0 
-         AND age_in_years > 34 
-         AND hbres_currentdate between 'S08000015' AND 'S08000028' 
-         AND council_area is not null 
-         AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]') 
-     GROUP BY link_no || '-' || cis_marker, main_condition
-     ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
-  setNames(tolower(names(.))) %>%  # variables to lower case
+# smoking_adm <- tbl_df(dbGetQuery(channel, statement=
+#     "SELECT distinct link_no || '-' || cis_marker admission_id, substr(main_condition,1,3) diag, 
+#             min(council_area) ca, min(hbres_currentdate) hb, min(sex) sex_grp,
+#             max(extract (year from discharge_date)) year, min(age_in_years) age, 
+#             max(discharge_date) disch_date, min(admission_date) adm_date
+#     FROM ANALYSIS.SMR01_PI  
+#     WHERE discharge_date between '1 January 2012' and '31 December 2018'  
+#          AND sex <> 0 
+#          AND age_in_years > 34 
+#          AND hbres_currentdate between 'S08000015' AND 'S08000028' 
+#          AND council_area is not null 
+#          AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]') 
+#      GROUP BY link_no || '-' || cis_marker, main_condition
+#      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
+#   setNames(tolower(names(.))) %>%  # variables to lower case
+#   create_agegroups() # Creating age groups for standardization.
+
+smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
+    "WITH adm_table AS (
+        SELECT distinct link_no || '-' || cis_marker admission_id, 
+            FIRST_VALUE(council_area) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY admission_date, discharge_date) ca,
+            FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY admission_date, discharge_date) hb,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY admission_date, discharge_date) sex_grp,
+            FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY admission_date, discharge_date) diag,
+            MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
+            MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
+            MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
+            MAX(discharge_date) OVER (PARTITION BY link_no, cis_marker) end_cis
+        FROM ANALYSIS.SMR01_PI  z
+        WHERE exists(
+          SELECT * 
+          FROM ANALYSIS.SMR01_PI  
+          WHERE link_no=z.link_no and cis_marker=z.cis_marker
+              AND regexp_like(main_condition, '", smoking_diag, "')
+              AND age_in_years > 34
+              AND discharge_date between '1 January 2012' and '31 December 2018' 
+        )
+    )
+    SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
+           start_cis, end_cis, ca, hb
+    FROM adm_table 
+    WHERE end_cis between '1 January 2012' and '31 December 2018' 
+        AND age > 34 
+        AND sex_grp in ('1', '2') 
+        AND hb between 'S08000015' AND 'S08000028'
+        AND regexp_like(diag, '", smoking_diag, "')"))) %>% 
+  setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 smoking_adm %<>% # adding council codes
@@ -44,9 +88,9 @@ smoking_adm %<>% # adding council codes
                      '04'='S12000035', '05'='S12000026', '06'='S12000005', 
                      '07'='S12000039', '08'='S12000006', '09'='S12000042', '10'='S12000008',
                      '11'='S12000045', '12'='S12000010', '13'='S12000011', '14'='S12000036', 
-                     '15'='S12000014', '16'='S12000015', '17'='S12000046', '18'='S12000017', 
+                     '15'='S12000014', '16'='S12000047', '17'='S12000049', '18'='S12000017', 
                      '19'='S12000018', '20'='S12000019', '21'='S12000020', '22'='S12000021', 
-                     '23'='S12000044', '24'='S12000023', '25'='S12000024', '26'='S12000038', 
+                     '23'='S12000050', '24'='S12000023', '25'='S12000048', '26'='S12000038', 
                      '27'='S12000027', '28'='S12000028', '29'='S12000029', '30'='S12000030',  
                      '31'='S12000040', '32'='S12000013'))
 
@@ -190,17 +234,18 @@ smoking_adm %<>%
 ## Part 3 - Keeping only one record per CIS and aggregating geographic areas ----
 ###############################################.
 smoking_adm %<>% 
-  arrange(admission_id, adm_date) %>% 
-  group_by(admission_id) %>% 
-  # selecting first value of an admission for all variables, including the risks 
-  # to follow PHE methodology
-  summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
+  # arrange(admission_id, adm_date) %>% 
+  # group_by(admission_id) %>% 
+  # # selecting first value of an admission for all variables, including the risks 
+  # # to follow PHE methodology
+  # summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
   # Excluding cases where young people has a disease for which only risk for older people.
-  filter(current > 0) %>% ungroup() %>% 
+  filter(current > 0) %>% #ungroup() %>% 
   mutate(scotland = "S00000001") %>%  # creating variable for Scotland
   #creating code variable with all geos and then aggregating to get totals
-  gather(geolevel, code, ca:scotland) %>% 
-  ungroup() %>% select(-c(geolevel)) %>% 
+  gather(geolevel, code, c(ca, hb, scotland)) %>% 
+  # ungroup() %>% 
+  select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
@@ -259,7 +304,8 @@ smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prev
 # Merging prevalence with smoking admissions basefile 
 smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "sex_grp")) %>% 
   #recode age groups to match prevalence by age file
-  mutate(age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
+  mutate(age_grp = as.numeric(age_grp),
+         age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
                               age_grp>=12 & age_grp<=13 ~ 3,
                               age_grp>=14 & age_grp<=15 ~ 4,
                               age_grp>=16 ~ 5))
@@ -291,7 +337,7 @@ saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds
 ## Part 6 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
-              pop = "CA_pop_allages", yearstart = 2012, yearend = 2017,
+              pop = "CA_pop_allages", yearstart = 2012, yearend = 2018,
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
