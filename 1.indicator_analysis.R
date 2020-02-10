@@ -159,7 +159,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       }
       
       # Excludes HSCP level if not wanted
-      if (hscp == FALSE) {
+      if (hscp == FALSE & geography == "council") {
         pop_lookup %<>% subset(substr(code,1,3) != "S37")
       }
       
@@ -180,7 +180,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       }
       
       # Excludes HSCP level if not wanted
-      if (hscp == FALSE) {
+      if (hscp == FALSE & geography == "council") {
         pop_lookup %<>% subset(substr(code,1,3) != "S37")
       }
       
@@ -200,8 +200,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
     data_indicator %<>% subset(substr(code,1,3) != "S11")
   }
   
-  # Excludes HSCP level if not wanted
-  if (hscp == FALSE) {
+  # Excludes HSCP level if not wanted when council data is the base
+  if (hscp == FALSE & geography == "council") {
     data_indicator %<>% subset(substr(code,1,3) != "S37")
   }
   
