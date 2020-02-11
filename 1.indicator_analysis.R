@@ -159,7 +159,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
       }
       
       # Excludes HSCP level if not wanted
-      if (hscp == FALSE & geography == "council") {
+      if (hscp == FALSE & geography %in% c("council", "all")) {
         pop_lookup %<>% subset(substr(code,1,3) != "S37")
       }
       
