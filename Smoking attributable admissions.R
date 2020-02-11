@@ -7,10 +7,6 @@
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
-# tidy old code
-# need of admissiond/end dates in final sql query?
-# Recode hbs too to 2019 versions
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -28,25 +24,15 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
                        "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
 
-# Extracting admissions from Scottish residents 35 and over with a smoking 
-# attributable diagnosis code within the main diagnosis field. 
-# smoking_adm <- tbl_df(dbGetQuery(channel, statement=
-#     "SELECT distinct link_no || '-' || cis_marker admission_id, substr(main_condition,1,3) diag, 
-#             min(council_area) ca, min(hbres_currentdate) hb, min(sex) sex_grp,
-#             max(extract (year from discharge_date)) year, min(age_in_years) age, 
-#             max(discharge_date) disch_date, min(admission_date) adm_date
-#     FROM ANALYSIS.SMR01_PI  
-#     WHERE discharge_date between '1 January 2012' and '31 December 2018'  
-#          AND sex <> 0 
-#          AND age_in_years > 34 
-#          AND hbres_currentdate between 'S08000015' AND 'S08000028' 
-#          AND council_area is not null 
-#          AND regexp_like(main_condition, 'C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]') 
-#      GROUP BY link_no || '-' || cis_marker, main_condition
-#      ORDER BY link_no || '-' || cis_marker, max(discharge_date)")) %>% 
-#   setNames(tolower(names(.))) %>%  # variables to lower case
-#   create_agegroups() # Creating age groups for standardization.
-
+# Extracting one row per admission in which there was an episode with
+# an smoking attributable admission as their main condition
+# during the right period with an age of 35+. If a patient had an episode with
+# a related diagnosis outside the period that admission won't be counted.
+# For each admissions it extracts the information from the first episode.
+# Then of those admissions selecting the ones that had an smoking attributable
+# diagnosis as their first main diagnosis (to follow PHE methodology); with an
+# age on admission of 35+, valid sex group, Scottish resident, and with a final
+# discharge date in the period of interest
 smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
@@ -83,7 +69,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
-smoking_adm %<>% # adding council codes
+smoking_adm %<>% # adding 2019 council codes and changing to 2019 hb codes
   mutate(ca = recode(ca, '01'='S12000033', '02'='S12000034', '03'='S12000041', 
                      '04'='S12000035', '05'='S12000026', '06'='S12000005', 
                      '07'='S12000039', '08'='S12000006', '09'='S12000042', '10'='S12000008',
@@ -92,7 +78,9 @@ smoking_adm %<>% # adding council codes
                      '19'='S12000018', '20'='S12000019', '21'='S12000020', '22'='S12000021', 
                      '23'='S12000050', '24'='S12000023', '25'='S12000048', '26'='S12000038', 
                      '27'='S12000027', '28'='S12000028', '29'='S12000029', '30'='S12000030',  
-                     '31'='S12000040', '32'='S12000013'))
+                     '31'='S12000040', '32'='S12000013'),
+         hb = recode(hb, 'S08000018' = 'S08000029', 'S08000027' = 'S08000030',
+                     'S08000021' = 'S08000031', 'S08000023' = 'S08000032'))
 
 ###############################################.
 ## Part 2 - add in relative risks of each disease as a result of smoking ----
@@ -231,20 +219,14 @@ smoking_adm %<>%
     TRUE ~ 0))
 
 ###############################################.
-## Part 3 - Keeping only one record per CIS and aggregating geographic areas ----
+## Part 3 - Aggregating geographic areas ----
 ###############################################.
 smoking_adm %<>% 
-  # arrange(admission_id, adm_date) %>% 
-  # group_by(admission_id) %>% 
-  # # selecting first value of an admission for all variables, including the risks 
-  # # to follow PHE methodology
-  # summarise_at(c("sex_grp", "age_grp", "year", "current", "ex", "ca", "hb"), first) %>% 
   # Excluding cases where young people has a disease for which only risk for older people.
-  filter(current > 0) %>% #ungroup() %>% 
+  filter(current > 0) %>% 
   mutate(scotland = "S00000001") %>%  # creating variable for Scotland
   #creating code variable with all geos and then aggregating to get totals
   gather(geolevel, code, c(ca, hb, scotland)) %>% 
-  # ungroup() %>% 
   select(-c(geolevel)) %>% 
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
 
