@@ -23,7 +23,8 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # Smoking attributable diagnosis
 smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
                        "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
-
+# Sorting variables
+sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # Extracting one row per admission in which there was an episode with
 # an smoking attributable admission as their main condition
 # during the right period with an age of 35+. If a patient had an episode with
@@ -37,13 +38,13 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
             FIRST_VALUE(council_area) OVER (PARTITION BY link_no, cis_marker 
-                ORDER BY admission_date, discharge_date) ca,
+                ORDER BY ", sort_var, ") ca,
             FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
-                ORDER BY admission_date, discharge_date) hb,
+                ORDER BY ", sort_var, ") hb,
             FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
-                ORDER BY admission_date, discharge_date) sex_grp,
+                ORDER BY ", sort_var, ") sex_grp,
             FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
-                ORDER BY admission_date, discharge_date) diag,
+                ORDER BY ", sort_var, ") diag,
             MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
             MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
             MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
@@ -59,7 +60,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
-           start_cis, end_cis, ca, hb
+           start_cis, end_cis, ca, hb,
     FROM adm_table 
     WHERE end_cis between '1 January 2012' and '31 December 2018' 
         AND age > 34 
