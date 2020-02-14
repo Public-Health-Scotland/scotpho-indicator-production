@@ -455,17 +455,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
   ##################################################.
   ##  Part 6 - Checking results ----
   ##################################################.
-  # Varies data checks depending on what organisation running code.
-  if (exists("organisation") == TRUE) { #Health Scotland
-    if (organisation == "HS") { 
-      # Selecting Health boards and Scotland for latest year in dataset
-      ggplot(data = data_indicator %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                              & year== max(year)), aes(code, rate) ) +
-        geom_point(stat = "identity") +
-        geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
-    }
-    
-  } else if (qa == FALSE) { #if no quality assurance desired
+  if (qa == FALSE) { #if no quality assurance desired
     # Selecting Health boards and Scotland for latest year in dataset
     ggplot(data = data_indicator %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
                                             & year== max(year)), aes(code, rate) ) +
