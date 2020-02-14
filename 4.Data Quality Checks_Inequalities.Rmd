@@ -32,13 +32,13 @@ ca <- any(substr(data_indicator$code,1,3) == "S12")
 #Optional parameters allows for checking against previously run data file.
 #Paramater also handles if old indicator name to be different to current name.
 
-if (qa==TRUE){ #if qa is true then open old indicator file for comparisons
+if (new_ind==FALSE){ #if qa is true then open old indicator file for comparisons
     if (old_file == "default"){  #if no old_filename supplied default to new filename supplied
             old_filename <- {{filename}}
     }else if (old_file != "default"){
             old_filename <- {{old_file}}} #Reading last shiny data file loaded for comparisons.
 old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_ineq.rds"))
-}else if(qa==FALSE){
+}else if(new_ind==TRUE){
   old_filename <- "no historic file"
 }
 
@@ -52,7 +52,7 @@ Indicator:  **`r filename`** <br>
 Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, ".rds"))`<br>
-**Old** indicator file (for comparisons):  /`r if(qa==TRUE){(paste0(data_folder, "Shiny Data/", old_filename, ".rds"))}`
+**Old** indicator file (for comparisons):  /`r if(new_ind==FALSE){(paste0(data_folder, "Shiny Data/", old_filename, ".rds"))}`
 
 ------------------------------------------------------------------------------------
 
@@ -125,7 +125,7 @@ ft_sc_quin_check
 
 ### Within health board or council deprivation quintiles
 Within hb/ca quintiles should only return data for either nhs board or councils.<br>
-Conditional formatting will show up if gdistinct geography counts are not as expected 
+Conditional formatting will show up if distinct geography counts are not as expected 
 ```{r,}
 #print flextable
 ft_hb_quin_check 
@@ -192,7 +192,7 @@ Sometimes figures can change, e.g when the SMR records are more complete or new 
 Use your judgement to decide if any differences are within acceptable range.
 
 ```{r}
-if(qa==TRUE){
+if(new_ind==FALSE){
 new_file <- data_indicator %>% subset(code %in% check_codes)
 
 old_file <- old_data_indicator %>% subset(code %in% check_codes)%>%
@@ -227,8 +227,8 @@ if (nrow(matched) == 0) {"Old and new data files values match"
                     par.x="upci_new",
                     par.y="upci_old") %>%
   autofit()}
-}else if(qa==FALSE){
-  "no historic checks run"
+}else if(new_ind==TRUE){
+  "New_ind parameter set to TRUE - no historic checks run"
 }
 ```
 
@@ -255,7 +255,7 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 
 ##Data check 5:
 #### Small numbers
-Look at proportion of areas and quintiles where counts are <5 and estimates may not be robust. 
+Look at proportion of areas and quintiles where more than 10% of row include counts of less than 5 and therefore may not be robust. 
 
 ```{r}
 small_count_data <- data_indicator  %>% 
@@ -264,7 +264,7 @@ small_count_data <- data_indicator  %>%
   mutate(percent_U5=u5/count*100,
          year =as.factor(year)) %>%
   ungroup() %>%
-  subset(u5>0)
+  subset(percent_U5>10)
 
 flextable(small_count_data)
 
@@ -289,24 +289,21 @@ linear_trends <- data_indicator  %>%
   summarise(count=n()) %>%
   group_by(geo_type, quint_type,year) %>%
   mutate(sum=sum(count)) %>%
-  spread(pattern,count) %>%
+  pivot_wider(names_from = pattern, values_from = count,values_fill=list(count=0)) %>%
   mutate(percent_linear=100-round(non_linear/sum*100,1))
 
 ft <- linear_trends %>%
- select(geo_type,quint_type,year,ascending:non_linear,sum,percent_linear) %>%
+ select(geo_type,quint_type,year,ascending, descending, non_linear,sum,percent_linear) %>%
   flextable() %>%
   merge_v(j=c("geo_type","quint_type")) %>%
   autofit()%>%
   theme_vanilla()
 
 ft
-
 ```
 
 -------------------------------------------------------------------------------
-
 ##Data check 7: Shiny app
-
 
 ```{r}
 
@@ -314,7 +311,8 @@ shinyApp(
 
   ui = fluidPage(
      fluidRow(
-     column(5,selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = FALSE, selected="S00000001: Scotland")),
+      fluidRow(column(12,(p("Use dropdowns to adjust charts - remember geography code selected needs to match the quintile type")))),
+      column(5,selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = FALSE, selected="S00000001: Scotland")),
      column(3,selectInput("quint_selected", "Quintile:", choices = unique(data_indicator$quint_type),multiple = FALSE, selected="sc_quin")),
      column(3,selectInput("year_selected", "Year:", choices = unique(data_indicator$year),multiple = FALSE,selected=max(data_indicator$year)))),
      fluidRow(column(8,(h3("Check annual rates by quintile and rate trends")))),
@@ -457,134 +455,6 @@ output$par_trend <- renderPlotly({
   options = list(height = 2000)
 )
 
-
-
 ```
 
 
-
-
-
-```{r}
-
-# quint_type_selection <- "sc_quin"
-# year_selection <- 2015
-# geo_selection <- "S00000001"
-  
-
-# RATE-BAR CHART
-
-# # reactive dataset for bar chart
-# rate_bar_data <- data_indicator %>%
-# select(code, year, numerator, denominator, rate, quint_type, quintile, geo_type, par) %>%
-#   subset(quint_type==quint_type_selection & year==year_selection & code==geo_selection) %>%
-#   mutate(average=rate[quintile=="Total"]) %>%
-#     filter(quintile !="Total") %>%
-#     droplevels()
-# 
-#     #Palette for plot 
-#     pal_rate_bar <- case_when(rate_bar_data$quintile == "1" ~ '#022031', 
-#                               rate_bar_data$quintile == "2" ~ '#313695', 
-#                               rate_bar_data$quintile == "3" ~ '#4575b4', 
-#                               rate_bar_data$quintile == "4" ~ '#74add1', 
-#                               rate_bar_data$quintile == "5" ~ '#abd9e9')
-# 
-# 
-#  plot_ly(data=rate_bar_data, x=~quintile) %>%
-#       #Comparator line
-#      add_trace(y = ~average, name = "Average", type = 'scatter', mode = 'lines',
-#               line = list(color = '#FF0000'), hoverinfo="skip") %>%
-#   #quintile bars   
-#    add_bars(y = ~rate, color = ~ quintile, marker = list(color = pal_rate_bar))  %>%
-#       layout(bargap = 0.1, margin=list(b = 140), #to avoid labels getting cut out
-#              showlegend = FALSE) %>%
-#       config(displayModeBar = F, displaylogo = F, editable =F) # taking out toolbar
-                           
-```
-
-
-```{r}
-
-# RATE-TREND CHART
-# 
-# # reactive dataset for trend chart
-# rate_trend_data <- data_indicator %>%
-#   select(code, year, numerator, denominator, rate, quint_type, quintile, geo_type, sii, rii, par) %>%
-#   subset(quint_type==quint_type_selection & code==geo_selection) %>%
-#     arrange(quintile) %>% #this is needed to make palette assignments work well
-#     droplevels()
-# 
-#         #Palette for plot 
-#     pal_simd_trend <- case_when(rate_trend_data$quintile == "1" ~ '#022031', 
-#                                 rate_trend_data$quintile == "2" ~ '#313695', 
-#                                 rate_trend_data$quintile == "3" ~ '#4575b4', 
-#                                 rate_trend_data$quintile == "4" ~ '#74add1', 
-#                                 rate_trend_data$quintile == "5" ~ '#abd9e9',
-#                                 rate_trend_data$quintile == "Total" ~ '#FF0000')
-# 
-#  #Creating plot
-#     plot_ly(data=rate_trend_data, x=~year, 
-#                                 hoverinfo="text") %>%
-#       add_lines(y = ~rate, name = "", type = 'scatter', 
-#                 mode = 'lines', color = ~quintile,  colors = pal_simd_trend)
-
-
-```
-
-
-```{r}
-
-# 
-# quint_type_selection <- "sc_quin"
-# year_selection <- 2015
-# geo_selection <- "S00000001"
-# 
-# 
-# #SII
-# 
-# rate_trend_data <- data_indicator %>%
-#   select(code, year, numerator, denominator, rate, quint_type, quintile, geo_type, sii, rii, par) %>%
-#   subset(quint_type==quint_type_selection & code==geo_selection) %>%
-#     arrange(quintile) %>% #this is needed to make palette assignments work well
-#     droplevels()
-# 
-# 
-# index_data <- rate_trend_data  %>%  filter((quintile == "Total"))
-# 
-# plot_ly(data=index_data, x=~year,
-#                          hoverinfo="text") %>%
-#       add_lines(y = ~sii, name = "Absolute inequality (SII)", type = 'scatter', mode = 'lines',
-#                 line = list(color = '#74add1'))  %>%
-#       config(displayModeBar = FALSE, displaylogo = F,  editable =F) # taking out toolbar
-# 
-#  plot_ly(data=index_data, x=~year,hoverinfo="text") %>%
-#       add_lines(y = ~rii, name = "Relative gap", type = 'scatter', mode = 'lines',
-#                 line = list(color = '#313695')) %>%
-#       config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
-
-```
-
-
-```{r}
-#PAR
-
-#preparing data needed, creates two dummy variables for stacked bar chart
-#     rate_parbar_data <- rate_bar_data %>%
-#       mutate(baseline = rate[quintile == "5"],
-#              diff_baseline = rate - rate[quintile == "5"]) %>% 
-#       droplevels()
-# 
-# 
-# plot_ly(data = rate_parbar_data, x = ~quintile,hoverinfo="text") %>%
-#       add_bars(y = ~baseline, name= "", marker = list(color = "#4da6ff"), showlegend = FALSE) %>%   
-#       add_bars(y = ~diff_baseline, name = "Attributable to deprivation", 
-#                marker = list(color = "#ffa64d"), showlegend = FALSE) %>% 
-#       layout(title=year_selection,
-#         bargap = 0.1, barmode = 'stack', showlegend = T, 
-#              legend = list(x = 0.9, y = 0.9),
-#              margin = list(b = 140)) %>%
-#       config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
-# 
-
-
-```
