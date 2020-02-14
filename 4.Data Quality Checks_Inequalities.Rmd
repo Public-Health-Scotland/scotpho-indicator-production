@@ -10,52 +10,6 @@ runtime: shiny
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r, include=FALSE}
-#chunk can be removed when rendered in funtion
-
-#checks to build
-# 1- expected geographies present
-# 2- expected quintiles present
-# 3- compare to previous file
-# 4- rates within ci - will all indicators have ci?
-# 5 - small numbers - do all indicators have numerators?
-# 6 - visualise rates by simd (shiny)
-# 7 - visualise sii and rii (shiny)
-# 8 - visualise par (shiny)
-
-# library(dplyr) # for data manipulation
-# library(ggplot2) # for plotting
-# library(tidyr) # for data manipulation
-# library(RcppRoll) #for moving averages
-# library(readr) # writing csv's
-# library(rmarkdown) #for data quality checking
-# library(shiny) #for data quality checking
-# library(flextable) # for output tables
-# library(plotly) #for data quality checking
-
-# if (exists("organisation") == TRUE) { #Health Scotland
-#   if (organisation == "HS") { 
-#     data_folder <- "X:/ScotPHO Profiles/Data/" 
-#     lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-#   }
-# } else  { #ISD, first server then desktop
-#   if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-#     data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-#     lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-#   } else {
-#     data_folder <- "//stats/ScotPHO/Profiles/Data/"
-#     lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
-#   }}
-
-#filename="alcohol_stays_depr"
-#filename="healthy_birth_depr"
-#filename="test_early_cancer_deaths_depr"
-
-#qa <- TRUE
-#old_file <- "default"
-#check_extras <- NULL
-
-```
 
 ```{r, include=FALSE}
 
@@ -67,9 +21,10 @@ data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "
   mutate(geo_type=substr(code,1,3))
 
 #Add geography code names
-data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
-
-#Test which optional geographies are present in dataset - not sure this code is needed?
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
+mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name
+  
+#Test which optional geographies are present in dataset 
 scot <-  any(substr(data_indicator$code,1,3) =="S00")
 board <- any(substr(data_indicator$code,1,3) == "S08")
 ca <- any(substr(data_indicator$code,1,3) == "S12")
@@ -89,19 +44,15 @@ old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "
 
 # Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
 # check_extras is an optional parameter that can be used to supply additional bespoke geography codes to check
-
 check_codes <- c("S00000001","S08000031","S12000036",check_extras) 
-
 
 ```
 
 Indicator:  **`r filename`** <br>
 Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
-
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, ".rds"))`<br>
 **Old** indicator file (for comparisons):  /`r if(qa==TRUE){(paste0(data_folder, "Shiny Data/", old_filename, ".rds"))}`
-
 
 ------------------------------------------------------------------------------------
 
@@ -177,8 +128,9 @@ Within hb/ca quintiles should only return data for either nhs board or councils.
 Conditional formatting will show up if gdistinct geography counts are not as expected 
 ```{r,}
 #print flextable
-ft_hb_quin_check
+ft_hb_quin_check 
 ft_ca_quin_check
+
 ```
 
 ------------------------------------------------------------------------------------  
@@ -362,7 +314,7 @@ shinyApp(
 
   ui = fluidPage(
      fluidRow(
-     column(3,selectInput("code_selected", "Area:", choices = unique(data_indicator$code),multiple = FALSE, selected="S00000001")),
+     column(5,selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = FALSE, selected="S00000001: Scotland")),
      column(3,selectInput("quint_selected", "Quintile:", choices = unique(data_indicator$quint_type),multiple = FALSE, selected="sc_quin")),
      column(3,selectInput("year_selected", "Year:", choices = unique(data_indicator$year),multiple = FALSE,selected=max(data_indicator$year)))),
      fluidRow(column(8,(h3("Check annual rates by quintile and rate trends")))),
@@ -385,8 +337,8 @@ shinyApp(
     #reactive simd trend data
     simd_trend_data<- reactive({
     rate_data <- data_indicator %>% # reactive dataset for trend chart
-    select(code, year, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
-    subset(quint_type==input$quint_selected & code==input$code_selected) %>%
+    select(code,code_name, year, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
+    subset(quint_type==input$quint_selected & code_name==input$code_selected) %>%
     arrange(quintile) %>% #this is needed to make palette assignments work well
     droplevels()
     })
