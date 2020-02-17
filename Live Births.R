@@ -41,4 +41,4 @@ analyze_first(filename = "live_births", geography = "datazone11", measure = "cru
               yearstart = 2002, yearend = 2018, time_agg = 1, pop ='DZ11_pop_allages')
 
 analyze_second(filename = "live_births", measure = "crude", time_agg = 1, crude_rate=1000,
-               ind_id = 13106, year_type = "calendar")
+               ind_id = 20008, year_type = "calendar")

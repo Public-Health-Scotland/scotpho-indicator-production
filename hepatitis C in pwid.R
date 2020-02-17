@@ -24,21 +24,24 @@ hepc_pwid <- read_csv(paste0(data_folder, "Received Data/Hep C Among PWID_2008-0
   mutate_at(c("denominator", "numerator"), as.numeric)
 
 geography_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/codedictionary.rds') %>% 
-  setNames(tolower(names(.))) 
+  setNames(tolower(names(.)))
+
+#ca_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds') %>% 
+  #setNames(tolower(names(.)))
 
 hepc_pwid <- left_join(hepc_pwid, geography_codes, "areaname") %>%
   mutate(year = as.numeric(substr(year,1,4))) %>% #format as financial year
   distinct(year, areaname, .keep_all =TRUE) 
   
-hepc_pwid2 <- hepc_pwid %>%
+hepc_pwid <- hepc_pwid %>%
   select(year, code, numerator, denominator)
 
-saveRDS(hepc_pwid2, file=paste0(data_folder, 'Temporary/hepc_pwid2_formatted.rds'))
+saveRDS(hepc_pwid, file=paste0(data_folder, 'Temporary/hepc_pwid_formatted.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-analyze_second(filename = "hepc_pwid2", measure = "percent", time_agg = 1, 
+analyze_second(filename = "hepc_pwid", measure = "percent", time_agg = 1, 
                ind_id = 4122, year_type = "financial")
 
