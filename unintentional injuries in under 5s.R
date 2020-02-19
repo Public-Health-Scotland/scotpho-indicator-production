@@ -50,16 +50,16 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
  unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = 1)
  
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
    setNames(tolower(names(.))) %>%   #variables to lower case
-   select(pc7, ca2011)
+   select(pc7, ca2019)
  
  # aggregate the data by council area
  unintentional_under5 <- left_join(unintentional_under5, postcode_lookup, "pc7") %>% 
-   subset(!(is.na(ca2011))) %>%  # exclude records with no ca2011 
+   subset(!(is.na(ca2019))) %>%  # exclude records with no ca2011 
    mutate_if(is.character, factor) %>%  # converting variables into factors
-   group_by(year, ca2011, sex_grp, age_grp) %>%  
-   summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2011)
+   group_by(year, ca2019, sex_grp, age_grp) %>%  
+   summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2019)
  
  # save file
  saveRDS(unintentional_under5, file=paste0(data_folder, 'Prepared Data/unintentional_under5_raw.rds'))
@@ -69,7 +69,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
 ###############################################.
  
 analyze_first(filename = "unintentional_under5", geography = "council", measure = "stdrate", 
-               pop = "CA_pop_under5", yearstart = 2005, yearend = 2017,
+               pop = "CA_pop_under5", yearstart = 2005, yearend = 2017, hscp = T,
                time_agg = 3, epop_age = 'normal')
  
 analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3, 

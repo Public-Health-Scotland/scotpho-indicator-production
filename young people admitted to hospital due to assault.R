@@ -39,17 +39,17 @@ young_assault <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_1.5.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  select(pc7, ca2011)
+  select(pc7, ca2019)
 
 # aggregate the data with council area info
 young_assault <- left_join(young_assault, postcode_lookup, "pc7") %>% 
-  subset(!(is.na(ca2011))) %>%  # exclude records with no ca2011 
+  subset(!(is.na(ca2019))) %>%  # exclude records with no ca2011 
   mutate_if(is.character, factor) %>%  # converting variables into factors
 # group and aggregate by year, ca2011, sex, age
-  group_by(year, ca2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2011)
+  group_by(year, ca2019, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2019)
 
 saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca2011_raw.rds'))
 
@@ -58,11 +58,10 @@ saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca20
 ###############################################.
 
 analyze_first(filename = "youngassault_ca2011", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018,
+              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018, hscp = T,
               time_agg = 3, epop_age = '15to25')
 
 analyze_second(filename = "youngassault_ca2011", measure = "stdrate", time_agg = 3, 
-               epop_total = 25400, ind_id = 13049, year_type = "financial", 
-               profile = "CP", min_opt = 179196)
+               epop_total = 25400, ind_id = 13049, year_type = "financial")
 
-
+##END
