@@ -32,11 +32,28 @@ geography_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/co
 hepc_pwid <- left_join(hepc_pwid, geography_codes, "areaname") %>%
   mutate(year = as.numeric(substr(year,1,4))) %>% #format as financial year
   distinct(year, areaname, .keep_all =TRUE) 
+
+hepc_adp <- hepc_pwid %>% filter(substr(code,1,3) == "S12") %>% 
+  mutate(code = case_when(
+    code == "S12000005" ~ "S11000005", code == "S12000006" ~ "S11000006", code == "S12000008" ~ "S11000008", 
+    code == "S12000010" ~ "S11000051", code == "S12000011" ~ "S11000011", code == "S12000014" ~ "S11000013", 
+    code == "S12000017" ~ "S11000016", code == "S12000018" ~ "S11000017", code == "S12000019" ~ "S11000051", 
+    code == "S12000020" ~ "S11000019", code == "S12000021" ~ "S11000020", code == "S12000026" ~ "S11000025", 
+    code == "S12000028" ~ "S11000027", code == "S12000029" ~ "S11000052", code == "S12000030" ~ "S11000029", 
+    code == "S12000033" ~ "S11000001", code == "S12000034" ~ "S11000002", code == "S12000035" ~ "S11000004", 
+    code == "S12000036" ~ "S11000012", code == "S12000038" ~ "S11000024", code == "S12000039" ~ "S11000030", 
+    code == "S12000040" ~ "S11000031", code == "S12000041" ~ "S11000003", code == "S12000042" ~ "S11000007", 
+    code == "S12000050" ~ "S11000052", code == "S12000045" ~ "S11000009", code == "S12000049" ~ "S11000015", 
+    code == "S12000047" ~ "S11000014", code == "S12000048" ~ "S11000023", code == "S12000013" ~ "S11000032", 
+    code == "S12000027" ~ "S11000026", code == "S12000023" ~ "S11000022", TRUE ~ "Error")) #%>% 
+  #group_by(year, code) %>% summarise_all(sum, na.rm=T) %>% ungroup()
   
 hepc_pwid <- hepc_pwid %>%
   select(year, code, numerator, denominator)
 
 saveRDS(hepc_pwid, file=paste0(data_folder, 'Temporary/hepc_pwid_formatted.rds'))
+
+saveRDS(hepc_adp, file=paste0(data_folder, 'Temporary/hepc_adp_formatted.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
@@ -45,3 +62,5 @@ saveRDS(hepc_pwid, file=paste0(data_folder, 'Temporary/hepc_pwid_formatted.rds')
 analyze_second(filename = "hepc_pwid", measure = "percent", time_agg = 1, 
                ind_id = 4122, year_type = "financial")
 
+analyze_second(filename = "hepc_adp", measure = "percent", time_agg = 1, 
+               ind_id = 4122, year_type = "financial")
