@@ -118,7 +118,7 @@ ft_ca_quin_check <- geo_checks %>%
 Within Scotland quintiles should return data for scotland, nhs board and councils.<br>
 Table below indicates which type & how many geography codes are present & highlights if this is unexpected count
 
-```{r,}
+```{r}
 #print flextable
 ft_sc_quin_check 
 ```
@@ -126,7 +126,7 @@ ft_sc_quin_check
 ### Within health board or council deprivation quintiles
 Within hb/ca quintiles should only return data for either nhs board or councils.<br>
 Conditional formatting will show up if distinct geography counts are not as expected 
-```{r,}
+```{r}
 #print flextable
 ft_hb_quin_check 
 ft_ca_quin_check
