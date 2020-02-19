@@ -23,14 +23,6 @@ live_births <- read.csv(paste0(data_folder, "Received Data/births by 2011 data z
   mutate(total = sum(male, female)) %>%
   summarise(numerator = sum(total, na.rm =T)) %>% ungroup()
          
-         
-# pivot_longer(-c(year, datazone), names_to = "sex", values_to = "value")
-# ?pivot_longer
-# mutate(datazone = case_when(is.na(datazone) ~ lag(datazone),
-#                              TRUE ~ datazone)) %>%
-#mutate(sex = if_else(sex == 1, "male", "female")) %>%
-  
-
 saveRDS(live_births, file=paste0(data_folder, 'Prepared Data/live_births_raw.rds'))
 
 ###############################################.
@@ -40,5 +32,5 @@ saveRDS(live_births, file=paste0(data_folder, 'Prepared Data/live_births_raw.rds
 analyze_first(filename = "live_births", geography = "datazone11", measure = "crude", 
               yearstart = 2002, yearend = 2018, time_agg = 1, pop ='DZ11_pop_allages')
 
-analyze_second(filename = "live_births", measure = "crude", time_agg = 1, crude_rate=1000,
+analyze_second(filename = "live_births", measure = "crude", time_agg = 1, crude_rate=1000, 
                ind_id = 20008, year_type = "calendar")
