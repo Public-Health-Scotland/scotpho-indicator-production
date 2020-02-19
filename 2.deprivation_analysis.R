@@ -161,8 +161,8 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
   if (!is.null(pop)){
     if(measure == "stdrate") {
       pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'_SR.rds')) %>% 
-        subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
-        mutate_at(c("sex_grp", "code"), as.factor)
+        # subset(year >= yearstart) %>% #Reading population file and selecting only for 2011 onwards
+        mutate_at(c("sex_grp", "code", "age_grp"), as.factor)
       
       data_depr <- right_join(x=data_depr, y=pop_depr_lookup, # Matching population with data
                         by = c("year", "code", "sex_grp", "age_grp", "quintile", "quint_type"))
