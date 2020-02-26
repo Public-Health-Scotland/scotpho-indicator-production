@@ -1,4 +1,4 @@
-# WORK N PROGRESS - Hep C in PWID indicator
+# ScotPHO indicators: Hepatitis C in people who injects drugs
 
 #   Part 1 - read in data
 #   Part 2 - Prepare geographies
@@ -25,9 +25,6 @@ hepc_pwid <- read_csv(paste0(data_folder, "Received Data/Hep C Among PWID_2008-0
 
 geography_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/codedictionary.rds') %>% 
   setNames(tolower(names(.)))
-
-#ca_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds') %>% 
-  #setNames(tolower(names(.)))
 
 hepc_pwid <- left_join(hepc_pwid, geography_codes, "areaname") %>%
   mutate(year = as.numeric(substr(year,1,4))) %>% #format as financial year
