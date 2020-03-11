@@ -276,4 +276,13 @@ analyze_first(filename = "smoking_deaths",  measure = "stdrate", geography = "al
 analyze_second(filename = "smoking_deaths", measure = "stdrate", time_agg = 2, 
                epop_total = 120000, ind_id = 20201, year_type = "calendar")
 
+# Rounding figures - they are estimates and rounding helps to undestand that
+# they are not precise
+data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds")) %>% 
+  mutate(numerator = round(numerator, -1)) %>% #to nearest 10
+  mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
+
+saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
+write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
+
 ##END

@@ -60,7 +60,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
-           start_cis, end_cis, ca, hb,
+           start_cis, end_cis, ca, hb
     FROM adm_table 
     WHERE end_cis between '1 January 2012' and '31 December 2018' 
         AND age > 34 
@@ -229,9 +229,12 @@ smoking_adm %<>%
   #creating code variable with all geos and then aggregating to get totals
   gather(geolevel, code, c(ca, hb, scotland)) %>% 
   select(-c(geolevel)) %>% 
-  group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
+  group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() %>% 
+  # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
+  filter(!(is.na(code)))
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+smoking_adm <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 ## Part 4 - Add in prevalence info ----
@@ -325,5 +328,14 @@ analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
                epop_total = 120000, ind_id = 1548, year_type = "calendar")
+
+# Rounding figures - they are estimates and rounding helps to undestand that
+# they are not precise
+data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds")) %>% 
+  mutate(numerator = round(numerator, -1)) %>% #to nearest 10
+  mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
+
+saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 
 ##END
