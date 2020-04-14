@@ -255,7 +255,7 @@ If these geographies are available, use the chart to look at whether the rates f
 #Selecting Council area, HSCP and its localities for latest year in dataset
 #city of edinburgh council = S1200036
 #city of edinburgh partnership = S37000012
-#Edinburgh localities = S99000044,45,46,47
+#Edinburgh localities = S99000043,44,45,46
 
 #Filter City of Edinburgh value central line in chart below
 ed_value <- data_indicator %>% 
@@ -265,7 +265,7 @@ ed_value <- data_indicator %>%
 #Generate chart showing rates for all edinburgh geographies for latest year
 edinburgh_chart <- ggplot(data = data_indicator %>% 
          filter((code =="S12000036" | code=="S37000012"
-                |code=="S99000044"|code=="S99000045"|code=="S99000046"|code=="S99000047") 
+                |code=="S99000043"|code=="S99000044"|code=="S99000045"|code=="S99000046") 
                 & year== max(year)), aes(areaname, rate)) +
   geom_point(stat = "identity") +
   geom_hline(yintercept= ed_value$rate, linetype="dashed", color = "red")+
