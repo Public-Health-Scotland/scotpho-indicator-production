@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = FALSE)
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_ineq.rds")) %>%
+data_indicator <- readRDS(paste0(data_folder, "Data to be checked/test qa report files/", filename, "_ineq.rds")) %>%
   mutate(geo_type=substr(code,1,3))
 
 #Add geography code names
@@ -293,7 +293,8 @@ linear_trends <- data_indicator  %>%
   mutate(percent_linear=100-round(non_linear/sum*100,1))
 
 ft <- linear_trends %>%
- select(geo_type,quint_type,year,ascending, descending, non_linear,sum,percent_linear) %>%
+ #select(geo_type,quint_type,year,ascending, descending, non_linear,sum,percent_linear) %>%
+select_if(names(.) %in% c('geo_type','quint_type','year','ascending', 'descending','non_linear','sum','percent_linear')) %>%
   flextable() %>%
   merge_v(j=c("geo_type","quint_type")) %>%
   autofit()%>%
