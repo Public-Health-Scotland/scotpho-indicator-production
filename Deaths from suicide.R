@@ -64,10 +64,10 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/suicide_depr_raw.rds')
 # FEMALE
 suicides_female <- deaths_suicide %>%
   subset(sex_grp==2) %>% 
-  group_by(year, age_grp, sex_grp, ca2011) %>%  
+  group_by(year, age_grp, sex_grp, ca2019) %>%  
   summarize(numerator = n()) %>% 
   ungroup() %>%   
-  rename(ca = ca2011)
+  rename(ca = ca2019)
 
 saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female_raw.rds'))
 
@@ -75,10 +75,10 @@ saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female
 # MALE
 suicides_male <- deaths_suicide %>%
   subset(sex_grp==1) %>% 
-  group_by(year, age_grp, sex_grp, ca2011) %>%  
+  group_by(year, age_grp, sex_grp, ca2019) %>%  
   summarize(numerator = n()) %>% 
   ungroup() %>%   
-  rename(ca = ca2011)
+  rename(ca = ca2019)
 
 saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw.rds'))
 

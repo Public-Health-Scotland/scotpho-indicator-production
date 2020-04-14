@@ -61,7 +61,7 @@ for (quint in 1:5) { #creating files for each one of the quintiles
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "quitattempts_4weeks", geography = "council", 
+analyze_first(filename = "quitattempts_4weeks", geography = "council", hscp = T,
               measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
 
 analyze_second(filename = "quitattempts_4weeks", measure = "percent", time_agg = 1, 
@@ -76,7 +76,7 @@ filenames <- c("quitattempts_4weeks_quint1", "quitattempts_4weeks_quint2",
 mapply(analyze_first, filename = filenames, geography = "council", 
        measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
 
-mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, 
+mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, qa = F,
        ind_id = c(1539:1543), year_type = "financial")
 
 

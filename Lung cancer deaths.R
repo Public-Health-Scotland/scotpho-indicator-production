@@ -47,7 +47,7 @@ saveRDS(lung_deaths, file=paste0(data_folder, 'Prepared Data/lungcancer_deaths_r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "lungcancer_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2018,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2018, hscp = T,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "lungcancer_deaths", measure = "stdrate", time_agg = 3, 

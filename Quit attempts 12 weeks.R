@@ -39,7 +39,7 @@ saveRDS(quit_12weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_12wee
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "quitattempts_12weeks", geography = "council", 
+analyze_first(filename = "quitattempts_12weeks", geography = "council", hscp = T,
               measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
 
 analyze_second(filename = "quitattempts_12weeks", measure = "percent", time_agg = 1, 
