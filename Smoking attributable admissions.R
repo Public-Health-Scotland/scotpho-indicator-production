@@ -25,12 +25,13 @@ smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
                        "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
 # Sorting variables
 sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
-# Extracting one row per admission in which there was an episode with
-# an smoking attributable admission as their main condition
-# during the right period with an age of 35+. If a patient had an episode with
-# a related diagnosis outside the period that admission won't be counted.
-# For each admissions it extracts the information from the first episode.
-# Then of those admissions selecting the ones that had an smoking attributable
+# Extracting one row per hospital admission in which there was at least one episode containing
+# a smoking attributable condition in the main condition field.
+# The indicator counts hospital stays but will only includes stays if there was at least one episode with 
+# related diagnosis within the financial year if interest. Patients must also be aged over 34 years on admission to be counted. 
+
+# For each admission it extracts the information from the first episode within a hospital stay.
+# Then of these admissions selecting the ones that had an smoking attributable
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
