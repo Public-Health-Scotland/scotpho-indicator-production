@@ -78,7 +78,7 @@ saveRDS(data_inc_depdz01, file = paste0(data_folder, "Prepared Data/income_depri
 ## Part 2 - Calling the analysis functions ----
 ###############################################.
 #Normal indicator analysis, first for CA and then DZ11
-analyze_first(filename = "income_deprived_ca", geography = "council", measure = "percent", 
+analyze_first(filename = "income_deprived_ca", geography = "council", measure = "percent", hscp = T,
               yearstart = 2004, yearend = 2013, time_agg = 1, pop = "CA_pop_allages")
 analyze_first(filename = "income_deprived_dz11", geography = "datazone11", measure = "percent", 
               yearstart = 2014, yearend = 2018, time_agg = 1, pop = "DZ11_pop_allages")

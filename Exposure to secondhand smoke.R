@@ -35,10 +35,10 @@ saveRDS(exposure_geography, file=paste0(data_folder, 'Prepared Data/exposure_smo
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "exposure_smoking", geography = "council", 
+analyze_first(filename = "exposure_smoking", geography = "council", hscp = T,
               measure = "percent", yearstart = 2002, yearend = 2018, time_agg = 3)
 
-analyze_second(filename = "exposure_smoking", measure = "percent", time_agg = 3, 
+analyze_second(filename = "exposure_smoking", measure = "percent", time_agg = 3,  
                ind_id = 13037, year_type = "financial")
 
 ##END

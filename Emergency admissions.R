@@ -108,7 +108,7 @@ saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
 # it skips the parts of the function that bring the geographical info.
 mapply(analyze_first, filename = c("ea", "ma"), geography = "all", measure = "stdrate", 
        pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2018,
-       time_agg = 3, epop_age = "normal")
+       time_agg = 3, epop_age = "normal", hscp = T)
 
 #Emergency admissions
 analyze_second(filename = "ea", measure = "stdrate", time_agg = 3, 

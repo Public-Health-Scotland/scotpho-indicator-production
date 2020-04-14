@@ -79,7 +79,7 @@ saveRDS(data_crimedz01, file = paste0(data_folder, "Prepared Data/crime_rate_ca_
 ## Part 2 - Calling the analysis functions ----
 ###############################################.
 #Normal indicator analysis, first for CA and then DZ11
-analyze_first(filename = "crime_rate_ca", geography = "council", measure = "crude", 
+analyze_first(filename = "crime_rate_ca", geography = "council", measure = "crude", hscp = T, 
               yearstart = 2004, yearend = 2013, time_agg = 1, pop = "CA_pop_allages")
 analyze_first(filename = "crime_rate_dz11", geography = "datazone11", measure = "crude", 
               yearstart = 2014, yearend = 2018, time_agg = 1, pop = "DZ11_pop_allages")

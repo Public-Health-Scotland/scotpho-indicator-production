@@ -22,17 +22,20 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 #Looking to admissions with a main diagnosis of asthma, excluding unknown sex, by financial year. 
 #Creates one record per CIS and selects only one case per patient/year.
 data_asthma <- tbl_df(dbGetQuery(channel, statement=
-  "SELECT distinct link_no linkno, min(AGE_IN_YEARS) age, min(SEX) sex_grp, min(DR_POSTCODE) pc7,
+  "SELECT distinct link_no,
+            MIN(age_in_years) OVER (PARTITION BY link_no) age,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no
+                ORDER BY admission_date, discharge_date) sex_grp,
+            FIRST_VALUE(DR_POSTCODE) OVER (PARTITION BY link_no
+                ORDER BY admission_date, discharge_date) pc7,
       CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
    WHERE admission_date between '1 April 2002' and '31 March 2019'
       AND sex <> 0 
-      AND regexp_like(main_condition, 'J4[5-6]') 
-   GROUP BY link_no, CASE WHEN extract(month from admission_date) > 3 THEN
-      extract(year from admission_date) ELSE extract(year from admission_date) -1 END")) %>% 
+      AND regexp_like(main_condition, 'J4[5-6]') ")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
-  create_agegroups() # Creating age groups for standardization.
+  create_agegroups() # Creating age groups for standardization
 
 # Bringing  LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
@@ -47,7 +50,6 @@ data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>%
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
-
 # Datazone2011
 asthma_dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
@@ -90,7 +92,7 @@ analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3,
 
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2018,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2018, hscp = T,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 

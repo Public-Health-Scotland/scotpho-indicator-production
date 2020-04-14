@@ -159,7 +159,7 @@ apply_stats_disc("alcohol_stays_depr") # statistical disclosure applied to final
 ##Run macros again to generate CYP indicator data
 # Alcohol related stays in 11 to 25 year olds
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "ADP_pop_11to25", yearstart = 2002, yearend = 2018,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
               time_agg = 3, epop_age = '11to25', adp=TRUE)
 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 

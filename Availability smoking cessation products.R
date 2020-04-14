@@ -35,7 +35,7 @@ saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_product
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "cessation_products", geography = "council", measure = "crude", 
+analyze_first(filename = "cessation_products", geography = "council", measure = "crude", hscp = T,
               yearstart = 2002, yearend = 2018, time_agg = 1, pop="CA_pop_12+")
 
 analyze_second(filename = "cessation_products", measure = "crude", time_agg = 1,
