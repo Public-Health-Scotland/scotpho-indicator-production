@@ -25,7 +25,7 @@ young_assault <- tbl_df(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2018' 
+  WHERE admission_date between '1 April 2005' and '31 March 2019' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -51,17 +51,17 @@ young_assault <- left_join(young_assault, postcode_lookup, "pc7") %>%
   group_by(year, ca2019, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2019)
 
-saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca2011_raw.rds'))
+saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca2019_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-analyze_first(filename = "youngassault_ca2011", geography = "council", measure = "stdrate", 
+analyze_first(filename = "youngassault_ca2019", geography = "council", measure = "stdrate", 
               pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018, hscp = T,
               time_agg = 3, epop_age = '15to25')
 
-analyze_second(filename = "youngassault_ca2011", measure = "stdrate", time_agg = 3, 
+analyze_second(filename = "youngassault_ca2019", measure = "stdrate", time_agg = 3, 
                epop_total = 25400, ind_id = 13049, year_type = "financial")
 
 ##END

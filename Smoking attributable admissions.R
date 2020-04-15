@@ -25,12 +25,13 @@ smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
                        "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
 # Sorting variables
 sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
-# Extracting one row per admission in which there was an episode with
-# an smoking attributable admission as their main condition
-# during the right period with an age of 35+. If a patient had an episode with
-# a related diagnosis outside the period that admission won't be counted.
-# For each admissions it extracts the information from the first episode.
-# Then of those admissions selecting the ones that had an smoking attributable
+# Extracting one row per hospital admission in which there was at least one episode containing
+# a smoking attributable condition in the main condition field.
+# The indicator counts hospital stays but will only includes stays if there was at least one episode with 
+# related diagnosis within the financial year if interest. Patients must also be aged over 34 years on admission to be counted. 
+
+# For each admission it extracts the information from the first episode within a hospital stay.
+# Then of these admissions selecting the ones that had an smoking attributable
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
@@ -60,7 +61,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
-           start_cis, end_cis, ca, hb,
+           start_cis, end_cis, ca, hb
     FROM adm_table 
     WHERE end_cis between '1 January 2012' and '31 December 2018' 
         AND age > 34 
@@ -229,9 +230,12 @@ smoking_adm %<>%
   #creating code variable with all geos and then aggregating to get totals
   gather(geolevel, code, c(ca, hb, scotland)) %>% 
   select(-c(geolevel)) %>% 
-  group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
+  group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() %>% 
+  # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
+  filter(!(is.na(code)))
 
 saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+smoking_adm <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 ## Part 4 - Add in prevalence info ----
@@ -325,5 +329,14 @@ analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
                epop_total = 120000, ind_id = 1548, year_type = "calendar")
+
+# Rounding figures - they are estimates and rounding helps to undestand that
+# they are not precise
+data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds")) %>% 
+  mutate(numerator = round(numerator, -1)) %>% #to nearest 10
+  mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
+
+saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 
 ##END

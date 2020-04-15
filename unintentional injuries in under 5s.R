@@ -29,7 +29,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
         THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year
   FROM ANALYSIS.SMR01_PI z
-  WHERE admission_date between  '1 April 2005' and '31 March 2018'
+  WHERE admission_date between  '1 April 2005' and '31 March 2019'
     AND sex <> 0
     AND AGE_IN_YEARS <=4
     AND CASE WHEN admission_type = '32' THEN 1
@@ -69,7 +69,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
 ###############################################.
  
 analyze_first(filename = "unintentional_under5", geography = "council", measure = "stdrate", 
-               pop = "CA_pop_under5", yearstart = 2005, yearend = 2017, hscp = T,
+               pop = "CA_pop_under5", yearstart = 2005, yearend = 2018, hscp = T,
                time_agg = 3, epop_age = 'normal')
  
 analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3, 
