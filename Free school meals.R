@@ -127,4 +127,3 @@ final_result %>%
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_meals_shiny.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_meals_shiny.csv"))
 
-
