@@ -57,8 +57,8 @@ source("./1.indicator_analysis.R") #Normal indicator functions
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-analyze_first(filename = "derelict_site", geography = "datazone2011",
-              measure = "percent", yearstart = 2016, yearend = 2017, adp = FALSE,
+analyze_first(filename = "derelict_site", geography = "datazone11",
+              measure = "percent", yearstart = 2016, yearend = 2017,
               time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
