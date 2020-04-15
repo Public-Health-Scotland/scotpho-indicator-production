@@ -6,9 +6,6 @@
 ################################################################################
 ################################################################################
 
-############## IN DEVELOPMENT ############## 
-
-### need to add pop look up into function call
 
 ## This script prepares SG recorded crime profile indicators:
 ##      Breach of the Peace
