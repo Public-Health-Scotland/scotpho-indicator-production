@@ -7,8 +7,6 @@
 ################################################################################
 
 
-####### in development
-
 ## This script prepares SG Population within 500 metres of a derelict site indicator.
 ## Data formost recent update requested from SG SDVLS team.  
 ## Data are now published on statistics.scot.gov.uk:
