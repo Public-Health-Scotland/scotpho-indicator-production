@@ -41,6 +41,8 @@ df_received <- read.csv(paste0(data_folder,"/Received Data/20901 - 500m derelict
 
 names(df_received) <- tolower(names(df_received)) # make col names lower case
 
+df_received$datazone <- as.character(df_received$datazone)
+
 saveRDS(df_received, paste0(data_folder,"Prepared Data/derelict_site_raw.rds"))
 
 ###############################################.
@@ -56,10 +58,11 @@ source("./1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 
 analyze_first(filename = "derelict_site", geography = "datazone2011",
-              measure = "percent", yearstart = 2016, yearend = 2017, 
+              measure = "percent", yearstart = 2016, yearend = 2017, adp = FALSE,
               time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "derelict_site", measure = "percent", 
                time_agg = 1, ind_id = "20901", year_type = "calendar")
+
 
