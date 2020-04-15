@@ -95,6 +95,13 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
   
   geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
   
+  #Warning if parameter entered for geography is not one of the most used ones
+  if (!(geography %in% c("datazone11", "council"))) {
+    warning("Your geography parameter is not 'datazone11' nor 'council'. The function
+            will still work correctly if your raw data contains all the geographies
+            you require. If this is not the case change geography to 'datazone11'
+            or 'council'")
+  }
   # Merging data with lookup depending on geography base
   if (geography == "datazone11") {
     
