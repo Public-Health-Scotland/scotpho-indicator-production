@@ -6,7 +6,6 @@
 ################################################################################
 ################################################################################
 
-
 ## This script prepares SG recorded crime profile indicators:
 ##      Breach of the Peace
 ##      Common assault
