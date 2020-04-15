@@ -12,7 +12,8 @@
 
 # FUNCTION ONE: ANALYZE_FIRST
 # filename -  Name of the raw file the function reads without the "_raw.sav" at the end
-# geography - what is the base geography of the raw file: council or datazone2011
+# geography - what is the base geography of the raw file: council, datazone2011,
+#    or all if your basefile contains all the geographies you require.
 # adp - To calculate the data for ADP level as well change it to TRUE, default is false.
 # hscp - To calculate the data for HSCP too when data is at CA level change it to TRUE, default is false.
 # measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
@@ -80,7 +81,7 @@ if (exists("organisation") == TRUE) { #Health Scotland
 ###############################################.
 ## Analysis function one ----
 ###############################################.
-analyze_first <- function(filename, geography = c("council", "datazone11"), 
+analyze_first <- function(filename, geography = c("council", "datazone11", "all"), 
                           measure = c("percent", "crude", "stdrate"), time_agg, 
                           pop = NULL, yearstart, yearend, epop_age = NULL, 
                           adp = FALSE, hscp = FALSE) {
@@ -96,11 +97,9 @@ analyze_first <- function(filename, geography = c("council", "datazone11"),
   geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
   
   #Warning if parameter entered for geography is not one of the most used ones
-  if (!(geography %in% c("datazone11", "council"))) {
-    warning("Your geography parameter is not 'datazone11' nor 'council'. The function
-            will still work correctly if your raw data contains all the geographies
-            you require. If this is not the case change geography to 'datazone11'
-            or 'council'")
+  if (!(geography %in% c("datazone11", "council", "all"))) {
+    stop("Your geography parameter is not 'datazone11','council' nor 'all'. 
+         Change it to one of the above.")
   }
   # Merging data with lookup depending on geography base
   if (geography == "datazone11") {
