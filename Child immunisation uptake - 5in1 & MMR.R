@@ -31,7 +31,7 @@ five01_data <- read.spss(paste0(data_folder, "Received Data/2003_2019_Scotpho_Ch
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>% 
-  summarise_at(c("total24", "five24"), funs(sum), na.rm =T) %>% 
+  summarise_at(c("total24", "five24"), list(sum), na.rm =T) %>% 
   ungroup()
 
 # Rename variables into numerator and denominator
@@ -44,7 +44,7 @@ five11_data <- read.spss( paste0(data_folder, "Received Data/2004_2019_Scotpho_C
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>%
-  summarise_at(c("total24", "five24"), funs(sum), na.rm =T) %>% ungroup()
+  summarise_at(c("total24", "five24"), list(sum), na.rm =T) %>% ungroup()
 
 # Rename variables into numerator and denominator
 five11_data <- five11_data %>% rename(denominator = total24, numerator = five24)
@@ -68,7 +68,7 @@ mmr01_data <- read.spss( paste0(data_folder, "Received Data/2003_2019_Scotpho_Ch
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>% 
-  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup() %>%
+  summarise_at(c("total24", "mmr24"), list(sum), na.rm =T) %>% ungroup() %>%
   # Rename variables into numerator and denominator
   rename(denominator = total24, numerator = mmr24)
 
@@ -79,7 +79,7 @@ mmr11_data <- read.spss( paste0(data_folder, "Received Data/2004_2019_Scotpho_Ch
   mutate(datazone = substr(datazone, 1, 9)) %>%   #trimming datazone to 9 characters
   # aggregate to get the count, removing sex
   group_by(year, datazone) %>% 
-  summarise_at(c("total24", "mmr24"), funs(sum), na.rm =T) %>% ungroup()  %>% 
+  summarise_at(c("total24", "mmr24"), list(sum), na.rm =T) %>% ungroup()  %>% 
   # Rename variables into numerator and denominator
   rename(denominator = total24, numerator = mmr24)
 
