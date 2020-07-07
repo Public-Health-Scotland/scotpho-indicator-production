@@ -29,7 +29,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
         THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year
   FROM ANALYSIS.SMR01_PI z
-  WHERE admission_date between  '1 April 2005' and '31 March 2019'
+  WHERE admission_date between  '1 April 2005' and '31 December 2018'
     AND sex <> 0
     AND AGE_IN_YEARS <=4
     AND CASE WHEN admission_type = '32' THEN 1
