@@ -8,17 +8,9 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-#install.packages('RcppRoll')
-#install.packages('flextable')
-#install.packages('plotly')
-#install.packages('binom')
-#library(haven)
 
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
-
-# data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-# lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
 
 ###############################################.
 ## Part 1 - Prepare basefile: 5 in 1 ----
