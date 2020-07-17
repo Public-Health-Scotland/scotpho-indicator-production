@@ -13,17 +13,17 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-sad_data_extract <- read_excel(paste0(data_folder, "Received Data/Single dwellings estimates 2018.xlsx"), 
-                            sheet = "Formatted",col_types = c("text", rep("numeric", 24))) %>% 
+sad_data_extract <- read_excel(paste0(data_folder, "Received Data/Single dwellings estimates 2019.xlsx"), 
+                            sheet = "Formatted",col_types = c("text", rep("numeric", 26))) %>% 
   setNames(tolower(names(.)))   #variables to lower case
 
 #varstocases: split out 'multiple gather' function
-sad_data_denom <- sad_data_extract %>% select(-c(n2007:n2018)) %>% 
-    gather(year, denominator, d2007:d2018, na.rm = TRUE, convert = FALSE) %>% 
+sad_data_denom <- sad_data_extract %>% select(-c(n2007:n2019)) %>% 
+    gather(year, denominator, d2007:d2019, na.rm = TRUE, convert = FALSE) %>% 
     mutate(year = substr(year, 2, 5)) #Remove leading "d" in year
 
-sad_data_numer <- sad_data_extract %>% select(-c(d2007:d2018)) %>% 
-    gather(year, numerator, n2007:n2018, na.rm = TRUE, convert = FALSE) %>% 
+sad_data_numer <- sad_data_extract %>% select(-c(d2007:d2019)) %>% 
+    gather(year, numerator, n2007:n2019, na.rm = TRUE, convert = FALSE) %>% 
     mutate(year = substr(year, 2, 5)) #Remove leading "n" in year
 
 sad_data <- inner_join(sad_data_numer, sad_data_denom) #joining together 
@@ -99,7 +99,7 @@ analyze_first(filename = "Single_Dwellings_LA", geography = "council", measure =
               yearstart = 2007, yearend = 2013, time_agg = 1)
 
 analyze_first(filename = "Single_Dwellings_dz11", geography = "datazone11", measure = "percent", 
-              yearstart = 2014, yearend = 2018, time_agg = 1)
+              yearstart = 2014, yearend = 2019, time_agg = 1)
 
 # Merging CA, DZ11 together and save both periods together
 all_data <- rbind(readRDS(paste0(data_folder, "Temporary/Single_Dwellings_LA_formatted.rds")),
@@ -112,7 +112,7 @@ analyze_second(filename = "Single_Dwellings_all", measure = "percent", time_agg 
 
 #Deprivation analysis function
 analyze_deprivation(filename="Single_Dwellings_depr", measure="percent", time_agg=1, 
-                    yearstart= 2007, yearend=2018,   year_type = "calendar", 
+                    yearstart= 2007, yearend=2019,   year_type = "calendar", 
                     ind_id = 20504)
 
 ##END
