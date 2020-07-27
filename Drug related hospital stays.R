@@ -119,8 +119,7 @@ analyze_first(filename = "drug_stays_dz11", geography = "datazone11", measure = 
               adp = TRUE, time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "drug_stays_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20205, year_type = "financial", 
-               profile = "HN", min_opt = 2999)
+               epop_total = 200000, ind_id = 20205, year_type = "financial")
 apply_stats_disc("drug_stays_dz11_shiny") # statistical disclosure applied to final values
 
 #Deprivation analysis function 
@@ -137,8 +136,7 @@ analyze_first(filename = "drug_stays_11to25", geography = "council", measure = "
               time_agg = 3, epop_age = '11to25')
 
 analyze_second(filename = "drug_stays_11to25", measure = "stdrate", time_agg = 3, 
-               epop_total = 34200, ind_id = 13025, year_type = "financial", 
-               profile = "CP", min_opt = 2999)
+               epop_total = 34200, ind_id = 13025, year_type = "financial")
 apply_stats_disc("drug_stays_11to25_shiny") # statistical disclosure applied to final values
 
 ##END

@@ -83,7 +83,7 @@ saveRDS(sadla_data_raw, file=paste0(data_folder, 'Prepared Data/Single_Dwellings
 # Prepare / Aggregate by dz11
 sad11_data_raw <- sad_data_raw %>%
   group_by(datazone, year, dz) %>% 
-  summarise_at(c("numerator", "denominator"), funs(sum), na.rm =T) %>% 
+  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) %>% 
   filter(dz == "dz11") %>% ungroup()
 
 sad11_data_raw <- select(sad11_data_raw,-c(dz))

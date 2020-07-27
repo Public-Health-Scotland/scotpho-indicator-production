@@ -90,6 +90,6 @@ mapply(analyze_first, filename = quint_files, geography = "datazone11",
        measure = "percent", yearstart = 2003, yearend = 2018, time_agg = 3)
 
 mapply(analyze_second, filename = quint_files, measure = "percent", time_agg = 3, 
-       year_type = "financial", ind_id = c(1521, 1522, 1523, 1524, 1525))
+       year_type = "financial", ind_id = c(1521, 1522, 1523, 1524, 1525), qa = F)
 
 #END
