@@ -6,4 +6,4 @@ These functions can prepare data for intermediate zones, HSC localities, HSC par
 
 For some indicators we also prepare data by socioeconomic deprivation categories. To do this use the functions from "2.deprivation_analysis". Their approach is very similar to the other ones, but you can find more detailed instructions in the function script.
 
-Both functions use the geography and population lookups created with the code from [this repository](https://github.com/ScotPHO/lookups).
+Both functions use the geography and population lookups created with the code from [this repository](https://github.com/Public-Health-Scotland/scotpho-lookups).
