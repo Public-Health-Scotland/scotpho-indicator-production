@@ -25,7 +25,7 @@ young_assault <- tbl_df(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2019' 
+  WHERE admission_date between '1 April 2005' and '31 March 2020' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -39,7 +39,7 @@ young_assault <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, ca2019)
 
@@ -58,7 +58,7 @@ saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca20
 ###############################################.
 
 analyze_first(filename = "youngassault_ca2019", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2018, hscp = T,
+              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2019, hscp = T,
               time_agg = 3, epop_age = '15to25')
 
 analyze_second(filename = "youngassault_ca2019", measure = "stdrate", time_agg = 3, 
