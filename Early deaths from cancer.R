@@ -23,7 +23,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 cancer_deaths <- tbl_df(dbGetQuery(channel, statement=
     "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
      FROM ANALYSIS.GRO_DEATHS_C 
-     WHERE date_of_registration between '1 January 2002' AND '31 December 2018'
+     WHERE date_of_registration between '1 January 2002' AND '31 December 2019'
            AND country_of_residence ='XS'
            AND age < 75
            AND regexp_like(underlying_cause_of_death, 'C') 
@@ -33,7 +33,7 @@ cancer_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -66,7 +66,7 @@ saveRDS(candeath_depr, file=paste0(data_folder, 'Prepared Data/early_cancer_deat
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "early_cancer_deaths_dz11", geography = "datazone11", 
-              measure = "stdrate", yearstart = 2002, yearend = 2018, time_agg = 3,
+              measure = "stdrate", yearstart = 2002, yearend = 2019, time_agg = 3,
               epop_age = "normal", pop = "DZ11_pop_under75")
 
 analyze_second(filename = "early_cancer_deaths_dz11", measure = "stdrate", time_agg = 3, 
@@ -74,7 +74,7 @@ analyze_second(filename = "early_cancer_deaths_dz11", measure = "stdrate", time_
 
 #Deprivation analysis function
 analyze_deprivation(filename="early_cancer_deaths_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2018, year_type = "calendar", 
+                    yearstart= 2002, yearend=2019, year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age="normal",
                     epop_total =182000, ind_id = 20106)
 
