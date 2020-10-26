@@ -58,6 +58,8 @@ scot_pop_base <- dz_pop_base %>% group_by(year) %>%
 dz_pop_base <- dz_pop_base %>% group_by(year, datazone) %>% 
   summarise(pop = sum(denominator)) #obtaining total pop for each datazone
 
+rm(dz_pop_base)
+
 ###############################################.
 ## Part 2 - Create access rank data ----
 ###############################################.
@@ -73,7 +75,9 @@ mapply(read_simd, data = "DataZone2001_all_simd", simd = "simd2009v2_access_rank
 mapply(read_simd, data = "DataZone2001_all_simd", simd = "simd2012_access_rank", 
        year = 2010:2013, list_pos = 9:12) #simd version 2012
 mapply(read_simd, data = "DataZone2011_simd2016", simd = "simd2016_access_rank", 
-       year = 2014:2018, list_pos = 13:17) #simd version 2016
+       year = 2014:2016, list_pos = 13:15) #simd version 2016
+mapply(read_simd, data = "DataZone2011_simd2020v2", simd = "simd2020v2_access_rank", 
+       year = 2017:2019, list_pos = 16:18) #simd version 2020
 
 data_access <- do.call("rbind", data_access) # converting from list into dataframe
 
@@ -82,8 +86,9 @@ data_access <- left_join(data_access, dz_pop_base, by = c("datazone", "year"))
 data_access <- left_join(data_access, scot_pop_base, by = "year")
 
 # Creating cumulative populations for each year based on access rank
-data_access <- data_access %>% group_by(year) %>% arrange(rank) %>% 
+data_access %<>% group_by(year) %>% arrange(rank) %>% 
   mutate(cum_pop = cumsum(pop)) %>% ungroup() %>% 
+  mutate_if(is.integer, as.numeric) %>% #R complaining of different variable types
   # If the datazone is included in the 15% more access deprived then use its
   # population as numerator, if not consider 0
   mutate(numerator = case_when((pop_15 - cum_pop)>=0 ~ pop,
@@ -122,7 +127,7 @@ saveRDS(data_access_dz01, file = paste0(data_folder, "Prepared Data/access_depri
 analyze_first(filename = "access_deprived_ca", geography = "council", measure = "percent", hscp = T,
               yearstart = 2002, yearend = 2013, time_agg = 1, pop = "CA_pop_allages")
 analyze_first(filename = "access_deprived_dz11", geography = "datazone11", measure = "percent", 
-              yearstart = 2014, yearend = 2018, time_agg = 1, pop = "DZ11_pop_allages")
+              yearstart = 2014, yearend = 2019, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
 all_data <- rbind(readRDS(paste0(data_folder, "Temporary/access_deprived_dz11_formatted.rds")),
@@ -136,7 +141,7 @@ analyze_second(filename = "access_deprived_all", measure = "percent",
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="access_deprived_depr", measure="percent", time_agg=1, 
-                    yearstart= 2002, yearend=2018,  
+                    yearstart= 2002, yearend=2019,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20902)
 
 ## END
