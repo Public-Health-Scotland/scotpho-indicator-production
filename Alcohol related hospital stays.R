@@ -1,5 +1,7 @@
-#   ScotPHO indicators: Alcohol-related hospital stays (all ages) and 
-#   Alcohol-related hospital stays (ages 11 to 25 years)
+#   ScotPHO indicators: 3 indicator outputs from this script 
+#   Alcohol-related hospital stays (all ages) indicator, 
+#   Alcohol-related hospital stays (all ages) inequalities indicator and 
+#   Alcohol-related hospital stays (ages 11 to 25 years) indicator
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
