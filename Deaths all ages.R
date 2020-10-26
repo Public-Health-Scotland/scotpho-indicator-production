@@ -1,4 +1,6 @@
-# ScotPHO indicators: Deaths all ages (could also be called All Cause Mortality (All Ages))
+# ScotPHO indicators: 2 indicator outputs from this script
+#   Deaths all ages (could also be called All Cause Mortality (All Ages))
+#   Deaths all ages inequalities indicator
 
 #   Part 1 - Extract data from SMRA - Deaths file.
 #   Part 2 - Create the different geographies basefiles
