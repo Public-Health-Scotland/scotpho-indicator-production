@@ -48,28 +48,18 @@ data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>%
 ## Part 2 - Create denominator files for the different geographies basefiles ----
 ###############################################.
 ###############################################.
-# Datazone2011
-dz11 <- data_deaths %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
+# Datazone2011 basefile
+deaths_dz11 <- data_deaths %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
-datadz <- readRDS(paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
-
-# Datazone2001. Only used for IRs
-dz01 <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% subset(year<2011) %>% rename(datazone = datazone2001)
-
-saveRDS(dz01, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz01_raw.rds'))
-
-###############################################.
-#Deprivation indicator numerator file
-# Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-dz01_dep <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% subset(year<=2013) %>% rename(datazone = datazone2001)
+saveRDS(deaths_dz11, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
 
 # Deprivation basefile
-dep_file <- dz11 %>% subset(year>=2014)
-dep_file <- rbind(dz01_dep, dep_file) #joining together
+# Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+deaths_dz01 <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% subset(year<=2013) %>% rename(datazone = datazone2001)
+
+dep_file <- rbind(deaths_dz01, deaths_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/deaths_allages_depr_raw.rds'))
 
