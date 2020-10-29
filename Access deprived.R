@@ -58,8 +58,6 @@ scot_pop_base <- dz_pop_base %>% group_by(year) %>%
 dz_pop_base <- dz_pop_base %>% group_by(year, datazone) %>% 
   summarise(pop = sum(denominator)) #obtaining total pop for each datazone
 
-rm(dz_pop_base)
-
 ###############################################.
 ## Part 2 - Create access rank data ----
 ###############################################.
@@ -84,6 +82,8 @@ data_access <- do.call("rbind", data_access) # converting from list into datafra
 # Joining with both of the populations: dz and scotland 15%
 data_access <- left_join(data_access, dz_pop_base, by = c("datazone", "year"))
 data_access <- left_join(data_access, scot_pop_base, by = "year")
+
+rm(dz_pop_base)
 
 # Creating cumulative populations for each year based on access rank
 data_access %<>% group_by(year) %>% arrange(rank) %>% 
