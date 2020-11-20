@@ -31,14 +31,14 @@ data_asthma <- tbl_df(dbGetQuery(channel, statement=
       CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 April 2002' and '31 March 2019'
+   WHERE admission_date between '1 April 2002' and '31 March 2020'
       AND sex <> 0 
       AND regexp_like(main_condition, 'J4[5-6]') ")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -51,24 +51,35 @@ data_asthma <- left_join(data_asthma, postcode_lookup, "pc7") %>%
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
 # Datazone2011
-asthma_dz11 <- data_asthma %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
+asthma_dz11 <- data_asthma %>% 
+  group_by(year, datazone2011, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>%  
+  rename(datazone = datazone2011)
 
 saveRDS(asthma_dz11, file=paste0(data_folder, 'Prepared Data/asthma_dz11_raw.rds'))
 
 # CA file for under 16 cases 
-asthma_ca_under16 <- data_asthma %>% subset(age<16) %>% group_by(year, ca2019, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%   rename(ca = ca2019)
+asthma_ca_under16 <- data_asthma %>% 
+  subset(age<16) %>% 
+  group_by(year, ca2019, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>%   
+  rename(ca = ca2019)
 
 saveRDS(asthma_ca_under16, file=paste0(data_folder, 'Prepared Data/asthma_under16_raw.rds'))
 
 # Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-asthma_dz01_dep <- data_asthma %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+asthma_dz01_dep <- data_asthma %>% 
+  group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% 
+  ungroup() %>% 
+  rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-dep_file <- rbind(asthma_dz01_dep, asthma_dz11 %>% subset(year>=2014)) #joing dz01 and dz11
+dep_file <- rbind(asthma_dz01_dep, asthma_dz11 %>% 
+                    subset(year>=2014)) #joing dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
@@ -78,7 +89,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
@@ -86,13 +97,13 @@ analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3,
 
 #Deprivation analysis function
 analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2018,   year_type = "financial", 
+                    yearstart= 2002, yearend=2019,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20304)
 
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2018, hscp = T,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2019, hscp = T,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 
