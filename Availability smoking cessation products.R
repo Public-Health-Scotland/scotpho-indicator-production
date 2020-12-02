@@ -12,10 +12,9 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-data_products <- read_excel(paste0(data_folder, "Received Data/IR2019-01231-smoking cessation products.xlsx"), 
+data_products <- read_excel(paste0(data_folder, "Received Data/IR2020-00971-smokcessationproducts.xlsx"), 
                             sheet = "Output", range = cell_limits(c(8, 2), c(NA, 10))) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
-  rename_all(list(~gsub("\\s","_",.))) # changing spaces for underscores
+  janitor::clean_names()
 
 # Bringing code information for LA.
 ca_lookup <- readRDS(paste0(data_folder, "Lookups/Geography/CAdictionary.rds"))
@@ -32,11 +31,15 @@ data_products <- data_products %>% rename(year = financial_year, ca = code) %>%
 
 saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_products_raw.rds'))
 
+pop_lookup <- readRDS(paste0(lookups, "Population/CA_pop_12+.rds")) %>% 
+  subset(year >= yearstart) %>% # Reading population file and selecting only for 2011 onwards
+  mutate(code = as.character(code))
+
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "cessation_products", geography = "council", measure = "crude", hscp = T,
-              yearstart = 2002, yearend = 2018, time_agg = 1, pop="CA_pop_12+")
+              yearstart = 2002, yearend = 2019, time_agg = 1, pop="CA_pop_12+")
 
 analyze_second(filename = "cessation_products", measure = "crude", time_agg = 1,
                crude_rate = 1000, ind_id = 1544, year_type = "financial")
