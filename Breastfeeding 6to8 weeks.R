@@ -15,7 +15,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-breastfed <- read_csv(paste0(data_folder, "Received Data/breastfeeding_dz.csv")) %>%
+breastfed <- read_csv(paste0(data_folder, "Received Data/2020_breastfeeding_dz.csv")) %>%
   setNames(tolower(names(.))) %>%
   mutate(datazone = as.factor(datazone2011))
 
@@ -33,7 +33,7 @@ saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds'))
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
-              yearstart = 2002, yearend = 2018, time_agg = 3 )
+              yearstart = 2002, yearend = 2019, time_agg = 3 )
 
 ## Exclusions at this point for geographies where denominator <=5 for an area  
 data_indicator <- readRDS(file=paste0(data_folder, "Temporary/breastfed_formatted.rds")) %>%
@@ -83,7 +83,7 @@ data_shiny <- data_shiny %>%
 saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/breastfed_shiny.rds"))
 write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/breastfed_shiny.csv"))
 
-qa_function(filename = "breastfed", iz=TRUE)
+#qa_function(filename = "breastfed", iz=TRUE)
 
 ##END
 
