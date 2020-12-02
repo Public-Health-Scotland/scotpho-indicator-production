@@ -31,10 +31,6 @@ data_products <- data_products %>% rename(year = financial_year, ca = code) %>%
 
 saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_products_raw.rds'))
 
-pop_lookup <- readRDS(paste0(lookups, "Population/CA_pop_12+.rds")) %>% 
-  subset(year >= yearstart) %>% # Reading population file and selecting only for 2011 onwards
-  mutate(code = as.character(code))
-
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
