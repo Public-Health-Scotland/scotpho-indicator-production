@@ -45,7 +45,9 @@ mapply(read_simd, data = "DataZone2001_all_simd", simd = "simd2009v2_inc_dep_n",
 mapply(read_simd, data = "DataZone2001_all_simd", simd = "simd2012_inc_dep_n", 
        year = 2010:2013, list_pos = 7:10) #simd version 2012
 mapply(read_simd, data = "DataZone2011_simd2016", simd = "simd2016_inc_dep_n", 
-       year = 2014:2018, list_pos = 11:15) #simd version 2016
+       year = 2014:2016, list_pos = 11:13) #simd version 2016
+mapply(read_simd, data = "DataZone2011_simd2020v2", simd = "simd2020v2_inc_dep_n", 
+       year = 2017:2019, list_pos = 14:16) #simd version 2020
 
 data_inc_dep <- do.call("rbind", data_inc_dep) # converting from list into dataframe
 
@@ -81,7 +83,7 @@ saveRDS(data_inc_depdz01, file = paste0(data_folder, "Prepared Data/income_depri
 analyze_first(filename = "income_deprived_ca", geography = "council", measure = "percent", hscp = T,
               yearstart = 2004, yearend = 2013, time_agg = 1, pop = "CA_pop_allages")
 analyze_first(filename = "income_deprived_dz11", geography = "datazone11", measure = "percent", 
-              yearstart = 2014, yearend = 2018, time_agg = 1, pop = "DZ11_pop_allages")
+              yearstart = 2014, yearend = 2019, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
 all_data <- rbind(readRDS(paste0(data_folder, "Temporary/income_deprived_dz11_formatted.rds")),
@@ -95,7 +97,7 @@ analyze_second(filename = "income_deprived_all", measure = "percent",
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="income_deprived_depr", measure="percent", time_agg=1, 
-                    yearstart= 2004, yearend=2018,  
+                    yearstart= 2004, yearend=2019,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20701)
 
 #END

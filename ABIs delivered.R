@@ -10,7 +10,7 @@ source("1.indicator_analysis.R") # Normal indicator functions
 ###############################################.
 
 # Data from official publication, formatting for tool
-abis_delivered <- read_csv(paste0(data_folder, "Received Data/2019-06-25_AlcoholBriefInterventions.csv")) %>%
+abis_delivered <- read_csv(paste0(data_folder, "Received Data/2020_AlcoholBriefInterventions.csv")) %>%
   setNames(tolower(names(.))) %>% #set names to lower case
   rename(year = finyear, code = nhsboard, numerator = number, rate = percentage) %>%
   mutate(code = recode(code, "Scotland" = "S00000001", "NHS Ayrshire & Arran" = "S08000015", "NHS Borders" = "S08000016",
