@@ -14,7 +14,7 @@ library(janitor)
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-dev_concerns <- read_csv(paste0(data_folder, "Received Data/IR2019-00435.csv")) %>%
+dev_concerns <- read_csv(paste0(data_folder, "Received Data/IR2020-00980_development27months.csv")) %>%
   setNames(tolower(names(.))) %>%
   clean_names() %>%
   mutate(datazone = as.factor(datazone2011))
@@ -34,7 +34,7 @@ saveRDS(dev_concerns, file=paste0(data_folder, 'Prepared Data/dev_concerns_raw.r
 ###############################################.
 
 analyze_first(filename = "dev_concerns", geography = "datazone11", hscp = T, measure = "percent", 
-              yearstart = 2013, yearend = 2019, time_agg = 3)
+              yearstart = 2013, yearend = 2020, time_agg = 3)
 
 analyze_second(filename = "dev_concerns", measure = "percent", time_agg = 3, 
                ind_id = 13048, year_type = "financial")
