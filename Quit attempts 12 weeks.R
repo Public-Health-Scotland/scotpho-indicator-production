@@ -12,13 +12,13 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data extracted from table from Smoking cessation annual publication
-quit_12weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_12weeks_2019.csv")) %>% 
+quit_12weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_12weeks_2020.csv")) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   gather("year", "numerator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
 
 #the total number of quit attempts is the denominator 
-quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2019.csv")) %>% 
+quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2020.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   gather("year", "denominator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
@@ -40,7 +40,7 @@ saveRDS(quit_12weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_12wee
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "quitattempts_12weeks", geography = "council", hscp = T,
-              measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
+              measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
 analyze_second(filename = "quitattempts_12weeks", measure = "percent", time_agg = 1, 
                ind_id = 1537, year_type = "financial")
