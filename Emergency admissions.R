@@ -16,7 +16,8 @@ source("2.deprivation_analysis.R") # deprivation function
 
 #Function to create data for different geography levels
 create_geo_levels <- function(geography, list_pos) {
-  #If there are multiple admissions in one year it selects one.
+  #If there are multiple admissions in one year it selects one per geography.
+  # So if a patient is admitted twice but with different residence in each, it will be counted twice
   data_agg <- data_adm %>% rename(code = {{geography}} ) %>% 
     group_by(link_no, year, code) %>% 
     summarise(sex_grp = first(sex_grp), age_grp = first(age_grp), admissions = n()) %>%
@@ -46,24 +47,30 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
+sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 #read in SMR01 data. Following Secondary Care Team definitions.
 #Excluding people with no valid sex or age.
 #Only emergency or urgent admissions. Selecting one record per admission.
-data_adm <- tbl_df(dbGetQuery(channel, statement=
-   "SELECT distinct link_no, cis_marker, min(AGE_IN_YEARS) age, min(SEX) sex_grp, 
-      min(dr_postcode) pc7, max(extract(year from discharge_date)) year,
-      min(admission_date) doadm
+# Information from first episode in stay that meets criteria
+data_adm <- tbl_df(dbGetQuery(channel, statement=paste0(
+   "SELECT distinct link_no, cis_marker, 
+            min(AGE_IN_YEARS) OVER (PARTITION BY link_no, cis_marker) age,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") sex_grp,
+            FIRST_VALUE(dr_postcode) OVER (PARTITION BY link_no, cis_marker 
+            ORDER BY ", sort_var, ") pc7,
+            max(extract(year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year, 
+            min(admission_date) OVER (PARTITION BY link_no, cis_marker) doadm
    FROM ANALYSIS.SMR01_PI 
-   WHERE discharge_date between '1 January 2002' and '31 December 2018'
+   WHERE discharge_date between '1 January 2002' and '31 December 2019'
       AND sex not in ('9', '0')
       AND AGE_IN_YEARS is not null 
       AND (admission_type between '20' and '22' or admission_type between '30' and '39') 
-   GROUP BY link_no, cis_marker
-   ORDER BY link_no, cis_marker, min(admission_date) ")) %>% 
+   ORDER BY link_no, cis_marker"))) %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing geography info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, intzone2011, ca2019, hb2019, hscp2019)
 
@@ -92,6 +99,7 @@ data_ea_list <- list() #creating empty lists for placing data created by functio
 data_ma_list <- list() 
 
 # This will run the function for all those columns and for both indicators
+# It takes 20-30 minutes to run
 mapply(create_geo_levels, geography = c("scotland", "hb2019", "ca2019", "hscp2019",
                                         "hscp_locality", "intzone2011"), list_pos = 1:6)
 
@@ -104,10 +112,10 @@ saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-# The function call uses a different geogrpahy to datazone11 or council as this way,
+# The function call uses a different geography to datazone11 or council as this way,
 # it skips the parts of the function that bring the geographical info.
 mapply(analyze_first, filename = c("ea", "ma"), geography = "all", measure = "stdrate", 
-       pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2018,
+       pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2019,
        time_agg = 3, epop_age = "normal", hscp = T)
 
 #Emergency admissions
