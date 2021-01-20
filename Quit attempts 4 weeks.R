@@ -14,13 +14,13 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 
 #Reading data extracted from table from Smoking cessation annual publication
-quit_4weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2019.csv")) %>% 
+quit_4weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2020.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   gather("year", "numerator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
 
 #the total number of quit attempts is the denominator 
-quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2019.csv")) %>% 
+quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2020.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   gather("year", "denominator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
@@ -42,7 +42,7 @@ saveRDS(quit_4weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_4weeks
 ###############################################.
 
 # Reading council quintile data requested to smoking cessation team
-quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_Council_SIMD_FY2009-10 to FY2018-19.sav"),
+quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_Council_SIMD_FY2009-10 to FY2019-20.sav"),
                           to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   filter(scsimdquintile != 99) %>% #excluding unknown values
@@ -62,7 +62,7 @@ for (quint in 1:5) { #creating files for each one of the quintiles
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "quitattempts_4weeks", geography = "council", hscp = T,
-              measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
+              measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
 analyze_second(filename = "quitattempts_4weeks", measure = "percent", time_agg = 1, 
                ind_id = 1536, year_type = "financial")
@@ -74,7 +74,7 @@ filenames <- c("quitattempts_4weeks_quint1", "quitattempts_4weeks_quint2",
                "quitattempts_4weeks_quint5") 
 
 mapply(analyze_first, filename = filenames, geography = "council", 
-       measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
+       measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
 mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, qa = F,
        ind_id = c(1539:1543), year_type = "financial")
