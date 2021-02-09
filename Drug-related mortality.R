@@ -77,20 +77,30 @@ drug_deaths %>% group_by(year) %>% count() %>% View()
 postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
+# Aggregating data by datazone for deprivation analysis
+drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") %>% 
+  select(year, datazone2001, datazone2011, sex_grp, age_grp) %>%
+  mutate(datazone = case_when(year<2014 ~ datazone2001,
+                              year>2013 ~ datazone2011)) %>% 
+  group_by(year, datazone, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup()
+
+saveRDS(drug_deaths_depr, file=paste0(data_folder, 'Prepared Data/drug_deaths_depr_raw.rds'))
+
 # Aggregating data by CA
-drug_deaths <- left_join(drug_deaths, postcode_lookup, "pc7") %>% 
-  rename(datazone = datazone2011, ca = ca2019) %>%
+drug_deaths_ca <- left_join(drug_deaths, postcode_lookup, "pc7") %>% 
+  rename(ca = ca2019) %>%
   group_by(year, ca, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup()
 
-saveRDS(drug_deaths, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw.rds'))
+saveRDS(drug_deaths_ca, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw.rds'))
 
 # Females
-saveRDS(drug_deaths %>% subset(sex_grp==2), 
+saveRDS(drug_deaths_ca %>% subset(sex_grp==2), 
         file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw.rds'))
 
 # Males 
-saveRDS(drug_deaths %>% subset(sex_grp==1),
+saveRDS(drug_deaths_ca %>% subset(sex_grp==1),
         file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw.rds'))
 
 ###############################################.
@@ -110,6 +120,12 @@ all_drug_deaths <- rbind(final_result, drug_deaths_02_05)
 # save this for shiny
 saveRDS(all_drug_deaths, file = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.rds"))
 write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.csv"))
+
+#Deprivation analysis function 
+analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
+                    yearstart= 2006, yearend=2019,   year_type = "calendar", 
+                    pop = "depr_pop_allages", epop_age="normal",
+                    epop_total =200000, ind_id = 4121)
 
 ###############################################.
 ## Part 4 - Female drug related mortality analysis functions ----
