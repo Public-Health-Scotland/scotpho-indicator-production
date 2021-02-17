@@ -19,16 +19,16 @@ drugmat_old <- readRDS(file=paste0(data_folder, 'Prepared Data/maternity_drug_ol
 #Now extract data from open data platform
 drugmat_ca <- read_csv("https://www.opendata.nhs.scot/dataset/df10dbd4-81b3-4bfa-83ac-b14a5ec62296/resource/3e96277a-9029-4390-ab90-ec600f9926a5/download/11.6_ca_drugmisuse.csv") %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
-  rename(code = ca2011) #to allow merging
+  rename(code = ca) #to allow merging
 
 drugmat_hb <- read_csv("https://www.opendata.nhs.scot/dataset/df10dbd4-81b3-4bfa-83ac-b14a5ec62296/resource/8c8377e1-b1c7-48e7-b313-79eb5ac3c110/download/11.6_hb_drugmisuse.csv") %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
-  rename(code = hbr2014) %>%  select(-hbr2014qf) #to allow merging
+  rename(code = hbr) %>%  select(-hbrqf) #to allow merging
 
 #Merging together ca and hb
 data_drugmat <- rbind(drugmat_ca, drugmat_hb) %>% 
   #selecting only totals and hb, ca and scotland
-  filter(simdquintileqf == "d" &
+  filter(#simdquintileqf == "d" &
            substr(code, 1, 3) %in% c("S92", "S08", "S12")) %>% 
   rename(trend_axis = financialyears, numerator = drugmisuse, denominator = maternities) %>% 
   select(trend_axis, code, numerator, denominator) %>% 
