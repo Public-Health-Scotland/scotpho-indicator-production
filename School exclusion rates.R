@@ -27,8 +27,8 @@ library(stringr) # for strings
 
 ## set file pathways
 # NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
+data_folder <- "A:/ScotPHO Profiles/Data/" 
+lookups <- "A:/ScotPHO Profiles/Data/Lookups/"
 
 
 ################################################################################
