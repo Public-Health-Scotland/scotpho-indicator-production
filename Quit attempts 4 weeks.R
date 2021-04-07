@@ -20,7 +20,7 @@ quit_4weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_
   mutate(year = substr(year,1,4))
 
 #the total number of quit attempts is the denominator 
-quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2020.csv")) %>% 
+quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2020.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   gather("year", "denominator", -la_name) %>% #from wide to long format
   mutate(year = substr(year,1,4))
