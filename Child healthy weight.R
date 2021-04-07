@@ -13,7 +13,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ## Part 1 - Prepare basefile ----
 ###############################################.
 # Reading data provided by child health team for datazones 2011
-child_weight11 <- read.spss( paste0(data_folder, "Received Data/IR2020-00067_DZ2011 Child weight.sav"), 
+child_weight11 <- read.spss( paste0(data_folder, "Received Data/IR2021-00162_DZ2011-child-weight.sav"), 
                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>% #variable names to lower case
   rename(datazone = datazone2011, numerator = healthy_weight, denominator = tot) %>% 
@@ -27,7 +27,7 @@ saveRDS(child_weight11, file=paste0(data_folder, 'Prepared Data/child_healthywei
 
 ###############################################.
 # Datazone2001 
-child_weight01 <- read.spss( paste0(data_folder, "Received Data/IR2020-00067_DZ2001 Child weight.sav"), 
+child_weight01 <- read.spss( paste0(data_folder, "Received Data/IR2021-00162_DZ2001-child-weight.sav"), 
                              to.data.frame=TRUE, use.value.labels=FALSE)%>% 
   setNames(tolower(names(.))) %>%  #variable names to lower case
   rename(datazone = datazone2001, numerator = healthy_weight, denominator = tot) %>% 
@@ -49,7 +49,7 @@ saveRDS(child_weight_dep, file=paste0(data_folder, 'Prepared Data/child_healthyw
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "child_healthyweight", geography = "datazone11", 
-              measure = "percent", yearstart = 2002, yearend = 2018, time_agg = 1)
+              measure = "percent", yearstart = 2002, yearend = 2019, time_agg = 1)
 
 # There are several boards and councils for which we only have incomplete data 
 # for certain years as they join to the CHSPS later on.
