@@ -21,13 +21,12 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 #Extracting deaths data for scottish residents (XS)
 #exclude any with null age group and where sex is unknown (9)
-data_deaths <- tbl_df(dbGetQuery(channel, statement=
- "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
+data_deaths <- as_tibble(dbGetQuery(channel, statement=
+ "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7, COUNCIL_AREA_2019 ca
   FROM ANALYSIS.GRO_DEATHS_C 
   WHERE date_of_registration between '1 January 2002' AND '31 December 2019'
         AND country_of_residence ='XS'
-        AND age is not NULL
-        AND sex <> 9")) %>%
+        AND age is not NULL")) %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
@@ -36,8 +35,7 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% 
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca) %>% 
   mutate_if(is.character, factor) # converting variables into factors
 
 ###############################################.
@@ -82,6 +80,24 @@ dep_1544_file <- rbind(deaths_1544_dz01, deaths_1544_dz11 %>% subset(year>=2014)
 saveRDS(dep_1544_file, file=paste0(data_folder, 'Prepared Data/deaths_15to44_depr_raw.rds'))
 
 ###############################################.
+# Deaths aged 1-15
+deaths_1to15 <- data_deaths %>% 
+  filter(between(age, 1, 15)) %>% 
+  group_by(year, ca) %>%
+  summarize(numerator = n()) %>% ungroup()
+
+saveRDS(deaths_1to15, file=paste0(data_folder, 'Prepared Data/deaths_1to15_raw.rds'))
+
+###############################################.
+# Deaths under 1
+deaths_under1 <- data_deaths %>% 
+  filter(age<1) %>% 
+  group_by(year, ca) %>%
+  summarize(numerator = n()) %>% ungroup()
+
+saveRDS(deaths_under1, file=paste0(data_folder, 'Prepared Data/deaths_under1_raw.rds'))
+
+###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 #Deaths all ages
@@ -114,4 +130,21 @@ analyze_deprivation(filename="deaths_15to44_depr", measure="stdrate", time_agg=3
                     year_type = "calendar", pop = "depr_pop_15to44", 
                     epop_age="normal", epop_total = 76000, ind_id = 20104)
 
+###############################################.
+# Deaths aged 1-15
+analyze_first(filename = "deaths_1to15", geography = "council", measure = "crude", 
+              pop = "CA_pop_1to15", yearstart = 2002, yearend = 2019, 
+              time_agg = 5, hscp = T)
+
+analyze_second(filename = "deaths_1to15", measure = "crude", time_agg = 5, 
+               crude_rate = 100000, ind_id = 13034, year_type = "calendar")
+
+###############################################.
+# Deaths under 1
+analyze_first(filename = "deaths_under1", geography = "council", measure = "crude", 
+              pop = "live_births", yearstart = 2002, yearend = 2019, 
+              time_agg = 5, hscp = T)
+
+analyze_second(filename = "deaths_under1", measure = "crude", time_agg = 5, 
+               crude_rate = 1000, ind_id = 13026, year_type = "calendar")
 #END
