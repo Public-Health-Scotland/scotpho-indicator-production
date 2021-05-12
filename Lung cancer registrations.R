@@ -34,12 +34,12 @@ lung_reg <- as_tibble(dbGetQuery(channel, statement=
 
 # Bringing  LA info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
-  setNames(tolower(names(.))) %>% select(pc7, ca2011) #variables to lower case
+  setNames(tolower(names(.))) %>% select(pc7, ca2019) #variables to lower case
 
 lung_reg <- left_join(lung_reg, postcode_lookup, by = "pc7") %>% #merging with lookup
   # aggregating by council area
-  group_by(year, ca2011, sex_grp, age_grp) %>% summarize(numerator = sum(count)) %>% 
-  ungroup() %>% rename(ca = ca2011) %>% 
+  group_by(year, ca2019, sex_grp, age_grp) %>% summarize(numerator = sum(count)) %>% 
+  ungroup() %>% rename(ca = ca2019) %>% 
   filter(!is.na(ca)) # excluding non-Scottish residents
 
 saveRDS(lung_reg, file=paste0(data_folder, 'Prepared Data/lungcancer_reg_raw.rds'))
