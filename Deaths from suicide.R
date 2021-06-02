@@ -21,17 +21,17 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 # Extracting data on deaths by excluding records with unknown sex and
 # with any icd10 code of suicide in any cause (includes non-Scottish residents).
-deaths_suicide <- tbl_df(dbGetQuery(channel, statement=
+deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
-      WHERE  year_of_registration between '2002' and '2018'
+      WHERE  year_of_registration between '2002' and '2019'
       AND sex <> 9
       AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'X[67]|X8[01234]|Y1|Y2|Y3[01234]|Y870|Y872')" )) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
