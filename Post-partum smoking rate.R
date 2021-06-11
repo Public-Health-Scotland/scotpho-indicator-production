@@ -13,13 +13,13 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 
 #Data comes from child health team
-postpartum <- read_csv(file=paste0(data_folder, 'Received Data/Smokingatfirstvisist_DZ_postpartum.csv')) %>% 
-  setNames(tolower(names(.))) %>% #set vaariables to lower case
+postpartum <- read_csv(file=paste0(data_folder, 'Received Data/Smokingatfirstvisit_DZ.csv')) %>% 
+  setNames(tolower(names(.))) %>% #set variables to lower case
   mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
                    TRUE ~ paste0("20",substr(fin_year,1,2)))) #format year to display financial year
 
 # bringing lookup to match with council
-ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+ca_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(datazone2011, ca2019) %>% distinct()
 
@@ -37,7 +37,7 @@ saveRDS(postpartum, file=paste0(data_folder, 'Prepared Data/postpartum_smoking_r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "postpartum_smoking", geography = "council", hscp = T,
-              measure = "percent", yearstart = 2002, yearend = 2018, time_agg = 3)
+              measure = "percent", yearstart = 2002, yearend = 2019, time_agg = 3)
 
 analyze_second(filename = "postpartum_smoking", measure = "percent", time_agg = 3, 
                ind_id = 1552, year_type = "financial")
