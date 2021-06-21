@@ -78,6 +78,9 @@ if (exists("organisation") == TRUE) { #Health Scotland
   }
 }
 
+# Setting permissions so files can be overwritten, read without permission issues
+Sys.umask("006")
+
 ###############################################.
 ## Analysis function one ----
 ###############################################.
