@@ -275,7 +275,7 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
 
 # Additional check of numerators (where present) to test if all numerators agree
 
-if(all(data_indicator$numerator != "")){    #if numerator column is not blank
+if(all(data_indicator$numerator != "", na.rm = TRUE)){    #if numerator column is not blank
 edinburgh_data <- data_indicator %>%        # create data frame filtered for edinburgh geographies
   filter(code =="S12000036" | code=="S37000012" | code=="S99000043"| 
            code=="S99000044"|code=="S99000045"|code=="S99000046") %>%
@@ -288,7 +288,7 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
          localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
          check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
 
-if(all(data_indicator$numerator == "")){
+if(all(data_indicator$numerator == "", na.rm = TRUE)){
   ed_flex <- "No numerator to cross reference totals"
 } else if (sum(edinburgh_data$check_tot, na.rm = T) !=0){
   ed_flex <- flextable(edinburgh_data) %>%
@@ -350,7 +350,7 @@ small_count_data <- data_indicator  %>%# if numerator is available generate flex
 
 ```{r echo=FALSE}
 #if numerator column is available (i.e. not all blank) produce flextable summarising counts of small numbers
-if(all(data_indicator$numerator != "")){
+if(all(data_indicator$numerator != "", na.rm = TRUE)){
   flextable(small_count_data)
 }
 
