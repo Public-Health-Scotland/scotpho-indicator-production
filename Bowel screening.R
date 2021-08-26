@@ -9,6 +9,8 @@
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
+library(haven) # need read_spss function to read in .zsav files
+
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
