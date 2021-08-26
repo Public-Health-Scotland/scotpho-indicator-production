@@ -43,13 +43,13 @@ drug_hosp <- tbl_df(dbGetQuery(channel, statement= paste0(
       CASE WHEN extract(month from discharge_date) > 3 THEN extract(year from discharge_date) 
         ELSE extract(year from discharge_date) -1 END as year 
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2002' and '31 March 2019'
+  WHERE discharge_date between  '1 April 2002' and '31 March 2020'
       AND sex <> 9 AND sex <> 0
       AND exists (
           SELECT * 
           FROM ANALYSIS.SMR01_PI  
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
-            AND discharge_date between '1 April 1997' and '31 March 2019'
+            AND discharge_date between '1 April 1997' and '31 March 2020'
             AND (regexp_like(main_condition, '", drug_diag ,"')
               OR regexp_like(other_condition_1,'", drug_diag ,"')
               OR regexp_like(other_condition_2,'", drug_diag ,"')
@@ -69,7 +69,7 @@ drug_hosp  %<>%
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing CA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>%
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -115,7 +115,7 @@ saveRDS(drugstays_11to25, file=paste0(data_folder, 'Prepared Data/drug_stays_11t
 ###############################################.
 ##Run macros to generate HWB and Drug Profile indicator data
 analyze_first(filename = "drug_stays_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
               adp = TRUE, time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "drug_stays_dz11", measure = "stdrate", time_agg = 3, 
@@ -124,7 +124,7 @@ apply_stats_disc("drug_stays_dz11_shiny") # statistical disclosure applied to fi
 
 #Deprivation analysis function 
 analyze_deprivation(filename="drug_stays_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2018,   year_type = "financial", 
+                    yearstart= 2002, yearend=2019,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20205)
 apply_stats_disc("drug_stays_depr_ineq")  # statistical disclosure applied to final values
@@ -132,7 +132,7 @@ apply_stats_disc("drug_stays_depr_ineq")  # statistical disclosure applied to fi
 ###############################################.
 ##Run macros again to generate Drug related admissions in 11 to 25 year olds
 analyze_first(filename = "drug_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2019,
               time_agg = 3, epop_age = '11to25')
 
 analyze_second(filename = "drug_stays_11to25", measure = "stdrate", time_agg = 3, 
