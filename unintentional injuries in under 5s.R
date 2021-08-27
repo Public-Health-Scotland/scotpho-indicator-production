@@ -50,7 +50,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
  unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = 1)
 
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>%
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>%
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2019)
 
