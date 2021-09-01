@@ -32,27 +32,24 @@ drug_deaths_male_02_05 <- read.csv(paste0(data_folder, "Received Data/drugs_deat
                                 setNames(tolower(names(.)))
 
 # NRS file for drug deaths - match to SQL query by rdno_entry_no_yr
-drug_deaths_NRS <- read.spss(paste0(data_folder, "Received Data/NRS_DRDs0619.sav"), 
+drug_deaths_NRS <- read.spss(paste0(data_folder, "Received Data/NRS_DRDs0620.sav"), 
                 to.data.frame=TRUE, use.value.labels=FALSE) %>%
                 setNames(tolower(names(.)))
 
-# SQL query for drug deaths 2006-2018
-# Select drug specific deaths from SMRA
+# SQL query for drug deaths 2006-2020
+# Select drug specific deaths from SMRA - the ICD10 codes have been removed from query as it was not finding all the deaths in the NRS extract (Sep21)
 # Select only deaths for scottish residents (COR=XS)
 # Exclude any with null age group
 # Exclude deaths where sex is unknown (9)
-# Selections based on primary cause of death 
-# ICD10 codes to match NRS definitions of drug-specific deaths (ie wholly attributable to drugs)
 drug_deaths_smr <- tbl_df(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, age, SEX sex_grp, UNDERLYING_CAUSE_OF_DEATH cod1, POSTCODE pc7, 
         REGISTRATION_DISTRICT rdno, ENTRY_NUMBER entry_no
         FROM ANALYSIS.GRO_DEATHS_C 
-          WHERE date_of_registration between '1 January 2006' and '31 December 2019'
+          WHERE date_of_registration between '1 January 2006' and '31 December 2020'
           AND age is not NULL
-          AND sex <> 9
-          AND regexp_like(underlying_cause_of_death,'^F1[1-69]|^X4[0-4]|^X6[0-4]|^X85|^Y1[0-4]')
-         ")) %>%
+          AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
+
 
 # Adding padding to the entry_no variable so it matches NRS format
 drug_deaths_smr <- drug_deaths_smr %>% 
@@ -74,7 +71,7 @@ drug_deaths %>% group_by(year) %>% count() %>% View()
 ## Part 2 - Creating basefiles ----
 ###############################################.
 # Bring council area info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Aggregating data by datazone for deprivation analysis
@@ -109,21 +106,21 @@ saveRDS(drug_deaths_ca %>% subset(sex_grp==1),
 
 # Analysis by CA
 analyze_first(filename = "drug_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2019,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020,
               time_agg = 1, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1, 
-               epop_total = 200000, ind_id = 4121, year_type = "calendar")
+               epop_total = 200000, ind_id = 4121, year_type = "calendar", qa = FALSE)
 
 all_drug_deaths <- rbind(final_result, drug_deaths_02_05)
 
-# save this for shiny
+# save for shiny - these files are to be used rather than the output from the analyze_second function.
 saveRDS(all_drug_deaths, file = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.rds"))
 write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_drug_deaths_shiny.csv"))
 
 #Deprivation analysis function 
 analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
-                    yearstart= 2006, yearend=2019,   year_type = "calendar", 
+                    yearstart= 2006, yearend=2020,   year_type = "calendar", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 4121)
 
@@ -131,16 +128,16 @@ analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5,
 ## Part 4 - Female drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2019,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020,
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only female half population
 analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12535, year_type = "calendar")
+               epop_total = 100000, ind_id = 12535, year_type = "calendar", qa = FALSE)
 
 all_female_drug_deaths <- rbind(final_result, drug_deaths_female_02_05)
 
-# save for shiny
+# save for shiny - these files are to be used rather than the output from the analyze_second function.
 saveRDS(all_female_drug_deaths, file = paste0(data_folder, "Data to be checked/all_female_drug_deaths_shiny.rds"))
 write_csv(all_female_drug_deaths, path = paste0(data_folder, "Data to be checked/all_female_drug_deaths_shiny.csv"))
 
@@ -148,16 +145,16 @@ write_csv(all_female_drug_deaths, path = paste0(data_folder, "Data to be checked
 ## Part 5 - Male drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2019, 
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020, 
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only male half population
 analyze_second(filename = "drug_deaths_male", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12534, year_type = "calendar")
+               epop_total = 100000, ind_id = 12534, year_type = "calendar", qa = FALSE)
 
 all_male_drug_deaths <- rbind(final_result, drug_deaths_male_02_05)
 
-# save for shiny
+# save for shiny - these files are to be used rather than the output from the analyze_second function.
 saveRDS(all_male_drug_deaths, file = paste0(data_folder, "Data to be checked/all_male_drug_deaths_shiny.rds"))
 write_csv(all_male_drug_deaths, path = paste0(data_folder, "Data to be checked/all_male_drug_deaths_shiny.csv"))
 
