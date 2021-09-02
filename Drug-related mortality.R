@@ -112,6 +112,9 @@ analyze_first(filename = "drug_deaths", geography = "council", measure = "stdrat
 analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1, 
                epop_total = 200000, ind_id = 4121, year_type = "calendar", qa = FALSE)
 
+#run up to here as qa app opens
+run_qa(filename = "drug_deaths", old_file="all_drug_deaths")
+  
 all_drug_deaths <- rbind(final_result, drug_deaths_02_05)
 
 # save for shiny - these files are to be used rather than the output from the analyze_second function.
@@ -135,6 +138,9 @@ analyze_first(filename = "drug_deaths_female", geography = "council", measure = 
 analyze_second(filename = "drug_deaths_female", measure = "stdrate", time_agg = 5, 
                epop_total = 100000, ind_id = 12535, year_type = "calendar", qa = FALSE)
 
+#run up to here as qa app opens
+run_qa(filename = "drug_deaths_female", old_file="all_female_drug_deaths")
+
 all_female_drug_deaths <- rbind(final_result, drug_deaths_female_02_05)
 
 # save for shiny - these files are to be used rather than the output from the analyze_second function.
@@ -151,6 +157,9 @@ analyze_first(filename = "drug_deaths_male", geography = "council", measure = "s
 #epop is only 100000 as only male half population
 analyze_second(filename = "drug_deaths_male", measure = "stdrate", time_agg = 5, 
                epop_total = 100000, ind_id = 12534, year_type = "calendar", qa = FALSE)
+
+#run up to here as qa app opens
+run_qa(filename = "drug_deaths_male", old_file="all_male_drug_deaths")
 
 all_male_drug_deaths <- rbind(final_result, drug_deaths_male_02_05)
 
