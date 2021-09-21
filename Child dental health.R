@@ -11,8 +11,8 @@ source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
 #Function to read raw data for each year
-read_excel_sheet <- function(sheet, range) {
-  data_dent <- read_excel(paste0(data_folder, "Received Data/IR2019-01329_children_dental_health.xlsx"), 
+read_excel_sheet <- function(extract, sheet, range) {
+  data_dent <- read_excel(paste0(data_folder, "Received Data/", extract, "_children_dental_health.xlsx"), 
                             sheet = sheet, range = range) %>% 
     setNames(tolower(names(.))) %>%   #variables to lower case
     mutate(year = substr(school_year,1,4)) %>% #creating year variable
@@ -23,13 +23,14 @@ read_excel_sheet <- function(sheet, range) {
 ## Part 1 - P1 Child dental raw data ----
 ###############################################.
 data_p1 <- as.data.frame(rbind(
-  read_excel_sheet(sheet = "2013_P1_C_DZ2011", range = "A5:E13075"),
-  read_excel_sheet(sheet = "2014_P1_C_DZ2011", range = "A5:E13189"),
-  read_excel_sheet(sheet = "2015_P1_C_DZ2011", range = "A5:E13186"),
-  read_excel_sheet(sheet = "2016_P1_C_DZ2011", range = "A5:E13004"),
-  read_excel_sheet(sheet = "2016.17_P1_letter_C", range = "A4:E12971"),
-  read_excel_sheet(sheet = "2017.18_P1_letter_C", range = "A4:E13075"),
-  read_excel_sheet(sheet = "2018.19_P1_letter_C", range = "A4:E13043"))) %>% 
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2013_P1_C_DZ2011", range = "A5:E13075"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2014_P1_C_DZ2011", range = "A5:E13189"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2015_P1_C_DZ2011", range = "A5:E13186"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2016_P1_C_DZ2011", range = "A5:E13004"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2016.17_P1_letter_C", range = "A4:E12971"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2017.18_P1_letter_C", range = "A4:E13075"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2018.19_P1_letter_C", range = "A4:E13043"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2019.20_P1_letter_C", range = "A4:E13043"))) %>% 
   group_by(datazone, year) %>% #aggregating 
   mutate(numerator = as.numeric(numerator)) %>% 
   summarise(numerator = sum(numerator, na.rm =T), 
@@ -43,13 +44,14 @@ saveRDS( data_p1 %>% filter(year>=2014), file=paste0(data_folder, 'Prepared Data
 ## Part 2 - P7 Child dental raw data ----
 ###############################################.
 data_p7 <- as.data.frame(rbind(
-  read_excel_sheet(sheet = "2013_P7_C_DZ2011", range = "A5:E12816"),
-  read_excel_sheet(sheet = "2014_P7_C_DZ2011", range = "A5:E12775"),
-  read_excel_sheet(sheet = "2015_P7_C_DZ2011", range = "A5:E12721"),
-  read_excel_sheet(sheet = "2016_P7_C_DZ2011", range = "A5:E12836"),
-  read_excel_sheet(sheet = "2016.17_P7_letter_C", range = "A4:E12954"),
-  read_excel_sheet(sheet = "2017.18_P7_letter_C", range = "A4:E12968"),
-  read_excel_sheet(sheet = "2018.19_P7_letter_C", range = "A4:E13000"))) %>% 
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2013_P7_C_DZ2011", range = "A5:E12816"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2014_P7_C_DZ2011", range = "A5:E12775"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2015_P7_C_DZ2011", range = "A5:E12721"),
+  read_excel_sheet(extract = "IR2019-01329", sheet = "2016_P7_C_DZ2011", range = "A5:E12836"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2016.17_P7_letter_C", range = "A4:E12954"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2017.18_P7_letter_C", range = "A4:E12968"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2018.19_P7_letter_C", range = "A4:E13000"),
+  read_excel_sheet(extract = "IR2021-00006", sheet = "2019.20_P7_letter_C", range = "A4:E13000"))) %>% 
   group_by(datazone, year) %>% #aggregating 
   mutate(numerator = as.numeric(numerator)) %>% 
   summarise(numerator = sum(numerator, na.rm =T), 
@@ -66,26 +68,26 @@ saveRDS(data_p7 %>% filter(year>=2014), file=paste0(data_folder, 'Prepared Data/
 #I need to amend the function so it works with population finite correction factor
 #Children at P1
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2018, time_agg = 1)
+              yearstart = 2012, yearend = 2020, time_agg = 1) 
 
 analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1, 
                ind_id = 21005, year_type = "school", pop="DZ11_pop_5")
 
 #Deprivation analysis function
 analyze_deprivation(filename="child_dental_p1_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend=2018, time_agg=1,
+                    yearstart= 2014, yearend=2020, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 ###############################################.
 #Children at P7
 analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2018, time_agg = 1)
+              yearstart = 2012, yearend = 2020, time_agg = 1)
 
 analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
                ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
 
 analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend=2018, time_agg=1,
+                    yearstart= 2014, yearend=2020, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
 
 ##END
