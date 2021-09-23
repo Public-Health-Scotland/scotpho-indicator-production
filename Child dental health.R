@@ -1,4 +1,4 @@
-# ScotPHO indicators: Child dental health at P1 and P7
+# ScotPHO indicators: Child dental health at P1 and P7.
 
 #   Part 1 - P1 Child dental raw data 
 #   Part 2 - P7 Child dental raw data 
