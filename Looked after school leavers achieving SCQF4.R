@@ -62,7 +62,7 @@ lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 # pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
 source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("./2.deprivation_analysis.R") # deprivation function..
 
 ################################################################################
 #####                          read in prepared data                       #####
