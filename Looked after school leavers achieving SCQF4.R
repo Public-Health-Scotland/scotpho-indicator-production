@@ -62,7 +62,7 @@ lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 # pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
 source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+source("./2.deprivation_analysis.R") # deprivation function..
 
 ################################################################################
 #####                          read in prepared data                       #####
@@ -80,7 +80,7 @@ analyze_first(filename = "looked_after_SCQF4", geography = "council",
 analyze_second(filename = "looked_after_SCQF4", measure = "percent", time_agg = 1,
               ind_id = 13007, year_type = "school")
 
-#for QA
+#for QA :)
 looked_after_SCQF4_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.rds")
 
 write.csv (looked_after_SCQF4_denom, "X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.csv")
