@@ -31,7 +31,7 @@ deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
@@ -96,7 +96,7 @@ saveRDS(suicides_young, file=paste0(data_folder, 'Prepared Data/suicides_young_r
 ###############################################.
 # All suicides
 analyze_first(filename = "deaths_suicide_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2018,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
               time_agg = 5, epop_age = "normal")
 
 analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg = 5, 
@@ -105,13 +105,13 @@ analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg =
 #Deprivation analysis function
 analyze_deprivation(filename="suicide_depr", measure="stdrate", time_agg=5,
                     pop = "depr_pop_allages", epop_total =200000, epop_age="normal",
-                    yearstart= 2002, yearend=2018, year_type = "financial", ind_id = 20403)
+                    yearstart= 2002, yearend=2019, year_type = "financial", ind_id = 20403)
 
 ###############################################.
 # Female and male suicides
 mapply(analyze_first, filename = c("suicides_female", "suicides_male"), 
        geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
-       yearstart = 2002, yearend = 2018, time_agg = 5, epop_age = "normal")
+       yearstart = 2002, yearend = 2019, time_agg = 5, epop_age = "normal")
 
 #Female suicides: epop is only 100000 as only female half population
 analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
@@ -125,7 +125,7 @@ analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5,
 # Young people suicides
 # Crude rates as numbers are too small for standardization.
 analyze_first(filename = "suicides_young", geography = "council", measure = "crude", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2018,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2019,
               time_agg = 5, epop_age = "11to25")
 
 analyze_second(filename = "suicides_young", measure = "crude", time_agg = 5, crude_rate = 100000,
