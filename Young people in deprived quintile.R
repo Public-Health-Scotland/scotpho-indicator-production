@@ -119,7 +119,7 @@ saveRDS(prepare_file(access_dz14, access_dz17),
 filenames <- c("young_people_crime", "young_people_access", "young_people_income")
 # Running functions for the three indicators
 mapply(analyze_first, filename = filenames, geography = "datazone11", measure = "percent", 
-              yearstart = 2011, yearend = 2019, time_agg = 1, pop = "DZ11_pop_under26")
+              yearstart = 2011, yearend = 2020, time_agg = 1, pop = "DZ11_pop_under26")
 
 mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, 
                ind_id = c(13005, 13003, 13004), year_type = "calendar", qa = F)
