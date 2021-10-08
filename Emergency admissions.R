@@ -62,7 +62,7 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=paste0(
             max(extract(year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year, 
             min(admission_date) OVER (PARTITION BY link_no, cis_marker) doadm
    FROM ANALYSIS.SMR01_PI 
-   WHERE discharge_date between '1 January 2002' and '31 December 2019'
+   WHERE discharge_date between '1 January 2002' and '31 December 2020'
       AND sex not in ('9', '0')
       AND AGE_IN_YEARS is not null 
       AND (admission_type between '20' and '22' or admission_type between '30' and '39') 
@@ -70,7 +70,7 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=paste0(
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing geography info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, intzone2011, ca2019, hb2019, hscp2019)
 
@@ -115,7 +115,7 @@ saveRDS(data_ma, paste0(data_folder, 'Prepared Data/ma_raw.rds'))
 # The function call uses a different geography to datazone11 or council as this way,
 # it skips the parts of the function that bring the geographical info.
 mapply(analyze_first, filename = c("ea", "ma"), geography = "all", measure = "stdrate", 
-       pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2019,
+       pop = c("DZ11_pop_allages", "DZ11_pop_65+"), yearstart = 2002, yearend = 2020,
        time_agg = 3, epop_age = "normal", hscp = T)
 
 #Emergency admissions
