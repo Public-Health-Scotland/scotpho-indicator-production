@@ -62,13 +62,12 @@ saveRDS(data_inc_depdz11, file = paste0(data_folder, "Prepared Data/income_depri
 #Preparing file for CA for period 2004 to 2013
 data_inc_depdz01 <- data_inc_dep %>% filter(year<2014)
 #Lookup file for CA
-ca_lookup <- read.spss('/conf/linkage/output/lookups/Archive/geography/other_ref_files/DataZone2001.sav',
-                       to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% select(ca2011, datazone2001)
+ca_lookup <- read_xlsx(paste0(data_folder, "Lookups/Geography/DataZone2001.xlsx")) %>% 
+  setNames(tolower(names(.))) %>% select(ca, datazone)
 
 #Merging with lookup and aggregating by ca
-data_inc_depdz01 <- left_join(data_inc_depdz01, ca_lookup, by = c("datazone" = "datazone2001")) %>% 
-  rename(ca = ca2011) %>% group_by(ca, year) %>% 
+data_inc_depdz01 <- left_join(data_inc_depdz01, ca_lookup) %>% 
+  group_by(ca, year) %>% 
   summarise(numerator=sum(numerator, na.rm = T)) %>% ungroup() %>% 
   #Dealing with changes in ca codes. Transforms old code versions into 2019 ones
   mutate(ca = recode(ca, "S12000015"='S12000047', "S12000024"='S12000048', 
