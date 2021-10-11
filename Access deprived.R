@@ -110,8 +110,8 @@ ca_lookup <- read_xlsx(paste0(data_folder, "Lookups/Geography/DataZone2001.xlsx"
   setNames(tolower(names(.))) %>% select(ca, datazone)
 
 #Merging with lookup and aggregating by ca
-data_access_dz01 <- left_join(data_access_dz01, ca_lookup, by = c("datazone" = "datazone2001")) %>% 
-  rename(ca = ca2011) %>% group_by(ca, year) %>% 
+data_access_dz01 <- left_join(data_access_dz01, ca_lookup) %>% 
+  group_by(ca, year) %>% 
   summarise(numerator=sum(numerator, na.rm = T)) %>% ungroup() %>% 
   #Dealing with changes in ca codes. Transforms old code versions into 2019 ones
   mutate(ca = recode(ca, "S12000015"='S12000047', "S12000024"='S12000048', 
