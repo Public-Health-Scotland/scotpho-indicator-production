@@ -33,7 +33,7 @@ cancer_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
