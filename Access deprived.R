@@ -106,9 +106,8 @@ saveRDS(data_access_dz11, file = paste0(data_folder, "Prepared Data/access_depri
 #Preparing file for CA for period 2004 to 2013
 data_access_dz01 <- data_access %>% filter(year<2014)
 #Lookup file for CA
-ca_lookup <- read.spss('/conf/linkage/output/lookups/Archive/geography/other_ref_files/DataZone2001.sav',
-                       to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% select(ca2011, datazone2001)
+ca_lookup <- read_xlsx(paste0(data_folder, "Lookups/Geography/DataZone2001.xlsx")) %>% 
+  setNames(tolower(names(.))) %>% select(ca, datazone)
 
 #Merging with lookup and aggregating by ca
 data_access_dz01 <- left_join(data_access_dz01, ca_lookup, by = c("datazone" = "datazone2001")) %>% 
