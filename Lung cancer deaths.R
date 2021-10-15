@@ -24,7 +24,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 lung_deaths <- tbl_df(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, AGE, SEX sex_grp, POSTCODE pc7 
        FROM ANALYSIS.GRO_DEATHS_C
-       WHERE date_of_registration between '1 January 2002' and '31 December 2019'
+       WHERE date_of_registration between '1 January 2002' and '31 December 2020'
           AND country_of_residence= 'XS' 
           AND regexp_like(underlying_cause_of_death, 'C3[34]')
           AND age >= 16
@@ -33,7 +33,7 @@ lung_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.))) %>% select(pc7, ca2019)
   
 lung_deaths <- left_join(lung_deaths, postcode_lookup, by = "pc7") %>% #merging with lookup
@@ -47,7 +47,7 @@ saveRDS(lung_deaths, file=paste0(data_folder, 'Prepared Data/lungcancer_deaths_r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "lungcancer_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2019, hscp = T,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2020, hscp = T,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "lungcancer_deaths", measure = "stdrate", time_agg = 3, 
