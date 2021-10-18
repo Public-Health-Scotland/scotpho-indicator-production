@@ -275,17 +275,6 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
     }
   }
   
-  # Temporary? - For school year 2019/20 only include data at HB (& Scot) level
-  # for Child Dental Health data
-  if (filename == "child_dental_p1" | filename == "child_dental_p7") {
-    data_indicator %<>% 
-      mutate(drop = case_when(year == 2019 & 
-                                (substr(code,1,3) != "S00" & substr(code,1,3) != "S08") ~ 1,
-                              T ~ 0)) %>% 
-      filter(drop != 1) %>% 
-      select(-drop)
-  }
-  
   analysis_first_result <<- data_indicator
   
   saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
