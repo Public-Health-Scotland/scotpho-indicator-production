@@ -27,7 +27,7 @@ hospitalisation_CHD <- tbl_df(dbGetQuery(channel, statement=
         THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year
     FROM ANALYSIS.SMR01_PI z 
-      WHERE admission_date between  '1 April 2002' and '31 March 2020'
+      WHERE admission_date between  '1 April 2002' and '31 March 2021'
       AND sex <> 0 
       AND regexp_like(main_condition, 'I2[0-5]')
     GROUP BY link_no,
@@ -48,7 +48,7 @@ hospitalisation_CHD <- hospitalisation_CHD %>% mutate(age_grp = case_when(
 ))
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2011)
 
@@ -80,7 +80,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/hospitalisation_CHD_de
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "hospitalisation_CHD_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "hospitalisation_CHD_dz11", measure = "stdrate", time_agg = 3, 
@@ -88,7 +88,7 @@ analyze_second(filename = "hospitalisation_CHD_dz11", measure = "stdrate", time_
 
 #Deprivation analysis function
 analyze_deprivation(filename="hospitalisation_CHD_depr", measure="stdrate", time_agg = 3, 
-                    yearstart= 2002, yearend=2019,   year_type = "financial", 
+                    yearstart= 2002, yearend=2021,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age= "normal",
                     epop_total = 200000, ind_id = 20303)
 
