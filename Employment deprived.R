@@ -110,8 +110,8 @@ data_shiny_deprivation_filtered <- final_result %>%
 
 # Save to Data to be checked folder
 
-saveRDS(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_all", "_shiny.rds"))
-write_csv(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_all", "_shiny.csv"))
-saveRDS(data_shiny_deprivation_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_depr_ineq.rds"))
+saveRDS(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "employment_deprived_all", "_shiny.rds"))
+write_csv(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "employment_deprived_all", "_shiny.csv"))
+saveRDS(data_shiny_deprivation_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "employment_deprived_depr_ineq.rds"))
 
 #END
