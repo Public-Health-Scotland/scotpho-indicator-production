@@ -96,7 +96,8 @@ analyze_second(filename = "income_deprived_all", measure = "percent",
 ###### Save final result before it is overwritten by analyze_deprivation() and filter correct years to include in Plot
 data_shiny_filtered <- final_result %>% 
   select(c(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)) %>% 
-  filter(year %in% c(2004, 2007, 2010, 2014, 2017))
+  filter(year %in% c(2004, 2007, 2010, 2014, 2017)) %>% 
+  arrange(code, year, trend_axis)
 
 ###############################################.
 #Deprivation analysis function
@@ -106,7 +107,8 @@ analyze_deprivation(filename="income_deprived_depr", measure="percent", time_agg
 
 ####### Filter depirvation data to include correct years
 data_shiny_deprivation_filtered <- final_result %>%  
-  filter(year %in% c(2004, 2007, 2010, 2014, 2017))
+  filter(year %in% c(2004, 2007, 2010, 2014, 2017)) %>% 
+  arrange(code, year, trend_axis)
 
 # Save to Data to be checked folder
 
