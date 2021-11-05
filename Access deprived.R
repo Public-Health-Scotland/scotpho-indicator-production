@@ -137,10 +137,28 @@ saveRDS(all_data, file = paste0(data_folder, "Temporary/access_deprived_all_form
 analyze_second(filename = "access_deprived_all", measure = "percent", 
                time_agg = 1, ind_id = 20902, year_type = "calendar")
 
+###### Save final result before it is overwritten by analyze_deprivation() and filter correct years to include in Plot
+data_shiny_filtered <- final_result %>% 
+  select(c(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)) %>% 
+  filter(year %in% c(2002, 2004, 2007, 2010, 2014, 2017)) %>% 
+  arrange(code, year, trend_axis)
+
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="access_deprived_depr", measure="percent", time_agg=1, 
                     yearstart= 2002, yearend=2019,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20902)
+
+####### Filter depirvation data to include correct years
+data_shiny_deprivation_filtered <- final_result %>%  
+  filter(year %in% c(2002, 2004, 2007, 2010, 2014, 2017)) %>% 
+  arrange(code, year, trend_axis)
+
+
+# Save to Data to be checked folder
+
+saveRDS(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "access_deprived_all", "_shiny.rds"))
+write_csv(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "access_deprived_all", "_shiny.csv"))
+saveRDS(data_shiny_deprivation_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "access_deprived_depr_ineq.rds"))
 
 ## END
