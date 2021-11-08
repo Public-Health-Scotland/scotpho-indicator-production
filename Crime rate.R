@@ -94,10 +94,28 @@ saveRDS(all_data, file = paste0(data_folder, "Temporary/crime_rate_all_formatted
 analyze_second(filename = "crime_rate_all", measure = "crude", time_agg = 1, 
                crude_rate = 1000, ind_id = 20801, year_type = "calendar")
 
+###### Save final result before it is overwritten by analyze_deprivation() and filter correct years to include in Plot
+data_shiny_filtered <- final_result %>% 
+  select(c(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)) %>% 
+  filter(year %in% c(2004, 2007, 2010, 2014, 2017))
+
 ###############################################.
 #Deprivation analysis function
 analyze_deprivation(filename="crime_rate_depr", measure="crude", time_agg=1, 
                     crude_rate = 1000, yearstart= 2004, yearend=2020,  
                     year_type = "calendar", pop = "depr_pop_allages", ind_id = 20801)
+
+
+####### Filter depirvation data to include correct years
+data_shiny_deprivation_filtered <- final_result %>%  
+  filter(year %in% c(2004, 2007, 2010, 2014, 2017))
+
+
+
+# Save to Data to be checked folder
+
+saveRDS(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_all", "_shiny.rds"))
+write_csv(data_shiny_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_all", "_shiny.csv"))
+saveRDS(data_shiny_deprivation_filtered, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/", "Data to be checked/", "crime_rate_depr_ineq.rds"))
 
 #END IS THE BEST

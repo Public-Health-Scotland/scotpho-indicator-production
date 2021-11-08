@@ -13,44 +13,48 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by AWT team
-awt <- read_excel(paste0(data_folder, "Received Data/alcohol_waiting_times_2020.xlsx"), 
+awt <- read_excel(paste0(data_folder, "Received Data/alcohol_waiting_times_2021.xlsx"), 
                                sheet = "alcohol_waiting_times") %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
-  mutate(code = case_when( #dumfries ADP missing, fife, western isles/outer hebrides, orkney, shetland, borders, lanark needs to be merged
-    geography == "Clackmannanshire ADP" ~ "S11000005", geography == "Falkirk ADP" ~ "S11000013", 
-    geography == "Stirling ADP" ~ "S11000029",   geography == "East Ayrshire ADP" ~ "S11000008", geography == "North Ayrshire ADP" ~ "S11000020", 
-    geography == "South Ayrshire ADP" ~ "S11000027", geography == "Midlothian and East Lothian" ~ "S11000051", 
-    geography == "West Lothian ADP" ~ "S11000031", geography == "Edinburgh City ADP" ~ "S11000012", 
-    geography == "East Renfrewshire ADP" ~ "S11000011", geography == "East Dunbartonshire ADP" ~ "S11000009", 
-    geography == "Inverclyde ADP" ~ "S11000017", geography == "Renfrewshire ADP" ~ "S11000024", 
-    geography == "West Dunbartonshire ADP" ~ "S11000030", geography == "Mid and East Lothian ADP" ~ "S11000051", 
-    geography == "Glasgow City ADP" ~ "S11000015", geography == "Highland ADP" ~ "S11000016", 
-    geography == "Argyll & Bute ADP" ~ "S11000004", geography == "Moray ADP" ~ "S11000019", 
-    geography == "Aberdeen City ADP" ~ "S11000001", geography == "Aberdeenshire ADP" ~ "S11000002", 
-    geography == "Perth & Kinross ADP" ~ "S11000023", geography == "Angus ADP" ~ "S11000003", geography == "Dundee City ADP" ~ "S11000007", 
-    geography == "Ayrshire & Arran" ~ "S08000015", 
-    geography == "Borders" ~ "S08000016", geography == "Dumfries & Galloway" ~ "S08000017", 
-    geography == "Fife" ~ "S08000029", geography == "Forth Valley" ~ "S08000019",
-    geography == "Grampian" ~ "S08000020", geography == "Greater Glasgow & Clyde" ~ "S08000031", 
-    geography == "Highland" ~ "S08000022", geography == "Lanarkshire" ~ "S08000032", 
-    geography == "Lothian" ~ "S08000024", geography == "Orkney" ~ "S08000025", 
-    geography == "Shetland" ~ "S08000026", geography == "Tayside" ~ "S08000030", geography == "Western Isles" ~ "S08000028", 
+  mutate(code = case_when( #create a code variable for each ADP and HB
+    geography == "Clackmannanshire_ADP" ~ "S11000005", geography == "Falkirk_ADP" ~ "S11000013", 
+    geography == "Stirling_ADP" ~ "S11000029", geography == "East Ayrshire_ADP" ~ "S11000008", 
+    geography == "North Ayrshire_ADP" ~ "S11000020", geography == "South Ayrshire_ADP" ~ "S11000027", 
+    geography == "Mid and East Lothian_ADP" ~ "S11000051", geography == "West Lothian_ADP" ~ "S11000031", 
+    geography == "City of Edinburgh_ADP" ~ "S11000012", geography == "East Renfrewshire_ADP" ~ "S11000011", 
+    geography == "East Dunbartonshire_ADP" ~ "S11000009", geography == "Inverclyde_ADP" ~ "S11000017", 
+    geography == "Renfrewshire_ADP" ~ "S11000024", geography == "West Dunbartonshire_ADP" ~ "S11000030", 
+    geography == "City of Glasgow_ADP" ~ "S11000015", geography == "Highland_ADP" ~ "S11000016", 
+    geography == "Argyll & Bute_ADP" ~ "S11000004", geography == "Moray_ADP" ~ "S11000019", 
+    geography == "Aberdeen City_ADP" ~ "S11000001", geography == "Aberdeenshire_ADP" ~ "S11000002", 
+    geography == "Perth & Kinross_ADP" ~ "S11000023", geography == "Angus_ADP" ~ "S11000003", 
+    geography == "Dundee City_ADP" ~ "S11000007", geography == "Dumfries & Galloway_ADP" ~ "S11000006", 
+    geography == "Fife_ADP" ~ "S11000014", geography == "Orkney Islands_ADP" ~ "S11000022", 
+    geography == "Scottish Borders_ADP" ~ "S11000025", geography == "Shetland Islands_ADP" ~ "S11000026", 
+    geography == "Western Isles_ADP" ~ "S11000032", geography == "Ayrshire & Arran_HB" ~ "S08000015", 
+    geography == "Borders_HB" ~ "S08000016", geography == "Dumfries & Galloway_HB" ~ "S08000017", 
+    geography == "Fife_HB" ~ "S08000029", geography == "Forth Valley_HB" ~ "S08000019",
+    geography == "Grampian_HB" ~ "S08000020", geography == "Greater Glasgow & Clyde_HB" ~ "S08000031", 
+    geography == "Highland_HB" ~ "S08000022", geography == "Lanarkshire_HB" ~ "S08000032", 
+    geography == "Lothian_HB" ~ "S08000024", geography == "Orkney_HB" ~ "S08000025", 
+    geography == "Shetland_HB" ~ "S08000026", geography == "Tayside_HB" ~ "S08000030", 
+    geography == "Western Isles_HB" ~ "S08000028", 
     geography == "Scotland" ~ "S00000001", TRUE ~ "Error")) %>% 
-  mutate(year = as.numeric(substr(year,1,4))) %>%   #converting to numeric as needed for functions 
-  filter(!(geography %in% c("East Lothian", "Mid Lothian", 
-                            "South Lanarkshire", "North Lanarkshire")  )) # excluding councils
+  mutate(year = as.numeric(substr(year,1,4)))   #converting to numeric as needed for functions 
 
-# Duplicating rows for ADPs not included in file using HB data.
-awt_agg <- awt %>%   
-  filter(geography %in% c("Fife", "Dumfries & Galloway", "Orkney", "Shetland",
-                          "Western Isles", "Borders", "Lanarkshire")  ) %>%  
-  mutate(code = case_when( #dumfries ADP missing, fife, western isles/outer hebrides, orkney, shetland, borders, lanark needs to be merged
-    geography == "Borders" ~ "S11000025", geography == "Dumfries & Galloway" ~ "S11000006", 
-    geography == "Fife" ~ "S11000014", 
-    geography == "Lanarkshire" ~ "S11000052", geography == "Orkney" ~ "S11000022", 
-    geography == "Shetland" ~ "S11000026", geography == "Western Isles" ~ "S11000032", TRUE ~ "Error")) 
 
-awt <- rbind(awt, awt_agg)  
+# ADPs for North and South Lanarkshire need to be combined as they are still combined as Lanarkshire in Profiles lookups
+awt <- awt %>%
+  mutate(code = case_when(geography == "South Lanarkshire_ADP" ~ "S11000052",
+                          geography == "North Lanarkshire_ADP" ~ "S11000052",
+                          TRUE ~ as.character(code))) %>% 
+  mutate(geography = case_when(code == "S11000052" ~ "Lanarkshire",
+                               TRUE ~ as.character(geography))) %>% 
+  group_by(year, geography, code) %>% 
+  summarise(numerator = sum(numerator),
+            denominator = sum(denominator)) %>% 
+  ungroup()
+
 
 saveRDS(awt, file=paste0(data_folder, 'Temporary/Alcohol_waiting_times_formatted.rds'))
 
