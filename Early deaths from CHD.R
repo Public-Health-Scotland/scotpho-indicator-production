@@ -27,13 +27,13 @@ deaths_CHD <- tbl_df(dbGetQuery(channel, statement=
      WHERE sex <> 9
       AND country_of_residence = 'XS'
       AND age < 75
-      AND date_of_registration between '1 January 2002' and '31 December 2019'
+      AND date_of_registration between '1 January 2002' and '31 December 2020'
       AND regexp_like(underlying_cause_of_death, '^I2[0-5]')" )) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -66,7 +66,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/deaths_CHD_depr_raw.rd
 ###############################################.
 #All patients asthma
 analyze_first(filename = "deaths_CHD_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_under75", yearstart = 2002, yearend = 2019,
+              pop = "DZ11_pop_under75", yearstart = 2002, yearend = 2020,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "deaths_CHD_dz11", measure = "stdrate", time_agg = 3, 
@@ -74,6 +74,6 @@ analyze_second(filename = "deaths_CHD_dz11", measure = "stdrate", time_agg = 3,
 
 #Deprivation analysis function
 analyze_deprivation(filename="deaths_CHD_depr", measure="stdrate", time_agg = 3, 
-                    yearstart= 2002, yearend=2019,   year_type = "calendar", 
+                    yearstart= 2002, yearend=2020,   year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age= "normal",
                     epop_total = 182000, ind_id = 20105)
