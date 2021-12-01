@@ -25,13 +25,6 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-organisation <- "HS" 
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -68,20 +61,20 @@ source("./2.deprivation_analysis.R") # deprivation function
 #####                          read in prepared data                       #####
 ################################################################################
 # read in csv
-looked_after_SCQF4<- read.csv(paste0(data_folder, "Received Data/looked_after_SCQF4_raw.csv"))
+LASL_SCQF_long<- read_rds(paste0(data_folder, "Prepared Data/LASL_SCQF_long.rds"))
 
-saveRDS(looked_after_SCQF4, file=paste0(data_folder, "Prepared Data/looked_after_SCQF4_raw.rds"))
+saveRDS(LASL_SCQF_long, file=paste0(data_folder, "Prepared Data/looked_after_SCQF4_raw.rds"))
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "looked_after_SCQF4", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2017, time_agg = 1)
+              measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
 analyze_second(filename = "looked_after_SCQF4", measure = "percent", time_agg = 1,
-              ind_id = 13007, year_type = "school")
+              ind_id = 13007, year_type = "school", , qa=FALSE)
 
-#for QA
-looked_after_SCQF4_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.rds")
+#for QA 
+looked_after_SCQF4_denom <- readRDS(paste0(data_folder, "Temporary/looked_after_SCQF4_formatted.rds"))
 
-write.csv (looked_after_SCQF4_denom, "X:/ScotPHO Profiles/Data/Temporary/looked_after_SCQF4_formatted.csv")
+write.csv (looked_after_SCQF4_denom, paste0(data_folder, "Temporary/looked_after_SCQF4_formatted.csv"))
 

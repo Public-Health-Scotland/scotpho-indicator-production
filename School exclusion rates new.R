@@ -30,10 +30,6 @@ library(stringr) # for strings
 data_folder <- "A:/ScotPHO Profiles/Data/" 
 lookups <- "A:/ScotPHO Profiles/Data/Lookups/"
 
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
-
-
 
 ################################################################################
 #####                          read in prepared data                       #####

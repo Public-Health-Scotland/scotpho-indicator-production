@@ -24,12 +24,6 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-organisation <- "HS" 
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -66,22 +60,22 @@ source("./2.deprivation_analysis.R") # deprivation function
 ################################################################################
 #####                          read in prepared data                       #####
 ################################################################################
-# read in csv
-looked_after_pos_dest<- read.csv(paste0(data_folder, "Received Data/looked_after_positive_dest_raw.csv"))
+# read in rds
+LASL_PostDest_long <- read_rds(paste0(data_folder, "Prepared Data/LASL_PostDest_long.rds"))
 
-saveRDS(looked_after_pos_dest, file=paste0(data_folder, "Prepared Data/looked_after_positive_dest_raw.rds"))
+saveRDS(LASL_PostDest_long, file=paste0(data_folder, "Prepared Data/looked_after_positive_dest_raw.rds"))
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "looked_after_positive_dest", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2018, time_agg = 1)
+              measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
 analyze_second(filename = "looked_after_positive_dest", measure = "percent", time_agg = 1,
-              ind_id = 13011, year_type = "school")
+              ind_id = 13011, year_type = "school", qa=FALSE)
 
 #for QA
-looked_after_dest_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_positive_dest_formatted.rds")
+looked_after_dest_denom <- readRDS(paste0(data_folder, "Temporary/looked_after_pos_dest_formatted.rds"))
 
-write.csv (looked_after_dest_denom, "X:/ScotPHO Profiles/Data/Temporary/looked_after_positive_dest_formatted.csv")
+write.csv (looked_after_dest_denom, paste0(data_folder, "Temporary/looked_after_pos_dest_formatted.csv"))
 
 

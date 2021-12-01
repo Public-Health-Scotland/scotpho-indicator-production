@@ -26,10 +26,37 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
+###############################################.
+## Packages/Filepaths/Functions ----
+###############################################.
+
+## HOW TO USE THESE FUNCTIONS
+# FUNCTION ONE: ANALYZE_FIRST
+# filename -  Name of the raw file the function reads without the "_raw.sav" at the end
+# geography - what is the base geography of the raw file: council or datazone2011
+# adp - To calculate the data for ADP level as well change it to TRUE, default is false.
+# measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
+# time_agg - Aggregation period used expressed in year, e.g. 3
+# pop - Name of the population file. Only used for those that need a denominator.  
+# yearstart - Start of the period you want to run an analysis for
+# yearend -  End of the period you want to run an analysis for
+# epop_age - Type of european population to use: 16+, <16, 0to25, 11to25, 15to25. 
+#            Only used for standardize rates.
+
+# FUNCTION TWO: ANALYZE_SECOND
+# filename -  Name of the formatted file the function reads without the "_formatted.sav" at the end
+# measure - crude rate (crude), standardized rate(stdrate), percentage (percent)
+#           percentage with finite population correction factor (perc_pcf)
+# time_agg - Aggregation period used expressed in year, e.g. 3 
+# ind_id - indicator code/number
+# year_type - calendar, financial, school or annual snapshot. This last one should
+#           be used like "Month snapshot" e.g. "August snapshot"
+# crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
+# epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
+# pop - Only for crude rate cases that need finite population correction factor. Reference population.
+
+source("./1.indicator_analysis.R") #Normal indicator functions
+source("./2.deprivation_analysis.R") # deprivation function
 
 
 ################################################################################
@@ -67,31 +94,27 @@ school_leaver <- select(school_leaver, c(1,5,4,3))
 # save rds raw file for use in analysis funtions
 saveRDS(school_leaver, file=paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
+################################################################################
+#####                          read in prepared data                       #####
+################################################################################
+# read in data
+school_leaver_destinations <- read_rds(paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
+
+saveRDS(school_leaver_destinations, file=paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
 
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "school_leaver_destinations", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2017, 
+              measure = "percent", yearstart = 2009, yearend = 2019, 
               time_agg = 1)
 
 
 # then complete analysis with the updated '_formatted.rds' file
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
-               time_agg = 1, ind_id = "13010",year_type = "school")
+               time_agg = 1, ind_id = "13010",year_type = "school", qa=FALSE)
 
-# convert zeroes back to NA for supressed data
-final_result[final_result == 0] <- NA
-
-# convert numertaor into integar
-final_result$numerator <- as.integer(final_result$numerator)
 
 # re-check test chart
 ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
@@ -100,12 +123,11 @@ ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
 
 
-#resave both rds and csv files
-final_result <- final_result %>% select(c(code, ind_id, year, numerator, rate, lowci,
-                                          upci, def_period, trend_axis))
+
+#for QA 
+
 saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
 write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
-
 
 
 

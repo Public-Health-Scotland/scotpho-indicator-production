@@ -24,12 +24,6 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-organisation <- "HS" 
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -69,18 +63,19 @@ source("./2.deprivation_analysis.R") # deprivation function
 # read in csv
 active_travel<- read.csv(paste0(data_folder, "Received Data/active_travel_raw.csv"))
 
-saveRDS(active_travel, file=paste0(data_folder, "Prepared Data/active_travel_raw.rds"))
+saveRDS(active_travel_raw, file=paste0(data_folder, "Prepared Data/active_travel_raw.rds"))
+
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "active_travel", geography = "council", 
-              measure = "percent", yearstart = 2008, yearend = 2018, time_agg = 1)
+              measure = "percent", yearstart = 2008, yearend = 2020, time_agg = 1)
 
 analyze_second(filename = "active_travel", measure = "percent", time_agg = 1,
-              ind_id = 13040, year_type = "school")
+              ind_id = 13040, year_type = "school", qa=FALSE)
+
 
 #for QA
-active_travel_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/active_travel_formatted.rds")
+active_travel_denom <- readRDS(paste0(data_folder, "Temporary/active_travel_formatted.rds"))
 
-write.csv (active_travel_denom, "X:/ScotPHO Profiles/Data/Temporary/active_travel_formatted.csv")
-
+write.csv (active_travel_denom, paste0(data_folder, "Temporary/active_travel_formatted.csv"))
