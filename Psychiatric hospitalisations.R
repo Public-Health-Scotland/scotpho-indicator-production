@@ -31,7 +31,7 @@ data_psychiatric <- as_tibble(dbGetQuery(channel, statement=
         MAX( datazone_2011 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2011, 
         MAX( datazone_2001 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2001 
    FROM ANALYSIS.SMR04_PI z
-   WHERE discharge_date between '1 April 2002' and '31 March 2020'
+   WHERE discharge_date between '1 April 2002' and '31 March 2021'
          AND specialty <> 'G5' 
          AND sex in ('1', '2')
          AND datazone_2011 is not null 
@@ -40,13 +40,14 @@ data_psychiatric <- as_tibble(dbGetQuery(channel, statement=
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
+
 ###############################################.
 ## Part 2 - Prepare geography basefiles ----
 ###############################################.
 ###############################################.
 # Datazone2011
-dz11 <- data_psychiatric %>% group_by(year, datazone_2011, sex_grp, age_grp) %>% 
-  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2011)
+dz11 <- data_psychiatric %>% group_by(year, datazone_2011, age_grp, sex_grp) %>% 
+  summarise(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2011)
 
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
 
@@ -65,7 +66,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges
 ###############################################.
 # All patients psychiatric discharge
 analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
@@ -73,7 +74,7 @@ analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", ti
 
 # Deprivation analysis function
 analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2019,   year_type = "financial", 
+                    yearstart= 2002, yearend=2020,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20402)
 
