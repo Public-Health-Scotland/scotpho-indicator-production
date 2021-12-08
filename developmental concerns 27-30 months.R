@@ -14,10 +14,14 @@ library(janitor)
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-dev_concerns <- read_csv(paste0(data_folder, "Received Data/IR2020-00980_development27months.csv")) %>%
+dev_concerns <- read_csv(paste0(data_folder, "Received Data/IR2021-00903_development27months.csv")) %>%
   setNames(tolower(names(.))) %>%
   clean_names() %>%
   mutate(datazone = as.factor(datazone2011))
+#removes all other geographies apart from datazone(needed if received data contains Scotland and hb data)
+dev_concerns <- dev_concerns %>%
+  filter(!(is.na(datazone))|hb_residence_desc=="Unknown")
+  
 
 dev_concerns <- dev_concerns %>%
   mutate( #creates year field based on lenght of fin_year
@@ -26,6 +30,8 @@ dev_concerns <- dev_concerns %>%
   group_by(year, datazone) %>%
   summarise(numerator = sum(no_with_concern), denominator = sum(no_reviews)) %>%
   ungroup()
+
+
 
 saveRDS(dev_concerns, file=paste0(data_folder, 'Prepared Data/dev_concerns_raw.rds')) 
 
