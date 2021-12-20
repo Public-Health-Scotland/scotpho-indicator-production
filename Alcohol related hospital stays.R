@@ -49,13 +49,13 @@ data_alcohol_episodes <- tbl_df(dbGetQuery(channel, statement= paste0(
   "SELECT link_no linkno, cis_marker cis, AGE_IN_YEARS age, admission_date, 
       discharge_date, DR_POSTCODE pc7, SEX sex_grp, ADMISSION, DISCHARGE, URI
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2001' and '31 March 2020'
+  WHERE discharge_date between  '1 April 2001' and '31 March 2021'
       and sex <> 9
       and exists (
           select * 
           from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and discharge_date between '1 April 2001' and '31 March 2020'
+            and discharge_date between '1 April 2001' and '31 March 2021'
             and (regexp_like(main_condition, '", alc_diag ,"')
               or regexp_like(other_condition_1,'", alc_diag ,"')
               or regexp_like(other_condition_2,'", alc_diag ,"')
@@ -75,7 +75,7 @@ data_alcoholstays <- data_alcohol_episodes  %>%
             ddisch=last(discharge_date),
             staymonth=month(ddisch),
             year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0)) %>% # generate financial year of stay field
-  subset(year>=2002 & year <2020) %>% # profiles only require figures from fye 2002/03 tp latest fye 2019/20
+  subset(year>=2002 & year <2021) %>% # profiles only require figures from fye 2002/03 tp latest fye 2020/21
   ungroup() %>% 
   # Creating age groups for standardization.
   create_agegroups()
@@ -84,7 +84,7 @@ data_alcoholstays <- data_alcohol_episodes  %>%
 xtabs(~data_alcoholstays$year)
 
 # Bringing CA and datazone info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2020_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Match geography information (datazone) to stays data
@@ -141,7 +141,7 @@ saveRDS(alcoholstays_11to25, file=paste0(data_folder, 'Prepared Data/alcohol_sta
 ##Run macros to generate HWB and Alcohol Profile indicator data
 # All ages alcohol related hospital stays 
 analyze_first(filename = "alcohol_stays_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2019,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
               time_agg = 1, epop_age = "normal",  adp = TRUE)
 
 analyze_second(filename = "alcohol_stays_dz11", measure = "stdrate", time_agg = 1, 
@@ -151,17 +151,17 @@ apply_stats_disc("alcohol_stays_dz11_shiny") # statistical disclosure applied to
 
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1, 
-                    yearstart= 2002, yearend=2019,   year_type = "financial", 
+                    yearstart= 2002, yearend=2020,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
-apply_stats_disc("alcohol_stays_depr") # statistical disclosure applied to final values to ensure consistency with other profile indicators
+apply_stats_disc("alcohol_stays_depr_ineq") # statistical disclosure applied to final values to ensure consistency with other profile indicators
 
 ###############################################.
 ##Run macros again to generate CYP indicator data
 # Alcohol related stays in 11 to 25 year olds
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2019,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2020,
               time_agg = 3, epop_age = '11to25', adp=TRUE)
 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 
