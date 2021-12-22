@@ -14,7 +14,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 #Reading data provided by Prescribing team
 sad_data_extract <- read_excel(paste0(data_folder, "Received Data/Single dwellings estimates 2020.xlsx"), 
-                            sheet = "Formatted",col_types = c("text", rep("numeric", 26))) %>% 
+                            sheet = "Formatted",col_types = c("text", rep("numeric", 28))) %>% 
   setNames(tolower(names(.)))   #variables to lower case
 
 #varstocases: split out 'multiple gather' function
