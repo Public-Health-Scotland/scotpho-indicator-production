@@ -9,7 +9,7 @@
 ###############################################.
 source("1.indicator_analysis.R") #Normal indicator functions
 
-#another comment
+
 
 ###############################################.
 ## Part 1 - Create basefile ----
@@ -57,7 +57,7 @@ awt <- awt %>%
             denominator = sum(denominator)) %>% 
   ungroup()
 
-#monica testing
+
 
 saveRDS(awt, file=paste0(data_folder, 'Temporary/Alcohol_waiting_times_formatted.rds'))
 
