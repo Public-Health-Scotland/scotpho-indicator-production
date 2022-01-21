@@ -1,12 +1,12 @@
 ################################################################################
 ################################################################################
 #########                                                              #########
-#####         School leaver positive destinations indicator prep           #####
+#####     School leavers with 1 or more qualification at SCQF Level 4      #####
 #########                                                              #########
 ################################################################################
 ################################################################################
 
-## This script analyses SG education data on the School leaver positive destinations measure
+## This script analyses SG education data on the School leaver with 1 or more qualification at SCQF Level 4
 
 ## The latest data (Feb 2019) is available here:
 #    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/leavedestla
@@ -55,8 +55,8 @@ library(stringr) # for strings
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
 # pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
-source("./1.Analysts_space/Christina/ScotPHO/ScotPHO Profile/1.indicator_analysis.R") #Normal indicator functions
-source("./1.Analysts_space/Christina/ScotPHO/ScotPHO Profile/2.deprivation_analysis.R") # deprivation function
+source("./1.Analysts_space/Vicki PH/ScotPHO/ScotPHO Profile/1.indicator_analysis.R") #Normal indicator functions
+source("./1.Analysts_space/Vicki PH/ScotPHO/ScotPHO Profile/2.deprivation_analysis.R") # deprivation function
 
 getwd()
 setwd("/PHI_conf/ScotPHO/")
@@ -64,7 +64,7 @@ setwd("/PHI_conf/ScotPHO/")
 #####                          read in prepared data                       #####
 ################################################################################
 # read in csv
-school_leaver <- read.csv(paste0(data_folder, "Received Data/school_leaver_destinations_raw.csv")) %>% 
+school_leaver <- read.csv(paste0(data_folder, "Received Data/school_leaver_SCQFL4_raw.csv")) %>% 
   as_tibble()
 
 
@@ -88,9 +88,6 @@ school_leaver$areaname[school_leaver$areaname == "Edinburgh, City of"] <- "City 
 school_leaver <- full_join(x = school_leaver, y = geog, by = "areaname") %>% 
   rename(ca = code)
 
-school_leaver$year <- substr(school_leaver$year, 1, 4) # truncate year in usual way
-
-school_leaver <- select(school_leaver, c(1,5,4,3))
 
 # save rds raw file for use in analysis funtions
 saveRDS(school_leaver, file=paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
@@ -99,21 +96,21 @@ saveRDS(school_leaver, file=paste0(data_folder, "Prepared Data/school_leaver_des
 #####                          read in prepared data                       #####
 ################################################################################
 # read in data
-school_leaver_destinations <- read_rds(paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
+school_leaver_destinations <- read_rds(paste0(data_folder, "Prepared Data/school_leaver_SCQFL4_raw.rds"))
 
-saveRDS(school_leaver_destinations, file=paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
+saveRDS(school_leaver_destinations, file=paste0(data_folder, "Prepared Data/school_leaver_SCQFL4_raw.rds"))
 
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "school_leaver_destinations", geography = "council", 
+analyze_first(filename = "school_leaver_SCQFL4", geography = "council", 
               measure = "percent", yearstart = 2009, yearend = 2019, 
               time_agg = 1)
 
 
 # then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "school_leaver_destinations", measure = "percent", 
+analyze_second(filename = "school_leaver_SCQFL4", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "school", qa=FALSE)
 
 
@@ -127,8 +124,8 @@ ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000
 
 #for QA 
 
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
+saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_SCQFL4_shiny.rds"))
+write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_SCQFL4_shiny.csv"))
 
 
 

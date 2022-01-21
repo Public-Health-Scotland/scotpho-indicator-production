@@ -23,12 +23,6 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-organisation <- "HS" 
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -73,13 +67,16 @@ saveRDS(SCRA_care, file=paste0(data_folder, "Prepared Data/scra_care_protection_
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "scra_care_protection", geography = "council", 
-              measure = "crude", yearstart = 2004, yearend = 2018, time_agg = 1)
+              measure = "crude", yearstart = 2004, yearend = 2020, time_agg = 1)
 
 analyze_second(filename = "scra_care_protection", measure = "crude", time_agg = 1,
-              ind_id = 13001, year_type = "financial", crude_rate = 1000)
+              ind_id = 13001, year_type = "financial", crude_rate = 1000, qa=FALSE)
 
 #for QA
-scra_care_protection_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/scra_care_protection_formatted.rds")
+scra_care_protection_denom <- readRDS(paste0(data_folder, "Temporary/scra_care_protection_formatted.rds"))
 
-write.csv (scra_care_protection_denom, "X:/ScotPHO Profiles/Data/Temporary/scra_care_protection_formatted.csv")
+write.csv(scra_care_protection_denom, paste0(data_folder, "Temporary/scra_care_protection_formatted.csv"))
+
+
+
 

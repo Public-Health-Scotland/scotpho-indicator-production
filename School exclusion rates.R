@@ -25,10 +25,6 @@ rm(list=ls())
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "A:/ScotPHO Profiles/Data/" 
-lookups <- "A:/ScotPHO Profiles/Data/Lookups/"
 
 source("./1.indicator_analysis.R") #Normal indicator functions
 source("./2.deprivation_analysis.R") # deprivation function
@@ -42,6 +38,8 @@ source("./2.deprivation_analysis.R") # deprivation function
 school_exclusion <- read.csv(paste0(data_folder, "Received Data/school_exclusion_raw.csv")) %>% 
   as_tibble()
 
+school_exclusion<- read_excel("/PHI_conf/ScotPHO/1.Analysts_space/Christina/ScotPHO/ScotPHO files/New data/school_exclusion_orig.xlsx")
+View(school_exclusion_orig)
 
 ###############################################.
 ## Part 1 - data prep
@@ -60,15 +58,17 @@ school_exclusion$year <- substr(school_exclusion$year, 1, 4) # truncate year in 
 
 school_exclusion <- select(school_exclusion, c(1,5,4,3))
 
+###append
+school_exclusion
+
+
 # save rds raw file for use in analysis funtions
 saveRDS(school_exclusion, file=paste0(data_folder, "Prepared Data/school_exclusion_raw.rds"))
+
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
 
 
 ###############################################.

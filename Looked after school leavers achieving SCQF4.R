@@ -10,9 +10,8 @@
 ## This script analyses Scottish Government data on the number of looked after 
 ## school leavers achieving 1 qualification at SCQF level 4 or better
 
-## The data at local authority level is not published routinely; this needs to be
-## requested from the Children and Families Directorate (email: 
-## childrens.statistics@gov.scot). 
+## The data at local authority level is available here:
+## https://www.gov.scot/publications/education-outcomes-looked-children-2019-20/. 
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -63,7 +62,7 @@ source("./2.deprivation_analysis.R") # deprivation function
 # read in csv
 LASL_SCQF_long<- read_rds(paste0(data_folder, "Prepared Data/LASL_SCQF_long.rds"))
 
-saveRDS(LASL_SCQF_long, file=paste0(data_folder, "Prepared Data/looked_after_SCQF4_raw.rds"))
+saveRDS(looked_after_SCQF4_raw, file=paste0(data_folder, "Prepared Data/looked_after_SCQF4_raw.rds"))
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.

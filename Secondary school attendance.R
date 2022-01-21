@@ -1,7 +1,7 @@
 ################################################################################
 ################################################################################
 #########                                                              #########
-#####       Looked after school leavers in positive destination            #####
+#####                     Secondary School Attendance                  #####
 #########                                                              #########
 ################################################################################
 ################################################################################
@@ -10,7 +10,8 @@
 ## school leavers achieving 1 qualification at SCQF level 4 or better
 
 ## The data at local authority level is not published routinely; this needs to be
-## requested from the Children and Families Directorate (email: ). 
+## requested from the Children and Families Directorate (email: 
+## childrens.statistics@gov.scot). 
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -59,22 +60,36 @@ source("./2.deprivation_analysis.R") # deprivation function
 ################################################################################
 #####                          read in prepared data                       #####
 ################################################################################
-# read in rds
-LASL_PostDest_long <- read_rds(paste0(data_folder, "Prepared Data/LASL_PostDest_long.rds"))
 
-saveRDS(LASL_PostDest_long, file=paste0(data_folder, "Prepared Data/looked_after_positive_dest_raw.rds"))
+library(readxl)
+
+school_attend_raw <- read_excel(paste0(data_folder, "Received Data/school_attend_raw.xlsx"))
+saveRDS(school_attend_raw, file=paste0(data_folder, "Prepared Data/school_attend_raw.rds"))
+
+
+# read in rds
+school_attend_raw <- read_rds(paste0(data_folder, "Prepared Data/school_attend_raw.rds"))
+
+
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "looked_after_positive_dest", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2019, time_agg = 1)
 
-analyze_second(filename = "looked_after_positive_dest", measure = "percent", time_agg = 1,
-              ind_id = 13011, year_type = "school", qa=FALSE)
+
+
+analyze_first(filename = "school_attend", geography = "council", 
+              measure = "percent", yearstart = 2010, yearend = 2019, time_agg=1)
+
+# then complete analysis with the updated '_formatted.rds' file
+analyze_second(filename = "school_attend", measure = "crude", crude_rate = 1000,
+               ind_id = "20603", year_type = "school",  time_agg=1, qa=FALSE)
+
+
 
 #for QA
-looked_after_dest_denom <- readRDS(paste0(data_folder, "Temporary/looked_after_pos_dest_formatted.rds"))
+school_attend <- readRDS(paste0(data_folder, "Temporary/school_attend_formatted.rds"))
 
-write.csv (looked_after_dest_denom, paste0(data_folder, "Temporary/looked_after_pos_dest_formatted.csv"))
+write.csv (school_attend, paste0(data_folder, "Temporary/school_attend_formatted.csv"))
+
 
 
