@@ -33,34 +33,37 @@ saveRDS(sad_data, file=paste0(data_folder, 'Prepared Data/Single_Dwellings_depr_
 #### Match lookup - datazone with local authority
 
 # dz01 Lookup file for CA 
-dz01_lookup <- read.spss('/conf/linkage/output/lookups/Archive/geography/other_ref_files/DataZone2001.sav',
-                       to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
-  select(ca2011, datazone2001) %>% 
+dz01_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Deprivation/DataZone2001_all_simd.rds')%>% 
+  setNames(tolower(names(.))) %>% #variables to lower case
+  select(ca2019, datazone2001)  
   # #Dealing with changes in ca, hb and hscp codes. Transforms old code versions into 2019 ones
-  mutate(ca2011 = recode(ca2011, "S12000015"='S12000047', "S12000024"='S12000048',
-                       "S12000046"='S12000049', "S12000044"='S12000050'))
+  #mutate(ca2011 = recode(ca2011, "S12000015"='S12000047', "S12000024"='S12000048',
+     #                  "S12000046"='S12000049', "S12000044"='S12000050'))
 
 # \\Isdsf00d03\cl-out\lookups\Unicode\Geography\DataZone2011
 #Preparing file for CA for period 2007 to 2014 (2014 only including dz <= S01006505)
 sad01_data <- sad_data %>% filter(year<=2014)
 #Merging with lookup
 sad01_data <- left_join(sad01_data, dz01_lookup, by = c("datazone" = "datazone2001")) %>% 
-  rename(ca = ca2011) %>% filter(datazone<='S01006505') %>% mutate(dz = "dz01")
+  rename(ca = ca2019) %>% filter(datazone<='S01006505') %>% mutate(dz = "dz01")
 
 # dz11 Lookup file for CA 
-dz11_lookup <- read.spss('/conf/linkage/output/lookups/Unicode/Geography/DataZone2011/DataZone2011.sav',
-                         to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
-  select(ca2011, datazone2011) %>% 
-  mutate(ca2011 = recode(ca2011, "S12000015"='S12000047', "S12000024"='S12000048',
-                         "S12000046"='S12000049', "S12000044"='S12000050'))
+# dz11_lookup <- read.spss('/conf/linkage/output/lookups/Unicode/Geography/DataZone2011/DataZone2011.sav',
+#                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
+#   setNames(tolower(names(.))) %>%   #variables to lower case
+#   select(ca2011, datazone2011) %>% 
+#   mutate(ca2011 = recode(ca2011, "S12000015"='S12000047', "S12000024"='S12000048',
+#                          "S12000046"='S12000049', "S12000044"='S12000050'))
+
+dz11_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Deprivation/DataZone2011_simd2020v2.rds')%>% 
+  setNames(tolower(names(.))) %>% #variables to lower case
+  select(ca2019, datazone2011)  
 
 #Preparing file for CA for period 2014 to 2017 (2014 only including dz > S01006505)
 sad11_data <- sad_data %>% filter(year>=2014)
 #Merging with lookup
 sad11_data <- left_join(sad11_data, dz11_lookup, by = c("datazone" = "datazone2011")) %>% 
-  rename(ca = ca2011) %>% filter(datazone>'S01006505') %>% mutate(dz = "dz11")
+  rename(ca = ca2019) %>% filter(datazone>'S01006505') %>% mutate(dz = "dz11")
 
 # Merge dz01 & dz11 data into single file (Basefile)
 sad_data_raw <- full_join(sad01_data, sad11_data)
