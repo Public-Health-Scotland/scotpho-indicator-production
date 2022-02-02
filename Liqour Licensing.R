@@ -23,6 +23,7 @@
 
 ## Manlually added 2018/19 data into:
 # /PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2019-20_combined.xlsx
+# note that updated data (Feb 2022)for Moray 2015-16, Dundee 2016-17 and Moray 2017-18
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
