@@ -47,13 +47,6 @@ sad01_data <- sad_data %>% filter(year<=2014)
 sad01_data <- left_join(sad01_data, dz01_lookup, by = c("datazone" = "datazone2001")) %>% 
   rename(ca = ca2019) %>% filter(datazone<='S01006505') %>% mutate(dz = "dz01")
 
-# dz11 Lookup file for CA 
-# dz11_lookup <- read.spss('/conf/linkage/output/lookups/Unicode/Geography/DataZone2011/DataZone2011.sav',
-#                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-#   setNames(tolower(names(.))) %>%   #variables to lower case
-#   select(ca2011, datazone2011) %>% 
-#   mutate(ca2011 = recode(ca2011, "S12000015"='S12000047', "S12000024"='S12000048',
-#                          "S12000046"='S12000049', "S12000044"='S12000050'))
 
 dz11_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Deprivation/DataZone2011_simd2020v2.rds')%>% 
   setNames(tolower(names(.))) %>% #variables to lower case
