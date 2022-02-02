@@ -22,7 +22,7 @@
 # \\Isdsf00d03\ScotPHO\1.Analysts_space\Jane\data/LLiS 2011-12 to 2018-19 combined.xlsx
 # or A:\ScotPHO Profiles\Data\Received Data/LLiS 2011-12 to 2018-19 combined.xlsx
 
-## Manlually added 2018/19 data into:
+## Manually added 2019/20 data into:
 # /PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2019-20_combined.xlsx
 # note that updated data (Feb 2022)for Moray 2015-16, Dundee 2016-17 and Moray 2017-18
 
@@ -118,6 +118,7 @@ saveRDS(personal, paste0(data_folder,"Prepared Data/personal_raw.rds"))
 ###############################################.
 
 ###### premises licenses total --------
+# didnt seem to run all these at once so ran indicators separately
 
 analyze_first(filename = "premises_total", geography = "council", adp = TRUE,
               measure = "crude", yearstart = 2011, yearend = 2019, 
