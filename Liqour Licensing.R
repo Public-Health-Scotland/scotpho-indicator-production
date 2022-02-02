@@ -19,7 +19,8 @@
 # https://www2.gov.scot/Topics/Statistics/Browse/Crime-Justice/PubLiquor
 
 ## Previous years are saved here:
-# N:/All/ScotPHO Profiles/Rolling Updates/Alcohol/Raw Data/Received Data/LLiS 2011-12 to 2018-19 combined.xlsx
+# \\Isdsf00d03\ScotPHO\1.Analysts_space\Jane\data/LLiS 2011-12 to 2018-19 combined.xlsx
+# or A:\ScotPHO Profiles\Data\Received Data/LLiS 2011-12 to 2018-19 combined.xlsx
 
 ## Manlually added 2018/19 data into:
 # /PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2019-20_combined.xlsx
