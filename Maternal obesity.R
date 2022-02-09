@@ -12,7 +12,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-mat_obesity <- read_csv(paste0(data_folder, "Received Data/IR2021-00001_obesity.csv")) %>%
+mat_obesity <- read_csv(paste0(data_folder, "Received Data/IR2022-00008_obesity.csv")) %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
   rename(year = finyear, datazone = datazone2011, numerator = obese, denominator = all_known) %>% 
   mutate(year = year - 1) # Fyear coded by year ending Mar31. Change to match profiles. 
@@ -29,13 +29,13 @@ saveRDS(mat_obesity_dep, file=paste0(data_folder, 'Prepared Data/mat_obesity_dep
 ###############################################.
 #CYP profile
 analyze_first(filename = "mat_obesity", geography = "datazone11", measure = "percent", 
-              yearstart = 2010, yearend = 2019, time_agg = 3)
+              yearstart = 2010, yearend = 2020, time_agg = 3)
 
 analyze_second(filename = "mat_obesity", measure = "percent", time_agg = 3, 
                ind_id = 13021, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="mat_obesity_depr", measure="percent", time_agg=3, 
-                    yearstart= 2014, yearend=2019, year_type = "financial", ind_id = 13021)
+                    yearstart= 2014, yearend=2020, year_type = "financial", ind_id = 13021)
 
 ##END

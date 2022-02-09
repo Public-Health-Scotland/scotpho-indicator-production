@@ -31,7 +31,7 @@ data_deaths <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Open LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
