@@ -62,7 +62,7 @@ analyze_deprivation(filename="deaths_all_prem_depr", measure="stdrate", time_agg
 
 
 #creating csv file, prefer to do checks from that!
-prem_deathsrds <- readRDS('//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.rds')
+#prem_deathsrds <- readRDS('//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.rds')
 
-write_csv(prem_deathsrds, '//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.csv')
+#write_csv(prem_deathsrds, '//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.csv')
   
