@@ -34,7 +34,6 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   select(pc7, datazone2001, datazone2011)
 
 deaths_all <- left_join(deaths_all, postcode_lookup, "pc7") %>% 
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
 
@@ -63,7 +62,7 @@ analyze_deprivation(filename="deaths_all_prem_depr", measure="stdrate", time_agg
 
 
 #creating csv file, prefer to do checks from that!
-#prem_deathsrds <- readRDS('//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.rds')
+prem_deathsrds <- readRDS('//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.rds')
 
-#write_csv(prem_deathsrds, '//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.csv')
+write_csv(prem_deathsrds, '//PHI_conf/ScotPHO/Profiles/Data/Data to be checked/deaths_all_prem_depr_ineq.csv')
   
