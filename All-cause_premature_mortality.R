@@ -34,7 +34,6 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   select(pc7, datazone2001, datazone2011)
 
 deaths_all <- left_join(deaths_all, postcode_lookup, "pc7") %>% 
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
 
