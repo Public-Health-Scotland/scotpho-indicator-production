@@ -13,7 +13,10 @@ source("2.deprivation_analysis.R") #Deprivation functions
 create_quintile_data <- function(quint_number) {
   smoking_preg_quint <-smok_preg_depr %>% 
     subset(quintile == quint_number) %>%
-    select(year, datazone, numerator, denominator)
+    group_by(ca, year) %>% 
+    summarise(numerator = sum(numerator), denominator = sum(denominator)) %>% 
+    ungroup() %>% 
+    select(year, ca, numerator, denominator)
   
   saveRDS(smoking_preg_quint, file=paste0(data_folder, 'Prepared Data/smoking_preg_q', quint_number, '_raw.rds'))
 }
@@ -86,7 +89,7 @@ analyze_deprivation(filename="smoking_preg_depr", measure="percent", time_agg=3,
 quint_files <- c("smoking_preg_q1", "smoking_preg_q2", "smoking_preg_q3", 
                  "smoking_preg_q4", "smoking_preg_q5")
 
-mapply(analyze_first, filename = quint_files, geography = "datazone11", 
+mapply(analyze_first, filename = quint_files, geography = "council", hscp = FALSE,
        measure = "percent", yearstart = 2003, yearend = 2020, time_agg = 3)
 
 mapply(analyze_second, filename = quint_files, measure = "percent", time_agg = 3, 
