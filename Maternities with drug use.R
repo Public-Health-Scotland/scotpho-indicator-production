@@ -76,6 +76,11 @@ data_drugmat <- data_drugmat %>%
                     " ", "financial years; 3-year aggregates"),
         ind_id = 4129) #indicator number
 
+#change order of variables to match other inidcator data files
+
+data_drugmat <- data_drugmat %>% 
+  select(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)
+
 #Including both rds and csv file for now
 saveRDS(data_drugmat, file = paste0(data_folder, "Data to be checked/maternity_druguse_shiny.rds"))
 write_csv(data_drugmat, path = paste0(data_folder, "Data to be checked/maternity_druguse_shiny.csv"))
