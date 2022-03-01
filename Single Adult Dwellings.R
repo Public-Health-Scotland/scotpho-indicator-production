@@ -12,24 +12,33 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
-#Reading data provided by Prescribing team
-sad_data_extract <- read_excel(paste0(data_folder, "Received Data/Single dwellings estimates 2020.xlsx"), 
-                            sheet = "Formatted",col_types = c("text", rep("numeric", 28))) %>% 
-  setNames(tolower(names(.)))   #variables to lower case
+#Reading data in directly from website that was manually downloaded for previous program
 
-#varstocases: split out 'multiple gather' function
-sad_data_denom <- sad_data_extract %>% select(-c(n2007:n2020)) %>% 
-    gather(year, denominator, d2007:d2020, na.rm = TRUE, convert = FALSE) %>% 
-    mutate(year = substr(year, 2, 5)) #Remove leading "d" in year
 
-sad_data_numer <- sad_data_extract %>% select(-c(d2007:d2020)) %>% 
-    gather(year, numerator, n2007:n2020, na.rm = TRUE, convert = FALSE) %>% 
-    mutate(year = substr(year, 2, 5)) #Remove leading "n" in year
+col_names_n <- c("datazone", "name", 2006:2020)
+col_names_d <- c("datazone", "name", 2001:2020)
 
-sad_data <- inner_join(sad_data_numer, sad_data_denom) #joining together 
+#read data in direct from source
+sad_data_extract <- bind_rows(read_csv("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fhousehold-estimates&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2Fcount&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2Findicator%28dwellings%29=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Findicator-dwellings%2Fwith-single-adult-discounts",
+                       skip=8, col_names = col_names_n) %>%  mutate(type = "numerator"),
+                       read_csv("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fhousehold-estimates&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2Fcount&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2Findicator%28dwellings%29=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Findicator-dwellings%2Ftotal-dwellings", 
+                                skip = 8, col_names = col_names_d) %>% mutate(type = "denominator")) #%>% 
+  #janitor::clean_names()
+sad_data_extract <-subset(sad_data_extract, select = -c (name, `2006`, `2001`:`2005`))
+sad_data_extract_format <- sad_data_extract %>% 
+  mutate (datazone=gsub("http://statistics.gov.scot/id/statistical-geography/","", datazone))
+#filter to only datazone level
+sad_data_extract_format <- filter(sad_data_extract_format,substr(datazone,1,3)=="S01")
+#pivot_longer years to one column
+sad_data_extract_pivot <- sad_data_extract_format %>% 
+  pivot_longer(cols = c(`2007`:`2020`), names_to = "year", values_to = "count") %>% 
+#pivot_wider type to two different columns for numerator and denominator
+  pivot_wider(names_from = type, values_from = count) %>% 
+  filter(!is.na(denominator))
 
-saveRDS(sad_data, file=paste0(data_folder, 'Prepared Data/Single_Dwellings_depr_raw.rds'))
 
+saveRDS(sad_data_extract_pivot, file=paste0(data_folder, 'Prepared Data/Single_Dwellings_depr_raw.rds'))
+#old_data <- readRDS(paste0(data_folder, 'Prepared Data/Single_Dwellings_depr_raw.rds'))
 #### Match lookup - datazone with local authority
 
 # dz01 Lookup file for CA 
@@ -42,7 +51,7 @@ dz01_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Deprivation/DataZon
 
 # \\Isdsf00d03\cl-out\lookups\Unicode\Geography\DataZone2011
 #Preparing file for CA for period 2007 to 2014 (2014 only including dz <= S01006505)
-sad01_data <- sad_data %>% filter(year<=2014)
+sad01_data <- sad_data_extract_pivot %>% filter(year<=2014)
 #Merging with lookup
 sad01_data <- left_join(sad01_data, dz01_lookup, by = c("datazone" = "datazone2001")) %>% 
   rename(ca = ca2019) %>% filter(datazone<='S01006505') %>% mutate(dz = "dz01")
@@ -53,7 +62,7 @@ dz11_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Deprivation/DataZon
   select(ca2019, datazone2011)  
 
 #Preparing file for CA for period 2014 to 2017 (2014 only including dz > S01006505)
-sad11_data <- sad_data %>% filter(year>=2014)
+sad11_data <- sad_data_extract_pivot %>% filter(year>=2014)
 #Merging with lookup
 sad11_data <- left_join(sad11_data, dz11_lookup, by = c("datazone" = "datazone2011")) %>% 
   rename(ca = ca2019) %>% filter(datazone>'S01006505') %>% mutate(dz = "dz11")

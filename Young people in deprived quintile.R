@@ -52,6 +52,7 @@ pop <- readRDS(paste0(lookups, "Population/DZ11_pop_basefile.rds")) %>%
   group_by(year, datazone2011) %>% 
   summarise(pop = sum(denominator, na.rm= T)) %>% ungroup
 
+# Population totals for each year
 pop14 <- pop %>% filter(year == "2014") 
 pop17 <- pop %>% filter(year == "2017") 
 
@@ -97,7 +98,7 @@ simd_data17 <- left_join(simd_data17, pop17, by = c("datazone2011")) %>%
                                              labels=c("5", "4", "3", "2", "1"))))) %>% 
   select(-starts_with("cum_pop"), -starts_with("simd"))
 
-
+# Creating lists of datazones in most topic deprived quintile
 crime_dz14 <- simd_data14 %>% filter(crime_quintile == "5") %>% pull(datazone2011)
 inc_dz14 <- simd_data14 %>% filter(inc_quintile == "5") %>% pull(datazone2011)
 access_dz14 <- simd_data14 %>% filter(access_quintile == "5") %>% pull(datazone2011)
@@ -105,6 +106,7 @@ crime_dz17 <- simd_data17 %>% filter(crime_quintile == "5") %>% pull(datazone201
 inc_dz17 <- simd_data17 %>% filter(inc_quintile == "5") %>% pull(datazone2011)
 access_dz17 <- simd_data17 %>% filter(access_quintile == "5") %>% pull(datazone2011)
 
+# Preparing files, joining with population by dz and saving files
 saveRDS(prepare_file(inc_dz14, inc_dz17), 
         paste0(data_folder, "Prepared Data/young_people_income_raw.rds"))
 saveRDS(prepare_file(crime_dz14, crime_dz17), 
@@ -123,6 +125,14 @@ mapply(analyze_first, filename = filenames, geography = "datazone11", measure = 
 
 mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, 
                ind_id = c(13005, 13003, 13004), year_type = "calendar", qa = F)
+
+# For individual checks
+analyze_second(filename = "young_people_crime", measure = "percent", time_agg = 1, 
+                ind_id = 13005, year_type = "calendar")
+analyze_second(filename = "young_people_access", measure = "percent", time_agg = 1, 
+               ind_id = 13003, year_type = "calendar")
+analyze_second(filename = "young_people_income", measure = "percent", time_agg = 1, 
+               ind_id = 13004, year_type = "calendar")
 
 ## END
 
