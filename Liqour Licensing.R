@@ -6,7 +6,7 @@
 ################################################################################
 ################################################################################
 
-# JP 2.2.22
+# JP 1.2.22
 
 ## This script prepares SG Liquor Licensing in Scotland profile indicators:
 ##      Personal licences in force
@@ -19,12 +19,14 @@
 # https://www2.gov.scot/Topics/Statistics/Browse/Crime-Justice/PubLiquor
 
 ## Previous years are saved here:
-# \\Isdsf00d03\ScotPHO\1.Analysts_space\Jane\data/LLiS 2011-12 to 2018-19 combined.xlsx
-# or A:\ScotPHO Profiles\Data\Received Data/LLiS 2011-12 to 2018-19 combined.xlsx
+# \\Isdsf00d03\ScotPHO\1.Analysts_space\Jane\data/LLiS_2011-12_to_2019-20_combined.xlsx
+# or previously Andy A:\ScotPHO Profiles\Data\Received Data/LLiS 2011-12 to 2018-19 combined.xlsx
 
-## Manually added 2019/20 data into:
-# /PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2019-20_combined.xlsx
+## Manually added 2020/21 data into:
+# \\Isdsf00d03\ScotPHO\1.Analysts_space\Jane\data/LLiS_2011-12_to_2020-21_combined.xlsx
+# /PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2020-21_combined.xlsx
 # note that updated data (Feb 2022)for Moray 2015-16, Dundee 2016-17 and Moray 2017-18
+# 2020/2021 data no return yet for Aberdeenshire, East Renfrewshire, North Lanarkshire
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -121,7 +123,7 @@ saveRDS(personal, paste0(data_folder,"Prepared Data/personal_raw.rds"))
 # didnt seem to run all these at once so ran indicators separately
 
 analyze_first(filename = "premises_total", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2011, yearend = 2019, 
+              measure = "crude", yearstart = 2011, yearend = 2020, 
               pop = "CA_pop_18+", time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
@@ -130,7 +132,7 @@ analyze_second(filename = "premises_total", measure = "crude", crude_rate = 1000
 
 ###### premises licenses on trade --------
 analyze_first(filename = "premises_on", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2011, yearend = 2019, 
+              measure = "crude", yearstart = 2011, yearend = 2020, 
               pop = "CA_pop_18+", time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
@@ -140,7 +142,7 @@ analyze_second(filename = "premises_on", measure = "crude", crude_rate = 10000,
 
 ###### premises licenses off trade --------
 analyze_first(filename = "premises_off", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2011, yearend = 2019, 
+              measure = "crude", yearstart = 2011, yearend = 2020, 
               pop = "CA_pop_18+", time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
@@ -149,7 +151,7 @@ analyze_second(filename = "premises_off", measure = "crude", crude_rate = 10000,
 
 ###### personal licenses --------
 analyze_first(filename = "personal", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2011, yearend = 2019, 
+              measure = "crude", yearstart = 2011, yearend = 2020, 
               pop = "CA_pop_18+", time_agg = 1)
 
 # then complete analysis with the updated '_formatted.rds' file
