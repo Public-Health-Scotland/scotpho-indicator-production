@@ -432,10 +432,10 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 ##################################################.
 
 inequality_measures <- function(){
-
-  ##################################################.
-  ##  SII/RII  ----
-  ##################################################.
+  
+#################################################.
+##  SII/RII  ----
+##################################################.
   
   #Splitting into two files: one with quintiles for SII and one without to keep the total values
   data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
