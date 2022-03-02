@@ -1,6 +1,8 @@
-#############
-#####WIP#####
-#############
+# ScotPHO indicators: All-cause_premature_mortality. 
+
+#   Part 1 - Extract data from SMRA.
+#   Part 2 - Create the different geographies basefiles
+#   Part 3 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -18,7 +20,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 #Extract deaths data where: Valid sex exists, Scottish resident, Aged less than 75
 
-deaths_all <- tbl_df(dbGetQuery(channel, statement=
+deaths_all <- as_tibble(dbGetQuery(channel, statement=
                                   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
                                 FROM ANALYSIS.GRO_DEATHS_C
                                 WHERE sex <> 9
@@ -27,6 +29,11 @@ deaths_all <- tbl_df(dbGetQuery(channel, statement=
                                 AND date_of_registration between '1 January 2002' and '31 December 2020'")) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
+
+
+###############################################.
+## Part 2 - Create the different geographies basefiles ----
+###############################################.
 
 # Bringing  LA and datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>% 
@@ -53,6 +60,10 @@ dep_all_file <- rbind(deaths_all_dz01, deaths_all_dz11 %>% subset(year>=2014)) #
 
 saveRDS(dep_all_file, file=paste0(data_folder, 'Prepared Data/deaths_all_prem_depr_raw.rds'))
 
+
+###############################################.
+## Part 3 - Run analysis functions ----
+###############################################.
 
 #Deprivation analysis function
 analyze_deprivation(filename="deaths_all_prem_depr", measure="stdrate", time_agg = 3, 
