@@ -1,110 +1,97 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####         School leaver positive destinations indicator prep           #####
-#########                                                              #########
-################################################################################
-################################################################################
+### notes ----
 
-## This script analyses SG education data on the School leaver positive destinations measure
-
-## The latest data (Feb 2019) is available here:
-#    https://www2.gov.scot/Topics/Statistics/Browse/School-Education/leavedestla
-
-## Data in statistics.scot.gov but not currently in useable state
- # request for additional data sent to SG - keep eye out for future years.  
-## Need to add in geog codes for LAs as SG Ed Stats use their own ones.
-
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
-
-## install packages
-#install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-
-
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-# read in csv
-school_leaver <- read.csv(paste0(data_folder, "Received Data/school_leaver_destinations_raw.csv")) %>% 
-  as_tibble()
+# this script produces data for indicator 13030 - school leavers in positive destinations
+# source of data: https://www.gov.scot/publications/summary-statistics-attainment-initial-leaver-destinations-no-3-2021-edition/ 
 
 
 ###############################################.
-## Part 1 - data prep
+## Part 1 - Prepare data ----
 ###############################################.
 
-head(school_leaver)
 
-# rename vars
-names(school_leaver) <- tolower(names(school_leaver)) # make lower case
-school_leaver <- school_leaver %>% rename(areaname = la.name,
-                                          denominator = number.of.leavers, 
-                                          numerator = positive.destination) %>% 
-  filter(areaname != "Scotland") # drop Scotland rows
+###1.a load functions/dependencies ----
 
-# geog codes 
-geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
-school_leaver$areaname <- gsub("&", "and", school_leaver$areaname) # change & to match lookup
-school_leaver$areaname[school_leaver$areaname == "Edinburgh, City of"] <- "City of Edinburgh"
-school_leaver <- full_join(x = school_leaver, y = geog, by = "areaname") %>% 
-  rename(ca = code)
+source("1.indicator_analysis.R") 
 
-school_leaver$year <- substr(school_leaver$year, 1, 4) # truncate year in usual way
+library("janitor") #for row_to_names() function 
+library("stringr")#for string_replace() function
 
-school_leaver <- select(school_leaver, c(1,5,4,3))
 
-# save rds raw file for use in analysis funtions
-saveRDS(school_leaver, file=paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
+###1.b read in data ----
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
+positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-4-2022-edition.xlsx"), sheet = "L2.2") #positive destinations data
+
+ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
+
+
+
+###1.c clean data ----
+
+positive_dest <- tail(positive_dest, -3) %>% # remove metadata from top of speadsheet
+  row_to_names(row_number = 1) %>% #convert first row to headers
+  setNames(tolower(names(.))) %>%
+  mutate(`year` = str_sub(year,1,nchar(year)-3),#convert from FY YY/YY to YYYY
+         `la name` = str_replace(`la name`, "Edinburgh, City of","City of Edinburgh"),
+         `la name` = str_replace(`la name`, "&","and"),
+         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), 0)), #replace suppression symbols with 0
+         across(contains(c("positive", "leaver", "year")), as.numeric)) %>%
+  left_join(ca, by = c("la name" = "areaname"), all.x = TRUE) %>% # join with council area lookup
+  mutate(code = ifelse(`la name` == "Scotland", "S00000001", code)) %>% 
+  select("year", "code", "positive destination", "number of leavers") %>%
+  rename("numerator" = "positive destination",
+         "denominator" = "number of leavers")
+
+
+#1.d. Save file - do some QA checks at this point ----
+saveRDS(positive_dest, file=paste0(data_folder, 'Prepared Data/school_leaver_destinations_raw.rds'))
+
 
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "school_leaver_destinations", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2017, 
-              time_agg = 1)
 
 
-# then complete analysis with the updated '_formatted.rds' file
+#(note: analyze_first() can't be used because some geographies figures were suppressed when published)
+# workaround below formats data to be used in analyze_second() function 
+#it ensures Scotland totals remain accurate and are not just the sum of all council area figures
+
+
+yearstart <- 2009
+yearend <- 2021 
+filename <- "school_leaver_destinations"
+
+#read in data created in step 1
+data_indicator <- readRDS(paste0(data_folder, "Prepared Data/school_leavers_destinations_raw.rds"))
+
+# read in geography lookup to get health boards
+geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  select(ca2019, hb2019) %>%
+  distinct(.)
+
+# get figures for HBs and combine with CA and Scotland figures (as created in part 1)
+data_indicator <- positive_dest %>%
+  filter(year >= yearstart & year <= yearend, # selecting only years of interest
+         code != "S00000001") %>% 
+  left_join(geo_lookup, by = c("code" = "ca2019")) %>%
+  select(-code) %>%
+  rename("code" = "hb2019") %>%
+  group_by(year, code) %>%
+  summarise_all(sum) %>% ungroup() %>%
+  rbind(positive_dest)
+
+
+#save file to be used in analyze_second() function
+saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
+
+
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "school")
 
-# convert zeroes back to NA for supressed data
-final_result[final_result == 0] <- NA
-
-# convert numertaor into integar
-final_result$numerator <- as.integer(final_result$numerator)
-
-# re-check test chart
-ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                        & year== max(year)), aes(code, rate) ) +
-  geom_point(stat = "identity") +
-  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
 
 
-#resave both rds and csv files
-final_result <- final_result %>% select(c(code, ind_id, year, numerator, rate, lowci,
-                                          upci, def_period, trend_axis))
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
+
+
 
 
 

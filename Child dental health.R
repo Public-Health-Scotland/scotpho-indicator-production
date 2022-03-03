@@ -70,14 +70,6 @@ saveRDS(data_p7 %>% filter(year>=2014), file=paste0(data_folder, 'Prepared Data/
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
               yearstart = 2012, yearend = 2020, time_agg = 1) 
 
-child_dental_p1_formatted <- readRDS(file=paste0(data_folder, "Temporary/child_dental_p1_formatted.rds")) %>%
-    mutate(drop = case_when(year == 2019 & 
-                              (substr(code,1,3) != "S00" & substr(code,1,3) != "S08") ~ 1,
-                            T ~ 0)) %>% 
-    filter(drop != 1) %>% 
-    select(-drop)
-
-saveRDS(child_dental_p1_formatted, file=paste0(data_folder, "Temporary/child_dental_p1_formatted.rds"))
 
 analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1, 
                ind_id = 21005, year_type = "school", pop="DZ11_pop_5")
@@ -92,15 +84,8 @@ analyze_deprivation(filename="child_dental_p1_depr", measure="perc_pcf",
 analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
               yearstart = 2012, yearend = 2020, time_agg = 1)
 
-child_dental_p7_formatted <- 
-  readRDS(file=paste0(data_folder, "Temporary/child_dental_p7_formatted.rds")) %>%
-  mutate(drop = case_when(year == 2019 & 
-                            (substr(code,1,3) != "S00" & substr(code,1,3) != "S08") ~ 1,
-                          T ~ 0)) %>% 
-  filter(drop != 1) %>% 
-  select(-drop)
 
-saveRDS(child_dental_p7_formatted, file=paste0(data_folder, "Temporary/child_dental_p7_formatted.rds"))
+
 
 
 analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
