@@ -50,7 +50,7 @@ read_excel_allsheets <- function(filename, tibble = TRUE) {
 }
 
 ## call function with received data
-mysheets <- read_excel_allsheets(filename = "/PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2019-20_combined.xlsx")
+mysheets <- read_excel_allsheets(filename = "/PHI_conf/ScotPHO/Profiles/Data/Received Data/llis_2011-12_to_ 2020-21_combined.xlsx")
 
 ## bind list items together into dataframe
 df_received <- bind_rows(mysheets) %>% as_tibble() %>% 
