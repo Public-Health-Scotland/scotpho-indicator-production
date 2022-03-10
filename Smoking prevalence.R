@@ -14,8 +14,7 @@
 
 ## Select Smoking - Local Authority/Health Board
 
-## D/l entire dataset as a CSV file and save as:
-#     X:\ScotPHO Profiles\Data\Received Data\smoking_prev_received
+
 
 ## Function arguments:
 #   id = indicator ID 
@@ -23,11 +22,9 @@
 #             will not be required once old OPT is retired
 #   topic = "Smoking"
 #   age_range = defaults to "All", 
-#               can also select "16-34", "16-64", "35-64" or "65 And Over" 
+#               can also select "16-34 years", "16-64 years", "35-64 years" or "65 years and over" 
 #   sex = "All", can also select "Female" or "Male"
-#   min_opt = manually enter from OPT numbers file at:
-#               X:\ScotPHO Profiles\Rolling Updates\Documentation\Planning Docs
-#             will not be required once old OPT is retired
+#  
 
 ################################################################################
 #####                          install packages etc                        #####
@@ -36,19 +33,20 @@
 rm(list=ls()) 
 
 ## install packages
+
+source("1.indicator_analysis.R") 
+
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/" # not required?
 
 ################################################################################
 #####                          create prepared data                        #####
 ################################################################################
 # open received data
-df_received <- read.csv(paste0(data_folder,"Received Data/smoking_prev_received.csv"))
+df_received <- read.csv(paste0(data_folder,"Received Data/smoking_prevalence_2019.csv"), stringsAsFactors = FALSE)
+
+
 
 # save as rdf in prepared data
 saveRDS(df_received, paste0(data_folder,"Prepared Data/smoking_prev_raw.rds"))
@@ -121,6 +119,7 @@ df_wide %>% mutate(ci_check = as.logical(rate<lowci | rate>upci)) %>%
 # datafiles for upload to the profiles platform
 analyze <- function(id, profile = "tx", topic = "Smoking", age_range = "All", 
                     sex = "All"){
+  
   df_indicator <- df_wide %>% 
     # filter specific age-sex groups
     filter(age_grp == age_range & sex_grp == sex) %>% 
@@ -129,9 +128,11 @@ analyze <- function(id, profile = "tx", topic = "Smoking", age_range = "All",
     # reorder columns and deselect unneeded variables
     select(c(code, ind_id, year, numerator, rate, lowci,
       upci, def_period, trend_axis)) %>% 
-    arrange(year, code) %>% 
-    # save shiny file
-    write_csv(paste0(data_folder, "Data to be checked/",id, "_smoking_prev_", age_range, "_", sex, "_shiny.csv"))  
+    arrange(year, code)
+ 
+ #save shiny file
+    write_csv(df_indicator, paste0(data_folder, "Data to be checked/",id, "_smoking_prev_", age_range, "_", sex, "_shiny.csv"))  
+    write_rds(df_indicator, paste0(data_folder, "Data to be checked/",id, "_smoking_prev_", age_range, "_", sex, "_shiny.rds"))  
     
 
   } # end of function
@@ -141,13 +142,10 @@ analyze <- function(id, profile = "tx", topic = "Smoking", age_range = "All",
 #####                             Function calls                           #####
 ################################################################################
 
-# these call the above function to create indictaor data files
+# these call the above function to create indictator data files
 
-##  all ages, both sexes - H&W
+##  all ages, both sexes - H&W/ Tobacco
 analyze(id = 20202)
-
-##  all ages, both sexes - Tobacco
-analyze(id = 1563)
 
 ## all ages, male
 analyze(id = 1568, sex = "Male")
@@ -156,14 +154,45 @@ analyze(id = 1568, sex = "Male")
 analyze(id = 1569, sex = "Female")
 
 ## 16-34, both sexes
-analyze(id = 1564, age_range = "16-34")   
+analyze(id = 1564, age_range = "16-34 years")   
 
 ## 16-64, both sexes
-analyze(id = 1565, age_range = "16-64")   
+analyze(id = 1565, age_range = "16-64 years")   
 
 ## 35-64, both sexes
-analyze(id = 1566, age_range = "35-64")   
+analyze(id = 1566, age_range = "35-64 years")   
 
 ## 65+, both sexes
-analyze(id = 1567, age_range = "65 And Over")   
+analyze(id = 1567, age_range = "65 years and over")   
+
+
+################################################################################
+#####                          Data quality checks                   #####
+################################################################################
+
+run_qa <- function(filename, old_file="default", check_extras=c()){
+  run("Data Quality Checks.Rmd")
+}  
+
+
+#run each of these 7 lines individually to QA each indicator
+run_qa(filename = "20202_smoking_prev_All_All", old_file="default")
+
+run_qa(filename = "1569_smoking_prev_All_Female", old_file="default")
+
+run_qa(filename = "1568_smoking_prev_All_Male", old_file="default")
+
+
+#next time updating, switch old_file to "default" for these 4 indicators, as done above ^
+run_qa(filename = "1567_smoking_prev_65 years and over_All", old_file="1567_smoking_prev_65 And Over_All")
+
+run_qa(filename = "1566_smoking_prev_35-64 years_All", old_file="1566_smoking_prev_35-64_All") 
+
+run_qa(filename = "1565_smoking_prev_16-64 years_All", old_file="1565_smoking_prev_16-64_All")
+
+run_qa(filename = "1564_smoking_prev_16-34 years_All", old_file="1564_smoking_prev_16-34_All")
+
+
+run_qa(filename = "employment_deprived_all", old_file="default")
+
 
