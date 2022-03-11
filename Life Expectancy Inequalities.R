@@ -148,15 +148,6 @@ filter(code=="S00000001" & quintile !="Total")
 
  p
  
-# ####Charting sii ----
- 
-
-p_line <- plot_ly(data=chart, x=~year,
-                  text=~quintile, textposition="none", hoverinfo="text") %>%
-  add_lines(y = ~rate, name = "", type = 'scatter',
-            mode = 'lines', color = ~quintile)
-
-p_line
 
 ####Charting sii ----
 
