@@ -127,7 +127,13 @@ data_depr_female <- data_depr %>%
 
 
  
-####Charting checks ----
+##################################################.
+##  Part 3 - Checkign charts ----
+# New indicators which work in opposite direction to most inequalities indicators just creating 
+# some charts to test how data works
+##################################################. 
+ 
+####Charting rate by quintile ----
  
 chart <- data_depr_male %>%
 filter(code=="S00000001" & quintile !="Total")
@@ -142,7 +148,7 @@ filter(code=="S00000001" & quintile !="Total")
 
  p
  
-# ####Charting checks ----
+# ####Charting sii ----
  
 
 p_line <- plot_ly(data=chart, x=~year,
@@ -152,11 +158,11 @@ p_line <- plot_ly(data=chart, x=~year,
 
 p_line
 
-####Charting checks 
+####Charting sii ----
+
 chart2 <- data_depr_male %>%
   filter(code=="S00000001" & quintile =="Total")
 
-#Create plot SII
 sii_plot <- plot_ly(data=chart2, x=~trend_axis,hoverinfo="text") %>%
   add_lines(y = ~sii, name = "Absolute inequality (SII)", type = 'scatter', mode = 'lines',
             line = list(color = '#74add1'))  %>% 
@@ -167,8 +173,8 @@ sii_plot <- plot_ly(data=chart2, x=~trend_axis,hoverinfo="text") %>%
 
 sii_plot
 
+####Charting rii ----
 
-#Create plot RII
 rii_plot <- plot_ly(data=chart2, x=~trend_axis)%>%
   add_lines(y = ~rii,name = "Relative gap", type = 'scatter', mode = 'lines',
             line = list(color = '#313695')) %>% 
@@ -177,3 +183,24 @@ rii_plot <- plot_ly(data=chart2, x=~trend_axis)%>%
   config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
 
 rii_plot
+
+####Charting paf ----
+
+#preparing data needed, creates two dummy variables for stacked bar chart
+chart3<- data_depr_male %>%
+  filter(code=="S00000001" & year=="2018" & quintile !="Total") %>%
+  mutate(baseline = rate[quintile == "5"],
+         diff_baseline = rate - rate[quintile == "5"]) %>% 
+  droplevels()
+
+par_bar_plot <- plot_ly(data = chart3, x = ~quintile, 
+                        textposition="none", hoverinfo="text") %>%
+  add_bars(y = ~baseline, name= "", marker = list(color = "#4da6ff"), showlegend = FALSE) %>%   
+  add_bars(y = ~diff_baseline, name = "Attributable to deprivation", 
+           marker = list(color = "#ffa64d"), showlegend = FALSE) %>% 
+  layout(bargap = 0.1, barmode = 'stack', showlegend = T, 
+         legend = list(x = 0.9, y = 0.9),
+         margin = list(b = 140)) %>% #to avoid labels getting cut out
+  config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
+
+par_bar_plot 
