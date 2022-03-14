@@ -167,7 +167,6 @@ matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
   upci_match =ifelse((upci.x ==""|upci.y ==""),
                                   0,round((upci.x-upci.y)/upci.x,3)),
   year=as.factor(year))
-  
 
 ```
 
@@ -177,8 +176,8 @@ New rows of data (e.g. the latest year of data) cannot be compared if it wasn't 
 Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences. <br>
 Use your judgement to decide if any differences are acceptable.
 
-```{r, echo=FALSE}
-flextable(matched,
+```{r,out.width = "800px", echo=FALSE}
+ft_check3 <- flextable(matched,
   col_keys = c("code", "areaname","year","numerator.x", "numerator.y","numerator_match",
                "rate.x", "rate.y","rate_match",
                "lowci.x","lowci.y", "lowci_match",
@@ -196,6 +195,11 @@ flextable(matched,
   color(~ lowci_match !=0,~lowci_match, color= "red") %>% 
   color(~ upci_match !=0,~upci_match, color = "red") %>%
   autofit()
+
+#saving flextable as image to work around pandoc issues
+save_as_image(ft_check3 , path = "check3.png")
+
+knitr::include_graphics("check3.png")
 ```
 
 ------------------------------------------------------------------------------------
