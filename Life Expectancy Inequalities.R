@@ -27,18 +27,28 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
 }
 
 ###############################################.
-#   Small function to save final output files ----
+#   Function to format and save final output files ----
 ###############################################.
 
 save_output<-function(filename) {
-  saveRDS(data_depr, paste0(data_folder, "Temporary/", filename, "_final.rds")) # not sure i really need this stage
+
+    #edit fields to match those required by profiles tool
+  data_depr <- data_depr %>%
+    select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
+    mutate(ind_id=20102,
+           numerator = 0,
+           def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
+    # fill in missing values and if any have negative lower CI change that to zero.
+    mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0)) 
+  
+  data_depr$lowci <- ifelse(data_depr$lowci<0, 0, data_depr$lowci)
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
     select(-c(most_rate, least_rate))
   
   #Saving file
-  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_ineq.rds"))
+  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename,"_ineq.rds"))
 }
 
 ###############################################.
@@ -46,7 +56,7 @@ save_output<-function(filename) {
 ###############################################.
 
 #example of file end fields and structure 
-example_ineq <- read_rds("/PHI_conf/ScotPHO/Profiles/Data/Shiny Data/deaths_allages_depr_ineq.rds")
+#example_ineq <- read_rds("/PHI_conf/ScotPHO/Profiles/Data/Shiny Data/deaths_allages_depr_ineq.rds")
 
 # Mannually created Lookup for adding area standard geography codes to geography names.
 area_lookup <- read_excel("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/Area Lookup.xlsx")
@@ -82,60 +92,40 @@ rm(area_lookup,hb_depr_data,ca_depr_data)
 ##  Part 2 - Call deprivation analysis functions ----
 ##################################################.
 
+##################################################.
 ##Female Life expectancy ----
+##################################################.
 data_depr <-data_depr_all %>%
   filter(sex=="F")
 
 #call function to generate measures of inequality
 inequality_measures()
 
-#edit fields to match those required by profiles tool
-data_depr_female <- data_depr %>%
-  select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
-  mutate(ind_id=20102,
-         numerator = 0,
-     def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
-  # fill in missing values and if any have negative lower CI change that to zero.
-  mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0)) 
-
- data_depr_female$lowci <- ifelse(data_depr_female$lowci<0, 0, data_depr_female$lowci)
-
- #call function to save file
- save_output(filename="life_expectancy_inequalities_female")
-
-
- ##Male Life expectancy ----
- data_depr <-data_depr_all %>%
-   filter(sex=="M")
- 
- #call function to generate measures of inequality
- inequality_measures()
- 
- #edit fields to match those required by profiles tool
- data_depr_male <- data_depr %>%
-   select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
-   mutate(ind_id=20101,
-          numerator = 0,
-          def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
-   # fill in missing values and if any have negative lower CI change that to zero.
-   mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0)) 
- 
- data_depr_male$lowci <- ifelse(data_depr_male$lowci<0, 0, data_depr_male$lowci)
- 
 #call function to save file
- save_output(filename="life_expectancy_inequalities_male")
+save_output(filename="life_expectancy_female")
 
+
+##################################################.
+##Male Life expectancy ----
+##################################################.
+data_depr <-data_depr_all %>%
+  filter(sex=="M")
+
+#call function to generate measures of inequality
+inequality_measures()
+
+#call function to save file
+save_output(filename="life_expectancy_male")
 
  
 ##################################################.
-##  Part 3 - Checkign charts ----
-# New indicators which work in opposite direction to most inequalities indicators just creating 
-# some charts to test how data works
+##  Part 3 - Checking charts ----
+# just some quick charts checking how measure data is looking - may not be needed in once data can be accepted by profiles tool 
 ##################################################. 
  
 ####Charting rate by quintile ----
  
-chart <- data_depr_male %>%
+chart <- data_depr %>%
 filter(code=="S00000001" & quintile !="Total")
 
  p <- plot_ly(data=chart , x=~trend_axis) %>%
@@ -151,7 +141,7 @@ filter(code=="S00000001" & quintile !="Total")
 
 ####Charting sii ----
 
-chart2 <- data_depr_male %>%
+chart2 <- data_depr %>%
   filter(code=="S00000001" & quintile =="Total")
 
 sii_plot <- plot_ly(data=chart2, x=~trend_axis,hoverinfo="text") %>%
@@ -178,7 +168,7 @@ rii_plot
 ####Charting paf ----
 
 #preparing data needed, creates two dummy variables for stacked bar chart
-chart3<- data_depr_male %>%
+chart3<- data_depr %>%
   filter(code=="S00000001" & year=="2018" & quintile !="Total") %>%
   mutate(baseline = rate[quintile == "5"],
          diff_baseline = rate - rate[quintile == "5"]) %>% 
@@ -195,3 +185,6 @@ par_bar_plot <- plot_ly(data = chart3, x = ~quintile,
   config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
 
 par_bar_plot 
+
+
+#END
