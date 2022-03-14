@@ -106,6 +106,9 @@ if(iz == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S02!=1279, ~S02, color
 ft_geo_check <- ft_geo_check %>%
   autofit()
 
+#saving flextable as image to work around pandoc issues
+save_as_image(ft_geo_check, path = "check1.png")
+
 ```  
 
 Are the expected geographies appearing for all expected years?<br>
