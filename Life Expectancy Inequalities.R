@@ -92,7 +92,7 @@ inequality_measures()
 #edit fields to match those required by profiles tool
 data_depr_female <- data_depr %>%
   select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
-  mutate(ind_id=9999,
+  mutate(ind_id=20102,
          numerator = 0,
      def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
   # fill in missing values and if any have negative lower CI change that to zero.
@@ -114,7 +114,7 @@ data_depr_female <- data_depr %>%
  #edit fields to match those required by profiles tool
  data_depr_male <- data_depr %>%
    select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
-   mutate(ind_id=9991,
+   mutate(ind_id=20101,
           numerator = 0,
           def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
    # fill in missing values and if any have negative lower CI change that to zero.
