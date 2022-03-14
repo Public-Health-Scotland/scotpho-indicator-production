@@ -30,12 +30,12 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
 #   Function to format and save final output files ----
 ###############################################.
 
-save_output<-function(filename) {
+save_output<-function(filename,ind_id) {
 
     #edit fields to match those required by profiles tool
   data_depr <- data_depr %>%
     select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
-    mutate(ind_id=20102,
+    mutate(ind_id=ind_id,
            numerator = 0,
            def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
     # fill in missing values and if any have negative lower CI change that to zero.
@@ -45,7 +45,8 @@ save_output<-function(filename) {
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    select(-c(most_rate, least_rate))
+    rename(measure=rate) %>%
+    select(-c(most_rate, least_rate, par_rr, count))
   
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename,"_ineq.rds"))
@@ -102,7 +103,7 @@ data_depr <-data_depr_all %>%
 inequality_measures()
 
 #call function to save file
-save_output(filename="life_expectancy_female")
+save_output(filename="life_expectancy_female", ind_id=20102)
 
 
 ##################################################.
@@ -115,7 +116,7 @@ data_depr <-data_depr_all %>%
 inequality_measures()
 
 #call function to save file
-save_output(filename="life_expectancy_male")
+save_output(filename="life_expectancy_male",ind_id=20101)
 
  
 ##################################################.
