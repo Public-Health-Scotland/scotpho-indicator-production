@@ -118,9 +118,11 @@ If some geographies are missing consider:<br>
 Is any suppression already applied to the dataset?<br>
 Might there legitimately be no data for that area (e.g. there might have been no deaths in that intermediate zone)?
 
-```{r, echo=FALSE}
-#print flextable
-ft_geo_check 
+```{r, out.width = "400px", echo=FALSE}
+knitr::include_graphics("check1.png")
+
+#print flextable - this method of printing flextables should work when pandoc gets updated
+#ft_geo_check 
 
 ```
 
