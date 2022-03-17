@@ -339,7 +339,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
   # ##################################################.
   
   #call function to generate measures of inequality (function appears at bottom of this script)
-  inequality_measures()
+  data_depr <- data_depr %>% inequality_measures()
 
   ##################################################.
   ##  Part 7 - Adding time labels and indicator info ----
@@ -431,14 +431,14 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 ## generating SII, RII, PAF and Ranges.
 ##################################################.
 
-inequality_measures <- function(){
-  
+inequality_measures <- function(dataset){
+
 #################################################.
 ##  SII/RII  ----
 ##################################################.
   
   #Splitting into two files: one with quintiles for SII and one without to keep the total values
-  data_depr_sii <- data_depr %>% group_by(code, year, quint_type) %>% 
+  data_depr_sii <- dataset %>% group_by(code, year, quint_type) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
     filter(quintile != "Total") %>% 
     #This variables are used for SII, RII and PAR calculation
@@ -446,7 +446,7 @@ inequality_measures <- function(){
            proportion_pop = denominator/total_pop) %>% # proportion of the population in each SIMD out of the total population. )
     ungroup()
   
-  data_depr_totals <- data_depr %>% filter(quintile == "Total")
+  data_depr_totals <- dataset %>% filter(quintile == "Total")
   
   ###############################################.
   # Calculate the regression coefficient

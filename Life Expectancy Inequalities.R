@@ -30,8 +30,8 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
 #   Function to format and save final output files ----
 ###############################################.
 
-save_output<-function(filename,ind_id) {
-
+save_output<-function(filename, ind_id) {
+  
     #edit fields to match those required by profiles tool
   data_depr <- data_depr %>%
     select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
@@ -92,33 +92,24 @@ rm(area_lookup,hb_depr_data,ca_depr_data)
 ##################################################.
 ##  Part 2 - Call deprivation analysis functions ----
 ##################################################.
+##Female Life expectancy 
+data_depr <- data_depr_all %>%
+  filter(sex == "F") %>% 
+  #call function to generate measures of inequality
+  inequality_measures()
 
-##################################################.
-##Female Life expectancy ----
-##################################################.
-data_depr <-data_depr_all %>%
-  filter(sex=="F")
-
-#call function to generate measures of inequality
-inequality_measures()
-
-#call function to save file
 save_output(filename="life_expectancy_female", ind_id=20102)
 
-
 ##################################################.
-##Male Life expectancy ----
-##################################################.
-data_depr <-data_depr_all %>%
-  filter(sex=="M")
-
+##Male Life expectancy 
+data_depr <- data_depr_all %>%
+  filter(sex == "M") %>% 
 #call function to generate measures of inequality
-inequality_measures()
+  inequality_measures()
 
 #call function to save file
-save_output(filename="life_expectancy_male",ind_id=20101)
+save_output(filename="life_expectancy_male", ind_id=20101)
 
- 
 ##################################################.
 ##  Part 3 - Checking charts ----
 # just some quick charts checking how measure data is looking - may not be needed in once data can be accepted by profiles tool 
