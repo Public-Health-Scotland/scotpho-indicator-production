@@ -55,7 +55,7 @@ data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
+old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
 
 ```
 
