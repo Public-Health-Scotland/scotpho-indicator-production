@@ -1,10 +1,21 @@
 
+### 1 - notes ----
+
+# this script updates the following indicator: 13018 Employment rate for 16-24 year olds
+# data source: https://www.nomisweb.co.uk/ 
+
+
+### 2  - functions/packages ----
+
 source("1.indicator_analysis.R") 
 library(stringr)
 library(rio)
 
+
+### 3 - read in data and clean/format ----
+
   #read in the data
-  data_list <- import_list(paste0(data_folder,"Received Data/nomis_16-24_employment.xlsx"),  setclass = "tbl",  
+  data <- import_list(paste0(data_folder,"Received Data/nomis_16-24_employment.xlsx"),  setclass = "tbl",  
                            rbind = TRUE, skip = 5, rbind_label = "excel tab") %>% 
  
   #rename columns
@@ -43,7 +54,7 @@ library(rio)
     distinct(.)
   
   #include health board figures
-  final <- data_list %>%
+  final <- data %>%
    filter(code != "S00000001") %>% 
       left_join(geo_lookup, by = c("code" = "ca2019")) %>%
       select(-code) %>%
@@ -54,6 +65,10 @@ library(rio)
     
  #save files to be used in analyze_second() function
   saveRDS(final, file=paste0(data_folder, "Temporary/1308_16-24_employment_formatted.rds"))
+  
+  
+  
+# 4 - use analyze_second() function to create final shiny app file  
   
   analyze_second(filename = "1308_16-24_employment", measure = "percent", 
                  time_agg = 1, ind_id = "13018",year_type = "calendar")
