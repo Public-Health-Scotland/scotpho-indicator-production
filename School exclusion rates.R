@@ -1,103 +1,96 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####                  School exclusion rates indicator prep               #####
-#########                                                              #########
-################################################################################
-################################################################################
+### 1. notes -----
 
-## This script analyses SG education data on the school exclusion rates 
+# this script updates the following indicator: 13016 - School exclusion rate
 
-## The latest data (Feb 2019) is available here:
-#    https://www.gov.scot/publications/school-exclusion-statistics/
+# numerator source (no. of exclusions): https://www.gov.scot/publications/school-exclusion-statistics/ (Table 2.1: Cases of exclusion by local authority)
+# denominator source (no. of pupils):   https://www.gov.scot/publications/pupil-census-supplementary-statistics/  (Table 5.1: Schools by local authority)
+# update file names below when new data from links above are saved in "data received" folder.
 
-## Data in statistics.scot.gov but not currently in useable state
-## Need to add in geog codes for LAs as SG Ed Stats use their own ones.
-
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
-
-## install packages
-#install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "A:/ScotPHO Profiles/Data/" 
-lookups <- "A:/ScotPHO Profiles/Data/Lookups/"
+# required packages/functions -----
+source("1.indicator_analysis.R") 
+library(stringr)
 
 
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-# read in csv
-school_exclusion <- read.csv(paste0(data_folder, "Received Data/school_exclusion_raw.csv")) %>% 
-  as_tibble()
+### 2. read in data -----
 
+# exclusions by council area (numerator)
+ca_exclusions <- read_excel(paste0(data_folder, "Received Data/Exclusion_statistics_202021.xlsx"), sheet = "Table 2.1", skip = 3) %>% 
+  head(32) 
 
-###############################################.
-## Part 1 - data prep
-###############################################.
+# exclusions scotland level (numerator - sits on different tab than council area figures)
+scotland_exclusions <- read_excel(paste0(data_folder, "Received Data/Exclusion_statistics_202021.xlsx"), sheet = "Table 1.1", skip = 3) %>%
+  filter(`Exclusion type` == "All cases of exclusion") %>% 
+  select(-`Exclusion type`) %>%
+  mutate("Local Authority" = "All local authorities", .before = "2002/03")
+
+# total pupils by council area + scotland (denominator)
+total_pupils <- read_excel(paste0(data_folder, "Received Data/Pupils_in_Scotland_2020.xlsx"), sheet = "Table 5.2", skip = 2) %>% 
+  head(33) 
+
+# council area lookup
+ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # council area lookup
+
+# health board lookup
+hb <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  select(ca2019, hb2019) %>%
+  distinct(.)
 
 
 
-# geog codes 
-geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
-school_exclusion$areaname <- gsub("&", "and", school_exclusion$areaname) # change & to match lookup
-school_exclusion$areaname[school_exclusion$areaname == "Edinburgh, City of"] <- "City of Edinburgh"
-school_exclusion<- full_join(x = school_exclusion, y = geog, by = "areaname") %>% 
-  rename(ca = code)
+### 4. prepare data ------
 
-school_exclusion$year <- substr(school_exclusion$year, 1, 4) # truncate year in usual way
-
-school_exclusion <- select(school_exclusion, c(1,5,4,3))
-
-# save rds raw file for use in analysis funtions
-saveRDS(school_exclusion, file=paste0(data_folder, "Prepared Data/school_exclusion_raw.rds"))
-
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
-
-
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-analyze_first(filename = "school_exclusion", geography = "council", 
-              measure = "percent", yearstart = 2009, yearend = 2018, 
-              time_agg = 1)
+prepare_dat <- function(df, val_name) {
+  
+  df %>%
+    # renaming/replacing values
+    rename_at(1, ~"Local Authority") %>%
+    mutate(across(-"Local Authority", ~replace(., . %in% c("c", "low", "x", "z"), 0))) %>% # replace suppression symbols with 0
+    mutate(`Local Authority` = str_replace(`Local Authority`, "&","and")) %>% #replace & with "and"
+    
+    # including council area/scotland codes
+    left_join(ca, by = c("Local Authority" = "areaname")) %>% # add in council area codes
+    mutate(code = ifelse(`Local Authority` == "All local authorities", "S00000001", code)) %>% #add in scotland code
+    select(-`Local Authority`) %>%
+    
+    # reshape from wide to long to include a calendar year column
+    pivot_longer(-c("Local Authority", "code"), names_to = "year", values_to = val_name) %>% # pivot longer to create year column
+    mutate(year = as.numeric(substr(year, 1, 4))) %>% # change date from FY to calendar year
+    mutate(across(-c("Local Authority", "code"), as.numeric)) # convert values to numeric
+}
 
 
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "school_exclusion", measure = "crude", 
-               time_agg = 1, ind_id = "13016",year_type = "school")
+# prepare denominator data 
+denominator_data <- prepare_dat(total_pupils, "denominator")
 
-# convert zeroes back to NA for supressed data
-final_result[final_result == 0] <- NA
+# prepare numerator data
+numerator_data <- bind_rows(prepare_dat(ca_exclusions, "numerator"), 
+                            prepare_dat(scotland_exclusions, "numerator"))          
 
-# convert numertaor into integar
-final_result$numerator <- as.integer(final_result$numerator)
-
-# re-check test chart
-ggplot(data = final_result %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                      & year== max(year)), aes(code, rate) ) +
-  geom_point(stat = "identity") +
-  geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
-
-
-#resave both rds and csv files
-final_result <- final_result %>% select(c(code, ind_id, year, numerator, rate, lowci,
-                                          upci, def_period, trend_axis))
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_leaver_destinations_shiny.csv"))
+# combine numerator and denominator
+combined_data <- left_join(numerator_data, denominator_data, by = c("code", "year"))
 
 
 
+# create figures at health board level 
+hb_data <- combined_data %>%
+  filter(code != "S00000001") %>%
+  left_join(hb, by = c("code" = "ca2019")) %>%
+  select("code" = "hb2019", "numerator", "denominator", "year") %>%
+  group_by(code, year) %>%
+  summarise_all(sum)
+
+
+
+#combine ca, scotland and board figures
+all <- bind_rows(combined_data, hb_data) %>%
+  mutate(rate = (numerator/denominator) * 1000) #calculate crude rate
+
+
+#save file to be used in analyze_second() function
+saveRDS(all, paste0(data_folder, "Temporary/school_exclusions_final.rds"))
+
+
+
+analyze_second(filename = "school_exclusions", measure = "crude", time_agg = 1,
+               ind_id = 13016, year_type = "school", crude_rate = 1000)
 
