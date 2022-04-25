@@ -63,14 +63,14 @@ save_output<-function(filename, ind_id) {
 area_lookup <- read_excel("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/Area Lookup.xlsx")
 
 # Open Health Board LE data
-hb_depr_data <- read_excel(paste0(source_network,"life expectancy in health boards split by SIMD 2013-2017 to 2016-2020.xlsx")) %>%
+hb_depr_data <- read_excel(paste0(source_network,"life expectancy in Health boards split by SIMD 2001-2005 to 2016-2020.xlsx")) %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   mutate(quint_type=case_when(substr(area,1,4) != "Scot" ~ "hb_quin",substr(area,1,4) == "Scot" ~"sc_quin")) #add field labelling quintile type - within HB quintile
 
 # Open Health Board LE data (remove Scotland level data as already avialable in HB level data extract)
-ca_depr_data <- read_excel(paste0(source_network,"life expectancy in council areas split by SIMD 2013-2017 to 2016-2020.xlsx")) %>%
+ca_depr_data <- read_excel(paste0(source_network,"life expectancy in Council areas split by SIMD 2001-2005 to 2016-2020.xlsx")) %>%
   setNames(tolower(names(.))) %>% #variables to lower case
-  subset(substr(area,1,4) != "Scot") %>% #remove scotland data from one dataset (already present in HB file)
+  #subset(substr(area,1,4) != "Scot") %>% #remove scotland data from one dataset (already present in HB file)
   mutate(quint_type="ca_quin")
 
 # Bind HB and CA data & rename fields
