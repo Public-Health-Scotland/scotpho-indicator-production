@@ -43,7 +43,6 @@ dat_cleansed <- dat %>%
   # reshape data from wide to long to create year column
   pivot_longer(cols = -c("care_type", "areaname"), names_to = "year") %>%
   
-  
   # split care_type column into 3 seperate columns (to calculate numerator and denominator)
   pivot_wider(names_from = "care_type", values_from = "value") %>%
   setNames(tolower(names(.))) %>%
@@ -78,4 +77,14 @@ analyze_second(filename = "high_care_needs", measure = "percent", time_agg = 1,
                ind_id = 20502, year_type = "financial")
 
 
+### add in 2006/7 - 2008/9 data currently in tool (not published)
+old_update <- read.csv(paste0(data_folder, "Shiny Data/high_care_needs_shiny.csv")) %>%
+  filter(year >= 2006 & year <= 2008)
 
+final_result <- final_result %>%
+  select(-denominator) %>%
+  rbind(old_update)
+
+# save files again    
+saveRDS(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.rds"))  
+write_csv(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.csv"))   
