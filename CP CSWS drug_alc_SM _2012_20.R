@@ -30,14 +30,6 @@
 # note that revised data for 2020 - Glasgow drug adn SM, N Ayreshire all 3, 
 # S Lanarkshire all 3, W Dunbartonshire alcohol and SM 
 
-## remove any existing objects from global environment 
-rm(list=ls())  
-
-## install packages 
-#install.packages("tidyverse") 
-library(tidyverse) # all kinds of stuff  
-library(stringr) # for strings 
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
