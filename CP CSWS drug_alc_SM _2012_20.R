@@ -45,7 +45,7 @@ source("./1.indicator_analysis.R") #Normal indicator functions
 # values for total of suppressed data also present each year but with no ca identified,  
 # these will be added to Scotland total by R but will not appear as a row in final dataset
 
-df_received<- read.csv(paste0(data_folder, "Received Data/CP CSWS 2012_21 revised 19'20.xlsx")) 
+df_received<- read.excel(paste0(data_folder, "Received Data/CP CSWS 2012_21 revised 19'20.xlsx")) 
 
 ## add la geog codes 
 # create dataframe for lookup 
