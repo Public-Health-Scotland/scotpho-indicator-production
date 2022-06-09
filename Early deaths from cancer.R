@@ -7,6 +7,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
+#random comment 
+
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
