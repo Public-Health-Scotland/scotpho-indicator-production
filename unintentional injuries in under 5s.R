@@ -29,7 +29,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END as year
   FROM ANALYSIS.SMR01_PI z
-  WHERE admission_date between  '1 April 2005' and '31 December 2020'
+  WHERE admission_date between  '1 April 2005' and '31 December 2021'
     AND sex <> 0
     AND AGE_IN_YEARS <=4
     AND CASE WHEN admission_type = '32' THEN 1
@@ -50,7 +50,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
  unintentional_under5 <- unintentional_under5 %>% mutate(age_grp = 1)
 
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>%
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_1.rds') %>%
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2019)
 
@@ -69,7 +69,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
 ###############################################.
 
 analyze_first(filename = "unintentional_under5", geography = "council", measure = "stdrate",
-               pop = "CA_pop_under5", yearstart = 2005, yearend = 2020, hscp = T,
+               pop = "CA_pop_under5", yearstart = 2005, yearend = 2021, hscp = T,
                time_agg = 3, epop_age = 'normal')
 
 analyze_second(filename = "unintentional_under5", measure = "stdrate", time_agg = 3,

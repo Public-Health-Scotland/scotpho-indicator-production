@@ -1,129 +1,85 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####                    School meals indicator prep                       #####
-#########                                                              #########
-################################################################################
-################################################################################
+### 1. notes ------
 
-## This script analyses SG education data on the free school meals measure
+# indictor: 13012 - Children registered for free school meals
+# source: https://www.gov.scot/publications/school-healthy-living-survey-statistics-2020/ 
+# change filename and update year below: 
 
-## The latest data (Sept 2019) is available here:
-#  https://www2.gov.scot/Topics/Statistics/Browse/School-Education/MealsSD/mealspesd/mealspesd2019
-# 2018 data uses same URL but with year changed
-
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
-
-## install packages
-#install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
+data_filename <- "healthy-living-survey-supplementary_statistics_2020.xlsx" # name of the excel file saved in "data received" folder
+data_update_year <- 2020 # year of data that has been published
 
 
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-## read in csv files
-# new data
-school_meals_new <- read.csv(paste0(data_folder, "Received Data/school_meals_2018_2019.csv")) %>% 
-  as_tibble()
-# old data for merging
-school_meals_old <- read.csv(paste0(data_folder, "Received Data/school_meals_2015_2017.csv")) %>% 
-  as_tibble() %>% 
-  select(c(year, LA, numerator, denominator)) %>% 
-  rename(ca = LA)
 
-###############################################.
-## Part 1 - data prep
-###############################################.
+### 2. read in data ------
 
-head(school_meals_new)
+source("1.indicator_analysis.R") 
 
-# rename vars
-names(school_meals_new) <- tolower(names(school_meals_new))# make lower case
-school_meals_new <- school_meals_new %>%   rename(areaname = la)
+# primary 1-4 pupils
+primary <- read_xlsx(paste0(data_folder, "Received Data/", data_filename), sheet = "Table 7", skip = 6) %>%
+  head(32) %>%
+  select("areaname" = 1, "denominator" = 6, "numerator" = 7)
 
-## remove commas from numeric vars
-school_meals_new$numerator <- gsub(",", "", school_meals_new$numerator, fixed = TRUE)
-school_meals_new$denominator <- gsub(",", "", school_meals_new$denominator, fixed = TRUE)
+# secondary pupils
+secondary <- read_xlsx(paste0(data_folder, "Received Data/", data_filename), sheet = "Table 13", skip = 5) %>%
+  head(32) %>%
+  select("areaname" = 1, "denominator" = 2, "numerator" = 3)
 
-## change numerator and denomitaior col type to numeric
-school_meals_new$numerator <- as.numeric(school_meals_new$numerator)
-school_meals_new$denominator <- as.numeric(school_meals_new$denominator)
+# council area lookup
+ca_lookup <- readRDS(paste0(lookups,"Geography/CAdictionary.rds"))
 
 
-# geog codes 
-geog <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) # load file
-school_meals_new$areaname <- gsub("&", "and", school_meals_new$areaname) # change & to match lookup
-school_meals_new$areaname[school_meals_new$areaname == "Edinburgh City"] <- "City of Edinburgh"
-school_meals_new <- full_join(x = school_meals_new, y = geog, by = "areaname") %>% 
-  rename(ca = code)
 
-# reorder columns
-school_meals_new <- select(school_meals_new, c(1,5,3,4))
+### 4. clean/format data  ------
 
-# check col names are same across dataframes
-names(school_meals_new)== names(school_meals_old)
+# combine primary and secondary school data
+all <- rbind(primary, secondary)
 
-# merge old and new dataframes
-school_meals <- school_meals_old %>% 
-  rbind(school_meals_new) %>% 
-  filter(ca != "")  # drop any empty rows
-
-## check geog codes consistent across time period
-school_meals %>% group_by(ca) %>% summarise(count=n()) %>% filter(count != 5)
-
-# recode old council codes
-school_meals$ca[school_meals$ca == "S12000015"] <- "S12000047" # Fife
-school_meals$ca[school_meals$ca == "S12000024"] <- "S12000048" # P&K
-school_meals$ca[school_meals$ca == "S12000044"] <- "S12000050" # N Lan
-school_meals$ca[school_meals$ca == "S12000046"] <- "S12000049" # Glasgow City
-
-## recheck geog codes consistent across time period
-school_meals %>% group_by(ca) %>% summarise(count=n()) %>% filter(count != 5)
+all <- all %>%
+  mutate(areaname = gsub("^[1-9]|[1-9]$", "", areaname)) %>% # remove any reference to notes in ca names
+  left_join(ca_lookup, by = "areaname", all.x = TRUE) %>%  # include council area codes
+  select("ca" = "code", "numerator", "denominator") %>%
+  group_by(ca) %>%
+  summarise_all(sum) %>% ungroup() %>% # summing primary and secondary figures
+  mutate(year = data_update_year) # add year column
 
 
-  
-# save rds raw file for use in analysis funtions
-saveRDS(school_meals, file=paste0(data_folder, "Prepared Data/school_meals_raw.rds"))
-
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-organisation  <-  "HS"
-source("X:/ScotPHO Profiles/indicator-production-master/1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
+write_rds(all, paste0(data_folder, "Prepared Data/free_school_meals_raw.rds"))
 
 
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-analyze_first(filename = "school_meals", geography = "council", 
-              measure = "percent", yearstart = 2015, yearend = 2019, 
+
+### 5. analyse data ------
+
+analyze_first(filename = "free_school_meals", geography = "council", 
+              measure = "percent", yearstart = 2015, yearend = 2020, 
               time_agg = 1)
 
 
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "school_meals", measure = "percent", 
-               time_agg = 1, ind_id = "13012",year_type = "school")
+analyze_second(filename = "free_school_meals", measure = "percent", 
+               time_agg = 1, ind_id = "13012",year_type = "calendar")
 
 
-## Check correct number of HB and LA per year
-final_result %>%
-  mutate(geo_type=substr(code,1,3)) %>%
-  group_by(geo_type, trend_axis) %>%
-  summarise(count=n()) 
 
-#resave both rds and csv files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/school_meals_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/school_meals_shiny.csv"))
+### 5. combine new data with previous update to get all years -----
+
+previous_update <- readRDS(paste0(data_folder, "Shiny Data/free_school_meals_shiny.rds"))
+
+current_update <- readRDS(paste0(data_folder, "Data to be checked/free_school_meals_shiny.rds")) %>%
+  rbind(previous_update)
+
+
+write_rds(current_update, paste0(data_folder, "Data to be checked/free_school_meals_shiny.rds"))
+write_csv(current_update, paste0(data_folder, "Data to be checked/free_school_meals_shiny.csv"))
+
+
+
+### 6. QA the data -----
+
+run_qa <- function(filename, old_filename="default", check_extras=c()){
+  run("Data Quality Checks.Rmd")
+}  
+
+run_qa(filename = "free_school_meals_shiny", old_filename="default", check_extras=c())
+
+
+
+
 

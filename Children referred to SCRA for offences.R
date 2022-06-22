@@ -19,16 +19,11 @@
 rm(list=ls()) 
 
 ## install packages
-#install.packages("tidyverse")
+
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
-organisation <- "HS" 
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -73,13 +68,9 @@ saveRDS(SCRA_offence, file=paste0(data_folder, "Prepared Data/scra_offence_raw.r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "scra_offence", geography = "council", 
-              measure = "crude", yearstart = 2004, yearend = 2018, time_agg = 1)
+              measure = "crude", yearstart = 2004, yearend = 2020, time_agg = 1)
 
 analyze_second(filename = "scra_offence", measure = "crude", time_agg = 1,
               ind_id = 20803, year_type = "financial", crude_rate = 1000)
 
-#for QA
-scra_offence_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/scra_offence_formatted.rds")
-
-write.csv (scra_offence_denom, "X:/ScotPHO Profiles/Data/Temporary/scra_offence_formatted.csv")
 

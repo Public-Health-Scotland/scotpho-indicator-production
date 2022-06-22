@@ -69,7 +69,7 @@ saveRDS(dep_all_file, file=paste0(data_folder, 'Prepared Data/deaths_all_prem_de
 analyze_deprivation(filename="deaths_all_prem_depr", measure="stdrate", time_agg = 3, 
                     yearstart= 2002, yearend=2020,   year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age= "normal",
-                    epop_total = 182000, ind_id = 20105)
+                    epop_total = 182000, ind_id = 8)
 
 
 #creating csv file, prefer to do checks from that!

@@ -55,7 +55,7 @@ data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.rds")) 
+old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
 
 ```
 
@@ -106,6 +106,9 @@ if(iz == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S02!=1279, ~S02, color
 ft_geo_check <- ft_geo_check %>%
   autofit()
 
+#saving flextable as image to work around pandoc issues
+save_as_image(ft_geo_check, path = "check1.png")
+
 ```  
 
 Are the expected geographies appearing for all expected years?<br>
@@ -115,9 +118,11 @@ If some geographies are missing consider:<br>
 Is any suppression already applied to the dataset?<br>
 Might there legitimately be no data for that area (e.g. there might have been no deaths in that intermediate zone)?
 
-```{r, echo=FALSE}
-#print flextable
-ft_geo_check 
+```{r, out.width = "400px", echo=FALSE}
+knitr::include_graphics("check1.png")
+
+#print flextable - this method of printing flextables should work when pandoc gets updated
+#ft_geo_check 
 
 ```
 
@@ -162,7 +167,6 @@ matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
   upci_match =ifelse((upci.x ==""|upci.y ==""),
                                   0,round((upci.x-upci.y)/upci.x,3)),
   year=as.factor(year))
-  
 
 ```
 
@@ -172,8 +176,8 @@ New rows of data (e.g. the latest year of data) cannot be compared if it wasn't 
 Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences. <br>
 Use your judgement to decide if any differences are acceptable.
 
-```{r, echo=FALSE}
-flextable(matched,
+```{r,out.width = "800px", echo=FALSE}
+ft_check3 <- flextable(matched,
   col_keys = c("code", "areaname","year","numerator.x", "numerator.y","numerator_match",
                "rate.x", "rate.y","rate_match",
                "lowci.x","lowci.y", "lowci_match",
@@ -191,6 +195,11 @@ flextable(matched,
   color(~ lowci_match !=0,~lowci_match, color= "red") %>% 
   color(~ upci_match !=0,~upci_match, color = "red") %>%
   autofit()
+
+#saving flextable as image to work around pandoc issues
+save_as_image(ft_check3 , path = "check3.png")
+
+knitr::include_graphics("check3.png")
 ```
 
 ------------------------------------------------------------------------------------
