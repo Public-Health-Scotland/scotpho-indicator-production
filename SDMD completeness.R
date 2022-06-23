@@ -39,7 +39,7 @@ geography_codes <- readRDS('/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/co
                              "East Renfrewshire" = "Renfrewshire East"))
 
 #Initial completeness file extracted from SDMD publication
-sdmd_initial <- read_xlsx(paste0(data_folder, "Received Data/SDMD Initial Completeness 2021.xlsx")) %>%
+sdmd_initial <- read_xlsx(paste0(data_folder, "Received Data/SDMD Initial Completeness 2022.xlsx")) %>%
   rename(numerator = sdmd_ind, denominator = total_datwt, hb2019name = LocationCode) %>%
   mutate_at(c("denominator", "numerator"), as.numeric)
 
@@ -50,7 +50,7 @@ sdmd_initial <- left_join(sdmd_initial, geography_codes, "hb2019name") %>%
 saveRDS(sdmd_initial, file=paste0(data_folder, 'Temporary/sdmd_initialcompl_formatted.rds'))
 
 # Follow-up completeness file extracted from SDMD publication
-sdmd_follow <- read_xlsx(paste0(data_folder, "Received Data/SDMD Followup Completeness 2021.xlsx")) %>%
+sdmd_follow <- read_xlsx(paste0(data_folder, "Received Data/SDMD Followup Completeness 2022.xlsx")) %>%
   # Prisons are counted as a health board in the data, and we don't want to include them
   filter(LocationCode != "Prisons") %>%
   # Geography lookup does not have ADP at the end of ADP location names
