@@ -1,7 +1,7 @@
 #############
 #####WIP#####
-#############
-#Dying in hospital
+##############
+#D ing in hospital
 #The number of deaths from all causes that occurred in hospital in a given year.
 #Numerator = Number of deaths from any cause that occurred in hospital in a given year.
 #Denominator = Number of deaths from any cause in a given year, irrespective of the place of death.
