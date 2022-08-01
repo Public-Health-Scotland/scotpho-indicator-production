@@ -69,7 +69,7 @@ hosp_deaths_depr <- rbind(hosp_deaths_dz01, hosp_deaths_dz11 %>% subset(year>=20
 ## Part 2 - Extract total deaths from SMRA deaths dataset ----
 ###########################################################################.
 
-all_deaths_raw <- tbl_df(dbGetQuery(channel, statement=
+all_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                       "SELECT POSTCODE pc7, 
                                     CASE WHEN extract(month from DATE_OF_DEATH) > 3 
                                     THEN extract(year from DATE_OF_DEATH) 
