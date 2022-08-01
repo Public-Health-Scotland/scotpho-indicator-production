@@ -7,7 +7,7 @@
 #   Part 1 - Extract deaths occuring in hospital from SMR01 dataset
 #   Part 2 - Extract total deaths from SMRA deaths dataset
 #   Part 3 - Combined hospital deaths and total deaths files 
-
+#   Part 4 - Run analysis functions 
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
