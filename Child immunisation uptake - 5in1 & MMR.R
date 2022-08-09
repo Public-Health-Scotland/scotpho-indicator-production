@@ -37,21 +37,15 @@ five01_data =
 five01_data <- five01_data %>% rename(denominator = total24, numerator = five24)
 
 # Datazone2011 - Read data (Immunisation uptake at 24 month) provided by child health team and aggregate
-five11_data =
-  read_spss(paste0(data_folder,
-                   "Received Data/Child Immunisation Uptake - 2004_2020_scotpho_childhoodimms_dz_dz2011.zsav")) %>%
+
+five11_data = read_csv(paste0(data_folder,
+                              "Received Data/2004_2021_scotpho_childhoodimms_dz_dz2011.csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(datazone = datazone2011) %>%
-  # Remove assorted SPSS stuff
-  zap_label() %>%
-  zap_labels() %>%
-  zap_formats() %>%
-  zap_widths() %>%
-  # aggregate to get the count, removing sex
+  mutate_at(vars(datazone), ~replace(., is.na(.), "")) %>% 
   group_by(year, datazone) %>%
   summarise_at(c("total24", "five24"), list(sum), na.rm =T) %>%
   ungroup()
-
 # Rename variables into numerator and denominator
 five11_data <- five11_data %>% rename(denominator = total24, numerator = five24)
 
@@ -86,23 +80,15 @@ mmr01_data =
   rename(denominator = total24, numerator = mmr24)
 
 # Datazone2011 - Read data (Immunisation uptake at 24 month) provided by child health team and aggregate
-mmr11_data =
-  read_spss(paste0(data_folder,
-                   "Received Data/Child Immunisation Uptake - 2004_2020_scotpho_childhoodimms_dz_dz2011.zsav")) %>%
+mmr11_data = read_csv(paste0(data_folder,
+                             "Received Data/2004_2021_scotpho_childhoodimms_dz_dz2011.csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(datazone = datazone2011) %>%
-  # Remove assorted SPSS stuff
-  zap_label() %>%
-  zap_labels() %>%
-  zap_formats() %>%
-  zap_widths() %>%
-  # aggregate to get the count, removing sex
+  mutate_at(vars(datazone), ~replace(., is.na(.), "")) %>% 
   group_by(year, datazone) %>%
   summarise_at(c("total24", "mmr24"), list(sum), na.rm =T) %>%
-  ungroup() %>%
-  # Rename variables into numerator and denominator
+  ungroup() %>% 
   rename(denominator = total24, numerator = mmr24)
-
 saveRDS(mmr11_data, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_dz11_raw.rds'))
 
 #Deprivation basefile
@@ -116,14 +102,14 @@ saveRDS(mmr_dep_file, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_d
 ###############################################.
 
 analyze_first(filename = "Immunisation_5in1_dz11", geography = "datazone11", measure = "percent",
-              yearstart = 2004, yearend = 2020, time_agg = 3)
+              yearstart = 2004, yearend = 2021, time_agg = 3)
 
 analyze_second(filename = "Immunisation_5in1_dz11", measure = "percent", time_agg = 3,
                ind_id = 21103, year_type = "calendar")
 
 #Deprivation analysis function
 analyze_deprivation(filename="Immunisation_5in1_depr", measure="percent", time_agg=3,
-                    yearstart= 2004, yearend=2020,   year_type = "calendar",
+                    yearstart= 2004, yearend=2021,   year_type = "calendar",
                     ind_id = 21103)
 
 ###############################################.
@@ -131,14 +117,14 @@ analyze_deprivation(filename="Immunisation_5in1_depr", measure="percent", time_a
 ###############################################.
 
 analyze_first(filename = "Immunisation_MMR_dz11", geography = "datazone11", measure = "percent",
-              yearstart = 2004, yearend = 2020, time_agg = 3)
+              yearstart = 2004, yearend = 2021, time_agg = 3)
 
 analyze_second(filename = "Immunisation_MMR_dz11", measure = "percent", time_agg = 3,
                ind_id = 21104, year_type = "calendar")
 
 #Deprivation analysis function
 analyze_deprivation(filename="Immunisation_MMR_depr", measure="percent", time_agg=3,
-                    yearstart= 2004, yearend=2020,   year_type = "calendar",
+                    yearstart= 2004, yearend=2021,   year_type = "calendar",
                     ind_id = 21104)
 
 ##END
