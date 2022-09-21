@@ -503,7 +503,7 @@ run_qa <- function(filename, old_file="default", check_extras=c()){
 render_qa <- function(filename) {
   render("data_checks.Rmd", 
          output_file = paste0(filename, "_data_checks_", substr(date(), 21, 24)), 
-         output_dir = "/PHI_conf/ScotPHO/1.Analysts_space/Peter/test_data/")
+         output_dir = "/PHI_conf/ScotPHO/Profiles/Data/data_checks/")
 }
 
 ############################################################.
