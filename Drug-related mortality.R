@@ -32,20 +32,20 @@ drug_deaths_male_02_05 <- read.csv(paste0(data_folder, "Received Data/drugs_deat
                                 setNames(tolower(names(.)))
 
 # NRS file for drug deaths - match to SQL query by rdno_entry_no_yr
-drug_deaths_NRS <- read.spss(paste0(data_folder, "Received Data/NRS_DRDs0620.sav"), 
+drug_deaths_NRS <- read.spss(paste0(data_folder, "Received Data/NRS_DRDs0621.sav"), 
                 to.data.frame=TRUE, use.value.labels=FALSE) %>%
                 setNames(tolower(names(.)))
 
-# SQL query for drug deaths 2006-2020
+# SQL query for drug deaths 2006-2021
 # Select drug specific deaths from SMRA - the ICD10 codes have been removed from query as it was not finding all the deaths in the NRS extract (Sep21)
 # Select only deaths for scottish residents (COR=XS)
 # Exclude any with null age group
 # Exclude deaths where sex is unknown (9)
 drug_deaths_smr <- tbl_df(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, age, SEX sex_grp, UNDERLYING_CAUSE_OF_DEATH cod1, POSTCODE pc7, 
-        REGISTRATION_DISTRICT rdno, ENTRY_NUMBER entry_no
+        REGISTRATION_DISTRICT rdno, ENTRY_NUMBER entry_no, PLACE_OF_DEATH_POSTCODE pc_death
         FROM ANALYSIS.GRO_DEATHS_C 
-          WHERE date_of_registration between '1 January 2006' and '31 December 2020'
+          WHERE date_of_registration between '1 January 2006' and '31 December 2021'
           AND age is not NULL
           AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
@@ -63,6 +63,11 @@ drug_deaths_smr <- drug_deaths_smr %>%
   create_agegroups() # 5 year age-bands grop
 
 drug_deaths <- left_join(drug_deaths_NRS, drug_deaths_smr, "rdno_entry_no_yr")
+
+# Adding this to ensure HB/CA breakdown matches the NRS publication.
+# If postcode is NA then use the place of death postcode.
+drug_deaths %<>% mutate(pc7 = case_when(is.na(pc7) ~ pc_death,
+                                        TRUE ~ pc7))
            
 # checking if totals match with NRS publication
 drug_deaths %>% group_by(year) %>% count() %>% View()
@@ -71,7 +76,7 @@ drug_deaths %>% group_by(year) %>% count() %>% View()
 ## Part 2 - Creating basefiles ----
 ###############################################.
 # Bring council area info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Aggregating data by datazone for deprivation analysis
@@ -106,7 +111,7 @@ saveRDS(drug_deaths_ca %>% subset(sex_grp==1),
 
 # Analysis by CA
 analyze_first(filename = "drug_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2021,
               time_agg = 1, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1, 
@@ -123,7 +128,7 @@ write_csv(all_drug_deaths, path = paste0(data_folder, "Data to be checked/all_dr
 
 #Deprivation analysis function 
 analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
-                    yearstart= 2006, yearend=2020,   year_type = "calendar", 
+                    yearstart= 2006, yearend=2021,   year_type = "calendar", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 4121)
 
@@ -131,7 +136,7 @@ analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5,
 ## Part 4 - Female drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2021,
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only female half population
@@ -151,7 +156,7 @@ write_csv(all_female_drug_deaths, path = paste0(data_folder, "Data to be checked
 ## Part 5 - Male drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2020, 
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2021, 
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only male half population
