@@ -15,8 +15,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by AWT team
-awt <- read_excel(paste0(data_folder, "Received Data/alcohol_waiting_times_2021.xlsx"), 
-                               sheet = "alcohol_waiting_times") %>% 
+awt <- read_csv(paste0(data_folder, "Received Data/alcohol_waiting_times_2022.csv")) %>% 
   setNames(tolower(names(.))) %>%    #variables to lower case
   mutate(code = case_when( #create a code variable for each ADP and HB
     geography == "Clackmannanshire_ADP" ~ "S11000005", geography == "Falkirk_ADP" ~ "S11000013", 
@@ -50,7 +49,7 @@ awt <- awt %>%
   mutate(code = case_when(geography == "South Lanarkshire_ADP" ~ "S11000052",
                           geography == "North Lanarkshire_ADP" ~ "S11000052",
                           TRUE ~ as.character(code))) %>% 
-  mutate(geography = case_when(code == "S11000052" ~ "Lanarkshire",
+  mutate(geography = case_when(code == "S11000052" ~ "Lanarkshire_ADP",
                                TRUE ~ as.character(geography))) %>% 
   group_by(year, geography, code) %>% 
   summarise(numerator = sum(numerator),
@@ -66,5 +65,14 @@ saveRDS(awt, file=paste0(data_folder, 'Temporary/Alcohol_waiting_times_formatted
 ###############################################.
 analyze_second(filename = "Alcohol_waiting_times", measure = "percent", 
                time_agg = 1, ind_id = 4119, year_type = "financial")
+
+
+# Run after the QA doc has been produced.
+# Drugs team asked for CIs to be removed from data
+final_result %<>% select(c(-lowci, -upci))
+
+# Re-save files
+saveRDS(final_result, file = paste0(data_folder, "Data to be checked/Alcohol_waiting_times_shiny.rds"))
+write_csv(final_result, path = paste0(data_folder, "Data to be checked/Alcohol_waiting_times_shiny.csv"))
 
 ##END
