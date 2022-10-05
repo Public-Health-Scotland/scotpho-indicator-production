@@ -38,7 +38,6 @@ drug_deaths_NRS <- read.spss(paste0(data_folder, "Received Data/NRS_DRDs0621.sav
 
 # SQL query for drug deaths 2006-2021
 # Select drug specific deaths from SMRA - the ICD10 codes have been removed from query as it was not finding all the deaths in the NRS extract (Sep21)
-# Select only deaths for scottish residents (COR=XS)
 # Exclude any with null age group
 # Exclude deaths where sex is unknown (9)
 drug_deaths_smr <- tbl_df(dbGetQuery(channel, statement=
