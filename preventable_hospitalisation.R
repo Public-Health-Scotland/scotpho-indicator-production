@@ -35,7 +35,7 @@ data_chronic <- tibble::as_tibble(dbGetQuery(channel, statement=
    FROM ANALYSIS.SMR01_PI z
    WHERE admission_date between '1 April 2002' and '31 March 2022'
       AND sex <> 0 
-      AND (admission_type between '20' and '22' or admission_type between '30' and '39')
+      AND (admission_type between '30' and '39')
       AND regexp_like(main_condition, 'E1[0-4]|D51|D52|F0[0-3]|G40|I20|I25|I50|J20|
                                        J41|J4[3-5]|B180|B181|D501|D508|D509|I10X|I110|
                                        I119|I130|I148X|J81X|J42X|J46X|J47X') ")) %>% 
