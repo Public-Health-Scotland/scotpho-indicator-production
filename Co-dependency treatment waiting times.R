@@ -65,11 +65,4 @@ analyze_second(filename = "Co-dependency_waiting_times", measure = "percent",
                time_agg = 1, ind_id = 4150, year_type = "financial")
 
 
-# Drugs team asked for CIs to be removed from data
-final_result %<>% select(c(-lowci, -upci))
-
-# Re-save files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/Co-dependency_waiting_times_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/Co-dependency_waiting_times_shiny.csv"))
-
 ##END

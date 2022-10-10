@@ -64,13 +64,4 @@ analyze_second(filename = "Drug_waiting_times", measure = "percent",
                time_agg = 1, ind_id = 4136, year_type = "financial")
 
 
-# Run after the QA doc has been produced.
-# Drugs team asked for CIs to be removed from data
-final_result %<>% select(c(-lowci, -upci))
-
-# Re-save files
-saveRDS(final_result, file = paste0(data_folder, "Data to be checked/Drug_waiting_times_shiny.rds"))
-write_csv(final_result, path = paste0(data_folder, "Data to be checked/Drug_waiting_times_shiny.csv"))
-
-
 ##END
