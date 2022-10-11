@@ -35,10 +35,10 @@ data_chronic <- tibble::as_tibble(dbGetQuery(channel, statement=
    FROM ANALYSIS.SMR01_PI z
    WHERE admission_date between '1 April 2002' and '31 March 2022'
       AND sex <> 0 
-      AND (admission_type between '30' and '39')
-      AND regexp_like(main_condition, 'E1[0-4]|D51|D52|F0[0-3]|G40|I20|I25|I50|J20|
-                                       J41|J4[3-5]|B180|B181|D501|D508|D509|I10X|I110|
-                                       I119|I130|I148X|J81X|J42X|J46X|J47X') ")) %>% 
+      AND (admission_type between '20' and '22' or admission_type between '30' and '39')
+      AND regexp_like(main_condition, 'E1[0-4]|D51|D52|F0[0-3]|G40|G41|I20|I25|I50|J20|
+                                       J41|J4[3-5]|B180|B181|D50[189]|I10X|I110|
+                                       I119|I130|I48X|J81X|J42X|J46X|J47X') ")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization
 
@@ -53,7 +53,7 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
 
 data_chronic <- left_join(data_chronic, postcode_lookup, "pc7") %>% 
   select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>% 
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
+#  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
 #######################
@@ -89,7 +89,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/chronic_depr_raw.rds')
 ## Part 3 - Run analysis functions ----
 ###############################################.
 
-#All patients asthma
+#All patients preventable hosp
 analyze_first(filename = "chronic_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2022,
               time_agg = 3, epop_age = "normal")
