@@ -24,14 +24,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 data_deaths <- as_tibble(dbGetQuery(channel, statement=
  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7, COUNCIL_AREA_2019 ca
   FROM ANALYSIS.GRO_DEATHS_C 
-  WHERE date_of_registration between '1 January 2002' AND '31 December 2020'
+  WHERE date_of_registration between '1 January 2002' AND '31 December 2021'
         AND country_of_residence ='XS'
         AND age is not NULL")) %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Open LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
@@ -102,7 +102,7 @@ saveRDS(deaths_under1, file=paste0(data_folder, 'Prepared Data/deaths_under1_raw
 ###############################################.
 #Deaths all ages
 analyze_first(filename = "deaths_allages_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg = 3, 
@@ -110,7 +110,7 @@ analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg =
 
 #Deprivation analysis function
 analyze_deprivation(filename="deaths_allages_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2020,  
+                    yearstart= 2002, yearend=2021,  
                     year_type = "calendar", pop = "depr_pop_allages", 
                     epop_age="normal", epop_total =200000, ind_id = 20103)
 
@@ -118,7 +118,7 @@ analyze_deprivation(filename="deaths_allages_depr", measure="stdrate", time_agg=
 # Deaths 15-44
 #epop_age can set to normal even though a subset of whole pop (since only matches on pop which are present in file)
 analyze_first(filename = "deaths_15to44_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_15to44", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_15to44", yearstart = 2002, yearend = 2021,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "deaths_15to44_dz11", measure = "stdrate", time_agg = 3, 
@@ -126,14 +126,14 @@ analyze_second(filename = "deaths_15to44_dz11", measure = "stdrate", time_agg = 
 
 #Deprivation analysis function
 analyze_deprivation(filename="deaths_15to44_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2020,  
+                    yearstart= 2002, yearend=2021,  
                     year_type = "calendar", pop = "depr_pop_15to44", 
                     epop_age="normal", epop_total = 76000, ind_id = 20104)
 
 ###############################################.
 # Deaths aged 1-15
 analyze_first(filename = "deaths_1to15", geography = "council", measure = "crude", 
-              pop = "CA_pop_1to15", yearstart = 2002, yearend = 2020, 
+              pop = "CA_pop_1to15", yearstart = 2002, yearend = 2021, 
               time_agg = 5, hscp = T)
 
 analyze_second(filename = "deaths_1to15", measure = "crude", time_agg = 5, 
@@ -142,7 +142,7 @@ analyze_second(filename = "deaths_1to15", measure = "crude", time_agg = 5,
 ###############################################.
 # Deaths under 1
 analyze_first(filename = "deaths_under1", geography = "council", measure = "crude", 
-              pop = "live_births", yearstart = 2002, yearend = 2020, 
+              pop = "live_births", yearstart = 2002, yearend = 2021, 
               time_agg = 5, hscp = T)
 
 analyze_second(filename = "deaths_under1", measure = "crude", time_agg = 5, 
