@@ -70,7 +70,7 @@ data_adm <- tbl_df(dbGetQuery(channel, statement=paste0(
   setNames(tolower(names(.)))  #variables to lower case
 
 # Bringing geography info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, intzone2011, ca2019, hb2019, hscp2019)
 
