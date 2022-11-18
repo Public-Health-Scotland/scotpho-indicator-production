@@ -67,7 +67,7 @@ dat <- dat %>%
 ###############################################.
   
   analyze_first(filename = "participation", geography = "council", measure = "percent",  
-                yearstart = 2015, yearend = 2021, time_agg = 1)
+                yearstart = 2015, yearend = 2022, time_agg = 1)
   
   
   analyze_second(filename = "participation", measure = "percent", 
