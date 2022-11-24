@@ -28,8 +28,9 @@ extr_pupil <- function(filepath, sheet_name, heading_row_num, most_recent_year) 
 }
 ################################################ extracting data from file
 # just update the filepath (file should be in Scotpho Data folder), sheet name within the excel file and row number to use as column headers
-sec_pupils = extr_pupil("Received Data/Pupils_in_Scotland_2020.xlsx","Table 7.2",4,"2020")
-pri_pupils = extr_pupil("Received Data/Pupils_in_Scotland_2020.xlsx","Table 6.2",4,"2020")
+
+sec_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2021+V3.xlsx","Table 7.2",3,"2021")
+pri_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2021+V3.xlsx","Table 6.2",3,"2021")
 
 ###################### merging with council area lookup to retrieve council area codes
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) 
@@ -50,10 +51,10 @@ saveRDS(pri_pupils, file=paste0(data_folder, 'Prepared Data/cyp_primary_raw.rds'
 
 #####running analysis functions to first create gography aggregations and then create shiny files 
 analyze_first(filename = "cyp_secondary", geography = "council", measure = "percent", yearstart = 2005,
-              yearend = 2020, time_agg = 1, pop = "CA_pop_allages")
+              yearend = 2021, time_agg = 1, pop = "CA_pop_allages")
 
 analyze_first(filename = "cyp_primary", geography = "council", measure = "percent", yearstart = 2006,
-              yearend = 2020, time_agg = 1, pop = "CA_pop_allages")
+              yearend = 2021, time_agg = 1, pop = "CA_pop_allages")
 
 analyze_second(filename = "cyp_secondary", measure = "percent", time_agg = 1,
                ind_id = 13108, year_type = "calendar") # check if QA analysis shows some years missing
