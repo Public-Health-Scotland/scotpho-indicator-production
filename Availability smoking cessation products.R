@@ -12,7 +12,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by Prescribing team
-data_products <- read_excel(paste0(data_folder, "Received Data/IR2021-00771_smoking_products.xlsx"), 
+data_products <- read_excel(paste0(data_folder, "Received Data/IR2022-00878_smoking_products.xlsx"), 
                             sheet = "Output", range = cell_limits(c(8, 2), c(NA, 10))) %>% 
   janitor::clean_names()
 
@@ -35,7 +35,7 @@ saveRDS(data_products, file=paste0(data_folder, 'Prepared Data/cessation_product
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "cessation_products", geography = "council", measure = "crude", hscp = T,
-              yearstart = 2002, yearend = 2020, time_agg = 1, pop="CA_pop_12+")
+              yearstart = 2002, yearend = 2021, time_agg = 1, pop="CA_pop_12+")
 
 analyze_second(filename = "cessation_products", measure = "crude", time_agg = 1,
                crude_rate = 1000, ind_id = 1544, year_type = "financial")
