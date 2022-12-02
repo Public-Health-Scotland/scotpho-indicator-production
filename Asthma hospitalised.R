@@ -31,14 +31,14 @@ data_asthma <- tbl_df(dbGetQuery(channel, statement=
       CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 April 2002' and '31 March 2021'
+   WHERE admission_date between '1 April 2002' and '31 March 2022'
       AND sex <> 0 
       AND regexp_like(main_condition, 'J4[5-6]') ")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -89,7 +89,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
@@ -97,13 +97,13 @@ analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3,
 
 #Deprivation analysis function
 analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2020,   year_type = "financial", 
+                    yearstart= 2002, yearend=2021,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20304)
 
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2020, hscp = T,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2021, hscp = T,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 
