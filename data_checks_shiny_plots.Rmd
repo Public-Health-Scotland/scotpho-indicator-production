@@ -1,0 +1,155 @@
+---
+title: "shiny_data_check_plots"
+output: html_document
+runtime: shiny
+---
+
+---
+```{r, include=F, warning=F, message=F}
+
+source("1.indicator_analysis.R") 
+source("2.deprivation_analysis.R")
+library(stringr)
+
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+filename <- "drug_stays_dz11"
+old_file <- "default"
+check_extras <- c()
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Initial Checks
+
+```{r, include=FALSE, echo= FALSE}
+
+#read in geography code names dictionary
+code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) %>% mutate(areaname = as.character(areaname))
+
+hb_list <- code_dictionary %>% filter(str_detect(code, "S08")) %>% pull(areaname)
+ca_list <- code_dictionary %>% filter(str_detect(code, "S12")) %>% pull(areaname)
+hscp_list <- code_dictionary %>% filter(str_detect(code, "S37")) %>% pull(areaname)
+adp_list <- code_dictionary %>% filter(str_detect(code, "S11")) %>% pull(areaname)
+locality_list <- code_dictionary %>% filter(str_detect(code, "S99")) %>% pull(areaname)
+iz_list <- code_dictionary %>% filter(str_detect(code, "S02")) %>% pull(areaname)
+
+#Read in indicator file being checked
+data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
+
+#Add geography code names
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
+
+
+#Optional parament allows for old indicator name to be different to current name.
+if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
+  old_filename <- {{filename}}
+} else if (old_file != "default") {
+  old_filename <- {{old_file}}}
+
+#Reading last shiny data file loaded for comparisons.
+# Need error handing if mathcing file name can't be found?
+old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
+
+```
+
+
+
+
+------------------------------------------------------------------------------------  
+
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+qa_rates <- function() {
+  new_data <- data_indicator %>%
+             select(code, year, areaname, numerator, rate) %>%
+  mutate(numerator = round(numerator, 3),
+         rate = round(rate, 3))
+
+old_data <- old_data_indicator %>%
+    select(code, year, numerator, rate) %>%
+     mutate(numerator = round(numerator, 3),
+         rate = round(rate, 3))
+
+ both_data <- left_join(x = new_data, y = old_data, by=c("code", "year")) %>%
+   rename(numerator_new = numerator.x,
+          rate_new = rate.x,
+          numerator_old = numerator.y,
+          rate_old = rate.y)
+ 
+ rm(new_data, old_data)
+ 
+ both_data %<>% 
+ # calculate difference in numerator and rate
+  mutate(numerator_diff = numerator_new - numerator_old,
+         rate_diff = rate_new - rate_old) %>% 
+  # assign flag to rows with a difference in numerator or rate
+  mutate(diff_flag = case_when(numerator_diff > 0 | rate_diff > 0 ~ T,
+                               numerator_diff < 0 | rate_diff < 0 ~ T,
+                               TRUE ~ FALSE)) %>% 
+  mutate(numerator_percent_diff = numerator_diff/numerator_new*100,
+         rate_percent_diff = rate_diff/rate_new*100) %>% 
+  # Assigns significant difference flag if percentage difference is over 5% (what % should be assigned?)
+  mutate(significant_diff_flag = case_when(numerator_percent_diff > 5 | rate_percent_diff > 5 ~ T,
+                                           numerator_percent_diff <= -5 | rate_percent_diff <= -5 ~ T,
+                                           TRUE ~ FALSE)) %>% 
+  # assign colours for tables
+  mutate(table_colours = case_when(
+    diff_flag == FALSE ~ "#3BB118",
+    diff_flag == TRUE & significant_diff_flag == FALSE ~ "#F3C525",
+    diff_flag == TRUE & significant_diff_flag == TRUE ~ "#FC3934"
+  ))  %>% 
+  mutate(across(where(is.numeric), round, 3))
+
+
+}
+```
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+all_checks <- qa_rates()
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+shinyApp(
+  ui = fluidPage(
+    radioButtons("geo_level", "Geography level:", choices = c("Scotland" = "S00000001",
+                                                              "Health Board" = "S08",
+                                                              "Council Area" = "S12",
+                                                              "HSCP" = "S37",
+                                                              "ADP" = "S11",
+                                                              "Locality" = "S99",
+                                                              "IZ" = "S02")),
+    observeEvent(input$geo) selectInput("area", "Select area", choices = unique(trend_data$areaname)),
+     radioButtons("var_plot_trend", label = "Choose y axis variable",
+                                       choices = c("Rate/Percentage"="rate",
+                                                   "Numerator"="numerator")),
+    plotlyOutput("trend_plot")
+    ),
+  
+  
+  server = function(input, output) {
+      # Create plot
+    
+    trend_data <- all_checks %>% 
+      filter(areaname == input$area)
+    
+  output$trend_plot <- renderPlotly({
+    trend_plot <- plot_ly(data=trend_data, x=~year) %>% 
+  add_lines(y = ~get(paste0(input$var_plot_trend,"_new")), name = "New data") %>% 
+  add_lines(y = ~get(paste0(input$var_plot_trend,"_old")), name = "Old data") %>% 
+  layout(yaxis = list(title = "Numerator", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE),
+         xaxis = list(title = "Year", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE),
+         legend = list(orientation = 'h', x = 5, y = 5))
+         
+    })
+  },# server close
+  options = list(height = 1000)
+)
+```
+
+

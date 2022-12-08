@@ -1,0 +1,792 @@
+---
+title: "ScotPHO Profile indicator Data Quality Checks"
+output: html_document
+runtime: shiny
+
+---
+```{r, include=F, warning=F, message=F}
+
+source("1.indicator_analysis.R") 
+source("2.deprivation_analysis.R")
+
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+filename <- "drug_stays_dz11"
+old_file <- "default"
+check_extras <- c()
+
+```
+
+
+# Data Checks `r filename` {.tabset .tabset-pills}
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+
+library(stringr)
+library(reactable)
+library(reactablefmtr)
+```
+
+## Initial Checks
+
+```{r, include=FALSE, echo= FALSE}
+
+#read in geography code names dictionary
+code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
+
+#Read in indicator file being checked
+data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
+
+#Add geography code names
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
+
+#Test which optional geographies are present in dataset
+board <- any(substr(data_indicator$code,1,3) == "S08")
+ca <- any(substr(data_indicator$code,1,3) == "S12")
+hscp <- any(substr(data_indicator$code,1,3) == "S37")
+adp <- any(substr(data_indicator$code,1,3) == "S11")
+locality <- any(substr(data_indicator$code,1,3) == "S99")
+iz <- any(substr(data_indicator$code,1,3) == "S02")
+  
+# Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
+# All indicators include Scotland, NHS board, Council Area data so at least one geography included as    default.
+# check_extras is an optional parameter that can be used to supply additional bespoke geography codes to check
+check_codes <- c("S00000001","S08000015",check_extras) 
+
+##If ca true add ca geography to check codes
+if(ca==TRUE){check_codes <- c(check_codes,"S12000010")}
+
+##If IZ true add IZ geography to check codes
+if(iz==TRUE){check_codes <- c(check_codes,"S02001236")}
+
+##If ADP true add ADP geography to check codes
+if(adp==TRUE){check_codes <- c(check_codes,"S11000006")}
+
+#Optional parament allows for old indicator name to be different to current name.
+if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
+  old_filename <- {{filename}}
+} else if (old_file != "default") {
+  old_filename <- {{old_file}}}
+
+#Recode missing CI to zeros rather than NA to allow report to run
+data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
+data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
+  
+
+#Reading last shiny data file loaded for comparisons.
+# Need error handing if mathcing file name can't be found?
+old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
+
+```
+
+
+
+
+------------------------------------------------------------------------------------  
+
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+qa_rates <- function(geo_code) {
+  new_data <- data_indicator %>%
+  filter(str_detect(code, geo_code)) %>%
+         #year != max(year)) %>% # remove most recent year for comparison with old data
+  select(code, year, areaname, numerator, rate) %>%
+  mutate(numerator = round(numerator, 3),
+         rate = round(rate, 3))
+
+old_data <- old_data_indicator %>%
+  filter(str_detect(code, geo_code)) %>%
+  select(code, year, numerator, rate) %>%
+     mutate(numerator = round(numerator, 3),
+         rate = round(rate, 3))
+
+ both_data <- left_join(x = new_data, y = old_data, by=c("code", "year")) %>%
+   rename(numerator_new = numerator.x,
+          rate_new = rate.x,
+          numerator_old = numerator.y,
+          rate_old = rate.y)
+ 
+ rm(new_data, old_data)
+ 
+ both_data %<>% 
+ # calculate difference in numerator and rate
+  mutate(numerator_diff = numerator_new - numerator_old,
+         rate_diff = rate_new - rate_old) %>% 
+  # assign flag to rows with a difference in numerator or rate
+  mutate(diff_flag = case_when(numerator_diff > 0 | rate_diff > 0 ~ T,
+                               numerator_diff < 0 | rate_diff < 0 ~ T,
+                               TRUE ~ FALSE)) %>% 
+  mutate(numerator_percent_diff = numerator_diff/numerator_new*100,
+         rate_percent_diff = rate_diff/rate_new*100) %>% 
+  # Assigns significant difference flag if percentage difference is over 5% (what % should be assigned?)
+  mutate(significant_diff_flag = case_when(numerator_percent_diff > 5 | rate_percent_diff > 5 ~ T,
+                                           numerator_percent_diff <= -5 | rate_percent_diff <= -5 ~ T,
+                                           TRUE ~ FALSE)) %>% 
+  # assign colours for tables
+  mutate(table_colours = case_when(
+    diff_flag == FALSE ~ "#3BB118",
+    diff_flag == TRUE & significant_diff_flag == FALSE ~ "#F3C525",
+    diff_flag == TRUE & significant_diff_flag == TRUE ~ "#FC3934"
+  ))  %>% 
+  mutate(across(where(is.numeric), round, 3))
+
+
+}
+
+
+```
+
+## Scotland Checks
+
+### *Significant* difference in numerator or rate, Scotland level
+
+```{r, echo=FALSE, message=FALSE}
+scot_checks <- qa_rates(geo_code = "S00")
+
+scot_checks %>%
+  filter(significant_diff_flag == TRUE) %>% 
+reactable(filterable = TRUE,
+          columns = list(
+            numerator_diff = colDef(
+              style = color_scales(scot_significant_diff, color_ref = "table_colours")),
+            rate_diff = colDef(
+              style = color_scales(scot_significant_diff, color_ref = "table_colours")),
+            table_colours = colDef(show = FALSE),
+            diff_flag = colDef(show = FALSE),
+            significant_diff_flag = colDef(show = FALSE)))
+```
+
+### Differences in Numerator or rate, Scotland Level
+
+```{r, echo=FALSE, message=FALSE}
+reactable(scot_checks,
+          filterable = TRUE,
+          columns = list(
+            numerator_diff = colDef(
+              style = color_scales(scot_checks, color_ref = "table_colours")),
+            rate_diff = colDef(
+              style = color_scales(scot_checks, color_ref = "table_colours")),
+            table_colours = colDef(show = FALSE),
+            diff_flag = colDef(show = FALSE),
+            significant_diff_flag = colDef(show = FALSE)
+          ))
+```
+
+
+### Time trend 
+
+
+```{r, echo=FALSE, message=FALSE}
+scot_checks %>% 
+  plot_ly(x = ~year) %>% 
+  add_lines(y = ~numerator_new, name = "New data") %>% 
+  add_lines(y = ~numerator_old, name = "Old data") %>% 
+  layout(yaxis = list(title = "Numerator", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE),
+         xaxis = list(title = "Year", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE))
+```
+
+
+
+
+
+
+
+
+
+## HB Checks
+
+### Healthboards with a *Significant* Difference in Numerator or Rate
+
+```{r, echo=FALSE, message=FALSE}
+if(board==TRUE){
+
+hb_checks <- qa_rates(geo_code = "S08")
+
+hb_significant_diff <- hb_checks %>%
+   filter(significant_diff_flag == TRUE)
+
+reactable(hb_significant_diff,
+           filterable = TRUE,
+          columns = list(
+            numerator_diff = colDef(
+              style = color_scales(hb_significant_diff, color_ref = "table_colours")),
+            rate_diff = colDef(
+              style = color_scales(hb_significant_diff, color_ref = "table_colours")),
+            table_colours = colDef(show = FALSE),
+            diff_flag = colDef(show = FALSE),
+            significant_diff_flag = colDef(show = FALSE)
+            ))
+
+}
+
+if(board==TRUE){
+
+ # # Shows list of Health Boards with significant differences
+
+ hb_signif_diff_list <- unique(hb_significant_diff$areaname) %>%
+   as_tibble() %>%
+  rename("Health Boards with significant differences in numerator or rate" = value)
+
+ reactable(hb_signif_diff_list)
+
+ }
+
+```
+
+### Health Board Data
+
+```{r, echo=FALSE, message=FALSE}
+if(board==TRUE){
+
+hb_checks <- qa_rates(geo_code = "S08")
+
+reactable(hb_checks,
+          filterable = TRUE,
+          columns = list(
+            numerator_diff = colDef(
+              style = color_scales(hb_checks, color_ref = "table_colours")),
+            rate_diff = colDef(
+              style = color_scales(hb_checks, color_ref = "table_colours")),
+            table_colours = colDef(show = FALSE),
+            diff_flag = colDef(show = FALSE),
+            significant_diff_flag = colDef(show = FALSE)
+          ))
+
+} else {print("Health Board data not available")}
+```
+
+```{r, echo=FALSE}
+shinyApp(
+  ui = fluidPage(
+     selectInput("area", "Health Board:", choices = unique(hb_checks$areaname),multiple = FALSE),
+     radioButtons("var_plot_trend", label =NULL,
+                                       choices = c("Rate/Percentage"="rate",
+                                                   "Numerator"="numerator")),
+    plotlyOutput("trend_plot")
+    ),
+  
+  
+  server = function(input, output) {
+      # Create plot
+  output$trend_plot <- renderPlotly({
+    trend_data <- hb_checks %>% subset(areaname %in% input$area)
+    
+    
+    trend_plot <- plot_ly(data=trend_data, x=~year) %>% 
+  add_lines(y = ~get(paste0(input$var_plot_trend,"_new")), name = "New data") %>% 
+  add_lines(y = ~get(paste0(input$var_plot_trend,"_old")), name = "Old data") %>% 
+  layout(yaxis = list(title = "Numerator", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE),
+         xaxis = list(title = "Year", titlefont =list(size=14), 
+                                        tickfont =list(size=14), fixedrange=TRUE),
+         legend = list(orientation = 'h', x = 5, y = 5))
+         
+    })
+  },# server close
+  options = list(height = 1000)
+)
+```
+
+
+
+
+
+
+
+<!-- ## CA Checks -->
+
+<!-- ### Council Area with a *Significant* Difference in Numerator or Rate -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(ca==TRUE){ -->
+
+<!-- ca_checks <- qa_rates(geo_code = "S12") -->
+
+<!--   ca_significant_diff <- ca_checks %>% -->
+<!--    filter(significant_diff_flag == TRUE) -->
+
+<!--  reactable(ca_significant_diff, -->
+<!--            filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(ca_significant_diff, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(ca_significant_diff, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- if(ca==TRUE){ -->
+
+<!--  # # Shows list of CAs with significant differences -->
+
+<!--  ca_signif_diff_list <- unique(ca_significant_diff$areaname) %>% -->
+<!--    as_tibble() %>% -->
+<!--   rename("Council Areas with significant differences in numerator or rate" = value) -->
+
+<!--  reactable(ca_signif_diff_list) -->
+
+<!--  } -->
+
+<!-- ``` -->
+
+<!-- ### Council Area Data -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(ca==TRUE){ -->
+
+<!-- ca_checks <- qa_rates(geo_code = "S12") -->
+
+
+<!-- reactable(ca_checks, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(ca_checks, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(ca_checks, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE) -->
+<!--           )) -->
+
+
+
+<!-- } else {print("Council Area data not available")} -->
+<!-- ``` -->
+
+
+
+
+
+
+
+<!-- ## IZ Checks -->
+
+<!-- ### Intermediate Zones with a *Significant* Difference in Numerator or Rate -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(iz==TRUE){ -->
+
+<!-- iz_checks <- qa_rates(geo_code = "S02") -->
+
+<!-- iz_significant_diff <- iz_checks %>% -->
+<!--    filter(significant_diff_flag == TRUE) -->
+
+<!--  reactable(iz_significant_diff, -->
+<!--            filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(iz_significant_diff, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(iz_significant_diff, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- if(iz==TRUE){ -->
+
+<!--  # # Shows list of IZs with significant differences -->
+
+<!--  iz_signif_diff_list <- unique(iz_significant_diff$areaname) %>% -->
+<!--    as_tibble() %>% -->
+<!--   rename("Intermediate Zones with significant differences in numerator or rate" = value) -->
+
+<!--  reactable(iz_signif_diff_list) -->
+
+<!--  } -->
+
+<!-- ``` -->
+
+<!-- ### Intermediate Zone Data -->
+
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(iz==TRUE){ -->
+
+<!-- iz_checks <- qa_rates(geo_code = "S02") -->
+
+<!-- reactable(iz_checks, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(hb_checks, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(hb_checks, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE) -->
+<!--           )) -->
+
+<!-- } else {print("IZ level data not available")} -->
+<!-- ``` -->
+
+
+
+<!-- ## HSCP Checks -->
+
+<!-- ### HSCP with a *Significant* Difference in Numerator or Rate -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(hscp==TRUE){ -->
+
+<!--   hscp_checks <- qa_rates(geo_code = "S37") -->
+
+<!--   hscp_significant_diff <- hscp_checks %>% -->
+<!--    filter(significant_diff_flag == TRUE) -->
+
+<!--  reactable(hscp_significant_diff, -->
+<!--            filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(hscp_significant_diff, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(hscp_significant_diff, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- if(hscp==TRUE){ -->
+
+<!--  # # Shows list of HSCPs with significant differences -->
+
+<!--  hscp_signif_diff_list <- unique(hscp_significant_diff$areaname) %>% -->
+<!--    as_tibble() %>% -->
+<!--   rename("HSCP's with significant differences in numerator or rate" = value) -->
+
+<!--  reactable(hscp_signif_diff_list) -->
+
+<!-- } -->
+
+<!-- ``` -->
+
+<!-- ### Health and Social Care Partnership Data -->
+
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(hscp==TRUE){ -->
+
+<!-- hscp_checks <- qa_rates(geo_code = "S37") -->
+
+<!-- reactable(hscp_checks, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(hscp_checks, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(hscp_checks, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE) -->
+<!--           )) -->
+
+
+<!-- } else {print("HSCP data not available")} -->
+<!-- ``` -->
+
+
+
+
+
+
+<!-- ## ADP Checks -->
+
+<!-- ### ADP with a *Significant* Difference in Numerator or Rate -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(adp==TRUE){ -->
+
+<!--   adp_checks <- qa_rates(geo_code = "S11") -->
+
+<!--   adp_significant_diff <- adp_checks %>% -->
+<!--    filter(significant_diff_flag == TRUE) -->
+
+<!--  reactable(adp_significant_diff, -->
+<!--            filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(adp_significant_diff, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(adp_significant_diff, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- if(adp==TRUE){ -->
+
+<!--  # # Shows list of ADPs with significant differences -->
+
+<!--  adp_signif_diff_list <- unique(adp_significant_diff$areaname) %>% -->
+<!--    as_tibble() %>% -->
+<!--   rename("ADP's with significant differences in numerator or rate" = value) -->
+
+<!--  reactable(adp_signif_diff_list) -->
+
+<!-- } -->
+
+<!-- ``` -->
+
+<!-- ### Alcohol and Drugs Partnership Data -->
+
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(adp==TRUE){ -->
+
+<!-- adp_checks <- qa_rates(geo_code = "S11") -->
+
+
+<!-- reactable(adp_checks, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(adp_checks, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(adp_checks, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE) -->
+<!--           )) -->
+
+
+
+<!-- } else {print("ADP data not available")} -->
+<!-- ``` -->
+
+
+
+
+
+
+<!-- ## HSC Locality Checks -->
+
+<!-- ### Locality with a *Significant* Difference in Numerator or Rate -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(locality==TRUE){ -->
+
+<!--   locality_checks <- qa_rates(geo_code = "S99") -->
+
+<!--   locality_significant_diff <- locality_checks %>% -->
+<!--    filter(significant_diff_flag == TRUE) -->
+
+<!--  reactable(locality_significant_diff, -->
+<!--            filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(locality_significant_diff, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(locality_significant_diff, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- if(locality==TRUE){ -->
+
+<!--  # # Shows list of localities with significant differences -->
+
+<!--  locality_signif_diff_list <- unique(locality_significant_diff$areaname) %>% -->
+<!--    as_tibble() %>% -->
+<!--   rename("Localities with significant differences in numerator or rate" = value) -->
+
+<!--  reactable(locality_signif_diff_list) -->
+
+<!-- } -->
+
+<!-- ``` -->
+
+<!-- ### Health and Social Care Locality Data -->
+
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- if(locality==TRUE){ -->
+
+<!-- locality_checks <- qa_rates(geo_code = "S99") -->
+
+<!-- reactable(locality_checks, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             numerator_diff = colDef( -->
+<!--               style = color_scales(locality_checks, color_ref = "table_colours")), -->
+<!--             rate_diff = colDef( -->
+<!--               style = color_scales(locality_checks, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             significant_diff_flag = colDef(show = FALSE) -->
+<!--           )) -->
+
+
+<!-- } else {print("Locality data not available")} -->
+<!-- ``` -->
+
+
+
+
+
+
+
+<!-- ## SUBTOTALS -->
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- qa_subtotals <- function(geography){ -->
+<!--   subtotal_check %>% -->
+<!--                         select(year, Scotland, geography) %>% -->
+<!--                         mutate( -->
+<!--                           sub_diff = Scotland - subtotal_check[geography], -->
+<!--                            sub_percent_diff = sub_diff/Scotland*100, -->
+<!--                            diff_flag = case_when(sub_diff > 0 | sub_diff < 0 ~ TRUE, -->
+<!--                                                     TRUE ~ FALSE), -->
+<!--                            signif_flag = case_when(sub_percent_diff >= 5 | sub_percent_diff <= -5 ~ TRUE, -->
+<!--                                                       TRUE ~ FALSE), -->
+<!--                            table_colours = case_when( -->
+<!--                                                 diff_flag == FALSE ~ "#3BB118", -->
+<!--                                                 diff_flag == TRUE & signif_flag == FALSE ~ "#F3C525", -->
+<!--                                                 diff_flag == TRUE & signif_flag == TRUE ~ "#FC3934")) -->
+<!-- } -->
+<!-- ``` -->
+
+
+<!-- ```{r, echo=FALSE, message=FALSE} -->
+<!-- subtotal_check <- old_data_indicator %>% -->
+<!--   mutate(geo_level = case_when( -->
+<!--                             str_detect(code, "S00000001") ~ "Scotland", -->
+<!--                             str_detect(code, "S08") ~ "Health_Board", -->
+<!--                             str_detect(code, "S12") ~ "Council_Area", -->
+<!--                             str_detect(code, "S37") ~ "HSC_Partnership", -->
+<!--                             str_detect(code, "S11") ~ "Alcohol_Drug_Partnership", -->
+<!--                             str_detect(code, "S99") ~ "HSC_Locality", -->
+<!--                             str_detect(code, "S02") ~ "Intermediate_Zone" -->
+<!--   )) %>% -->
+<!--   group_by(geo_level, year) %>% -->
+<!--   summarise(total_numerator = round(sum(numerator), 3)) %>% -->
+<!--   ungroup() %>% -->
+<!--   pivot_wider(names_from = geo_level, values_from = total_numerator) %>% -->
+<!--   select(year, Scotland, everything()) # reorder the columns -->
+
+<!-- # checks HB vs Scotland, assigns flags and prints table -->
+<!-- if(board==TRUE) { -->
+
+<!--   subtotal_check_hb <- qa_subtotals(geography = "Health_Board") -->
+
+
+<!-- reactable(subtotal_check_hb, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             Health_Board = colDef( -->
+<!--               style = color_scales(subtotal_check_hb, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+<!-- } -->
+
+<!-- # checks CA vs Scotland and assigns flags -->
+<!-- if(ca==TRUE) { -->
+<!--   subtotal_check_ca <- qa_subtotals(geography = "Council_Area") -->
+
+
+
+
+<!-- reactable(subtotal_check_ca, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             Council_Area = colDef( -->
+<!--               style = color_scales(subtotal_check_ca, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+
+
+<!-- } -->
+
+<!-- # checks IZ vs Scotland and assigns flags -->
+<!-- if(iz==TRUE) { -->
+<!--   subtotal_check_iz <- qa_subtotals(geography = "Intermediate_Zone") -->
+
+
+<!-- reactable(subtotal_check_iz, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             Intermediate_Zone = colDef( -->
+<!--               style = color_scales(subtotal_check_iz, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+
+<!-- } -->
+
+<!-- # checks HSCP vs Scotland and assigns flags -->
+<!-- if(hscp==TRUE) { -->
+<!--   subtotal_check_hscp <- qa_subtotals(geography = "HSC_Partnership") -->
+
+
+<!-- reactable(subtotal_check_hscp, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             HSC_Partnership = colDef( -->
+<!--               style = color_scales(subtotal_check_hscp, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+
+<!-- } -->
+
+
+<!-- # checks ADP vs Scotland and assigns flags -->
+<!-- if(adp==TRUE) { -->
+<!--   subtotal_check_adp <- qa_subtotals(geography = "Alcohol_Drug_Partnership") -->
+
+
+<!-- reactable(subtotal_check_adp, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--             Alcohol_Drug_Partnership = colDef( -->
+<!--               style = color_scales(subtotal_check_adp, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+
+<!-- } -->
+
+<!-- # checks HSC locality vs Scotland and assigns flags -->
+<!-- if(locality==TRUE) { -->
+<!--   subtotal_check_locality <- qa_subtotals(geography = "HSC_Locality") -->
+
+
+<!-- reactable(subtotal_check_locality, -->
+<!--           filterable = TRUE, -->
+<!--           columns = list( -->
+<!--            HSC_Locality = colDef( -->
+<!--               style = color_scales(subtotal_check_locality, color_ref = "table_colours")), -->
+<!--             table_colours = colDef(show = FALSE), -->
+<!--             sub_diff = colDef(show = FALSE), -->
+<!--             sub_percent_diff = colDef(show = FALSE), -->
+<!--             diff_flag = colDef(show = FALSE), -->
+<!--             signif_flag = colDef(show = FALSE))) -->
+
+<!-- } -->
+<!-- ``` -->
+
+
+
+<!-- #### END -->
+

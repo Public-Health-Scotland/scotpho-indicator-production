@@ -9,6 +9,7 @@ source("1.indicator_analysis.R")
 source("2.deprivation_analysis.R")
 
 data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+filename <- "participation"
 old_file <- "default"
 check_extras <- c()
 

@@ -475,6 +475,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
   
   if (qa == TRUE) {
     render_qa(filename={{filename}})
+    
+    run_qa(filename={{filename}})
   }
 } # End analyze_second
 
@@ -494,9 +496,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 # check_extras - (default empty) parameter can be used to add bespoke geographies 
 #       of any geo type to Data Check 3 (comparing old and new figures)
 
-run_qa <- function(filename, old_file="default", check_extras=c()){
-  run("data_checks.Rmd")
-}  
+
 
 #### RENDER QA CHECKS ####
 
@@ -505,6 +505,14 @@ render_qa <- function(filename) {
          output_file = paste0(filename, "_data_checks_", substr(date(), 21, 24)), 
          output_dir = "/PHI_conf/ScotPHO/Profiles/Data/data_checks/")
 }
+
+
+
+### run shiny app ###
+
+run_qa <- function(filename, old_file="default", check_extras=c()){
+  run(paste0(here::here(), "/data_checks_shiny_plots.Rmd"))
+}  
 
 ############################################################.
 ## Function to create age groups ----
