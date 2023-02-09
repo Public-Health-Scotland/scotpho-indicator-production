@@ -5,7 +5,7 @@
 # Some of these deaths indicators include a deprivation analysis but this is not done for under 1 and 1 to 15 as the numerators are unlikely to be suffient for robust estimates.
 
 # Deaths all ages 
-# Deaths (under 1 year)
+# Deaths (under 1 year) (the live_births lookup (in scotpho-lookups repo) needs updated before this can be run using data requested from NRS)
 # Deaths (1 to 15 years)
 # Deaths (ages 15-44)
 # Deaths (under 75 years) - Prior to Jan 2023 this was only available in inequalities module as was labeled 'premature all cause mortality'. 
