@@ -9,7 +9,7 @@ source("1.indicator_analysis.R")
 source("2.deprivation_analysis.R")
 
 data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-filename <- "drug_stays_11to25"
+filename <- "life_expectancy_female"
 old_file <- "default"
 check_extras <- c()
 
@@ -349,6 +349,11 @@ if(all(data_indicator$numerator == "")){
 
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 qa_rates <- function(geo_code) {
+  if(!is.numeric(data_indicator$numerator)){
+    data_indicator %<>% mutate(numerator = as.numeric(numerator)) 
+    
+    old_data_indicator %<>% mutate(numerator = as.numeric(numerator)) 
+  }
   new_data <- data_indicator %>%
   filter(str_detect(code, geo_code)) %>%
          #year != max(year)) %>% # remove most recent year for comparison with old data
@@ -404,6 +409,9 @@ old_data <- old_data_indicator %>%
 
 ```{r, echo=FALSE, message=FALSE}
 scot_checks <- qa_rates(geo_code = "S00")
+
+scot_significant_diff <- scot_checks %>%
+   filter(significant_diff_flag == TRUE)
 
 scot_checks %>%
   filter(significant_diff_flag == TRUE) %>% 
@@ -881,8 +889,8 @@ subtotal_check <- data_indicator %>%
                             str_detect(code, "S37") ~ "HSC_Partnership",
                             str_detect(code, "S11") ~ "Alcohol_Drug_Partnership",
                             str_detect(code, "S99") ~ "HSC_Locality",
-                            str_detect(code, "S02") ~ "Intermediate_Zone"
-  )) %>% 
+                            str_detect(code, "S02") ~ "Intermediate_Zone"),
+         numerator = as.numeric(numerator)) %>% 
   group_by(geo_level, year) %>% 
   summarise(total_numerator = round(sum(numerator), 3)) %>%
   ungroup() %>% 
