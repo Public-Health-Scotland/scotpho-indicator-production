@@ -8,15 +8,15 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 source("1.indicator_analysis.R") #Normal indicator functions
-
+source("2.deprivation_analysis.R")
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data in directly from website that was manually downloaded for previous program
 
 
-col_names_n <- c("datazone", "name", 2006:2020)
-col_names_d <- c("datazone", "name", 2001:2020)
+col_names_n <- c("datazone", "name", 2006:2021)
+col_names_d <- c("datazone", "name", 2001:2021)
 
 #read data in direct from source
 sad_data_extract <- bind_rows(read_csv("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fhousehold-estimates&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2Fcount&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2Findicator%28dwellings%29=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Findicator-dwellings%2Fwith-single-adult-discounts",
@@ -31,7 +31,7 @@ sad_data_extract_format <- sad_data_extract %>%
 sad_data_extract_format <- filter(sad_data_extract_format,substr(datazone,1,3)=="S01")
 #pivot_longer years to one column
 sad_data_extract_pivot <- sad_data_extract_format %>% 
-  pivot_longer(cols = c(`2007`:`2020`), names_to = "year", values_to = "count") %>% 
+  pivot_longer(cols = c(`2007`:`2021`), names_to = "year", values_to = "count") %>% 
 #pivot_wider type to two different columns for numerator and denominator
   pivot_wider(names_from = type, values_from = count) %>% 
   filter(!is.na(denominator))
@@ -104,7 +104,7 @@ analyze_first(filename = "Single_Dwellings_LA", geography = "council", measure =
               yearstart = 2007, yearend = 2013, time_agg = 1)
 
 analyze_first(filename = "Single_Dwellings_dz11", geography = "datazone11", measure = "percent", 
-              yearstart = 2014, yearend = 2020, time_agg = 1)
+              yearstart = 2014, yearend = 2021, time_agg = 1)
 
 # Merging CA, DZ11 together and save both periods together
 all_data <- rbind(readRDS(paste0(data_folder, "Temporary/Single_Dwellings_LA_formatted.rds")),
@@ -117,7 +117,7 @@ analyze_second(filename = "Single_Dwellings_all", measure = "percent", time_agg 
 
 #Deprivation analysis function
 analyze_deprivation(filename="Single_Dwellings_depr", measure="percent", time_agg=1, 
-                    yearstart= 2007, yearend=2020,   year_type = "calendar", 
+                    yearstart= 2007, yearend=2021,   year_type = "calendar", 
                     ind_id = 20504)
 
 ##END
