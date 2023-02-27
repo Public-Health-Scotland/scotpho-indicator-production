@@ -12,7 +12,7 @@ source("1.indicator_analysis.R")
 source("2.deprivation_analysis.R")
 
 data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-filename <- "deaths_under75_dz11"
+filename <- "income_deprived"
 old_file <- "default"
 check_extras <- c()
 
@@ -38,7 +38,7 @@ library(reactablefmtr)
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
+data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_depr_ineq.rds")) 
 
 #Add geography code names
 data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
@@ -78,7 +78,7 @@ data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 
 #Reading last shiny data file loaded for comparisons.
 # Need error handing if mathcing file name can't be found?
-old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
+old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", old_filename, "_depr_ineq.rds")) 
 
 ```
 
