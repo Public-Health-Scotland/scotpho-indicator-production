@@ -30,10 +30,10 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # Selections based on primary cause of death 
 # ICD10 codes to match NRS definitions of alcohol-specific deaths (ie wholly attributable to alcohol) 
 
-data_deaths <- tbl_df(dbGetQuery(channel, statement=
+data_deaths <- tibble::as_tibble(dbGetQuery(channel, statement=
  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
   FROM ANALYSIS.GRO_DEATHS_C 
-  WHERE date_of_registration between '1 January 2002' AND '31 December 2020'
+  WHERE date_of_registration between '1 January 2002' AND '31 December 2021'
         AND country_of_residence ='XS'
         AND regexp_like(underlying_cause_of_death,'E244|F10|G312|G621|G721|I426|K292|K70|K852|K860|Q860|R78|X45|X65|Y15|E860') 
         AND age is not NULL
@@ -44,11 +44,11 @@ data_deaths <- tbl_df(dbGetQuery(channel, statement=
 data_deaths <- data_deaths %>% create_agegroups()
 
 # Open LA and datazone info.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2021_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2011) %>% #ca2019 to be used once dz populations updated and move to using new GSS codes.
+  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>% 
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
@@ -115,7 +115,7 @@ saveRDS(alcohol_deaths_male, file=paste0(data_folder, 'Prepared Data/alcohol_dea
 
 #Alcohol mortality indicator functions
 analyze_first(filename = "alcohol_deaths_dz11", geography = "datazone11", adp=TRUE, measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               time_agg = 5, epop_age = "normal")
 
 analyze_second(filename = "alcohol_deaths_dz11", measure = "stdrate", time_agg = 5, 
@@ -124,7 +124,7 @@ analyze_second(filename = "alcohol_deaths_dz11", measure = "stdrate", time_agg =
 ###############################################.
 #Alcohol mortality by deprivation indicator functions
 analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=5, 
-                    yearstart= 2002, yearend=2020,  
+                    yearstart= 2002, yearend=2021,  
                     year_type = "calendar", pop = "depr_pop_allages", 
                     epop_age="normal", epop_total =200000, ind_id = 20204)
 
@@ -132,7 +132,7 @@ analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=
 #FEMALE Alcohol mortality indicator functions
 #Set to produce IZ level data to allow production of ADP, HSCP and council data but IZ and locality data excluded from final dataset
 analyze_first(filename = "alcohol_deaths_female", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #open output of analyze first and exclude IZ and locality data
@@ -150,7 +150,7 @@ analyze_second(filename = "alcohol_deaths_female", measure = "stdrate", time_agg
 ###############################################.
 #MALE Alcohol mortality indicator functions
 analyze_first(filename = "alcohol_deaths_male", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2020,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
               adp=TRUE, time_agg = 5, epop_age = "normal")
 
 #open output of analyze first and exclude IZ and locality data
