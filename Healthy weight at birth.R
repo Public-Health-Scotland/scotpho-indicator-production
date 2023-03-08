@@ -12,7 +12,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-birthweight <- read_csv(paste0(data_folder, "Received Data/IR2022-00008_birthweight.csv")) %>%
+birthweight <- read_csv(paste0(data_folder, "Received Data/IR2023-00065_bwt.csv")) %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
   rename(year = finyear, datazone = datazone2011, numerator = numerator_normal) %>% 
   mutate(year = year - 1) %>%  # Fyear coded by year ending Mar31. Change to match profiles. 
@@ -30,14 +30,14 @@ saveRDS(birthweight_dep, file=paste0(data_folder, 'Prepared Data/healthy_birth_d
 ###############################################.
 #CYP profile
 analyze_first(filename = "healthy_birth", geography = "datazone11", measure = "percent", 
-              yearstart = 2002, yearend = 2020, time_agg = 3)
+              yearstart = 2002, yearend = 2021, time_agg = 3)
 
 analyze_second(filename = "healthy_birth", measure = "percent", time_agg = 3, 
                ind_id = 21105, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="healthy_birth_depr", measure="percent", time_agg=3, 
-                    yearstart= 2014, yearend=2020, year_type = "financial", ind_id = 21105)
+                    yearstart= 2014, yearend=2021, year_type = "financial", ind_id = 21105)
 
 ##END
 
