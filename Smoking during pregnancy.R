@@ -26,7 +26,7 @@ create_quintile_data <- function(quint_number) {
 ###############################################.
 
 # Bringing both dz01 and dz11 data as we use dz01 for period before 2014 and dz11 onwards
-smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2022-00008_smoking.csv")) %>%
+smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2023-00065_smoking_smr02.csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(year = finyear, datazone = datazone2011, numerator = smoker, 
          denominator = known_status) %>%
@@ -75,14 +75,14 @@ mapply(create_quintile_data, quint_number = c(1,2,3,4,5))
 ###############################################.
 # For all quintiles analysis
 analyze_first(filename = "smoking_preg", geography = "datazone11", measure = "percent", 
-              yearstart = 2003, yearend = 2020, time_agg = 3)
+              yearstart = 2003, yearend = 2021, time_agg = 3)
 
 analyze_second(filename = "smoking_preg", measure = "percent", time_agg = 3, 
                ind_id = 21002, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="smoking_preg_depr", measure="percent", time_agg=3, 
-                    yearstart= 2003, yearend=2020, year_type = "financial", ind_id = 21002)
+                    yearstart= 2003, yearend=2021, year_type = "financial", ind_id = 21002)
 
 ###############################################.
 # For deprivation quintile indicators 
@@ -90,7 +90,7 @@ quint_files <- c("smoking_preg_q1", "smoking_preg_q2", "smoking_preg_q3",
                  "smoking_preg_q4", "smoking_preg_q5")
 
 mapply(analyze_first, filename = quint_files, geography = "council", hscp = FALSE,
-       measure = "percent", yearstart = 2003, yearend = 2020, time_agg = 3)
+       measure = "percent", yearstart = 2003, yearend = 2021, time_agg = 3)
 
 mapply(analyze_second, filename = quint_files, measure = "percent", time_agg = 3, 
        year_type = "financial", ind_id = c(1521, 1522, 1523, 1524, 1525), qa = F)
