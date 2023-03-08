@@ -1,4 +1,4 @@
-#   ScotPHO indicators: 3 indicator outputs from this script 
+#    ScotPHO indicators: 3 indicator outputs from this script 
 #   Alcohol-related hospital stays (all ages) indicator, 
 #   Alcohol-related hospital stays (all ages) inequalities indicator and 
 #   Alcohol-related hospital stays (ages 11 to 25 years) indicator
