@@ -22,8 +22,7 @@ rm(list=ls())
 
 library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
-
-
+library(openxlsx) # to read in wide format data from excel
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -60,17 +59,114 @@ source("./2.deprivation_analysis.R") # deprivation function
 ################################################################################
 #####                          read in prepared data                       #####
 ################################################################################
-# read in csv
-SCRA_offence<- read.csv(paste0(data_folder, "Received Data/scra_offence_raw.csv"))
+
+# NOTE: If data received in wide format, uncomment this section to reformat:
+
+# 1) Read in excel:
+# ~~~~~~~~~~~~~~~~~
+SCRA_offence <- openxlsx::read.xlsx(paste0(data_folder,"Received Data/children_referred_to_scra_offence_and_non-offence.xlsx"),
+                                 sheet = "2. Referral Type", startRow = 45, colNames = TRUE,
+                                 cols = c(2:22), rows = c(45:78))
+
+# 2) Reformat data from wide to long, and add in ca codes.
+SCRA_offence %<>% 
+  rename("ca" = "Children/YP") %>%
+  select(-X2) %>%
+  pivot_longer(!ca, names_to = "year", values_to = "numerator") %>%
+  mutate(ca = case_when(
+    str_detect(ca,"Clackmannanshire") ~ "S12000005",
+    str_detect(ca,"Dumfries") ~ "S12000006",
+    str_detect(ca,"East Ayrshire") ~ "S12000008",
+    str_detect(ca,"East Lothian") ~ "S12000010",
+    str_detect(ca,"East Renfrewshire") ~ "S12000011",
+    str_detect(ca,"Siar") ~ "S12000013",
+    str_detect(ca,"Falkirk") ~ "S12000014",
+    str_detect(ca,"Highland") ~ "S12000017",
+    str_detect(ca,"Inverclyde") ~ "S12000018",
+    str_detect(ca,"Midlothian") ~ "S12000019",
+    str_detect(ca,"Moray")	~ "S12000020",
+    str_detect(ca,"North Ayrshire") ~ "S12000021",
+    str_detect(ca,"Orkney") ~ "S12000023",
+    str_detect(ca,"Scottish Borders") ~ "S12000026",
+    str_detect(ca,"Shetland") ~ "S12000027",
+    str_detect(ca,"South Ayrshire") ~ "S12000028",
+    str_detect(ca,"South Lanarkshire") ~ "S12000029",
+    str_detect(ca,"Stirling") ~ "S12000030",
+    str_detect(ca,"Aberdeen City") ~ "S12000033",
+    str_detect(ca,"Aberdeenshire") ~ "S12000034",
+    str_detect(ca,"Argyll") ~ "S12000035",
+    str_detect(ca,"Edinburgh")	~ "S12000036",
+    str_detect(ca,"Renfrewshire") ~"S12000038",
+    str_detect(ca,"West Dunbartonshire")	~"S12000039",
+    str_detect(ca,"West Lothian") ~"S12000040",
+    str_detect(ca,"Angus") ~"S12000041",
+    str_detect(ca,"Dundee") ~"S12000042",
+    str_detect(ca,"East Dunbartonshire") ~"S12000045",
+    str_detect(ca,"Fife") ~"S12000047",
+    str_detect(ca,"Perth") ~"S12000048",
+    str_detect(ca,"Glasgow") ~"S12000049",
+    str_detect(ca,"North Lanarkshire") ~"S12000050",
+    TRUE ~ ca),
+    year = as.numeric(paste0("20",str_sub(year, 1,2)))) %>% 
+  relocate(year,ca,numerator)
+
+# 3) Read in population look up and and format select only relevant dates 
+#    and ages (<16years)))
+
+pop_lookup <- readRDS(paste0("/conf/linkage/output/lookups/Unicode/Populations/",
+                             "Estimates/CA2019_pop_est_1981_2021.rds")) %>% 
+  filter(year %in% c(2004:2021),
+         age %in% c(8:15)) %>% 
+  group_by(year,ca2019) %>% 
+  summarise(denominator = sum(pop)) %>% 
+  ungroup()
+
+# 4) Match on population lookup to SCRA_care as denominator
+
+SCRA_offence <- left_join(SCRA_offence, pop_lookup, by = c("year", "ca" = "ca2019"))
+
+#Scotland totals have been provided, which differ from the sum of the council areas.
+# To ensure that the analyze_first() function calculates the given Scotland totals:
+# 1) Calculate council_area_sum 
+# 2) Subtract provided Scotland value from council_area_sum
+# (Scotland column becomes the difference between council_area_sum and the given total)
+
+# Create an extract of provided Scotland data
+scot <- SCRA_offence %>%
+  filter(ca == "Scotland")
+
+# Create an extract without Scotland data
+notscot <- SCRA_offence %>%
+  filter(ca != "Scotland")
+
+# Calculate council_area_sum and join this data set with scot data.
+# Reformat data into same format as SCRA_care so that it can be bound with SCRA_care
+difference <- SCRA_offence %>%
+  filter(ca != "Scotland") %>%
+  group_by(year) %>%
+  summarise(council_area_sum = sum(numerator)) %>%
+  ungroup() %>%
+  left_join(scot, by = "year") %>%
+  mutate(numerator = numerator - council_area_sum,
+         ca = "") %>%
+  select(-council_area_sum)
+
+# Bind the 'notscot' data to the difference data
+SCRA_offence <- bind_rows(notscot,difference) %>% 
+  arrange(year)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Otherwise, run this code:
+# Read in csv:
+#SCRA_offence<- read.csv(paste0(data_folder, "Received Data/scra_offence_raw.csv"))
 
 saveRDS(SCRA_offence, file=paste0(data_folder, "Prepared Data/scra_offence_raw.rds"))
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "scra_offence", geography = "council", 
-              measure = "crude", yearstart = 2004, yearend = 2020, time_agg = 1)
+              measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1)
 
 analyze_second(filename = "scra_offence", measure = "crude", time_agg = 1,
               ind_id = 20803, year_type = "financial", crude_rate = 1000)
-
 
