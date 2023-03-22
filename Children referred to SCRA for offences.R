@@ -110,50 +110,20 @@ SCRA_offence %<>%
     year = as.numeric(paste0("20",str_sub(year, 1,2)))) %>% 
   relocate(year,ca,numerator)
 
-# 3) Read in population look up and and format select only relevant dates 
+# 3) Read in population look up and and format select only relevant dates
 #    and ages (<16years)))
 
 pop_lookup <- readRDS(paste0("/conf/linkage/output/lookups/Unicode/Populations/",
-                             "Estimates/CA2019_pop_est_1981_2021.rds")) %>% 
+                             "Estimates/CA2019_pop_est_1981_2021.rds")) %>%
   filter(year %in% c(2004:2021),
-         age %in% c(8:15)) %>% 
-  group_by(year,ca2019) %>% 
-  summarise(denominator = sum(pop)) %>% 
+         age %in% c(8:15)) %>%
+  group_by(year,ca2019) %>%
+  summarise(denominator = sum(pop)) %>%
   ungroup()
 
 # 4) Match on population lookup to SCRA_care as denominator
 
 SCRA_offence <- left_join(SCRA_offence, pop_lookup, by = c("year", "ca" = "ca2019"))
-
-#Scotland totals have been provided, which differ from the sum of the council areas.
-# To ensure that the analyze_first() function calculates the given Scotland totals:
-# 1) Calculate council_area_sum 
-# 2) Subtract provided Scotland value from council_area_sum
-# (Scotland column becomes the difference between council_area_sum and the given total)
-
-# Create an extract of provided Scotland data
-scot <- SCRA_offence %>%
-  filter(ca == "Scotland")
-
-# Create an extract without Scotland data
-notscot <- SCRA_offence %>%
-  filter(ca != "Scotland")
-
-# Calculate council_area_sum and join this data set with scot data.
-# Reformat data into same format as SCRA_care so that it can be bound with SCRA_care
-difference <- SCRA_offence %>%
-  filter(ca != "Scotland") %>%
-  group_by(year) %>%
-  summarise(council_area_sum = sum(numerator)) %>%
-  ungroup() %>%
-  left_join(scot, by = "year") %>%
-  mutate(numerator = numerator - council_area_sum,
-         ca = "") %>%
-  select(-council_area_sum)
-
-# Bind the 'notscot' data to the difference data
-SCRA_offence <- bind_rows(notscot,difference) %>% 
-  arrange(year)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Otherwise, run this code:
@@ -166,6 +136,7 @@ saveRDS(SCRA_offence, file=paste0(data_folder, "Prepared Data/scra_offence_raw.r
 ###############################################.
 analyze_first(filename = "scra_offence", geography = "council", 
               measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1)
+
 
 analyze_second(filename = "scra_offence", measure = "crude", time_agg = 1,
               ind_id = 20803, year_type = "financial", crude_rate = 1000)
