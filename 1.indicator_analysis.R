@@ -97,6 +97,38 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
     subset(year >= yearstart) # selecting only years of interest
   
+  # If Scotland level totals are provided in the recieved extract, run the following code
+  # to ensure that the Scotland totals calculated below are the same as those provided. 
+  # 1) Calculate sum of geography totals
+  # 2) Subtract provided Scotland value from geography totals
+  # (Scotland column becomes the difference between council_area_sum and the given total)
+  
+  if(geography == "council"){
+  # Create an extract of provided Scotland data
+  scot <- data_indicator %>%
+    filter(ca %in% c("S00000001","Scotland"))
+  
+  # Create an extract of provided data excluding scotland
+  notscot <- data_indicator %>%
+    filter(!ca %in% c("S00000001","Scotland"))
+  
+  # Calculate council_area_sum and join this data set with scot data.
+  # Reformat data into same format as SCRA_care so that it can be bound with SCRA_care
+  difference <- data_indicator %>%
+    filter(!ca %in% c("S00000001","Scotland")) %>%
+    group_by(year) %>%
+    summarise(geography_sum = sum(numerator)) %>%
+    ungroup() %>%
+    left_join(scot, by = "year") %>%
+    mutate(numerator = numerator - geography_sum,
+           ca = "") %>%
+    select(-geography_sum)
+  
+  # Bind the 'notscot' data to the difference data
+  data_indicator <- bind_rows(notscot,difference) %>% 
+    arrange(year) 
+  }
+  
   geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
   
   #Warning if parameter entered for geography is not one of the most used ones
@@ -274,6 +306,13 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
                                     "4" = 5500, "5" = 6000, "6" = 1200)
     }
   }
+  
+  # If data provided already had a Scotland level, and the difference was calculated
+  # by creating a blank level of ca, the below code will remove this blank level
+  # from the analysis_first_result
+  
+  data_indicator %<>% 
+    filter(code != "")
   
   analysis_first_result <<- data_indicator
   
