@@ -126,36 +126,6 @@ pop_lookup <- readRDS(paste0("/conf/linkage/output/lookups/Unicode/Populations/"
 
 SCRA_care <- left_join(SCRA_care, pop_lookup, by = c("year", "ca" = "ca2019"))
 
-#Scotland totals have been provided, which differ from the sum of the council areas.
-# To ensure that the analyze_first() function calculates the given Scotland totals:
-# 1) Calculate council_area_sum 
-# 2) Subtract provided Scotland value from council_area_sum
-# (Scotland column becomes the difference between council_area_sum and the given total)
-
-# Create an extract of provided Scotland data
-scot <- SCRA_care %>%
-  filter(ca == "Scotland")
-
-# Create an extract without Scotland data
-notscot <- SCRA_care %>%
-  filter(ca != "Scotland")
-
-# Calculate council_area_sum and join this data set with scot data.
-# Reformat data into same format as SCRA_care so that it can be bound with SCRA_care
-difference <- SCRA_care %>%
-  filter(ca != "Scotland") %>%
-  group_by(year) %>%
-  summarise(council_area_sum = sum(numerator)) %>%
-  ungroup() %>%
-  left_join(scot, by = "year") %>%
-  mutate(numerator = numerator - council_area_sum,
-           ca = "") %>%
-  select(-council_area_sum)
-
-# Bind the 'notscot' data to the difference data
-SCRA_care <- bind_rows(notscot,difference) %>% 
-  arrange(year)
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Otherwise, if data sent in usual indicator long format, run this code:
 # Read in csv:
