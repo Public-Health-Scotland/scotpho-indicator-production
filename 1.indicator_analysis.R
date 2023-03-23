@@ -97,23 +97,23 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
     subset(year >= yearstart) # selecting only years of interest
   
-  # If Scotland level totals are provided in the recieved extract, run the following code
-  # to ensure that the Scotland totals calculated below are the same as those provided. 
+  # If Scotland level totals are provided in the received extract, the following code
+  # ensures that the Scotland totals calculated in this function are the same as those provided. 
   # 1) Calculate sum of geography totals
   # 2) Subtract provided Scotland value from geography totals
-  # (Scotland column becomes the difference between council_area_sum and the given total)
+  # (Scotland column becomes the difference between geography_sum and the given total)
   
   if(geography == "council"){
   # Create an extract of provided Scotland data
   scot <- data_indicator %>%
     filter(ca %in% c("S00000001","Scotland"))
   
-  # Create an extract of provided data excluding scotland
+  # Create an extract of provided data excluding Scotland
   notscot <- data_indicator %>%
     filter(!ca %in% c("S00000001","Scotland"))
   
-  # Calculate council_area_sum and join this data set with scot data.
-  # Reformat data into same format as SCRA_care so that it can be bound with SCRA_care
+  # Calculate geography_sum and join this with scot data.
+  # Reformat data into same format as data_indicator so that it can be bound with data_indicator
   difference <- data_indicator %>%
     filter(!ca %in% c("S00000001","Scotland")) %>%
     group_by(year) %>%
@@ -307,12 +307,15 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
     }
   }
   
+  #~~~~~~~~~~~~
   # If data provided already had a Scotland level, and the difference was calculated
   # by creating a blank level of ca, the below code will remove this blank level
   # from the analysis_first_result
   
   data_indicator %<>% 
     filter(code != "")
+  
+  #~~~~~~~~~~~~
   
   analysis_first_result <<- data_indicator
   
