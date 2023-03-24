@@ -7,196 +7,93 @@
 ################################################################################
 
 ## This script prepares SG recorded crime profile indicators:
-##      Breach of the Peace
+
 ##      Common assault
 ##      Drug crimes recorded
 ##      Vandalism
 ##      Violent crime
 ##      Attempted murder & serious assault 
+##      Breach of the Peace  (currently unincluded due to changes in crime categorisations by stats.gov)
 
-## Data are bulk downloaded from statistics.scot.gov.uk:
-# https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Frecorded-crime
+## Data are automatically downloaded from statistics.scot.gov.uk using the opendata package:
+# install the opendata scotland r package which communicates with the statistics.gov wesbite api
+# install.packages("devtools")
+# devtools::install_github("datasciencescotland/opendatascot")
 
-## D/l entire dataset as a CSV file and save as:
-#     .\Data\Received Data\rec_crime_received
+source("1.indicator_analysis.R")
+library(opendatascot)
 
-## Function arguments:
-#   id = indicator ID 
-#   topic = ""
+# indicator name is one of the names in the crimes list inside the function
+# start year is year to start extraction
+# end_year is most recent year for which data is available 
+# most recent year available can be seen by running line below and looking at $categories$refPeriod
+# Note: years in ods structure result below represent financial years e.g 2022  is for 2021/2022 , 2021 is for 2020/21
+ods_structure("recorded-crime") # see structure and variables contained in the recorded-crimes dataset
+# to update the data set the year in the extract data function calls in lines 76-80, to the most recent year 
 
-
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
-
-## install packages
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/" 
-
-
-################################################################################
-#####  Part 1)  format prepared data --------------------------------
-################################################################################
-
-# open received data
-df_received <- read.csv(paste0(data_folder,"Received Data/rec_crime_received.csv")) %>% 
-  as_tibble()
-
-df_received <- df_received %>% 
-  # select only LA data
-  filter(substr(FeatureCode, 1, 3) == "S12") %>% 
-  # select only counts
-  filter(Measurement == "Count") %>% 
-  # remove vars not needed
-  select(-c(Units, Measurement)) %>% 
-  rename(ca = FeatureCode, year = DateCode, 
-         numerator = Value, crime_offence = Crime.or.Offence) 
-
-# change Scotland geog code
-df_received$ca <- as.character(df_received$ca)
-df_received$ca[df_received$ca == "S92000003"] <- "S00000001"
-
-df_received <- df_received %>% 
-  arrange(year, ca, numerator)
-
-# extract crime/offence category
-df_received$crime_offence <- sub(".*: ", "", df_received$crime_offence)
-df_received$crime_offence <- as.factor(df_received$crime_offence)
-
-# filter only crime/offence categories for indicators
-df_received <- df_received %>%  
-  filter(crime_offence =="Breach of the peace etc."|
-         crime_offence =="Common assault"|
-         crime_offence =="Drugs"|
-         crime_offence =="Vandalism etc."|
-         crime_offence =="Non-sexual crimes of violence"|
-         crime_offence =="Att. murder & serious assault")
-
-#drop unused levels in factors
-df_received <- droplevels(df_received)
-
-# change year format for analysis functions
-df_received$year <- substr(df_received$year, 1, 4)
-df_received$year <- as.numeric(df_received$year)
-
-# select only years to be uploaded
-df_received <- df_received %>% 
-  filter(year >= 2004)
-
-## create separate df for each indicator
-# split df into list of 6 objects then assign ad df
-df_list <- split(df_received,df_received$crime_offence)
-att_murder <- as_tibble(df_list[[1]])
-breach <- as_tibble(df_list[[2]])
-comm_assault <- as_tibble(df_list[[3]])
-drugs <- as_tibble(df_list[[4]])
-violence <- as_tibble(df_list[[5]])
-vandalism <- as_tibble(df_list[[6]])
-
-# drop crime_offcence var and save rds raw files for use in analysis funtions
-att_murder <- att_murder %>% select(-crime_offence) 
-saveRDS(att_murder, paste0(data_folder,"Prepared Data/att_murder_raw.rds"))
-
-breach <- breach %>% select(-crime_offence) 
-saveRDS(breach, paste0(data_folder,"Prepared Data/breach_raw.rds"))
-
-comm_assault <- comm_assault %>% select(-crime_offence)
-saveRDS(comm_assault, paste0(data_folder,"Prepared Data/comm_assault_raw.rds"))
-
-drugs <- drugs %>% select(-crime_offence)
-saveRDS(drugs, paste0(data_folder,"Prepared Data/drugs_raw.rds"))
-
-violence <- violence %>% select(-crime_offence)
-saveRDS(violence, paste0(data_folder,"Prepared Data/violence_raw.rds"))
-
-vandalism <- vandalism %>% select(-crime_offence)
-saveRDS(vandalism, paste0(data_folder,"Prepared Data/vandalism_raw.rds"))
+# creating function to extract crime indicators 
+extract_crime = function(indicator_name,start_year,end_year){
+  
+  # URI= names of data in stats.gov opendata 
+  # filename= name of file in shiny data folders
+  # id= indicator id number
+  crimes = list(common_assault = list("URI"="crimes-group-1-common-assault","filename"="4154_commonassault","id"=4154),
+                vandalism = list("URI"="crimes-group-4-vandalism","filename"="4155_vandalism","id"=4155),
+                serious_assault = list("URI"="crimes-group-1-serious-assault-and-attempted-murder","filename"="4111_murderseriousassault","id"=4111),
+                drug_crimes = list("URI"=NULL,"filename"="20806_drugs","id"=20806),
+                violent_crime = list("URI"="all-group-1-non-sexual-crimes-of-violence","filename"="20805_violentcrime","id"=20805))
+  
+  date_range = (as.character(start_year:end_year))
+  
+  if (indicator_name!="drug_crimes") { # for indicator crime which isn't drug crimes
+    crime_data = ods_dataset("recorded-crime",geography = "la", refPeriod=date_range,
+                             crimeOrOffence= crimes[[indicator_name]]$URI, measureType="count") %>%  
+      setNames(tolower(names(.))) %>%
+      select("ca"= "refarea","year"="refperiod","numerator"="value") %>%
+      mutate(year=substr(year,1,4)) %>%
+      mutate(across(c("numerator","year"), ~ as.numeric(.))) 
+  }
+  else { # for drug crimes which is a combination of extractions from two different datasets
+    crime_data = rbind( 
+      
+      ods_dataset("recorded-crime",geography = "la", refPeriod=date_range,
+                  crimeOrOffence="crimes-group-5-drugs-possession",measureType="count") %>%  
+        setNames(tolower(names(.))) %>%
+        select("ca"= "refarea","year"="refperiod","numerator"="value") %>%
+        mutate(year=substr(year,1,4)) %>%
+        mutate(across(c("numerator","year"), ~ as.numeric(.))),
+      
+      ods_dataset("recorded-crime",geography = "la", refPeriod=date_range,
+                  crimeOrOffence="crimes-group-5-drugs-supply",measureType="count") %>%  
+        setNames(tolower(names(.))) %>%
+        select("ca"= "refarea","year"="refperiod","numerator"="value") %>%
+        mutate(year=substr(year,1,4)) %>%
+        mutate(across(c("numerator","year"), ~ as.numeric(.)))
+      
+    ) %>% 
+      group_by(ca,year) %>% 
+      summarise(numerator = sum(numerator))
+    
+  }
+  
+  saveRDS(crime_data, file=paste0(data_folder, 'Prepared Data/',crimes[[indicator_name]]$filename,'_raw.rds')) 
+  
+  analyze_first(filename = crimes[[indicator_name]]$filename, geography = "council", measure = "crude", yearstart = start_year,
+                yearend = end_year, time_agg = 1, adp = TRUE, pop = "CA_pop_allages")
+  
+  analyze_second(filename = crimes[[indicator_name]]$filename, measure = "crude", time_agg = 1,
+                 ind_id = crimes[[indicator_name]]$id, year_type = "financial",crude_rate = 10000) 
+  
+}
 
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-organisation  <-  "HS"
-source("./1.indicator_analysis.R") #Normal indicator functions
-#source("./2.deprivation_analysis.R") # deprivation function - not required
+# run function for each crime indicator extract
+# visualise the quality checks generated by the analyse_second QA output before 
+# kill the terminal and run next line for next crime indicator
+extract_crime("common_assault",2004,2022) 
+extract_crime("vandalism",2004,2022)
+extract_crime("serious_assault",2004,2022)
+extract_crime("drug_crimes",2004,2022)
+extract_crime("violent_crime",2004,2022)
 
-
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-
-###### attempted murder --------
-
-analyze_first(filename = "att_murder", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "att_murder", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "4111", year_type = "financial", pop = "CA_pop_allages")
-
-
-###### breach of the peace --------
-
-analyze_first(filename = "breach", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "breach", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "4156", year_type = "financial", pop = "CA_pop_allages")
-
-
-###### common assault --------
-analyze_first(filename = "comm_assault", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "comm_assault", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "4154", year_type = "financial", pop = "CA_pop_allages")
-
-
-###### drugs --------
-
-analyze_first(filename = "drugs", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "drugs", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "20806", year_type = "financial", pop = "CA_pop_allages")
-
-
-###### vandalism --------
-
-analyze_first(filename = "vandalism", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "vandalism", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "4155", year_type = "financial", pop = "CA_pop_allages")
-
-
-###### violent crime --------
-
-analyze_first(filename = "violence", geography = "council", adp = TRUE,
-              measure = "crude", yearstart = 2004, yearend = 2018, 
-              pop = "CA_pop_allages", time_agg = 1)
-
-
-# then complete analysis with the updated '_formatted.rds' file
-analyze_second(filename = "violence", measure = "crude", crude_rate = 10000,
-               time_agg = 1, ind_id = "20805", year_type = "financial", pop = "CA_pop_allages")
-
+# END
