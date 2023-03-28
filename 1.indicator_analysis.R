@@ -457,7 +457,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                                             upci, def_period, trend_axis))
   # Including both rds and csv file for now
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-  write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
+  write_csv(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
   
   # Making final dataset available outside the function
   final_result <<- data_indicator
