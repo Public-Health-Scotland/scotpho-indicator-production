@@ -61,6 +61,7 @@ library(flextable) # for output tables
 library(plotly) # for data quality checking
 library(htmltools) # for data quality checking
 library(magrittr) # for other pipe operators
+library(stringr) # for manipulating strings
 
 # Varies filepaths depending on if using server or not and what organisation uses it.
 if (exists("organisation") == TRUE) { #Health Scotland
@@ -97,37 +98,41 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
     subset(year >= yearstart) # selecting only years of interest
   
+  ## THIS SECTION OF CODE NEEDS TO BE MODIFIED TO HANDLE SUPPRESSION WHEN SCOTLAND VALUES PROVIDED
+  ## COMMENTED OUT FOR NOW 
+  ###########################################################
   # If Scotland level totals are provided in the received extract, the following code
   # ensures that the Scotland totals calculated in this function are the same as those provided. 
   # 1) Calculate sum of geography totals
   # 2) Subtract provided Scotland value from geography totals
   # (Scotland column becomes the difference between geography_sum and the given total)
   
-  if(geography == "council"){
-  # Create an extract of provided Scotland data
-  scot <- data_indicator %>%
-    filter(ca %in% c("S00000001","Scotland"))
-  
-  # Create an extract of provided data excluding Scotland
-  notscot <- data_indicator %>%
-    filter(!ca %in% c("S00000001","Scotland"))
-  
-  # Calculate geography_sum and join this with scot data.
-  # Reformat data into same format as data_indicator so that it can be bound with data_indicator
-  difference <- data_indicator %>%
-    filter(!ca %in% c("S00000001","Scotland")) %>%
-    group_by(year) %>%
-    summarise(geography_sum = sum(numerator)) %>%
-    ungroup() %>%
-    left_join(scot, by = "year") %>%
-    mutate(numerator = numerator - geography_sum,
-           ca = "") %>%
-    select(-geography_sum)
-  
-  # Bind the 'notscot' data to the difference data
-  data_indicator <- bind_rows(notscot,difference) %>% 
-    arrange(year) 
-  }
+  # if(geography == "council"){
+  # # Create an extract of provided Scotland data
+  # scot <- data_indicator %>%
+  #   filter(ca %in% c("S00000001","Scotland"))
+  # 
+  # # Create an extract of provided data excluding Scotland
+  # notscot <- data_indicator %>%
+  #   filter(!ca %in% c("S00000001","Scotland"))
+  # 
+  # # Calculate geography_sum and join this with scot data.
+  # # Reformat data into same format as data_indicator so that it can be bound with data_indicator
+  # difference <- data_indicator %>%
+  #   filter(!ca %in% c("S00000001","Scotland")) %>%
+  #   group_by(year) %>%
+  #   summarise(geography_sum = sum(numerator)) %>%
+  #   ungroup() %>%
+  #   left_join(scot, by = "year") %>%
+  #   mutate(numerator = numerator - geography_sum,
+  #          ca = "") %>%
+  #   select(-geography_sum)
+  # 
+  # # Bind the 'notscot' data to the difference data
+  # data_indicator <- bind_rows(notscot,difference) %>% 
+  #   arrange(year) 
+  # }
+  ###########################################################
   
   geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
   
@@ -308,12 +313,13 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   }
   
   #~~~~~~~~~~~~
+  # COMMENT OUT FOR NOW UNTIL ABOVE SCOTLAND SUPPRESSION MODIFICATION IS DONE
   # If data provided already had a Scotland level, and the difference was calculated
   # by creating a blank level of ca, the below code will remove this blank level
   # from the analysis_first_result
   
-  data_indicator %<>% 
-    filter(code != "")
+  # data_indicator %<>% 
+  #   filter(code != "")
   
   #~~~~~~~~~~~~
   
