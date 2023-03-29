@@ -63,68 +63,44 @@ source("./2.deprivation_analysis.R") # deprivation function
 
 # NOTE: If data received in wide format, uncomment this section to reformat:
 
+# NB: As of March 2023, the analyze_first function was modified to enable the Scotland 
+# totals that were received for this indicator to be correctly used in the data, 
+# however this modified function doesn't yet work for other indicators and the code
+# has been commented out. When running this SCRA update next, you may need to manipulate 
+# the data further than has been done in this script, to ensure that any provided 
+# Scotland totals are retained and not miscalculated.
+
+# If Scotland level totals are provided in the received extract and the analyze_first function
+# has not been modified to accommodate this, you will need to:
+# 1) Calculate sum of geography totals
+# 2) Subtract provided Scotland value from geography totals
+# 3) Retain this difference column but keep the area name ""
+# (Scotland column becomes the difference between geography_sum and the given total)
+
 # 1) Read in excel:
 # ~~~~~~~~~~~~~~~~~
 SCRA_care <- openxlsx::read.xlsx(paste0(data_folder,"Received Data/children_referred_to_scra_offence_and_non-offence.xlsx"),
                                  sheet = "2. Referral Type", startRow = 8, colNames = TRUE,
                                  cols = c(2:22), rows = c(8:42)) 
 
+geo_lookup <- readRDS(paste0(data_folder,"Lookups/Geography/CAdictionary.rds"))
+
 # 2) Reformat data from wide to long, and add in ca codes.
 SCRA_care %<>%
   rename("ca" = "Children/YP") %>%
   select(-X2) %>%
   pivot_longer(!ca, names_to = "year", values_to = "numerator") %>%
-  mutate(ca = case_when(
-    str_detect(ca,"Clackmannanshire") ~ "S12000005",
-    str_detect(ca,"Dumfries") ~ "S12000006",
-    str_detect(ca,"East Ayrshire") ~ "S12000008",
-    str_detect(ca,"East Lothian") ~ "S12000010",
-    str_detect(ca,"East Renfrewshire") ~ "S12000011",
-    str_detect(ca,"Siar") ~ "S12000013",
-    str_detect(ca,"Falkirk") ~ "S12000014",
-    str_detect(ca,"Highland") ~ "S12000017",
-    str_detect(ca,"Inverclyde") ~ "S12000018",
-    str_detect(ca,"Midlothian") ~ "S12000019",
-    str_detect(ca,"Moray")	~ "S12000020",
-    str_detect(ca,"North Ayrshire") ~ "S12000021",
-    str_detect(ca,"Orkney") ~ "S12000023",
-    str_detect(ca,"Scottish Borders") ~ "S12000026",
-    str_detect(ca,"Shetland") ~ "S12000027",
-    str_detect(ca,"South Ayrshire") ~ "S12000028",
-    str_detect(ca,"South Lanarkshire") ~ "S12000029",
-    str_detect(ca,"Stirling") ~ "S12000030",
-    str_detect(ca,"Aberdeen City") ~ "S12000033",
-    str_detect(ca,"Aberdeenshire") ~ "S12000034",
-    str_detect(ca,"Argyll") ~ "S12000035",
-    str_detect(ca,"Edinburgh")	~ "S12000036",
-    str_detect(ca,"Renfrewshire") ~"S12000038",
-    str_detect(ca,"West Dunbartonshire")	~"S12000039",
-    str_detect(ca,"West Lothian") ~"S12000040",
-    str_detect(ca,"Angus") ~"S12000041",
-    str_detect(ca,"Dundee") ~"S12000042",
-    str_detect(ca,"East Dunbartonshire") ~"S12000045",
-    str_detect(ca,"Fife") ~"S12000047",
-    str_detect(ca,"Perth") ~"S12000048",
-    str_detect(ca,"Glasgow") ~"S12000049",
-    str_detect(ca,"North Lanarkshire") ~"S12000050",
-    TRUE ~ ca),
-  year = as.numeric(paste0("20",str_sub(year, 1,2)))) %>% 
+  mutate(ca = case_when(str_detect(ca,"&") ~ str_replace(ca,"&","and"),
+                        ca == "Dundee" ~ "Dundee City",
+                        str_detect(ca, "Edinburgh") ~ "City of Edinburgh",
+                        str_detect(ca,"Siar") ~ "Na h-Eileanan Siar",
+                        ca == "Glasgow" ~ "Glasgow City",
+                        ca == "Orkney" ~ "Orkney Islands",
+                        ca == "Shetland" ~ "Shetland Islands",
+                        TRUE ~ ca)) %>% 
+  left_join(geo_lookup, by = c("ca" = "areaname")) %>% 
+  mutate(year = as.numeric(paste0("20",substr(year, 1,2)))) %>% 
   relocate(year,ca,numerator)
-
-# 3) Read in population look up and and format select only relevant dates 
-#    and ages (<16years)))
-
-pop_lookup <- readRDS(paste0("/conf/linkage/output/lookups/Unicode/Populations/",
-                      "Estimates/CA2019_pop_est_1981_2021.rds")) %>% 
-  filter(year %in% c(2004:2021),
-         age < 16) %>% 
-  group_by(year,ca2019) %>% 
-  summarise(denominator = sum(pop)) %>% 
-  ungroup()
-
-# 4) Match on population lookup to SCRA_care as denominator
-
-SCRA_care <- left_join(SCRA_care, pop_lookup, by = c("year", "ca" = "ca2019"))
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Otherwise, if data sent in usual indicator long format, run this code:
@@ -139,9 +115,9 @@ saveRDS(SCRA_care, file=paste0(data_folder, "Prepared Data/scra_care_protection_
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "scra_care_protection", geography = "council", 
-              measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1)
+analyze_first(filename = "scra_care_protection_test", geography = "council", 
+              measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1, pop = "CA_pop_under16")
 
-analyze_second(filename = "scra_care_protection", measure = "crude", time_agg = 1,
+analyze_second(filename = "scra_care_protection_test", measure = "crude", time_agg = 1,
               ind_id = 13001, year_type = "financial", crude_rate = 1000)
 
