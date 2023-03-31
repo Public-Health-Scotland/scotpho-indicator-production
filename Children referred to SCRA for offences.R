@@ -110,7 +110,7 @@ saveRDS(SCRA_offence, file=paste0(data_folder, "Prepared Data/scra_offence_test_
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "scra_offence_test", geography = "council", pop = "CA_pop_8to15",
+analyze_first(filename = "scra_offence", geography = "council", pop = "CA_pop_8to15",
               measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1)
 
 

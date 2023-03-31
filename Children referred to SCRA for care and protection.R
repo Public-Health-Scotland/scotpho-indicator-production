@@ -115,9 +115,9 @@ saveRDS(SCRA_care, file=paste0(data_folder, "Prepared Data/scra_care_protection_
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "scra_care_protection_test", geography = "council", 
+analyze_first(filename = "scra_care_protection", geography = "council", 
               measure = "crude", yearstart = 2004, yearend = 2021, time_agg = 1, pop = "CA_pop_under16")
 
-analyze_second(filename = "scra_care_protection_test", measure = "crude", time_agg = 1,
+analyze_second(filename = "scra_care_protection", measure = "crude", time_agg = 1,
               ind_id = 13001, year_type = "financial", crude_rate = 1000)
 
