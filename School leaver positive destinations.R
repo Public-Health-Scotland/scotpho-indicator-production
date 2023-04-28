@@ -1,7 +1,7 @@
 ### notes ----
 
 # this script produces data for indicator 13030 - school leavers in positive destinations
-# source of data: https://www.gov.scot/publications/summary-statistics-attainment-initial-leaver-destinations-no-3-2021-edition/ 
+# source of data: https://www.gov.scot/publications/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition/documents/
 
 
 ###############################################.
@@ -19,7 +19,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-4-2022-edition.xlsx"), sheet = "L2.2") #positive destinations data
+positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition-supplementary-tables.xlsx"), sheet = "L2.2") #positive destinations data
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
@@ -33,9 +33,9 @@ positive_dest <- tail(positive_dest, -3) %>% # remove metadata from top of spead
   mutate(`year` = str_sub(year,1,nchar(year)-3),#convert from FY YY/YY to YYYY
          `la name` = str_replace(`la name`, "Edinburgh, City of","City of Edinburgh"),
          `la name` = str_replace(`la name`, "&","and"),
-         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), 0)), #replace suppression symbols with 0
+         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
          across(contains(c("positive", "leaver", "year")), as.numeric)) %>%
-  left_join(ca, by = c("la name" = "areaname"), all.x = TRUE) %>% # join with council area lookup
+  left_join(ca, by = c("la name" = "areaname")) %>% # join with council area lookup
   mutate(code = ifelse(`la name` == "Scotland", "S00000001", code)) %>% 
   select("year", "code", "positive destination", "number of leavers") %>%
   rename("numerator" = "positive destination",
@@ -58,11 +58,11 @@ saveRDS(positive_dest, file=paste0(data_folder, 'Prepared Data/school_leaver_des
 
 
 yearstart <- 2009
-yearend <- 2021 
+yearend <- 2022
 filename <- "school_leaver_destinations"
 
 #read in data created in step 1
-data_indicator <- readRDS(paste0(data_folder, "Prepared Data/school_leavers_destinations_raw.rds"))
+data_indicator <- readRDS(paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
 
 # read in geography lookup to get health boards
 geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
