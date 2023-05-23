@@ -24,7 +24,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-scqf_level <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-4-2022-edition.xlsx"), sheet = "A2.3a and A2.3b")
+scqf_level <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition-supplementary-tables.xlsx"), sheet = "A2.3a_A2.3b")
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
@@ -39,10 +39,10 @@ scqf_level <- scqf_level %>%
   mutate(`year` = str_sub(year,1,nchar(year)-3), #convert year from FY yy/yy to yyyy
          `local authority` = str_replace(`local authority`, "Edinburgh, City of","City of Edinburgh"),
          `local authority` = str_replace(`local authority`, "&","and"),
-         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), 0)), # replace suppressed figures symbols with 0
+         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), # replace suppressed figures symbols with 0
          across(contains(c("scqf", "leaver", "year")), as.numeric)) %>% 
   rename("denominator" = "number of leavers") %>%
-  left_join(ca, by = c("local authority" = "areaname"), all.x = TRUE) %>% # join with council area lookup
+  left_join(ca, by = c("local authority" = "areaname")) %>% # join with council area lookup
   mutate(code = ifelse(`local authority` == "Scotland", "S00000001", code)) # assign scotland totals a geography code
 
 
@@ -83,7 +83,7 @@ saveRDS(scqf_6_depr, file=paste0(data_folder, 'Prepared Data/school_leavers_scqf
 #it ensures Scotland totals remain accurate and are not just the sum of all council area figures
 
 yearstart <- 2009
-yearend <- 2021 # note: change each time updating indicator
+yearend <- 2022 # note: change each time updating indicator
 
 #read data back in (containing council area and scotland figures)
 scqf_4 <- readRDS(paste0(data_folder, "Prepared Data/school_leavers_scqf_4_raw.rds"))
@@ -103,12 +103,18 @@ include_hb_figures <- function(df) {
   df %>%
     filter(year >= yearstart & year <= yearend,
            code != "S00000001") %>% 
+    
+    # add health board codes
     left_join(geo_lookup, by = c("code" = "ca2019")) %>%
     select(-code) %>%
     rename("code" = "hb2019") %>%
     group_by(year, code) %>%
-    summarise_all(sum) %>% ungroup() %>%
-    rbind(df)
+    
+    # only calculate health board figures if no suppression applied to corresponding council areas
+    # otherwise apply suppression
+    summarise(numerator = ifelse(any(is.na(numerator)), NA, sum(numerator)), 
+              denominator = ifelse(any(is.na(numerator)), NA, sum(denominator)), .groups = "drop") %>%
+  rbind(df)
   
 }
 
@@ -134,5 +140,7 @@ analyze_second(filename = "school_leavers_scqf_6", measure = "percent",
 
 analyze_second(filename = "school_leavers_scqf_6_depr", measure = "percent", 
                time_agg = 1, ind_id = "20601",year_type = "school")
+
+
 
 
