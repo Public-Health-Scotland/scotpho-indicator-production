@@ -88,7 +88,7 @@ Sys.umask("006")
 analyze_first <- function(filename, geography = c("council", "datazone11", "all"), 
                           measure = c("percent", "crude", "stdrate"), time_agg, 
                           pop = NULL, yearstart, yearend, epop_age = NULL, 
-                          adp = FALSE, hscp = FALSE) {
+                          adp = FALSE, hscp = FALSE, source_suppressed=F) {
   
   ##################################################.
   ## Part 1 - Read in raw data and add in lookup info ----
@@ -107,31 +107,83 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   # 2) Subtract provided Scotland value from geography totals
   # (Scotland column becomes the difference between geography_sum and the given total)
   
-  # if(geography == "council"){
-  # # Create an extract of provided Scotland data
-  # scot <- data_indicator %>%
-  #   filter(ca %in% c("S00000001","Scotland"))
-  # 
-  # # Create an extract of provided data excluding Scotland
-  # notscot <- data_indicator %>%
-  #   filter(!ca %in% c("S00000001","Scotland"))
-  # 
-  # # Calculate geography_sum and join this with scot data.
-  # # Reformat data into same format as data_indicator so that it can be bound with data_indicator
-  # difference <- data_indicator %>%
-  #   filter(!ca %in% c("S00000001","Scotland")) %>%
-  #   group_by(year) %>%
-  #   summarise(geography_sum = sum(numerator)) %>%
-  #   ungroup() %>%
-  #   left_join(scot, by = "year") %>%
-  #   mutate(numerator = numerator - geography_sum,
-  #          ca = "") %>%
-  #   select(-geography_sum)
-  # 
-  # # Bind the 'notscot' data to the difference data
-  # data_indicator <- bind_rows(notscot,difference) %>% 
-  #   arrange(year) 
-  # }
+  if(geography == "council"){
+  # Create an extract of provided Scotland data
+  
+  scot <- data_indicator %>%
+    filter(ca %in% c("S00000001","Scotland"))
+
+  # Create an extract of provided data excluding Scotland
+  notscot <- data_indicator %>%
+    filter(!ca %in% c("S00000001","Scotland"))
+
+  # Calculate geography_sum and join this with scot data.
+  # Reformat data into same format as data_indicator so that it can be bound with data_indicator
+  difference <- data_indicator %>%
+    filter(!ca %in% c("S00000001","Scotland")) %>%
+    group_by(year) %>%
+    summarise(geography_sum = sum(numerator, na.rm = TRUE)) %>%
+    ungroup() %>%
+    left_join(scot, by = "year") %>%
+    mutate(numerator = numerator - geography_sum,
+           ca = "") %>%
+    select(-geography_sum)
+
+  # Bind the 'notscot' data to the difference data
+  data_indicator <- bind_rows(notscot,difference) %>%
+    arrange(year)
+  }
+  
+  if(source_suppressed){ # only runs if user indicates that the received data has been suppressed from source
+  # get the rows where suppresion has been applied
+  suppressed_rows = data_indicator%>%
+    filter(is.na(numerator))
+  # create empty list to store the geo codes and years for the suppressed rows 
+  final_suppression_codes = list()
+  # iterate over suppressed rows dataframe and add needed values (codes and years) to list
+  for (i in unique(suppressed_rows$ca)){
+    df = suppressed_rows %>% filter(ca== i)
+    codes = list(codes = i,years = unique(df$year))
+    list_data = list(codes)
+    final_suppression_codes = append(final_suppression_codes,list_data)
+  }
+  # using the geo_lookup, for each of the identified suppressed geo codes...
+  #- ....find all codes built up from the suppressed codes and add them to the suppressed codes list
+  # we will now have all the codes suppressed and the years for which to supress for each code
+  geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+  
+  for (i in (1:length(final_suppression_codes))){
+    built_up_codes = geo_lookup %>%
+      filter(ca2019==final_suppression_codes[[i]]$codes) %>%
+      select(c(4,5,6,7)) %>%
+      as.matrix() %>% 
+      as.vector() %>%
+      unique()
+    
+    final_suppression_codes[[i]]$codes = append(final_suppression_codes[[i]]$codes, built_up_codes)
+    
+  }
+  # we now have a total list of codes and the years for which they should be suppressed
+  final_suppression_codes
+  # create a dataframe for it that would exist in the work environment
+  suppression_df <- data.frame()
+  
+  for (i in  (1:length(final_suppression_codes))){
+    sup_codes = final_suppression_codes[[i]]$codes
+    sup_years = final_suppression_codes[[i]]$years
+    for(geo_code in sup_codes){
+      for (geo_year in sup_years){
+        entry = list(geo_code,geo_year,"yes")
+        suppression_df = rbind(suppression_df, entry)
+      }
+    }
+  }
+  names(suppression_df) = c("code","year","flag")
+  
+  }
+  
+  
+  
   ###########################################################
   
   geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
@@ -498,11 +550,25 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                                  "-year aggregates"))
   }
   
+  
+  # after analyse second runs, check if a dataframe of values to suppress exist in the environment 
+  if(exists("suppression_df")){ # access the suppression dataframe created in analyse first function
+    # if it exists it would mean that analyst specified that the data had some geographies suppressed by supplier
+    # we have to suppress them and areas built up from them for certain years.
+    data_indicator = left_join(data_indicator,suppression_df ,multiple = "all")  %>%
+      mutate(numerator=case_when(flag=="yes" ~ NA_real_, TRUE ~ numerator),
+             rate=case_when(flag=="yes" ~ NA_real_, TRUE ~ rate),
+             lowci=case_when(flag=="yes" ~ NA_real_, TRUE ~ lowci),
+             upci=case_when(flag=="yes" ~ NA_real_, TRUE ~ upci)) %>%
+      select(-flag)
+  }
+  
   saveRDS(data_indicator, paste0(data_folder, "Temporary/", filename, "_final.rds"))
   
   # Preparing data for Shiny tool
   data_shiny <- data_indicator %>% select(c(code, ind_id, year, numerator, rate, lowci,
                                             upci, def_period, trend_axis))
+  
   # Including both rds and csv file for now
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
   write_csv(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
