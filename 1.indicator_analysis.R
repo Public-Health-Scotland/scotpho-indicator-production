@@ -134,38 +134,39 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
     arrange(year)
   }
   
-  if(source_suppressed){ # only runs if user indicates that the received data has been suppressed from source
-  # get the rows where suppresion has been applied
-  suppressed_rows = data_indicator%>%
-    filter(is.na(numerator))
-  # create empty list to store the geo codes and years for the suppressed rows 
-  final_suppression_codes = list()
-  # iterate over suppressed rows dataframe and add needed values (codes and years) to list
-  for (i in unique(suppressed_rows$ca)){
-    df = suppressed_rows %>% filter(ca== i)
-    codes = list(codes = i,years = unique(df$year))
-    list_data = list(codes)
-    final_suppression_codes = append(final_suppression_codes,list_data)
-  }
-  # using the geo_lookup, for each of the identified suppressed geo codes...
-  #- ....find all codes built up from the suppressed codes and add them to the suppressed codes list
-  # we will now have all the codes suppressed and the years for which to supress for each code
-  geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
-  
-  for (i in (1:length(final_suppression_codes))){
-    built_up_codes = geo_lookup %>%
-      filter(ca2019==final_suppression_codes[[i]]$codes) %>%
-      select(c(4,5,6,7)) %>%
-      as.matrix() %>% 
-      as.vector() %>%
-      unique()
-    
-    final_suppression_codes[[i]]$codes = append(final_suppression_codes[[i]]$codes, built_up_codes)
-    
+  if(source_suppressed){ # only runs if user indicates that the received data has been suppressed from source i.e source_suppressed= True
+      # get the rows where suppresion has been applied
+      suppressed_rows = data_indicator%>%
+        filter(is.na(numerator))
+      # create empty list to store the geo codes and years for the suppressed rows 
+      final_suppression_codes = list()
+      # iterate over suppressed rows dataframe and add needed values (codes and years) to list
+      for (i in unique(suppressed_rows$ca)){
+        df = suppressed_rows %>% filter(ca== i)
+        codes = list(codes = i,years = unique(df$year))
+        list_data = list(codes)
+        final_suppression_codes = append(final_suppression_codes,list_data)
+      }
+      # using the geo_lookup, for each of the identified suppressed geo codes...
+      #- ....find all codes built up from the suppressed codes and add them to the suppressed codes list
+      # we will now have all the codes suppressed and the years for which to supress for each code
+      geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+      
+      for (i in (1:length(final_suppression_codes))){
+        built_up_codes = geo_lookup %>%
+          filter(ca2019==final_suppression_codes[[i]]$codes) %>%
+          select(c(4,5,6,7)) %>%
+          as.matrix() %>% 
+          as.vector() %>%
+          unique()
+        
+        final_suppression_codes[[i]]$codes = append(final_suppression_codes[[i]]$codes, built_up_codes)
   }
   # we now have a total list of codes and the years for which they should be suppressed
-  final_suppression_codes
+  # final_suppression_codes
   # create a dataframe for it that would exist in the work environment
+  # final dataframe is called suppression_df and can be viewed in your environment 
+  # it will exist there and be used by the analysis_second function 
   suppression_df <- data.frame()
   
   for (i in  (1:length(final_suppression_codes))){
@@ -550,11 +551,12 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
                                  "-year aggregates"))
   }
   
-  
-  # after analyse second runs, check if a dataframe of values to suppress exist in the environment 
-  if(exists("suppression_df")){ # access the suppression dataframe created in analyse first function
-    # if it exists it would mean that analyst specified that the data had some geographies suppressed by supplier
-    # we have to suppress them and areas built up from them for certain years.
+  ################################################################################################
+  # after all neccesary formating done in analyse second, check if a dataframe of values to suppress exist in the environment 
+  # access the suppression dataframe irt was created in analyse first function and thus exists in environment
+  # if it exists it would mean that analyst specified that the data had some geographies suppressed by supplier
+  # we have to suppress them and areas built up from them for certain years.
+  if(exists("suppression_df")){ 
     data_indicator = left_join(data_indicator,suppression_df ,multiple = "all")  %>%
       mutate(numerator=case_when(flag=="yes" ~ NA_real_, TRUE ~ numerator),
              rate=case_when(flag=="yes" ~ NA_real_, TRUE ~ rate),
@@ -562,6 +564,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
              upci=case_when(flag=="yes" ~ NA_real_, TRUE ~ upci)) %>%
       select(-flag)
   }
+  ###################################################################################################
   
   saveRDS(data_indicator, paste0(data_folder, "Temporary/", filename, "_final.rds"))
   
