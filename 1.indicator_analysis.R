@@ -122,12 +122,13 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   difference <- data_indicator %>%
     filter(!ca %in% c("S00000001","Scotland")) %>%
     group_by(year) %>%
-    summarise(geography_sum = sum(numerator, na.rm = TRUE)) %>%
+    summarise(geography_sum = sum(numerator, na.rm = TRUE), geography_denom = sum(denominator, na.rm = TRUE)) %>%
     ungroup() %>%
-    left_join(scot, by = "year") %>%
+    left_join(scot, by = "year")%>%
     mutate(numerator = numerator - geography_sum,
-           ca = "") %>%
-    select(-geography_sum)
+           denominator = denominator-geography_denom,
+           ca = "")%>%
+    select(-c(geography_sum,geography_denom))
 
   # Bind the 'notscot' data to the difference data
   data_indicator <- bind_rows(notscot,difference) %>%
@@ -244,6 +245,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
       select(-c(geolevel)) %>% 
       group_by(code, year) %>% summarise_all(sum, na.rm =T) %>% ungroup()
   }
+  
+  data_indicator = data_indicator %>% filter(!(is.na(code)))
   
   # Matching with population lookup
   if (!is.null(pop)){
