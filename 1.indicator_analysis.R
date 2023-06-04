@@ -374,12 +374,16 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   # by creating a blank level of ca, the below code will remove this blank level
   # from the analysis_first_result
   
-  # data_indicator %<>% 
-  #   filter(code != "")
+  data_indicator %<>%
+    filter(code != "")
   
   #~~~~~~~~~~~~
   
   analysis_first_result <<- data_indicator
+  
+  if(source_suppressed){ # make suppression_df available in environment 
+    suppression_df <<- suppression_df
+  }
   
   saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
 }
