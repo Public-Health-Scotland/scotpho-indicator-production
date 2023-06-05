@@ -27,11 +27,11 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # attributable diagnosis code within the main diagnosis field. 
 # Some codes used in the admissions analysis are not used here as considered non lethal
 # e.g. hip fracture
-smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
+smoking_deaths <- as_tibble(dbGetQuery(channel, statement=
     "SELECT year_of_registration year, substr(UNDERLYING_CAUSE_OF_DEATH,1,3) diag, age, 
             sex sex_grp, postcode pc7 
     FROM ANALYSIS.GRO_DEATHS_C
-    WHERE date_of_registration between '1 January 2012' and '31 December 2018'  
+    WHERE date_of_registration between '1 January 2012' and '31 December 2022'  
          AND sex <> 9 
          AND age > 34 
          AND country_of_residence='XS' 
@@ -41,7 +41,7 @@ smoking_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2019_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, ca2019, hb2019)
 
