@@ -77,19 +77,22 @@ ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) %>%
 # Manually check what the total for all LA figures is and compare to scotland total figure from soruce data - then insert a dummy row (where LA= NA) but includes the number that would be required to make LA totals add up to true scottish total
 # Rows with LA = NA will not appear as a row in final dataset but do contribute to scottish total.
 
-df_received<-read_excel("/PHI_conf/ScotPHO/Profiles/Data/Received Data/CP CSWS 2012_21 revised 19_20.xlsx") %>%
+df_received<-read_excel("/PHI_conf/ScotPHO/Profiles/Data/Received Data/CP CSWS 2012_22 revised 19_20.xlsx") %>%
   mutate(la = str_replace(la, "Glasgow","Glasgow City"),
          la = str_replace(la, "Edinburgh, City of","City of Edinburgh"),
          la = str_replace(la, "Eilean Siar","Na h-Eileanan Siar"),
          la = str_replace(la, "&","and"),
          across(contains(c("drug", "alcohol", "substance_misuse", "all")), as.numeric)) %>% #convert data columns to numeric (suppressed)
-    left_join(ca, by = c("la" = "areaname"), all.x = TRUE) # join with council area lookup
+    left_join(ca, by = c("la" = "areaname")) %>% # join with council area lookup
+  mutate(ca = ifelse(la == "Scotland", "S00000001", ca))
+
+
 
 #open 'geo_check_recieved dataframe and check that all la that have a 9 digit standard geo code have been matched
 #there will be rows for 'na' but should be no rows where names of councils don't match to a geography code
-geo_check_recieved <- df_received %>%
-  group_by(la, ca) %>%
-  summarise(count=n())
+# geo_check_recieved <- df_received %>%
+#   group_by(la, ca) %>%
+#   summarise(count=n())
 
 # prepare child protection with parental drug use - file to pass to analysis functions
 parental_drug <- df_received %>% select(c(year,ca, drug)) %>% 
@@ -115,63 +118,6 @@ saveRDS(child_protection_all, file=paste0(data_folder, "Prepared Data/child_prot
 #tidy up
 rm(ca, geo_check_recieved, parental_alcohol,parental_drug,parental_substance, child_protection_all)
 
-################################################################################.
-## Part 2 - Suppression  ---- 
-################################################################################. 
-# This part is required to ensure that any geography that has been suppressed in the raw data (or any unit of geography that is built up from suppressed data)
-# is still suppressed in the file fed into the shiny profiles app
-
-# geo lookup required to which tell which LA are subunits of which NHS boards/ADPs
-geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
-  group_by(ca2019,hb2019,adp) %>%
-  summarise(count=n()) %>%
-  ungroup() %>%
-  select(-count)
-
-# flag numerator cells from child protection raw dataset have suppression applied
-cp_suppressions <- df_received %>% 
-  mutate(drug_suppressed=case_when(is.na(drug) ~ "yes",TRUE ~"no"),
-         alcohol_suppressed=case_when(is.na(alcohol) ~ "yes",TRUE ~"no"),
-         substance_suppressed=case_when(is.na(substance_misuse) ~ "yes",TRUE ~"no"),
-         all_suppressed = case_when(is.na(all_on_register) ~ "yes",TRUE ~"no")
-         ) %>%
-  rename (ca2019=ca) %>% #rename to ease join with geo lookup 
-  filter(!is.na(ca2019)) %>% #remove any NA council areas (these are dummy rows anyway)
-  select(-la)
-
-#match file detailing which years and areas have suppression to geo lookup so we can tell which parent NHS boards should also be suppressed
-cp_suppressions <- left_join(cp_suppressions,geo_lookup,by = "ca2019")
-
-#manipulate df to give one row per geographic code and year
-cp_suppressions <-cp_suppressions %>%
-  pivot_longer(cols = c("ca2019","hb2019","adp"),values_to = "code") %>%
-  group_by(year,code,drug_suppressed,alcohol_suppressed,substance_suppressed, all_suppressed) %>%
-  summarise(count=n()) %>%
-  filter(drug_suppressed=="yes"|alcohol_suppressed=="yes"|substance_suppressed=="yes" | all_suppressed =="yes") %>%
-  ungroup()
-
-#flagging year and geography when suppression applied to drugs
-cp_drug_suppresion <-cp_suppressions %>%
-  filter(drug_suppressed=="yes") %>%
-  select( year, code, drug_suppressed)
-
-#file flagging year and geography when suppression applied to alcohol
-cp_alcohol_suppresion <-cp_suppressions %>%
-  filter(alcohol_suppressed=="yes") %>%
-  select( year, code, alcohol_suppressed)
-
-#file flagging year and geography when suppression applied to substance misuse
-cp_substance_suppresion <-cp_suppressions %>%
-  filter(substance_suppressed=="yes") %>%
-  select( year, code, substance_suppressed)
-
-#file flagging year and geography when suppression applied to all children on register
-cp_all_suppresion <-cp_suppressions %>%
-  filter(all_suppressed=="yes") %>%
-  select( year, code, all_suppressed)
-
-
-rm(geo_lookup)
 
 ################################################################################.
 ## Part 3 - Run analysis functions for 3 indicators---- 
@@ -182,33 +128,11 @@ rm(geo_lookup)
 
 analyze_first(filename = "child_protection_parental_drug", geography = "council",               
               measure = "crude", yearstart = 2012, yearend = 2021, 
-              time_agg = 1, pop = "CA_pop_under18", adp = TRUE) 
+              time_agg = 1, pop = "CA_pop_under18", adp = TRUE, source_suppressed = TRUE) 
 
 #remember the output of this file needs to have suppression reapplied so you need to keep running the script below to complete the update
 analyze_second(filename = "child_protection_parental_drug", measure = "crude", time_agg = 1,               
                ind_id = 4130, year_type = "July snapshot", crude_rate = 10000)
-
-## overwrite data output from functions with correct suppression applied
-filename <- "child_protection_parental_drug"
-pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-
-#match on file with a flag for which years and which geographies should be suppressed
-drug_final_result <- left_join(pre_suppression_data, cp_drug_suppresion, by=c("code", "year"))
-
-#reassign any measure values or CI to NA if suppression should be applied 
-drug_final_result <- drug_final_result %>%
-  mutate(numerator=case_when(drug_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
-         rate=case_when(drug_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
-         lowci=case_when(drug_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
-         upci=case_when(drug_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
-  select(-drug_suppressed)
-
-# Write out final files with suppression applied
-saveRDS(drug_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-write_csv(drug_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
-
-#tidy
-rm(pre_suppression_data,drug_final_result, cp_drug_suppresion)
 
 
 ################################################################################. 
@@ -222,27 +146,27 @@ analyze_first(filename = "child_protection_parental_alcohol", geography = "counc
 analyze_second(filename = "child_protection_parental_alcohol", measure = "crude", time_agg = 1,               
                ind_id = 4110, year_type = "July snapshot", crude_rate = 10000)
 
-## overwrite data output from functions with correct suppression applied
-filename <- "child_protection_parental_alcohol"
-pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-
-#match on file with a flag for which years and which geographies should be suppressed
-alcohol_final_result <- left_join(pre_suppression_data, cp_alcohol_suppresion, by=c("code", "year"))
-
-#reassign any measure values or CI to NA if suppression should be applied 
-alcohol_final_result <- alcohol_final_result %>%
-  mutate(numerator=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
-         rate=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
-         lowci=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
-         upci=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
-  select(-alcohol_suppressed)
-
-# Write out final files with suppression applied
-saveRDS(alcohol_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-write_csv(alcohol_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
-
-#tidy
-rm(pre_suppression_data, alcohol_final_result, cp_alcohol_suppresion)
+# ## overwrite data output from functions with correct suppression applied
+# filename <- "child_protection_parental_alcohol"
+# pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# 
+# #match on file with a flag for which years and which geographies should be suppressed
+# alcohol_final_result <- left_join(pre_suppression_data, cp_alcohol_suppresion, by=c("code", "year"))
+# 
+# #reassign any measure values or CI to NA if suppression should be applied 
+# alcohol_final_result <- alcohol_final_result %>%
+#   mutate(numerator=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
+#          rate=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
+#          lowci=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
+#          upci=case_when(alcohol_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
+#   select(-alcohol_suppressed)
+# 
+# # Write out final files with suppression applied
+# saveRDS(alcohol_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# write_csv(alcohol_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
+# 
+# #tidy
+# rm(pre_suppression_data, alcohol_final_result, cp_alcohol_suppresion)
 
 ################################################################################. 
 ## Child protection with parental substance  misuse
@@ -254,25 +178,25 @@ analyze_second(filename = "child_protection_parental_substance_misuse", measure 
                ind_id = 4153, year_type = "July snapshot", crude_rate = 10000)
 
 
-## overwrite data output from functions with correct suppression applied
-filename <- "child_protection_parental_substance_misuse"
-pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-
-#match on file with a flag for which years and which geographies should be suppressed
-substance_final_result <- left_join(pre_suppression_data, cp_substance_suppresion, by=c("code", "year"))
-
-#reassign any measure values or CI to NA if suppression should be applied 
-substance_final_result <- substance_final_result %>%
-  mutate(numerator=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
-         rate=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
-         lowci=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
-         upci=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
-  select(-substance_suppressed)
-
-# Write out final files with suppression applied
-saveRDS(substance_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-write_csv(substance_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
-
+# ## overwrite data output from functions with correct suppression applied
+# filename <- "child_protection_parental_substance_misuse"
+# pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# 
+# #match on file with a flag for which years and which geographies should be suppressed
+# substance_final_result <- left_join(pre_suppression_data, cp_substance_suppresion, by=c("code", "year"))
+# 
+# #reassign any measure values or CI to NA if suppression should be applied 
+# substance_final_result <- substance_final_result %>%
+#   mutate(numerator=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
+#          rate=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
+#          lowci=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
+#          upci=case_when(substance_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
+#   select(-substance_suppressed)
+# 
+# # Write out final files with suppression applied
+# saveRDS(substance_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# write_csv(substance_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
+# 
 
 
 ################################################################################. 
@@ -285,25 +209,25 @@ analyze_second(filename = "child_protection_all", measure = "crude", time_agg = 
                ind_id = 13035, year_type = "July snapshot", crude_rate = 1000)
 
 
-## overwrite data output from functions with correct suppression applied
-filename <- "child_protection_all"
-pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-
-#match on file with a flag for which years and which geographies should be suppressed
-all_final_result <- left_join(pre_suppression_data, cp_all_suppresion, by=c("code", "year"))
-
-#reassign any measure values or CI to NA if suppression should be applied 
-all_final_result <- all_final_result %>%
-  mutate(numerator=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
-         rate=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
-         lowci=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
-         upci=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
-  select(-all_suppressed)
-
-# Write out final files with suppression applied
-saveRDS(all_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
-write_csv(all_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
-
+# ## overwrite data output from functions with correct suppression applied
+# filename <- "child_protection_all"
+# pre_suppression_data <- readRDS(file=paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# 
+# #match on file with a flag for which years and which geographies should be suppressed
+# all_final_result <- left_join(pre_suppression_data, cp_all_suppresion, by=c("code", "year"))
+# 
+# #reassign any measure values or CI to NA if suppression should be applied 
+# all_final_result <- all_final_result %>%
+#   mutate(numerator=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ numerator),
+#          rate=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ rate),
+#          lowci=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ lowci),
+#          upci=case_when(all_suppressed=="yes" ~ NA_real_, TRUE ~ upci)) %>%
+#   select(-all_suppressed)
+# 
+# # Write out final files with suppression applied
+# saveRDS(all_final_result, file = paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+# write_csv(all_final_result, path = paste0(data_folder, "Data to be checked/", filename, "_shiny.csv"))
+# 
 
 ###END ----
 
