@@ -121,14 +121,15 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   # Reformat data into same format as data_indicator so that it can be bound with data_indicator
   difference <- data_indicator %>%
     filter(!ca %in% c("S00000001","Scotland")) %>%
-    group_by(year) %>%
-    summarise(geography_sum = sum(numerator, na.rm = TRUE), geography_denom = sum(denominator, na.rm = TRUE)) %>%
+    group_by(year) %>% summarise(across(any_of(c("numerator","denominator")), list(sum=sum), na.rm=TRUE)) %>% 
     ungroup() %>%
     left_join(scot, by = "year")%>%
-    mutate(numerator = numerator - geography_sum,
-           denominator = denominator-geography_denom,
-           ca = "")%>%
-    select(-c(geography_sum,geography_denom))
+    mutate(numerator = numerator - numerator_sum,
+           ca = "") %>% select(-c(numerator_sum))
+  if ("denominator" %in% colnames(difference)){
+    difference= difference %>% 
+      mutate(denominator = denominator - denominator_sum) %>% select(-c(denominator_sum)) 
+  }
 
   # Bind the 'notscot' data to the difference data
   data_indicator <- bind_rows(notscot,difference) %>%
@@ -156,7 +157,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
       for (i in (1:length(final_suppression_codes))){
         built_up_codes = geo_lookup %>%
           filter(ca2019==final_suppression_codes[[i]]$codes) %>%
-          select(c(4,5,6,7)) %>%
+          select(c(4,5,6,7)) %>% # selects hscp,hb,hscp_locality,adp
           as.matrix() %>% 
           as.vector() %>%
           unique()
@@ -180,6 +181,8 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
       }
     }
   }
+  
+  suppression_df = suppression_df %>% unique()
   names(suppression_df) = c("code","year","flag")
   
   }
@@ -382,7 +385,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   analysis_first_result <<- data_indicator
   
   if(source_suppressed){ # make suppression_df available in environment 
-    suppression_df <<- suppression_df
+    suppression_df <<- suppression_df 
   }
   
   saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
