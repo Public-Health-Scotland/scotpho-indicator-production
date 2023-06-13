@@ -16,7 +16,170 @@
 source("1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
-## Part 1 - Extract data from SMRA ----
+# Part 1  - Smoking Prevalence ----
+# Trends in percentage of ex & current smokers
+# split by gender
+###############################################.
+
+# Two potential sources of smoking prevalence data, both are surveys but due to differences in sample size and available data meant we needed to switch from 
+# using SHoS to SHeS as the source of smoking prevalence data for generation the smoking attributable deaths/admissions indicators. 
+# SHeS - Scottish Health survey
+# SHoS - Scottish Household survey
+
+# This indicator requires gender specific smoking prevalence rates for scotland split by age groups (35-54,55-64,65-74,75+) and also prevalence for geographic areas (la and hb)
+
+## AREA PREVALENCE (ca and hb) specific prevalence rates ----
+# read in SHoS data (for period 2012-2018)
+smok_prev_area_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (old data before move to shes).xlsx"), 
+                             sheet = "Area prev") %>% mutate(code = NA) %>% 
+  setNames(tolower(names(.))) %>%  #variables to lower case
+mutate(period=as.character(year),
+       source="SHoS")
+
+# Recoding names into codes. First councils and then HBs and Scotland
+smok_prev_area_shos$code[which(smok_prev_area_shos$type=="ca")] <- recode(smok_prev_area_shos$area[which(smok_prev_area_shos$type=="ca")],
+                                                                'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
+                                                                'Angus' = 'S12000041', 'Argyll & Bute' = 'S12000035',
+                                                                'Clackmannanshire' = 'S12000005', 'Dumfries & Galloway' = 'S12000006', 
+                                                                'Dundee City' = 'S12000042','East Ayrshire' = 'S12000008',
+                                                                'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
+                                                                'East Renfrewshire' = 'S12000011', 'Edinburgh, City of' = 'S12000036',
+                                                                'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
+                                                                'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
+                                                                'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
+                                                                'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
+                                                                'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
+                                                                'Orkney Islands' = 'S12000023', 'Perth & Kinross' = 'S12000048',
+                                                                'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
+                                                                'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
+                                                                'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
+                                                                'West Dunbartonshire' = 'S12000039', 'West Lothian' = 'S12000040')
+
+smok_prev_area_shos$code[which(smok_prev_area_shos$type=="hb")] <- recode(smok_prev_area_shos$area[which(smok_prev_area_shos$type=="hb")],
+                                                                'Ayrshire & Arran' = 'S08000015', 'Borders' = 'S08000016',
+                                                                'Dumfries & Galloway' = 'S08000017', 'Fife' = 'S08000029',
+                                                                'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
+                                                                'Greater Glasgow & Clyde' = 'S08000031','Highland' = 'S08000022',
+                                                                'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
+                                                                'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
+                                                                'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
+
+
+# read in SHsS data (for period 2019 onward)
+smok_prev_area_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"), 
+                             sheet = "area_prev_shes") %>% mutate(code = NA) %>% 
+  setNames(tolower(names(.)))   #variables to lower case
+
+#filter & reshape shes data
+smok_prev_area_shes <- smok_prev_area_shes %>%
+  select(-c("frequency","lci","uci")) %>%
+  mutate(smoking_categories=case_when(
+    smoking_categories=="Never smoked/Used to smoke occasionally" ~ "never",
+    smoking_categories=="Used to smoke regularly" ~ "ex_area",
+    smoking_categories=="Current smoker" ~ "current_area",
+    TRUE~"other")) %>%
+  pivot_wider(names_from ="smoking_categories",
+    values_from = "percent") %>%
+  filter(sex!=3) %>% #exclude sex 3 (all)
+  select(-"never")
+
+# Recoding names into codes. First councils and then HBs and Scotland
+smok_prev_area_shes$code[which(smok_prev_area_shes$type=="ca")] <- recode(smok_prev_area_shes$area[which(smok_prev_area_shes$type=="ca")],
+                                                                'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
+                                                                'Angus' = 'S12000041', 'Argyll and Bute' = 'S12000035',
+                                                                'Clackmannanshire' = 'S12000005', 'Dumfries and Galloway' = 'S12000006', 
+                                                                'Dundee City' = 'S12000042','East Ayrshire' = 'S12000008',
+                                                                'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
+                                                                'East Renfrewshire' = 'S12000011', 'Edinburgh City' = 'S12000036',
+                                                                'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
+                                                                'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
+                                                                'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
+                                                                'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
+                                                                'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
+                                                                'Orkney Islands' = 'S12000023', 'Perth and Kinross' = 'S12000048',
+                                                                'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
+                                                                'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
+                                                                'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
+                                                                'West Dunbartonshire' = 'S12000039', 'West Lothian' = 'S12000040')
+
+smok_prev_area_shes$code[which(smok_prev_area_shes$type=="hb")] <- recode(smok_prev_area_shes$area[which(smok_prev_area_shes$type=="hb")],
+                                                                'Ayrshire and Arran' = 'S08000015', 'Borders' = 'S08000016',
+                                                                'Dumfries and Galloway' = 'S08000017', 'Fife' = 'S08000029',
+                                                                'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
+                                                                'Greater Glasgow and Clyde' = 'S08000031','Highland' = 'S08000022',
+                                                                'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
+                                                                'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
+                                                                'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
+
+# add columns containing scotland current and ex smoking prevalence rate to entire dataset
+smok_prev_area_shes_scot <- smok_prev_area_shes %>%
+filter(code=="S00000001") %>%
+  select(-c("area","type","source","code")) %>%
+  rename(scot_current=current_area, scot_ex=ex_area)
+
+smok_prev_area_shes <-left_join(smok_prev_area_shes,smok_prev_area_shes_scot,by = c("sex","period","year"))
+
+
+# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020
+smok_prev_area_shes2020 <-smok_prev_area_shes  %>%
+  filter(year==2019) %>%
+  mutate(source=case_when(year==2019 ~ "shes duplicate2019"),
+         year=case_when(year==2019 ~ 2020))
+
+#bind shos and shes area prevalence
+smok_prev_area <- rbind(smok_prev_area_shes,smok_prev_area_shos,smok_prev_area_shes2020) %>%
+  mutate(sex_grp=as.character(sex)) %>%
+  select (-sex) %>%
+  arrange(code, year, sex_grp)
+
+rm(smok_prev_area_shes, smok_prev_area_shos,smok_prev_area_shes_scot,smok_prev_area_shes2020) # remove df not needed
+
+## AGE PREVALENCE (ca and hb) specific prevalence rates ----
+
+# read in SHoS age data (for period 2012-2018)
+smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (old data before move to shes).xlsx"),
+                            sheet = "Age prev") %>% rename(sex_grp = sex) %>% 
+  setNames(tolower(names(.))) %>%
+#variables to lower case
+mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
+                            agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
+  select(-agegrp, -code) %>% 
+  mutate(sex_grp = as.character(sex_grp)) %>% #to allow merging in next section
+  mutate(source="SHoS")
+
+# read in SHeS age data (for period 2019 onwards)
+smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for agegroups.xlsx"),
+                                 sheet = "age_prev_shes") %>% 
+  setNames(tolower(names(.))) %>%
+  select(-c("frequency")) %>%
+  mutate(smoking_category=case_when(
+    smoking_category=="Never smoked/Used to smoke occasionally" ~ "never",
+    smoking_category=="Used to smoke regularly" ~ "ex_age",
+    smoking_category=="Current smoker" ~ "current_age",
+    TRUE~"other")) %>%
+  pivot_wider(names_from ="smoking_category",
+              values_from = "percent") %>%
+  filter(sex_grp!=3) %>% #exclude sex 3 (all)
+  #variables to lower case
+  mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
+                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
+  select(-agegrp, -code) %>% 
+  mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
+
+# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020
+smok_prev_age_shes2020 <-smok_prev_age_shes  %>%
+  filter(year==2019) %>%
+  mutate(source=case_when(year==2019 ~ "shes duplicate2019"),
+         year=case_when(year==2019 ~ 2020))
+
+#bind shos and shes area prevalence
+smok_prev_age <- rbind(smok_prev_age_shes,smok_prev_age_shos,smok_prev_age_shes2020) %>%
+  arrange(year,sex_grp)
+
+rm(smok_prev_age_shes,smok_prev_age_shos, smok_prev_age_shes2020 )  # remove df not needed
+
+###############################################.
+## Part 2 - Extract data from SMRA ----
 ###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
@@ -49,7 +212,7 @@ smoking_deaths <- left_join(smoking_deaths, postcode_lookup, "pc7") %>%
   mutate(scotland = "S00000001") # creating variable for Scotland
 
 ###############################################.
-## Part 2 - add in relative risks of each disease as a result of smoking ----
+## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 # Taken from Public Health England profiles
 smoking_deaths %<>% 
@@ -60,7 +223,7 @@ smoking_deaths %<>%
     sex_grp == 2 & diag == "C15" ~ 7.75,
     sex_grp == 1 & diag == "C16" ~ 1.96, #Stomach cancers
     sex_grp == 2 & diag == "C16" ~ 1.36,
-    sex_grp == 1 & diag == "C25" ~ 2.31, #Panchreas cancers
+    sex_grp == 1 & diag == "C25" ~ 2.31, #Pancreas cancers
     sex_grp == 2 & diag == "C25" ~ 2.25,
     sex_grp == 1 & diag == "C32" ~ 14.60, #Larynx cancers
     sex_grp == 2 & diag == "C32" ~ 13.02,
@@ -169,7 +332,7 @@ smoking_deaths %<>%
     TRUE ~ 0))
 
 ###############################################.
-## Part 3 - Aggregating geographic areas ----
+## Part 4 - Aggregating geographic areas ----
 ###############################################.
 smoking_deaths %<>% 
   # Excluding cases where young people has a disease for which only risk for older people.
@@ -181,56 +344,6 @@ smoking_deaths %<>%
 
 saveRDS(smoking_deaths, file=paste0(data_folder, 'Temporary/smoking_deaths_part3.rds'))
 
-###############################################.
-## Part 4 - Add in prevalence info ----
-###############################################.
-# Create raw data on smoking prevalence 
-# Uses raw data requested from Scottish Household Survey on current and ex smoker 
-# prevalence, by age, sex and area.
-smok_prev_area <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prevalence_formatted.xlsx"), 
-                             sheet = "Area prev") %>% mutate(code = NA) %>% 
-  setNames(tolower(names(.)))   #variables to lower case
-
-# Recoding names into codes. First councils and then HBs and Scotland
-smok_prev_area$code[which(smok_prev_area$type=="ca")] <- recode(smok_prev_area$area[which(smok_prev_area$type=="ca")],
-                                                                'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
-                                                                'Angus' = 'S12000041', 'Argyll & Bute' = 'S12000035',
-                                                                'Clackmannanshire' = 'S12000005', 'Dumfries & Galloway' = 'S12000006', 
-                                                                'Dundee City' = 'S12000042','East Ayrshire' = 'S12000008',
-                                                                'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
-                                                                'East Renfrewshire' = 'S12000011', 'Edinburgh, City of' = 'S12000036',
-                                                                'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
-                                                                'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
-                                                                'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
-                                                                'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
-                                                                'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
-                                                                'Orkney Islands' = 'S12000023', 'Perth & Kinross' = 'S12000048',
-                                                                'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
-                                                                'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
-                                                                'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
-                                                                'West Dunbartonshire' = 'S12000039', 'West Lothian' = 'S12000040')
-
-smok_prev_area$code[which(smok_prev_area$type=="hb")] <- recode(smok_prev_area$area[which(smok_prev_area$type=="hb")],
-                                                                'Ayrshire & Arran' = 'S08000015', 'Borders' = 'S08000016',
-                                                                'Dumfries & Galloway' = 'S08000017', 'Fife' = 'S08000029',
-                                                                'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
-                                                                'Greater Glasgow & Clyde' = 'S08000031','Highland' = 'S08000022',
-                                                                'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
-                                                                'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
-                                                                'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
-
-smok_prev_area <- smok_prev_area %>% rename(sex_grp = sex) %>% select(-area, -type) %>% 
-  mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
-
-###############################################.
-# Format current and ex smoker data for age groups
-smok_prev_age <- read_excel(paste0(data_folder, "Received Data/SHOS_smoking_prevalence_formatted.xlsx"), 
-                            sheet = "Age prev") %>% rename(sex_grp = sex) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
-  mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
-                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
-  select(-agegrp, -code) %>% 
-  mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
 
 ###############################################.
 # Merging prevalence with smoking deaths basefile 
@@ -263,6 +376,9 @@ smoking_deaths %<>%
   group_by(code, year, sex_grp, age_grp) %>% 
   summarise(numerator = sum(numerator)) %>% ungroup()
 
+smoking_deaths %<>% 
+ filter(year<2022)
+
 saveRDS(smoking_deaths, file=paste0(data_folder, 'Prepared Data/smoking_deaths_raw.rds'))
 
 ###############################################.
@@ -270,13 +386,13 @@ saveRDS(smoking_deaths, file=paste0(data_folder, 'Prepared Data/smoking_deaths_r
 ###############################################.
 #All patients asthma
 analyze_first(filename = "smoking_deaths",  measure = "stdrate", geography = "all",
-              pop = "CA_pop_allages", yearstart = 2012, yearend = 2018,
+              pop = "CA_pop_allages", yearstart = 2012, yearend = 2021,
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_deaths", measure = "stdrate", time_agg = 2, 
                epop_total = 120000, ind_id = 20201, year_type = "calendar")
 
-# Rounding figures - they are estimates and rounding helps to undestand that
+# Rounding figures - they are estimates and rounding helps to understand that
 # they are not precise
 data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds")) %>% 
   mutate(numerator = round(numerator, -1)) %>% #to nearest 10
