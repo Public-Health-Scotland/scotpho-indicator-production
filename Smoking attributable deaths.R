@@ -1,14 +1,32 @@
 # ScotPHO indicator: Smoking attributable deaths
 
-# Part 1 - Extract data from SMRA
-# Part 2 - add in relative risks of each disease as a result of smoking
-# Part 3 - Aggregating geographic areas
-# Part 4 - Add in prevalence info
+# Notes for analyst:
+# Smoking attributable admissions/deaths are estimates only - it is calculated by following methodology laid out by PHE.
+# Put simply calculation involves multiplying certain types of admissions/deaths by the attributable fractions that are 
+# associated with smoking and then also factoring percentage of the population that are current or ex smokers.
+
+# In June 2023 the indicator switched from using SHoS(household survey) data as the source of smoking prevalence to using SHeS (health survey) data instead.
+# Around 2020 the SHoS survery stopped asking questions on ex-smoking status - which is essential for attributable calculation. 
+# The switch was also made on the recommendation of SG SHoS team as SHeS is deemed best source of health data
+# SHeS was not previously used as the sample size did not allow for robust estimates at LA level.
+# Since sample size of SHeS is small and local authority level data not robust we need to use aggregated years to provide smoking status for areas - this isn't ideal as scotpho indicator is a rolling average
+# but its is a smoking attributable admissions/deaths is an artificial construct so a very precise figure is unrealistic anyway.  
+
+# As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scot Kilgariff, who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
+# The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
+# therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
+
+# Although both teams now use SHeS as source of smoking prevalence our scotland totals will differ as ScotPHO indicator is a 2 year rolling figure (tobacco team produce scotland only data for individual years
+# scotpho estimates that include data prior to 2019 will still be based on SHoS (when we switched we did not back calculate historic data)
+
+
+# Part 1 - Compile smoking prevalence data
+# Part 2 - Extract data from SMRA
+# Part 3 - add in relative risks of each disease as a result of smoking
+# Part 4 - Aggregating geographic areas
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
-# check differences in results compared with SPSS method
-# Code passed up to part 3 included. Rest needs to be changed
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -16,21 +34,22 @@
 source("1.indicator_analysis.R") #Normal indicator functions
 
 ###############################################.
-# Part 1  - Smoking Prevalence ----
-# Trends in percentage of ex & current smokers
-# split by gender
+# Part 1  - Compile smoking prevalence data ----
+# Requires 2 data series both are trends in percentage of ex & current smokers in those aged 35 year plus, by year, by sex
+# Series 1 : prevalence across all age groups but split by ca/nhs board with overall scotland values
+# Series 2 : Scotland level prevalence buy split by age groups
 ###############################################.
 
-# Two potential sources of smoking prevalence data, both are surveys but due to differences in sample size and available data meant we needed to switch from 
-# using SHoS to SHeS as the source of smoking prevalence data for generation the smoking attributable deaths/admissions indicators. 
-# SHeS - Scottish Health survey
-# SHoS - Scottish Household survey
+# Historically there are 2 potential sources of smoking prevalence data,both national surveys but due to differences in sample size and available data meant that scotpho indicator 
+# needed to switch from using SHoS (Scottish Household survey) to SHeS (Scottish Health survey) as the source of smoking prevalence data for generation the smoking attributable deaths/admissions indicators. 
 
-# This indicator requires gender specific smoking prevalence rates for scotland split by age groups (35-54,55-64,65-74,75+) and also prevalence for geographic areas (la and hb)
 
-## AREA PREVALENCE (ca and hb) specific prevalence rates ----
+###############################################.
+# Prevalence data series 1:  AREA PREVALENCE ----
+###############################################.
+
 # read in SHoS data (for period 2012-2018)
-smok_prev_area_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (old data before move to shes).xlsx"), 
+smok_prev_area_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"), 
                              sheet = "Area prev") %>% mutate(code = NA) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
 mutate(period=as.character(year),
@@ -111,7 +130,7 @@ smok_prev_area_shes$code[which(smok_prev_area_shes$type=="hb")] <- recode(smok_p
                                                                 'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
                                                                 'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
 
-# add columns containing scotland current and ex smoking prevalence rate to entire dataset
+# add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
 smok_prev_area_shes_scot <- smok_prev_area_shes %>%
 filter(code=="S00000001") %>%
   select(-c("area","type","source","code")) %>%
@@ -119,8 +138,8 @@ filter(code=="S00000001") %>%
 
 smok_prev_area_shes <-left_join(smok_prev_area_shes,smok_prev_area_shes_scot,by = c("sex","period","year"))
 
-
-# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020
+# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020 data
+# scotpho indicator a 2 year rolling average therefore doesn't cope well with missing years of data
 smok_prev_area_shes2020 <-smok_prev_area_shes  %>%
   filter(year==2019) %>%
   mutate(source=case_when(year==2019 ~ "shes duplicate2019"),
@@ -134,10 +153,13 @@ smok_prev_area <- rbind(smok_prev_area_shes,smok_prev_area_shos,smok_prev_area_s
 
 rm(smok_prev_area_shes, smok_prev_area_shos,smok_prev_area_shes_scot,smok_prev_area_shes2020) # remove df not needed
 
-## AGE PREVALENCE (ca and hb) specific prevalence rates ----
+
+###############################################.
+## Prevalence data series 2: AGE PREVALENCE ----
+###############################################.
 
 # read in SHoS age data (for period 2012-2018)
-smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (old data before move to shes).xlsx"),
+smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"),
                             sheet = "Age prev") %>% rename(sex_grp = sex) %>% 
   setNames(tolower(names(.))) %>%
 #variables to lower case
@@ -160,7 +182,6 @@ smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attr
   pivot_wider(names_from ="smoking_category",
               values_from = "percent") %>%
   filter(sex_grp!=3) %>% #exclude sex 3 (all)
-  #variables to lower case
   mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
                               agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
   select(-agegrp, -code) %>% 
@@ -343,7 +364,6 @@ smoking_deaths %<>%
   group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() 
 
 saveRDS(smoking_deaths, file=paste0(data_folder, 'Temporary/smoking_deaths_part3.rds'))
-
 
 ###############################################.
 # Merging prevalence with smoking deaths basefile 
