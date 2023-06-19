@@ -23,8 +23,6 @@ positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
-
-
 ###1.c clean data ----
 
 positive_dest <- tail(positive_dest, -3) %>% # remove metadata from top of speadsheet
@@ -36,8 +34,8 @@ positive_dest <- tail(positive_dest, -3) %>% # remove metadata from top of spead
          across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
          across(contains(c("positive", "leaver", "year")), as.numeric)) %>%
   left_join(ca, by = c("la name" = "areaname")) %>% # join with council area lookup
-  mutate(code = ifelse(`la name` == "Scotland", "S00000001", code)) %>% 
-  select("year", "code", "positive destination", "number of leavers") %>%
+  mutate(ca = ifelse(`la name` == "Scotland", "S00000001", code)) %>% 
+  select("year", "ca", "positive destination", "number of leavers") %>%
   rename("numerator" = "positive destination",
          "denominator" = "number of leavers")
 
@@ -51,39 +49,8 @@ saveRDS(positive_dest, file=paste0(data_folder, 'Prepared Data/school_leaver_des
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
-
-#(note: analyze_first() can't be used because some geographies figures were suppressed when published)
-# workaround below formats data to be used in analyze_second() function 
-#it ensures Scotland totals remain accurate and are not just the sum of all council area figures
-
-
-yearstart <- 2009
-yearend <- 2022
-filename <- "school_leaver_destinations"
-
-#read in data created in step 1
-data_indicator <- readRDS(paste0(data_folder, "Prepared Data/school_leaver_destinations_raw.rds"))
-
-# read in geography lookup to get health boards
-geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
-  select(ca2019, hb2019) %>%
-  distinct(.)
-
-# get figures for HBs and combine with CA and Scotland figures (as created in part 1)
-data_indicator <- positive_dest %>%
-  filter(year >= yearstart & year <= yearend, # selecting only years of interest
-         code != "S00000001") %>% 
-  left_join(geo_lookup, by = c("code" = "ca2019")) %>%
-  select(-code) %>%
-  rename("code" = "hb2019") %>%
-  group_by(year, code) %>%
-  summarise_all(sum) %>% ungroup() %>%
-  rbind(positive_dest)
-
-
-#save file to be used in analyze_second() function
-saveRDS(data_indicator, file=paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
-
+analyze_first(filename = "school_leaver_destinations", measure = "percent", 
+              time_agg = 1, source_suppressed = TRUE, yearstart = 2009, yearend = 2022, geography = "council")
 
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "school")
