@@ -98,8 +98,7 @@ analyze_first <- function(filename, geography = c("council", "datazone11", "all"
   data_indicator <- readRDS(paste0(data_folder, "Prepared Data/", filename, "_raw.rds")) %>% 
     subset(year >= yearstart) # selecting only years of interest
   
-  ## THIS SECTION OF CODE NEEDS TO BE MODIFIED TO HANDLE SUPPRESSION WHEN SCOTLAND VALUES PROVIDED
-  ## COMMENTED OUT FOR NOW 
+ 
   ###########################################################
   # If Scotland level totals are provided in the received extract, the following code
   # ensures that the Scotland totals calculated in this function are the same as those provided. 
