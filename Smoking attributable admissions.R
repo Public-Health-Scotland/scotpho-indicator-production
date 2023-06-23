@@ -177,6 +177,7 @@ smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attr
   mutate(smoking_category=case_when(
     smoking_category=="Never smoked/Used to smoke occasionally" ~ "never",
     smoking_category=="Used to smoke regularly" ~ "ex_age",
+    smoking_category=="Current smoker" ~ "current_area",
     smoking_category=="Current smoker" ~ "current_age",
     TRUE~"other")) %>%
   pivot_wider(names_from ="smoking_category",
@@ -223,10 +224,10 @@ sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
-smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
+smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
-            FIRST_VALUE(council_area) OVER (PARTITION BY link_no, cis_marker 
+            FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
                 ORDER BY ", sort_var, ") ca,
             FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
                 ORDER BY ", sort_var, ") hb,
@@ -234,6 +235,8 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
                 ORDER BY ", sort_var, ") sex_grp,
             FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
                 ORDER BY ", sort_var, ") diag,
+                FIRST_VALUE(POSTCODE) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") pc7,
             MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
             MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
             MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
@@ -249,7 +252,7 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
-           start_cis, end_cis, ca, hb
+           start_cis, end_cis, ca, hb, pc7
     FROM adm_table 
     WHERE end_cis between '1 January 2012' and '31 December 2018' 
         AND age > 34 
@@ -259,10 +262,11 @@ smoking_adm <- tbl_df(dbGetQuery(channel, statement= paste0(
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
-smoking_adm %<>% # Bringing  LA and datazone info.
-  postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, ca2019, hb2019)
+
+# Bringing  LA and datazone info.
 
 smoking_adm <- left_join(smoking_adm, postcode_lookup, "pc7") %>% 
   mutate(scotland = "S00000001") # creating variable for Scotland
