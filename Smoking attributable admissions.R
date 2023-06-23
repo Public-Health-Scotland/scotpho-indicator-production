@@ -167,7 +167,8 @@ smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attr
                               agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
   select(-agegrp, -code) %>% 
   mutate(sex_grp = as.character(sex_grp)) %>% #to allow merging in next section
-  mutate(source="SHoS")
+  mutate(source="SHoS") |> 
+  arrange(sex_grp, year, source, ex_age,current_age, age_grp2)
 
 # read in SHeS age data (for period 2019 onwards)
 smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for agegroups.xlsx"),
@@ -177,7 +178,6 @@ smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attr
   mutate(smoking_category=case_when(
     smoking_category=="Never smoked/Used to smoke occasionally" ~ "never",
     smoking_category=="Used to smoke regularly" ~ "ex_age",
-    smoking_category=="Current smoker" ~ "current_area",
     smoking_category=="Current smoker" ~ "current_age",
     TRUE~"other")) %>%
   pivot_wider(names_from ="smoking_category",
