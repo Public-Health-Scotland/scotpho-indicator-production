@@ -436,7 +436,7 @@ smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "se
 #And now merging with the file with prevalence by age and sex 
 smoking_adm <- left_join(smoking_adm, smok_prev_age, by = c("age_grp2", "year", "sex_grp")) 
 
-smoking_adm <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+#smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
 
 ###############################################.
@@ -463,7 +463,7 @@ saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds
 ## Part 6 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
-              pop = "CA_pop_allages", yearstart = 2012, yearend = 2018,
+              pop = "CA_pop_allages", yearstart = 2012, yearend = 2021,
               time_agg = 2, epop_age = "normal")
 
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
