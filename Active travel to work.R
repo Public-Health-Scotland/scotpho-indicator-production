@@ -62,10 +62,12 @@ active_work2 <- active_work |>
 
 # b) Check totals for Scotland, ca and hb
 
+# Scotland totals
 scotland <- active_work2 |> 
   filter(level == "National") |> 
   select(year,numerator) 
 
+# Summarise ca totals and join to scotland
 test <- active_work2 |> 
   filter(level == "Local Authority") |> 
   select(year,numerator) |> 
@@ -73,14 +75,19 @@ test <- active_work2 |>
   summarise(n_ca = sum(numerator)) |> 
   left_join(scotland, by = "year")
 
+# Summarise health board and join to test
 test2 <- active_work2 |> 
   filter(level == "Health board") |> 
   select(year,numerator) |> 
   group_by(year) |> 
   summarise(n_hb = sum(numerator)) |> 
-  left_join(test, by = "year")
+  left_join(test, by = "year") |> 
+  mutate(num_ca_diff = numerator - n_ca,     # Calculate difference variables
+         num_hb_diff = numerator - n_hb) |> 
+  select(year, numerator, n_ca, num_ca_diff, n_hb, num_hb_diff)
 
-## Totals differ. Need to find out why.
+## Totals differ. Need to find out why. There doesn't seem to be a reason. Consistently 
+## multiples of 10? 
 
 #saveRDS(active_work, file=paste0(data_folder, "Prepared Data/active_travel_work_raw.rds"))
 
