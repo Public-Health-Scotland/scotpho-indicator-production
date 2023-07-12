@@ -15,16 +15,15 @@
 #   
 # CAVEAT: Typically, SHS respondents are interviewed face-to-face, in their homes.
 # However, in March 2020 the fieldwork approach was altered in response to the 
-# Covid-19 pandemic. This resulted in the majority of the 2020 survey fieldwork,
-# and all of the 2021 survey fieldwork, being carried out using telephone 
-# interviewing. As with the 2020 results, the results of the 2021 SHS telephone
-# survey are published as experimental statistics. They are not directly 
-# comparable to SHS face-to-face survey results for previous years (2019 and 
-# earlier).  The results from the 2020 and 2021 telephone surveys are broadly 
-# comparable. However, 2020 data was collected in October 2020 and 
-# January-March of 2021, while the 2021 data was collected over the course of
-# a whole year, between April 2021 and March 2022. So users should consider 
-# potential seasonal effects when making comparison between the two survey years.
+# Covid-19 pandemic. 
+# - most 2020 survey fieldwork and all 2021 used telephone interviews
+# - these are 'experimental statistics and not directly comparable to 2019 and before
+# - As with the 2020 results, the results of the 2021 SHS telephone
+# - The results from 2020 and 2021 telephone surveys are broadly comparable. 
+# - 2020 data was collected in October 2020 and January-March of 2021, 
+# - 2021 data was collected over the course of a whole year, April 2021 - March 2022.
+#  So users should consider potential seasonal effects when making comparison
+#  between the two survey years.
 
 
 # Libraries ---------------------------------------------------------------
@@ -72,7 +71,7 @@ test <- active_work2 |>
   filter(level == "Local Authority") |> 
   select(year,numerator) |> 
   group_by(year) |> 
-  summarise(n_ca = sum(numerator)) |> 
+  summarise(n_la = sum(numerator)) |> 
   left_join(scotland, by = "year")
 
 # Summarise health board and join to test
@@ -82,12 +81,17 @@ test2 <- active_work2 |>
   group_by(year) |> 
   summarise(n_hb = sum(numerator)) |> 
   left_join(test, by = "year") |> 
-  mutate(num_ca_diff = numerator - n_ca,     # Calculate difference variables
-         num_hb_diff = numerator - n_hb) |> 
-  select(year, numerator, n_ca, num_ca_diff, n_hb, num_hb_diff)
+  mutate(diff_scotland_la = numerator - n_la,     # Calculate difference variables
+         diff_scotland_hb = numerator - n_hb) |> 
+  select(year, numerator, n_la, diff_scotland_la, n_hb,diff_scotland_hb) |> 
+  rename(scotland_tot = numerator) 
+
+write.csv(test2, file=paste0(data_folder, "Received Data/Neighbourhood perceptions 2023/active_travel_work_differences.csv"))
 
 ## Totals differ. Need to find out why. There doesn't seem to be a reason. Consistently 
 ## multiples of 10? 
+
+# Refer to smoking attributable indicators for how to handle issues with SHS survey.
 
 #saveRDS(active_work, file=paste0(data_folder, "Prepared Data/active_travel_work_raw.rds"))
 
@@ -95,10 +99,5 @@ test2 <- active_work2 |>
 # Run analysis ------------------------------------------------------------
 
 analyze_first(filename = "active_travel_work", geography = "council", 
-              measure = "percent", yearstart = 2008, yearend = 2018, time_agg = 1)
-
-
-
-
-
+              measure = "percent", yearstart = 2008, yearend = 2021, time_agg = 1)
   
