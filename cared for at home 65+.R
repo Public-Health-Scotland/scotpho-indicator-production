@@ -6,7 +6,7 @@
 
 # required functions/packages
 source("1.indicator_analysis.R") 
-library(xlsx)
+library(readxl)
 library(stringr)
 
 
@@ -17,7 +17,7 @@ library(stringr)
 
 ### read in data file saved in "Data received" folder -----
 
-dat <- read_excel(paste0(data_folder, "Received Data/2022-04-26-balance-of-care.xlsx"), # change filename
+dat <- read_excel(paste0(data_folder, "Received Data/2023-02-28-balance-of-care.xlsm"), # change filename
                   sheet = "T2 Data")
 
 
@@ -54,7 +54,7 @@ dat_cleansed <- dat %>%
   mutate(areaname = str_replace(areaname, "&","and"),
          areaname = str_replace(areaname, "Edinburgh, City of","City of Edinburgh"),
          areaname = str_replace(areaname, "Eilean Siar","Na h-Eileanan Siar")) %>% 
-  left_join(ca_lookup, by = "areaname", all.x = TRUE) %>%
+  left_join(ca_lookup, by = "areaname") %>%
   
   #select final columns
   select("ca" = "code", year, "numerator" = "home care", denominator) %>%
@@ -70,7 +70,7 @@ saveRDS(dat_cleansed, paste0(data_folder, "Prepared Data/high_care_needs_raw.rds
 ###############################################.
 
 analyze_first(filename = "high_care_needs", geography = "council", measure = "percent", 
-              yearstart = 2009,  yearend = 2021, time_agg = 1)
+              yearstart = 2009,  yearend = 2022, time_agg = 1)
 
 
 analyze_second(filename = "high_care_needs", measure = "percent", time_agg = 1, 
