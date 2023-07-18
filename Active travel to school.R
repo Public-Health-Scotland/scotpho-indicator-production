@@ -1,86 +1,93 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####                      Active travel to school                         #####
-#########                                                              #########
-################################################################################
-################################################################################
+### 1. Notes -------
 
-## This script analyses Scottish Government data on the number of looked after 
-## school leavers achieving 1 qualification at SCQF level 4 or better
+# This script produces indicator data for: 13040 - Active travel to school
+# Data is supplied annually  Hands Up Scotland (HandsUpScotland@sustrans.org.uk) after the release of their annual publication
+# They usually sent across without having to request as it's a regular request
 
-## The data at local authority level is not published routinely; this needs to be
-## requested from the Children and Families Directorate (email: 
-## childrens.statistics@gov.scot). 
 
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
 
-## install packages
-#install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
+### 2. Packages/dependencies ------
+source("./1.indicator_analysis.R")
+library(readxl)
+library(janitor)
+library(purrr)
 
-organisation <- "HS" 
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
+### 3. Clean data ------
 
-## HOW TO USE THESE FUNCTIONS
-# FUNCTION ONE: ANALYZE_FIRST
-# filename -  Name of the raw file the function reads without the "_raw.sav" at the end
-# geography - what is the base geography of the raw file: council or datazone2011
-# adp - To calculate the data for ADP level as well change it to TRUE, default is false.
-# measure - crude rate (crude), standardized rate(stdrate), percentage (percent),
-# time_agg - Aggregation period used expressed in year, e.g. 3
-# pop - Name of the population file. Only used for those that need a denominator.  
-# yearstart - Start of the period you want to run an analysis for
-# yearend -  End of the period you want to run an analysis for
-# epop_age - Type of european population to use: 16+, <16, 0to25, 11to25, 15to25. 
-#            Only used for standardize rates.
+# filepath 
+path <- paste0(data_folder,"Received Data/Copy of Hands Up Scotland data for ScotPHO_2008 to 2022.xlsx")
 
-# FUNCTION TWO: ANALYZE_SECOND
-# filename -  Name of the formatted file the function reads without the "_formatted.sav" at the end
-# measure - crude rate (crude), standardized rate(stdrate), percentage (percent)
-#           percentage with finite population correction factor (perc_pcf)
-# time_agg - Aggregation period used expressed in year, e.g. 3 
-# ind_id - indicator code/number
-# year_type - calendar, financial, school or annual snapshot. This last one should
-#           be used like "Month snapshot" e.g. "August snapshot"
-# crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
-# epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
-# pop - Only for crude rate cases that need finite population correction factor. Reference population.
 
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+# get name of sheets
+sheet <- excel_sheets(path)
 
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-# read in csv
-active_travel<- read.csv(paste0(data_folder, "Received Data/active_travel_raw.csv"))
 
-saveRDS(active_travel, file=paste0(data_folder, "Prepared Data/active_travel_raw.rds"))
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-analyze_first(filename = "active_travel", geography = "council", 
-              measure = "percent", yearstart = 2008, yearend = 2018, time_agg = 1)
+# read in data from each sheet and apply sheet names as a df column 
+# this is because each years data is on a seperate tab
+# & sheet names contain info on year of data as there is no year column on each tab
+data <- lapply(setNames(sheet, sheet), 
+               function(x) read_excel(path, sheet=x, skip = 10)[,c(1, # local authority 
+                                                                   10:12, # active travel primary school
+                                                                   18:20, # active travel secondary school
+                                                                   45, # total survey respondents primary school
+                                                                   47)]) %>%  # total survey respondents secondary school
+  clean_names()
 
-analyze_second(filename = "active_travel", measure = "percent", time_agg = 1,
-              ind_id = 13040, year_type = "school")
 
-#for QA
-active_travel_denom <- readRDS("X:/ScotPHO Profiles/Data/Temporary/active_travel_formatted.rds")
+# convert columns to class numeric, except local authority column
+data <- map(data, ~ .x %>%
+              mutate(across(-`Local Authority`, as.numeric)))
 
-write.csv (active_travel_denom, "X:/ScotPHO Profiles/Data/Temporary/active_travel_formatted.csv")
 
+# combine list of data frames to one dataframe
+data <- bind_rows(data, .id="Sheet")
+
+
+# calculate numerator and denominator
+data <- data %>%
+  mutate(numerator = rowSums(select(., contains(c("Walk", "Cycle", "Scooter")))),
+         denominator = rowSums(select(., contains(c("Responses")))),
+         year = str_sub(Sheet, start = 2))
+
+
+# bring in LA dictionary and include LA codes
+la_lookup <- readRDS(paste0(lookups, "Geography/CAdictionary.rds"))
+
+
+data <- data %>%
+  mutate(`Local Authority` = str_replace(`Local Authority`, "&","and"),
+         `Local Authority` = str_replace(`Local Authority`, "Eilean Siar","Na h-Eileanan Siar"),
+         `Local Authority` = str_replace(`Local Authority`, "Edinburgh City","City of Edinburgh")
+  ) %>%
+  left_join(la_lookup, by = c("Local Authority" = "areaname")) %>%
+  rename(ca = code)
+
+
+# select final columns 
+data <- data %>% 
+  select(ca, year, numerator, denominator)
+
+
+# drop N/A rows
+data <- data %>%
+  filter(if_any(c(ca, numerator, denominator), complete.cases))
+
+
+# save file to be used in analysis functions 
+saveRDS(data, paste0(data_folder, "Prepared Data/active_travel_to_school_raw.rds"))
+
+
+
+
+### 4. Run analysis functions ------
+analyze_first(filename = "active_travel_to_school", geography = "council", 
+              measure = "percent", yearstart = 2008, yearend = 2022, time_agg = 1)
+
+
+analyze_second(filename = "active_travel_to_school", measure = "percent", time_agg = 1,
+               ind_id = 13040, year_type = "school")
+
+
+### END
