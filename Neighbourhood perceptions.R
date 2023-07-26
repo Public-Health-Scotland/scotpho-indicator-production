@@ -36,9 +36,11 @@ library(janitor)
 
 source("1.indicator_analysis.R") 
 
-# 1. Read in data ------------------------------------------------------------
+# 1. Read in received data ------------------------------------------------------------
 
-neighbour <- read.csv(paste0(data_folder,"Prepared Data/ScotPHO SHS neighbourhood perception.csv")) |> 
+neighbour <- read.csv(paste0(data_folder,"Received Data/Neighbourhood perceptions 2023/",
+                             "SHS perception of drug missuse neighbourhood rating",
+                             " perception of rowdiness.csv")) |> 
   clean_names()
 
 area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
@@ -49,17 +51,20 @@ area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")
 # a) Join data with area code lookup (fixing instances where names differ)
 # select only relevant columns (assuming sample_size = denominator?)
 neighbour2 <- neighbour |>  
-  mutate(numerator = as.numeric(str_replace(numerator,",","")),
-         sample_size = as.numeric(str_replace(sample_size,",","")),
-         geography = str_replace(geography,"&","and"),
-         geography = str_replace(geography,"Forth", "Forth Valley"),
-         geography = case_when(level == "Health board" ~ paste("NHS",geography),
+  mutate(geography = case_when(str_detect(geography, "&") ~ str_replace(geography, "&", "and"),
+                               geography_type == "Health Board" ~ paste("NHS",geography),
+                               #geography_type == "Health Board" & str_detect(geography, "Islands") ~ str_remove(geography, "Islands"),
                                geography == "Edinburgh, City of" ~ "City of Edinburgh",
                                geography == "Eilean Siar"~ "Na h-Eileanan Siar",
                                TRUE ~ geography)) |> 
   left_join(area_codes, by = c("geography" = "areaname")) |> 
-  select(geography, code, year, numerator, sample_size, level) |> # select only the relevant columns
+  select(geography, code, year, numerator, denominator, geography_type) |> # select only the relevant columns
   rename(ca = geography)
+
+test <- neighbour2 |> 
+  filter(is.na(code)) |> 
+  select(ca,code,geography_type) |> 
+  unique()
 
 rowdy <- neighbour |> 
   filter(str_detect(indicator, "rowdy"))
