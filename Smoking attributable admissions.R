@@ -248,16 +248,15 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
               AND regexp_like(main_condition, '", smoking_diag, "')
               AND age_in_years > 34
-              AND discharge_date between '1 January 2012' and '31 December 2018' 
+              AND discharge_date between '1 January 2012' and '31 December 2022' 
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
            start_cis, end_cis, ca, hb, pc7
     FROM adm_table 
-    WHERE end_cis between '1 January 2012' and '31 December 2018' 
+    WHERE end_cis between '1 January 2012' and '31 December 2022' 
         AND age > 34 
         AND sex_grp in ('1', '2') 
-        AND hb between 'S08000015' AND 'S08000028'
         AND regexp_like(diag, '", smoking_diag, "')"))) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   create_agegroups() # Creating age groups for standardization.
