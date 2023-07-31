@@ -10,7 +10,7 @@
 # The switch was also made on the recommendation of SG SHoS team as SHeS is deemed best source of health data
 # SHeS was not previously used as the sample size did not allow for robust estimates at LA level.
 # Since sample size of SHeS is small and local authority level data not robust we need to use aggregated years to provide smoking status for areas - this isn't ideal as scotpho indicator is a rolling average
-# but its is a smoking attributable admissions/deaths is an artificial construct so a very precise figure is unrealistic anyway.  
+# but smoking attributable admissions/deaths are artificial construct and using best available data should be acceptable.  
 
 # As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scot Kilgariff, who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
@@ -419,6 +419,6 @@ data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_dea
   mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
 
 saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
-write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
+write_csv(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
 
 ##END

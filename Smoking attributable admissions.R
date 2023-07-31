@@ -11,16 +11,16 @@
 # SHeS was not previously used as the sample size did not allow for robust estimates at LA level.
 # Since sample size of SHeS is small and local authority level data not robust we need to use aggregated years to provide smoking status for 
 # areas - this isn't ideal as scotpho indicator is a rolling average
-# but its is a smoking attributable admissions/deaths is an artificial construct so a very precise figure is unrealistic anyway.  
+# but smoking attributable admissions/deaths are artificial construct and using best available data should be acceptable.  
 
 # As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scot Kilgariff,
-#  who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
+# who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
-#  totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
+# totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
 
 # Although both teams now use SHeS as source of smoking prevalence our scotland totals will differ as ScotPHO indicator is a 2 year rolling figure
-# (tobacco team produce scotland only data for individual years
+# (tobacco team produce scotland only data for individual years)
 # scotpho estimates that include data prior to 2019 will still be based on SHoS (when we switched we did not back calculate historic data)
 
 # Part 1 - Compile smoking prevalence data
@@ -38,7 +38,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 # Part 1  - Compile smoking prevalence data ----
 # Requires 2 data series both are trends in percentage of ex & current smokers in those aged 35 year plus, by year, by sex
-# Series 1 : prevalence across all age groups but split by ca/nhs board with overall scotland values
+# Series 1 : prevalence across all age groups but split by ca/NHS board with overall Scotland values
 # Series 2 : Scotland level prevalence buy split by age groups
 ###############################################.
 
@@ -56,7 +56,7 @@ smok_prev_area_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Att
   mutate(period=as.character(year),
          source="SHoS")
 
-# Recoding names into codes. First councils and then HBs and Scotland
+# Re-coding names into codes. First councils and then HBs and Scotland
 smok_prev_area_shos$code[which(smok_prev_area_shos$type=="ca")] <- recode(smok_prev_area_shos$area[which(smok_prev_area_shos$type=="ca")],
                                                                           'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
                                                                           'Angus' = 'S12000041', 'Argyll & Bute' = 'S12000035',
@@ -167,7 +167,7 @@ smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attr
                               agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
   select(-agegrp, -code) %>% 
   mutate(sex_grp = as.character(sex_grp)) %>% #to allow merging in next section
-  mutate(source="SHoS") |> 
+  mutate(source="SHoS") %>%
   arrange(sex_grp, year, source, ex_age,current_age, age_grp2)
 
 # read in SHeS age data (for period 2019 onwards)
@@ -468,13 +468,13 @@ analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
 analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
                epop_total = 120000, ind_id = 1548, year_type = "calendar")
 
-# Rounding figures - they are estimates and rounding helps to undestand that
+# Rounding figures - they are estimates and rounding helps to understand that
 # they are not precise
 data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds")) %>% 
   mutate(numerator = round(numerator, -1)) %>% #to nearest 10
   mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
 
 saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
-write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write_csv(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 
 ##END
