@@ -13,6 +13,10 @@
 #  Data is sourced from the Scottish Household Survey - contact
 #   keith.hoy@transport.gov.scot>
 #   
+#   NOTE: when you request data, ensure you ask for raw data, not rounded. If
+#   multiple sheets are in excel document for different geographies, check that
+#   these totals match before using local authority data to run script. 
+#   
 # CAVEAT: Typically, SHS respondents are interviewed face-to-face, in their homes.
 # However, in March 2020 the fieldwork approach was altered in response to the 
 # Covid-19 pandemic. 
@@ -31,27 +35,30 @@
 library(tidyverse)
 library(stringr)
 library(janitor)
+library(openxlsx)
 
 source("1.indicator_analysis.R") 
 
-# 1. Read in data ------------------------------------------------------------
+# 1. Read in received data ------------------------------------------------------------
 
-active_work <- read.csv(paste0(data_folder,"Prepared Data/Percentage walking or cycling to work to 2021.csv")) |> 
-  clean_names()
+# Only read in local authority sheet (totals for all received geographies should match)
+active_work <- read.xlsx(paste0(data_folder,"Received Data/Neighbourhood perceptions 2023/Percentage walking or cycling to work to 2021.xlsx"), sheet = 2) |> 
+  clean_names() |> 
+  mutate(level = "local authority")
 
 area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
   filter(str_detect(code, "S12|S00|S08"))
 
-# 2. Data manipulation -------------------------------------------------------
+# 2. Data preparation -------------------------------------------------------
 
 # a) Join data with area code lookup (fixing instances where names differ)
 # select only relevant columns (assuming sample_size = denominator?)
-active_work2 <- active_work |>  
+active_work_areas <- active_work |>  
   mutate(numerator = as.numeric(str_replace(numerator,",","")),
          sample_size = as.numeric(str_replace(sample_size,",","")),
          geography = str_replace(geography,"&","and"),
          geography = str_replace(geography,"Forth", "Forth Valley"),
-         geography = case_when(level == "Health board" ~ paste("NHS",geography),
+         geography = case_when(level == "health board" ~ paste("NHS",geography),
                                geography == "Edinburgh, City of" ~ "City of Edinburgh",
                                geography == "Eilean Siar"~ "Na h-Eileanan Siar",
                                                              TRUE ~ geography)) |> 
@@ -59,45 +66,26 @@ active_work2 <- active_work |>
   select(geography, code, year, numerator, sample_size, level) |> # select only the relevant columns
   rename(ca = geography)
 
-# b) Check totals for Scotland, ca and hb
+# b) Reformat data - check geography sums 
 
-# Scotland totals
-scotland <- active_work2 |> 
-  filter(level == "National") |> 
-  select(year,numerator) 
+active_work_areas1 <- active_work_areas |> 
+  select(code, year, numerator, sample_size, level) |> 
+  rename(ca = code, denominator = sample_size) |> 
+  mutate(year = substr(year,1,4))
 
-# Summarise ca totals and join to scotland
-test <- active_work2 |> 
-  filter(level == "Local Authority") |> 
-  select(year,numerator) |> 
-  group_by(year) |> 
-  summarise(n_la = sum(numerator)) |> 
-  left_join(scotland, by = "year")
+raw_data <- active_work_areas1 |> 
+  filter(level == "local authority") |> 
+  select(-level)
 
-# Summarise health board and join to test
-test2 <- active_work2 |> 
-  filter(level == "Health board") |> 
-  select(year,numerator) |> 
-  group_by(year) |> 
-  summarise(n_hb = sum(numerator)) |> 
-  left_join(test, by = "year") |> 
-  mutate(diff_scotland_la = numerator - n_la,     # Calculate difference variables
-         diff_scotland_hb = numerator - n_hb) |> 
-  select(year, numerator, n_la, diff_scotland_la, n_hb,diff_scotland_hb) |> 
-  rename(scotland_tot = numerator) 
+## Write prepared data to prepared data folder
 
-write.csv(test2, file=paste0(data_folder, "Received Data/Neighbourhood perceptions 2023/active_travel_work_differences.csv"))
-
-## Totals differ. Need to find out why. There doesn't seem to be a reason. Consistently 
-## multiples of 10? 
-
-# Refer to smoking attributable indicators for how to handle issues with SHS survey.
-
-#saveRDS(active_work, file=paste0(data_folder, "Prepared Data/active_travel_work_raw.rds"))
-
+saveRDS(raw_data, file = paste0(data_folder, "Prepared Data/active_travel_to_work_raw.rds"))
 
 # Run analysis ------------------------------------------------------------
 
-analyze_first(filename = "active_travel_work", geography = "council", 
-              measure = "percent", yearstart = 2008, yearend = 2021, time_agg = 1)
+analyze_first(filename = "active_travel_to_work", geography = "council", 
+              measure = "percent", pop = NULL, yearstart = 2008, yearend = 2020, time_agg = 2)
+
+analyze_second(filename = "active_travel_to_work", measure = "percent", time_agg = 2, 
+                ind_id = 20206, year_type = "survey")
   
