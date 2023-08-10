@@ -1,8 +1,29 @@
+#   Update ScotPHO indicator ID 13018: 
+#   Employment rate for 16-24 year olds (percent)
 
-### 1 - notes ----
+ 
+# Data source is annual population survey from NOMIS 
+# https://www.nomisweb.co.uk/
 
-# this script updates the following indicator: 13018 Employment rate for 16-24 year olds
-# data source: https://www.nomisweb.co.uk/ 
+# To find data table behind the data update follow these selections in the NOMIS data download tool found at the url above
+
+#  - Data downloads
+# 	-Query		(https://www.nomisweb.co.uk/query/select/getdatasetbytheme.asp?opt=3&theme=&subgrp=)
+# 	-Annual population service (APS)
+# 	-Geography  (select countries : Scotland ,  Local authorities (within Scotland) then tick all within Soctland)
+#   -Date (12 months to December) – pick time periods required – full series if refreshing all or single year to add one year to existing dataset)
+# 	-Cell: Select ‘Change analysis’ option located near title “annual population survey” – then select table T01 “economic activity by age”
+# 	-Select option to download data for those aged 16-19 amd 20-24 in the “All People” (so no need for sex breakdown) and “All” plus “In employment” options [This means 4 options should be ticked in total]
+# 	-Summary of selections should allow you to review the choices
+# 	-Download Data – should present option to download data as an excel file
+
+# Data down load contains raw population total and numbers of 16-19 and 19-24 employed for scotland and local authorities, these datasets need to be manipulated then summed to give
+# totals for 16-24 years.
+
+#   Part 1 - Read in NOMIS extract data
+#   Part 2 - Create the different geographies basefiles
+#   Part 3 - Run analysis functions 
+
 
 
 ### 2  - functions/packages ----
