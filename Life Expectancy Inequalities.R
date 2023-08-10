@@ -32,25 +32,26 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
 
 save_output<-function(filename, ind_id) {
   
-    #edit fields to match those required by profiles tool
+  #edit fields to match those required by profiles tool
   data_depr <- data_depr %>%
     select(year, code, quintile, quint_type, denominator, rate, lowci,upci,sii:rel_range,trend_axis) %>%
     mutate(ind_id=ind_id,
            numerator = 0,
-           def_period = paste0(trend_axis,"; ","5 year period life expectancy")) %>%
+           def_period = paste0(trend_axis,"; ","5 year period life expectancy"),
+           quint_type=case_when(code=="S00000001" ~ "sc_quin", TRUE ~ quint_type)) %>%
     # fill in missing values and if any have negative lower CI change that to zero.
     mutate_at(c("rate", "lowci", "upci"), ~replace(., is.na(.), 0)) 
-  
+
   data_depr$lowci <- ifelse(data_depr$lowci<0, 0, data_depr$lowci)
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
-    rename(measure=rate) %>%
     select(-c(most_rate, least_rate, par_rr, count))
   
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename,"_ineq.rds"))
 }
+
 
 ###############################################.
 #   Part 1 - Import & manipulate raw data files provided by NRS. ----
