@@ -2,15 +2,14 @@
 #   Employment rate for 16-24 year olds (percent)
 
  
-# Data source is annual population survey from NOMIS 
+# Data source is the Annual Population Survey (APS) within NOMIS 
 # https://www.nomisweb.co.uk/
-
 # To find data table behind the data update follow these selections in the NOMIS data download tool found at the url above
 
 #  - Data downloads
 # 	-Query		(https://www.nomisweb.co.uk/query/select/getdatasetbytheme.asp?opt=3&theme=&subgrp=)
 # 	-Annual population service (APS)
-# 	-Geography  (select countries : Scotland ,  Local authorities (within Scotland) then tick all within Soctland)
+# 	-Geography  (select countries : Scotland ,  Local authorities (within Scotland) then tick all within Scotland)
 #   -Date (12 months to December) – pick time periods required – full series if refreshing all or single year to add one year to existing dataset)
 # 	-Cell: Select ‘Change analysis’ option located near title “annual population survey” – then select table T01 “economic activity by age”
 # 	-Select option to download data for those aged 16-19 amd 20-24 in the “All People” (so no need for sex breakdown) and “All” plus “In employment” options [This means 4 options should be ticked in total]
