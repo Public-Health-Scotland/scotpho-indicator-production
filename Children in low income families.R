@@ -1,3 +1,18 @@
+# original source of this indicator data no long populated
+
+#alternative might be the Stat-Xplore tool by DWP 
+# figures on children in low income families (defined as relative poverty - income <60% of UK median) available from StatXplore - DWP data from RAPID.
+# Need to check that equivalent to previous figures ?
+# Stats in FYE from 2014/15 onwards - statxplore seems to have numbers of children butnot percentanges, perhaps rates could be calculated using NRS populations.
+# StatXplore contains national and LA figures plus IZ available (dz also available but suppression means cant' aggregate up from datazone)
+
+#need to register if you want to download a large datafile
+#process of building your own table not that easy 
+#https://stat-xplore.dwp.gov.uk/webapi/jsf/dataCatalogueExplorer.xhtml
+
+
+
+
 ################################################################################
 ################################################################################
 #########                                                              #########
@@ -23,7 +38,7 @@ rm(list=ls())
 
 ## install packages
 #install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
+#library(tidyverse) # all kinds of stuff 
 library(stringr) # for strings
 
 ## set file pathways
