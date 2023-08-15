@@ -43,6 +43,9 @@ drunkeness_and_dis <- data %>%
   select(year, ca, numerator)
 
 
+# find max year in dataset to add to analyze_first() argument
+max_year = max(data$year)
+
 # save files to be used in analysis functions
 saveRDS(driving_under_inf, file=paste0(data_folder, 'Prepared Data/driving_under_influence_raw.rds'))
 saveRDS(drunkeness_and_dis, file=paste0(data_folder, 'Prepared Data/drunkeness_and_dis_behaviour_raw.rds'))
@@ -53,7 +56,7 @@ saveRDS(drunkeness_and_dis, file=paste0(data_folder, 'Prepared Data/drunkeness_a
 
 # driving under influence
 analyze_first(filename = "driving_under_influence", measure = "crude", 
-              time_agg = 1, yearstart = 2012, yearend = 2022, 
+              time_agg = 1, yearstart = 2012, yearend = max_year, 
               geography = "council", pop = "CA_pop_allages", adp = TRUE, hscp = TRUE)
 
 
@@ -64,7 +67,7 @@ analyze_second(filename = "driving_under_influence", measure = "crude",
 
 # drunk and other disorderly behaviour 
 analyze_first(filename = "drunkeness_and_dis_behaviour", measure = "crude", 
-              time_agg = 1, yearstart = 2012, yearend = 2022, 
+              time_agg = 1, yearstart = 2012, yearend = max_year, 
               geography = "council", pop = "CA_pop_allages", adp = TRUE, hscp = TRUE)
 
 
