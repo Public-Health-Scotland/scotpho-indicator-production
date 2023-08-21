@@ -1,85 +1,134 @@
-# original source of this indicator data no long populated
+# ScotPHO indicators: Children in low income families
 
-#alternative might be the Stat-Xplore tool by DWP 
-# figures on children in low income families (defined as relative poverty - income <60% of UK median) available from StatXplore - DWP data from RAPID.
-# Need to check that equivalent to previous figures ?
-# Stats in FYE from 2014/15 onwards - statxplore seems to have numbers of children butnot percentanges, perhaps rates could be calculated using NRS populations.
-# StatXplore contains national and LA figures plus IZ available (dz also available but suppression means cant' aggregate up from datazone)
+# Low income families are defined using relative poverty estimates
 
-#need to register if you want to download a large datafile
-#process of building your own table not that easy 
-#https://stat-xplore.dwp.gov.uk/webapi/jsf/dataCatalogueExplorer.xhtml
+# Relative low-income is defined as a family in low income Before Housing Costs (BHC) in the reference year. 
+# A family must have claimed Child Benefit and at least one other household benefit (Universal Credit, tax credits, or Housing Benefit) 
+# at any point in the year to be classed as low income in these statistics. Gross income measure is Before Housing Costs (BHC) and
+# includes contributions from earnings, state support and pensions.
 
 
+#########################################################################.
+## Notes on data source and calculation methodology
+#########################################################################.
 
+# In August 2023 update the source of children in low income families changed from Scottish Government website to the DWP opendata tool (StatXplore) as SG website no long being updated.
+# At this time we replaced the whole data series to ensure consistency in the indicator source/time periods over time.
+# This may well result in some changes to historically published figures - any differences likely to be small and due to the fact historical dataset was built up from DZ aggregations whereas
+# from 2023 onwards the CA data series used to derive HB and HSCP figures.
 
-################################################################################
-################################################################################
-#########                                                              #########
-#####           Children in low income families indicator prep             #####
-#########                                                              #########
-################################################################################
-################################################################################
+# Data Source : StatXplore 
+#               https://stat-xplore.dwp.gov.uk/webapi/jsf/login.xhtml
+# You will need to register with the site to enable you build and download the data required.
+# Once you have created a table you can save it to your account and use this
 
-## This script analyses HMRC data on the Children in Low Income Families measure
+# SHOULD BE ABLE TO USE API TO ACCESS THIS DATA BUT NEED HELP TO WRITE THE SCRIPT.
 
-## The latest data (August 2016) is available here:
-#    https://www.gov.uk/government/statistics/personal-tax-credits-children-in-low-income-families-local-measure-2016-snapshot-as-at-31-august-2016
+# DWP official publications page
+# https://www.gov.uk/government/statistics/children-in-low-income-families-local-area-statistics-2014-to-2022
 
-## Once the datazone level data for Scotland is downloaded, there is some work 
-#  to be done to unround the estimates.  This is done before importing to R.
+#   Part 1 - Open lookup files
+#   Part 2 - Read in CLIF data
+#   Part 3 - Run analysis function (only the second function is required)
 
-
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
-
-## install packages
-#install.packages("tidyverse")
-#library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
-
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
 
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-# read in csv
-child_low <- read.csv(paste0(data_folder, "Received Data/children_low_income_raw.csv"))
+source("1.indicator_analysis.R")
 
-saveRDS(child_low, file=paste0(data_folder, "Prepared Data/children_low_income_raw.rds"))
+
 ###############################################.
-## Part 2 - Run analysis functions ----
+## Part 1 Open look-up files  ----
 ###############################################.
-analyze_first(filename = "children_low_income", geography = "datazone11", 
-              measure = "percent", yearstart = 2013, yearend = 2016, time_agg = 1)
 
-# before the second phase of analysis, the data needs to be rounded to be in line with the HMRC 
-# published data. Open the intermediate file and export to csv - update in the csv - then import 
-# and save as rds for next phase.  I also changed the name of the formatted file so as not to 
-# overwrite it with the new one.  
-child_low_temp <- readRDS("X:/ScotPHO Profiles/Data/Temporary/children_low_income_formatted.rds")
+# DWP data only includes Scotland, LA and IZ level data - scotpho can derive CLIF number for NHS board and HSCP by assuming values are same for corresponding councils (or aggregations of coucnil)
+# This method makes the assumption that Council and HSCP partnership boundaries are the same and that NHS board are sum of constituent council areas
+# Not as accurate as aggregating data up from individual datazones but method should be close enough.
+geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  group_by(ca2019, hb2019, hscp2019) %>%
+  summarise(count=n()) %>%
+  ungroup() %>%
+  select(-count)
 
-write.csv (child_low_temp, "X:/ScotPHO Profiles/Data/Temporary/children_low_income_formatted_temp.csv")
+# DWP StatXplore does not include populations at IZ level so need to use the ScotPHO populations files to generate denominators.
+pop_lookup <- readRDS(paste0(lookups, "Population/DZ11_pop_allages_SR.rds")) %>% 
+  subset(year >= 2014 & age_grp <5) %>% # Reading pop file and selecting only 2014 onwards where age is 0-19 years
+  group_by(year, code) %>%
+  summarise(pop=sum(denominator))%>%
+  ungroup()
 
-child_low_formatted <- read.csv(paste0(data_folder, "Temporary/children_low_income_formatted.csv"))
 
-saveRDS(child_low_formatted, file=paste0(data_folder, "Temporary/children_low_income_formatted.rds"))
+#statxplorer provides numbers of children (<19) for IZ, LA, Scotland - but missing NHS board and HSCP - datazone level info is suppressed so can't aggregate up
+# maybe we could contact and request from Stat.Xplore@dwp.gov.uk
+#need a population denominator file with required geography levels
 
-# then complete analysis with the updated '_formatted.rds' file
+
+###############################################.
+## Part 2 - Read in CLIF data ----
+## sourced from StatXplore open data platform
+## Population should be 0-19 population for Scotland
+###############################################.
+
+# This excel file has been prepared by manually copying IZ level and council level exports from StatXplore into a single Excel sheet.
+clif_data<- read_excel(paste0(data_folder, "Received Data/Children in low income families/CLIF_formatted source data_082023.xlsx")) 
+
+#restructure data to long format
+clif_data <- clif_data %>%
+  pivot_longer(!code,names_to = "year",values_to = "numerator") %>%
+  mutate(year=as.numeric(substr(year,1,4)))
+  
+# Match on population with data
+clif_data  <- left_join(x=clif_data, y=pop_lookup, by = c("year", "code"))
+
+# Match on geography look-up to allow identification of parent geographies of IZ
+# This step allows us to derive nhs board and hscp partnership geography data from the CA level information
+# This triggered warning about many-to-many matches as there are multiple years of data for each CA
+# the relationship is set to many-to-many so warning is ignored
+clif_data  <- left_join(x=clif_data, y=geo_lookup, by = c("code" = "ca2019"), relationship="many-to-many")
+
+
+# aggregate numerator and denominators table for NHS boards
+clif_nhsboard <-clif_data %>%
+  filter(!(is.na(hb2019))) %>%
+  group_by(hb2019, year) %>%
+  summarise(numerator=sum(numerator),
+            pop=sum(pop)) %>%
+  ungroup() %>%
+  rename(code=hb2019)
+
+# aggregate numerator and denominators table for hscp partnership
+clif_hscp <-clif_data %>%
+  filter(!(is.na(hscp2019))) %>%
+  group_by(hscp2019, year) %>%
+  summarise(numerator=sum(numerator),
+            pop=sum(pop)) %>%
+  ungroup() %>%
+  rename(code=hscp2019)
+
+#select only required fields from base file
+clif_data <- clif_data %>%
+  select(code, year, numerator, pop)
+
+# combined IZ (which also contains scotland and LA), NHS board, HSCP data files
+clif_allgeo <-rbind(clif_data,clif_nhsboard,clif_hscp) %>%
+  rename(denominator=pop)
+  
+
+saveRDS(clif_allgeo, file=paste0(data_folder, "Temporary/children_low_income_formatted.rds"))
+
+
+###############################################.
+## Part 3 Run analysis functions  ----
+###############################################.
+
+# prepared data already contains numerator and denominator for all geographies so only need analyse second function.
+
 analyze_second(filename = "children_low_income", measure = "percent", time_agg = 1,
-              ind_id = 13027, year_type = "calendar", profile = "cy", min_opt = 1471290)
+               ind_id = 13027, year_type = "financial")
 
 
 
+
+##END
