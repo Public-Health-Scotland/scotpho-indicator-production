@@ -55,6 +55,13 @@ library(rio)
   #combine ages and group together
   mutate(variable = ifelse(`excel tab` %in% c(1,3), "denominator", "numerator")) %>%
   select(-`excel tab`, -`ca name`) %>%
+  
+  # for each local authority and year, if any 4 values used to create the numerator or denominator are NA, make them all NA 
+  group_by(ca) %>%
+  summarise(mutate(across(everything(), ~ if (any(is.na(.))) NA else .))) %>%
+  ungroup() %>%
+    
+  # calculate numerator and denominator by combining age groups
   group_by(ca, variable) %>%
   summarise_all(sum) %>%
   ungroup() %>%
