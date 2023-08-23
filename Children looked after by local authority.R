@@ -16,10 +16,7 @@
 
 # Data is extracted using the 'opendatascot' package
 
-# In order to run this script when updating this indicator:-
-# first update the variable called 'date_range' (line 35) to include an extra year
-
-# if you need to install the 'opendatascot' package first: -
+# uncomment the 2 lines below to install package if required:-
 # install.packages("devtools")
 # devtools::install_github("datasciencescotland/opendatascot")
 
@@ -32,26 +29,17 @@ library(opendatascot)
 
 
 #1.b extract data ----
-date_range <- (as.character(2013:2021)) # update each year
-
-
-# extract local authority & Scotland data
-looked_after_children <- ods_dataset("looked-after-children", # name of dataset to extract data from
-                                     residentialStatus = "all", # include children cared for in all settings
-                                     refPeriod = date_range, # filter bydate range defined above
-                                     measureType = "count") # only include counts, which we use as numerator
+looked_after_children <- opendatascot::ods_dataset("looked-after-children",
+                                                   measureType="count",
+                                                   residentialStatus = "all",
+                                                   geography = "la") 
 
 #1.c format data ----
 looked_after_children  %<>%
-  # select and rename required columns
-  select("ca" = "refArea",
-         "year" = "refPeriod",
-         "numerator" = "value") %>%
-  # convert some columns to class numeric
-  mutate(across(c("year", "numerator"), as.numeric)) %>%
-  # remove scotland figures - these will be re-calculated when aggregating to different geography levels 
-  filter(ca != "S92000003")
-
+  select(ca = refArea, year = refPeriod, numerator = value) %>%
+  mutate(across(c("year", "numerator"), as.numeric))
+  
+  
   
 #1.d save file to be used in analysis functions ------
 saveRDS(looked_after_children, file=paste0(data_folder, 'Prepared Data/looked_after_raw.rds'))
@@ -60,7 +48,7 @@ saveRDS(looked_after_children, file=paste0(data_folder, 'Prepared Data/looked_af
 
 ### Part 2 - Run analysis functions  ---------------------------------
 analyze_first(filename = "looked_after", geography = "council", pop = "CA_pop_under18",
-              measure = "crude", yearstart = 2013, yearend = 2021, time_agg = 1)
+              measure = "crude", yearstart = 2009, yearend = 2022, time_agg = 1)
 
 
 analyze_second(filename = "looked_after", measure = "crude", time_agg = 1,
