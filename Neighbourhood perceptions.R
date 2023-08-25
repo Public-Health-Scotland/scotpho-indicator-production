@@ -132,7 +132,7 @@ rowdy <- neighbour2 |>
   select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
 
 saveRDS(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.rds"))
-write.csv(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"))
+write.csv(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"),row.names = F)
 
 
 # c) 20903 data for Adults rating neighbourhood as very good place to live
@@ -142,7 +142,7 @@ very_good <- neighbour2 |>
   select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
 
 saveRDS(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
-write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
+write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"),row.names = F)
 
 
 # d) 4203 Perception of drug misuse in neighbourhood
@@ -152,7 +152,7 @@ drug_misuse <- neighbour2 |>
   select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
 
 saveRDS(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.rds"))
-write.csv(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.csv"))
+write.csv(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.csv"),row.names = F)
 
 # 4. Checks ---------------------------------------------------------------
 
