@@ -39,7 +39,8 @@
 
 # Libraries ---------------------------------------------------------------
 
-library(tidyverse)
+library(dplyr)
+library(stringr)
 library(stringr)
 library(janitor)
 
@@ -90,7 +91,7 @@ neighbour2 <- neighbour |>
          geography = case_when(geography_type == "Health Board" & str_detect(geography, "NHS Orkney Islands") ~ "NHS Orkney",
                               geography_type == "Health Board" & str_detect(geography, "NHS Shetland Islands") ~ "NHS Shetland",
                               .default = geography))|> 
-  left_join(area_codes, by = c("geography" = "areaname")) |> 
+  full_join(area_codes, by = c("geography" = "areaname")) |> 
   bind_rows(neighbourADP) |> 
   mutate(code = case_when(geography == "MALDEP" ~ "S11000051",
                    geography== "Lanarkshire ADP" ~ "S11000052",
@@ -210,21 +211,5 @@ check_year_totals <- function(last_year_data, this_year_data){
 # Check totals
 
 check_year_totals(last_year_data = last_year_rowdy, this_year_data = rowdy)
-
-# non match for some 2020 values for the following geographies:
-# 
-# S08000025, 26, S12...20,23, 27
-
-check_geos <- filter(last_year_data, code %in% c("S8000025", "S08000026", "S12000020",
-                                           "S12000023","S12000027"),
-                     year == "2020")
-
-# "S8000025",  "S12000020", "S12000023","S12000027" Not in last years data
-# "S08000026" in data but rate = 0
- 
 check_year_totals(last_year_data = last_year_very_good, this_year_data = very_good)
 check_year_totals(last_year_data = last_year_drug_misuse, this_year_data = drug_misuse)
-
-## For some strange reason the summary for last years rowdy data has 2020, 
-## but this year doesn't...
-## Also, some NA in the code column to be fixed. 
