@@ -22,7 +22,7 @@
 # yearstart - Start of the period you want to run an analysis for
 # yearend -  End of the period you want to run an analysis for
 # epop_age - Type of european population to use: 16+, <16, 0to25, 11to25, 15to25. 
-#            Only used for standardize rates.
+#            Only used for standardize rates when age groups are not the full 5 years eg <16 needs age group 0-4,5-9,10-14 but only pop for 15 & 16 year olds in ageband 15-19
 
 # FUNCTION TWO: ANALYZE_SECOND
 # filename -  Name of the formatted file the function reads without the "_formatted.sav" at the end
