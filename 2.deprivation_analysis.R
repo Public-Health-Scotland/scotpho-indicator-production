@@ -256,8 +256,9 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
       mutate(easr_first = numerator*epop/denominator, #easr population
              var_dsr = (numerator*epop^2)/denominator^2) %>%  # variance
       # Converting Infinites to NA and NA's to 0s to allow proper functioning
-      na_if(Inf) %>% #Caused by a denominator of 0 in an age group with numerator >0
-      mutate_at(c("easr_first", "var_dsr"), ~replace(., is.na(.), 0)) 
+      mutate(easr_first = ifelse(is.infinite(easr_first), NA, easr_first), # replace inf (caused by a denominator of 0 in an age group with numerator >0) with NA
+             var_dsr = ifelse(is.infinite(var_dsr), NA, var_dsr)) %>%
+      mutate_at(c("easr_first", "var_dsr"), ~replace(., is.na(.), 0)) #replace na with 0
     
     # aggregating by year, code and time
     data_depr <- data_depr %>% subset(select= -c(age_grp, sex_grp)) %>%
