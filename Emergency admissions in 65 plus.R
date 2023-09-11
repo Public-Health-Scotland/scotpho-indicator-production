@@ -146,10 +146,11 @@ emergency_admissions_forIS <- emergency_admissions_forIS %>%
   summarise_all(sum, na.rm =T) %>%
   ungroup() %>%
   mutate(crate=(emergency_cis/pop)*100000,
+         crate= ifelse(is.infinite(crate), NA, crate), ## Converting Infinites to NA and NA's to 0s to allow proper functioning
          year=paste0(year,"/",year+1))
 
 # Save out CSV file that can be sent to Improvement Service 
-write_csv(emergency_admissions_forIS, file = paste0(data_folder, "Data to be checked/ImprovementService_Emergency_Admissions_65.csv"))
+write_csv(emergency_admissions_forIS, file = paste0(data_folder, "Data to be checked/ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
 
 rm(emergency_admissions_forIS) #tidy large file
 
