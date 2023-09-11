@@ -9,8 +9,11 @@
 #   Part 3 - Run analysis functions
 
 
-# In the past IS received data from PHS secondary care team through an IR 
+# In the past IS received data from PHS secondary care team but in 2023 scotpho picked up as regular request
+# supply data with an IR number to ensure data can be traced back to code used to generate
 # \\Isdsf00d03\cl-out\IR2020\IR2022-00429
+# \\Isdsf00d03\cl-out\IR2023\IR2023-00713
+
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -150,6 +153,7 @@ emergency_admissions_forIS <- emergency_admissions_forIS %>%
          year=paste0(year,"/",year+1))
 
 # Save out CSV file that can be sent to Improvement Service 
+# log informatin request and s
 write_csv(emergency_admissions_forIS, file = paste0(data_folder, "Data to be checked/ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
 
 rm(emergency_admissions_forIS) #tidy large file
@@ -158,7 +162,6 @@ rm(emergency_admissions_forIS) #tidy large file
 ######################################################################################.
 ## Part 3 - Prepare basefiles for ScotPHO profiles indicator  ----
 ## 
-
 ######################################################################################.
 
 # Datazone2011
