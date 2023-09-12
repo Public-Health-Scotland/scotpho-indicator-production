@@ -164,6 +164,9 @@ rm(emergency_admissions_forIS) #tidy large file
 ## 
 ######################################################################################.
 
+# Reading file
+data_ea65<- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency65_basefile.rds'))
+
 # Datazone2011
 dz11 <- data_ea65 %>% 
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
@@ -204,10 +207,10 @@ analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_ag
 
 
 #Deprivation analysis function (runs against admissions all ages)
-analyze_deprivation(filename="emergency_stays65_dz11_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2021,   year_type = "financial", 
-                    pop = "depr_pop_65+_SR", epop_age="normal",
-                    epop_total =39000, ind_id = 999103)
+analyze_deprivation(filename="emergency_stays65_depr", measure="stdrate", time_agg=3, 
+                    yearstart= 2002, yearend=2021,year_type = "financial", 
+                    pop = "depr_pop_65+", epop_age="normal",
+                    epop_total =39000, ind_id = 99103)
 
 
 ##END
