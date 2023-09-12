@@ -210,7 +210,7 @@ analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_ag
 analyze_deprivation(filename="emergency_stays65_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2021,year_type = "financial", 
                     pop = "depr_pop_65+", epop_age="normal",
-                    epop_total =39000, ind_id = 999103)
+                    epop_total =39000, ind_id = 99103)
 
 
 ##END
