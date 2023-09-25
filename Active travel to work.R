@@ -84,8 +84,8 @@ saveRDS(raw_data, file = paste0(data_folder, "Prepared Data/active_travel_to_wor
 # Run analysis ------------------------------------------------------------
 
 analyze_first(filename = "active_travel_to_work", geography = "council", 
-              measure = "percent", pop = NULL, yearstart = 2008, yearend = 2020, time_agg = 2)
+              measure = "percent", pop = NULL, yearstart = 2008, yearend = 2020, time_agg = 1)
 
-analyze_second(filename = "active_travel_to_work", measure = "percent", time_agg = 2, 
+analyze_second(filename = "active_travel_to_work", measure = "percent", time_agg = 1, 
                 ind_id = 20206, year_type = "survey")
   
