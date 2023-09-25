@@ -142,7 +142,7 @@ very_good <- neighbour2 |>
   select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
 
 saveRDS(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
-write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"),row.names = F)
+write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
 
 
 # d) 4203 Perception of drug misuse in neighbourhood
