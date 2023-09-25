@@ -61,7 +61,7 @@ analyze_first(filename = "driving_under_influence", measure = "crude",
 
 
 analyze_second(filename = "driving_under_influence", measure = "crude", 
-               time_agg = 1, ind_id = "4156", year_type = "financial", 
+               time_agg = 1, ind_id = "4158", year_type = "financial", 
                pop = "CA_pop_allages", crude_rate = 10000)
 
 
