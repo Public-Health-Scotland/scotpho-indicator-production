@@ -94,8 +94,8 @@ immunisations_data_dz11 <- readRDS(paste0(data_folder,"Received Data/childhood i
 # filter 2011dz received data for columns related to 5in1.
 immunisation_5in1_dz11 <- immunisations_data_dz11 %>%
   select (datazone2011, year, total24, five24) %>%
-  group_by() %>%
   rename(denominator = total24, numerator = five24, datazone = datazone2011) 
+
 # save dz11 basefile
 saveRDS(immunisation_5in1_dz11, file=paste0(data_folder, 'Prepared Data/Immunisation_5in1_dz11_raw.rds'))
 
@@ -115,10 +115,10 @@ rm(immunisation_5in1_dz01,immunisation_5in1_dz11)
 # filter 2011dz received data for columns related to 5in1.
 immunisation_mmr_dz11 <- immunisations_data_dz11 %>%
   select (datazone2011, year, total24, mmr24) %>%
-  group_by() %>%
-  rename(denominator = total24, numerator = mmr24, datazone = datazone2011) 
+  rename(denominator = total24, numerator = mmr24, datazone = datazone2011)
+
 # save dz11 basefile
-saveRDS(immunisation_mmr_dz11, file=paste0(data_folder, 'Prepared Data/Immunisation_mmr_dz11_raw.rds'))
+saveRDS(immunisation_mmr_dz11, file=paste0(data_folder, 'Prepared Data/Immunisation_MMR_dz11_raw.rds'))
 
 
 #Deprivation basefile
