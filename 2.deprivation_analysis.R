@@ -430,6 +430,8 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 ##################################################.
 ## Inequality measures function ---- 
 ## generating SII, RII, PAF and Ranges.
+## this function separate from main body of function as life expectancy 
+#   inequality indicators only require this part
 ##################################################.
 
 inequality_measures <- function(dataset){
