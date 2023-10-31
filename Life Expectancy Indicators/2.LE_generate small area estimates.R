@@ -19,10 +19,9 @@
 ## Packages/Filepaths ----
 ###############################################.
 
-source("/Life Expectancy Indicators/1.Functions_life expectancy.R") #Life expectancy function where max age band is 85+ years (deliberate choise to use 85+ not 90+ because of small geographic units & small numbers)
+source("Life Expectancy Indicators/1.Functions_life_expectancy.R") #Life expectancy function where max age band is 85+ years (deliberate choise to use 85+ not 90+ because of small geographic units & small numbers)
 
 
-/PHI_conf/ScotPHO/1.Analysts_space/Vicky/scotpho-indicator-production_2023may/Life Expectancy Indicators/1.Functions_life expectancy.R
 ###########################################################.
 ## Part 1 - Extract deaths data from NRS deaths view ----
 ###########################################################.
