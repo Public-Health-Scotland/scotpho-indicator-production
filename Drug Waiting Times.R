@@ -13,7 +13,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ## Part 1 - Create basefile ----
 ###############################################.
 #Reading data provided by DWT team
-dwt <- read_csv(paste0(data_folder, "Received Data/drugs_waiting_times_2022.csv")) %>% 
+dwt <- read_csv(paste0(data_folder, "Received Data/Drug and alcohol treatment waiting times/2023 request/drug_waiting_times.csv")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   mutate(code = case_when( #create a code variable for each ADP and HB
     geography == "Clackmannanshire_ADP" ~ "S11000005", geography == "Falkirk_ADP" ~ "S11000013", 
@@ -39,7 +39,7 @@ dwt <- read_csv(paste0(data_folder, "Received Data/drugs_waiting_times_2022.csv"
     geography == "Shetland_HB" ~ "S08000026", geography == "Tayside_HB" ~ "S08000030", 
     geography == "Western Isles_HB" ~ "S08000028", 
     geography == "Scotland" ~ "S00000001", TRUE ~ "Error")) %>% 
-  mutate(year = as.numeric(substr(year,1,4)))   #converting to numeric as needed for functions 
+  mutate(year = as.numeric(substr(financial_year,1,4)))   #converting to numeric as needed for functions 
 
 
 # ADPs for North and South Lanarkshire need to be combined as they are still combined as Lanarkshire in Profiles lookups
