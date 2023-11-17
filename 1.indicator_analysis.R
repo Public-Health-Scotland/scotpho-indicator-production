@@ -618,7 +618,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 #       of any geo type to Data Check 3 (comparing old and new figures)
 
 run_qa <- function(filename, old_file="default", check_extras=c()){
-   run("Data Quality Checks.Rmd")
+   run("3.Data Quality Checks.Rmd")
 }  
 
 ############################################################.
