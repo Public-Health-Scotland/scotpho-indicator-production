@@ -34,6 +34,7 @@
 #           be used like "Month snapshot" e.g. "August snapshot"
 # crude rate - Only for crude rate cases. Population the rate refers to, e.g. 1000 = crude rate per 1000 people
 # epop_total - the total european population for the ages needed. For all ages the Epop_total = 200000 (100000 per sex group)
+# qa - parameter can be true/false - governs if inequalities indicator QA should be run - by default checks are set to run
 
 ###############################################.
 ## Packages and filepaths ----
@@ -45,21 +46,19 @@ library(RcppRoll) #for moving averages
 library(broom) #for the models
 library(purrr) #for the models
 library(binom)
+library(rmarkdown) #for data quality checking
+library(shiny) #for data quality checking
+library(flextable) # for output tables
+library(plotly) #for data quality checking
 
-# Varies filepaths depending on if using server or not and what organisation uses it.
-if (exists("organisation") == TRUE) { #Health Scotland
-  if (organisation == "HS") { 
-    data_folder <- "X:/ScotPHO Profiles/Data/" 
-    lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-  }
-} else  { #ISD, first server then desktop
-  if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-    data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
-    lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-  } else {
-    data_folder <- "//stats/ScotPHO/Profiles/Data/"
-    lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
-  }
+# Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly
+if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) { #if session on server
+  data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+  lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
+  
+} else { #else assumes using desktop
+  data_folder <- "//stats/ScotPHO/Profiles/Data/"
+  lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
 }
 
 ##################################################.
@@ -68,7 +67,7 @@ if (exists("organisation") == TRUE) { #Health Scotland
 analyze_deprivation <- function(filename, yearstart, yearend, time_agg, 
                                 measure = c("percent", "crude", "stdrate", "perc_pcf"),
                                 epop_age = NULL, epop_total = NULL, pop = NULL, 
-                                pop_pcf = NULL, crude_rate, ind_id, year_type) {
+                                pop_pcf = NULL, crude_rate, ind_id, year_type, qa=TRUE) {
   
   ###############################################.
   ## Part 1 - Read in raw data and add in lookup info ----
@@ -417,14 +416,40 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
   ##################################################.
   ##  Part 8 - Checking results ----
   ##################################################.
-  #Selecting Health boards and Scotland for latest year in dataset
-  ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                               & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
-         aes(code, rate) ) +
-    geom_point(stat = "identity") +
-    geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+  
+  if (qa == FALSE) { #if you don't want to run full data quality checks set qa=false then only scotland chart will be produced
+    #Selecting Health boards and Scotland for latest year in dataset
+    ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                       & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
+           aes(code, rate) ) +
+      geom_point(stat = "identity") +
+      geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+    
+  } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
+    
+    run_ineq_qa(filename={{filename}},old_file="default")} 
 
 }
+
+############################################################.
+## Function : Run Inequality Indicator Quality Assurance ----
+############################################################.
+# Function below runs an rmarkdown report (.Rmd) that runs through standard checks of indicator data
+# The report requires one manadatory parameter (the indicator filename) to run but there are several optional
+#  parameters to adjust
+# new_ind - (default is false) if indicator is new there might be no historic file to check against - changing parameter to true will allow skipping of historic checks.
+# filename - required - determines which indicator_data file is used for checking
+# old_file - (optional - if the indicator has changed name and you want to compare old and new files which have different names)
+#                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
+# check_extras - (default empty) parameter can be used to add bespoke geographies of any geo type to Data Check 3 (comparing old and new figures)
+
+run_ineq_qa <- function(filename, new_ind= FALSE, old_file="default", check_extras=c()){
+  run("4.Data Quality Checks_inequalities indicators.Rmd")
+}  
+
+
+
+
 
 
 ##################################################.
@@ -540,6 +565,9 @@ data_depr_totals <- left_join(data_depr_totals, data_depr_match,
 data_depr <- bind_rows(data_depr, data_depr_totals) 
 data_depr <<- data_depr
 } #end sii/rii/paf/range function
+
+
+
 
 
 ##END
