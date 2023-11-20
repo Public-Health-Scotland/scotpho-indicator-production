@@ -1,63 +1,66 @@
-# ScotPHO indicators: HPV vaccination in S3 girls
+# Analyst notes ---------------------------------------------------------------
+
+# This script updates the following indicator:-
+# 13032 - Uptake of the HPV vaccine in S3 girls
+
+# Data is provided by the immunisations team and should be saved in the HPV vaccine uptake subfolder
+# This data can be provided following the release of the 'HPV Immunisation Statistics Scotland' publication which is usually published at the end of November
+# Note they provide one years worth of data each year, therefore we append the latest received data extract onto the historic data
+# Then save a 'new' version of the historic data to be used the next year 
+
+
 
 #   Part 1 - Prepare basefile
 #   Part 2 - Run analysis functions
+#   Part 3 - create new historic data extract
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
+
+# dependencies -----------------------------------------------------------------
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
-###############################################.
-## Part 1 - Prepare basefile ----
-###############################################.
-# Reading data provided by immunisations team
-# Data requested in more than one file 
-# Data for 2009/10 to 2016/17
-hpv_data_old <- read.spss(paste0(data_folder, "Received Data/HPV_raw_2009_2016.sav"), 
-                          to.data.frame=TRUE, use.value.labels=FALSE)
 
-# Data for 2017/18
-hpv_data_17 <- read.spss(paste0(data_folder, "Received Data/2018_HPVuptakeAndRates.sav"), 
-                      to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% rename(datazone = datazone2011) %>% 
+# 1. Prepare base file ----------------------------------------------------------
+
+# read in historic data
+hpv_data_historic <- readRDS(paste0(data_folder, "Received Data/HPV vaccine uptake/historic_data_DO_NOT_DELETE.rds"))
+# save backup copy
+saveRDS(paste0(data_folder, "Received Data/HPV vaccine uptake/historic_data_backup.rds"))
+
+# read in latest years data 
+hpv_data_latest <- readRDS(paste0(data_folder, "Received Data/HPV vaccine uptake/2022 - HPV uptake.rds")) %>%
+  rename(datazone = geography) %>% 
   filter(substr(datazone,1,3) == "S01") %>% 
-  mutate(year = 2017) %>% #so it follows standard in functions
-  select(-rates, -schoolyear_ending) 
+  mutate(numerator = numerator_female, 
+         denominator = denominator_female) %>%
+  mutate(year = 2021) %>% # change each year
+  select(datazone, year, numerator, denominator) 
 
-# Data for 2018/19
-hpv_data_18 <- read.spss(paste0(data_folder, "Received Data/2019_HPVuptakeAndRates.zsav"), 
-                         to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% rename(datazone = geography) %>% 
-  filter(substr(datazone,1,3) == "S01") %>% 
-  mutate(year = 2018) %>% #so it follows standard in functions
-  select(-rates, -schoolyear_ending) 
 
-# Data for 2019/20
-hpv_data_19 <- read_rds(paste0(data_folder, "Received Data/2020 - HPV uptake.rds")) %>% 
-                         #to.data.frame=TRUE, use.value.labels=FALSE) 
-  setNames(tolower(names(.))) %>% rename(datazone = geography) %>% 
-  filter(substr(datazone,1,3) == "S01") %>% 
-  mutate(year = 2019) %>% #so it follows standard in functions
-  select(-rates, -schoolyear_ending) 
+# combine new and historic data
+hpv_data <- rbind(hpv_data_historic, hpv_data_latest)
 
-hpv_data <- rbind(hpv_data_19, hpv_data_18, hpv_data_17, hpv_data_old) #merging both together
 
+# save a version to be used in analysis functions 
 saveRDS(hpv_data, file=paste0(data_folder, 'Prepared Data/hpv_uptake_raw.rds'))
 
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
+
+
+# Part 2 - Run analysis functions ----------------------------------------------
 analyze_first(filename = "hpv_uptake", geography = "datazone11", measure = "percent", 
-              yearstart = 2009, yearend = 2019, time_agg = 3)
+              yearstart = 2009, yearend = 2021, time_agg = 3)
 
 analyze_second(filename = "hpv_uptake", measure = "percent", time_agg = 3, 
                ind_id = 13032, year_type = "school")
 
-#Deprivation analysis function
+# Deprivation analysis function
 analyze_deprivation(filename="hpv_uptake", measure="percent", time_agg=3, 
-                    yearstart= 2014, yearend=2019,   year_type = "school", 
+                    yearstart= 2014, yearend=2021,   year_type = "school", 
                     ind_id = 13032)
+
+
+# If everything looks as expected, then save a new version of the historic data which includes the latest year
+# This will overwrite the older version in the folder 
+saveRDS(hpv_data, file=paste0(data_folder, 'Prepared Data/historic_data_DO_NOT_DELETE.rds'))
 
 ##END
