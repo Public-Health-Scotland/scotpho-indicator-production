@@ -1,5 +1,4 @@
-# ScotPHO indicator: Drug and alcohol co-dependency treatment waiting times
-# New indicator added in October 2022
+# ScotPHO indicators: Alcohol treatment waiting times - % where LDP Standard (90%) not met
 
 #   Part 1 - Create basefile
 #   Part 2 - Format  Basefile for macro
@@ -10,12 +9,14 @@
 ###############################################.
 source("1.indicator_analysis.R") #Normal indicator functions
 
+
+
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
-#Reading data provided by DWT team
-cwt <- read_csv(paste0(data_folder, "Received Data//Drug and alcohol treatment waiting times/2023 request/co-dependency_waiting_times.csv")) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
+#Reading data provided by AWT team
+awt <- read_csv(paste0(data_folder, "Received Data/Drug and alcohol treatment waiting times/2023 request/alcohol_waiting_times.csv")) %>% 
+  setNames(tolower(names(.))) %>%    #variables to lower case
   mutate(code = case_when( #create a code variable for each ADP and HB
     geography == "Clackmannanshire_ADP" ~ "S11000005", geography == "Falkirk_ADP" ~ "S11000013", 
     geography == "Stirling_ADP" ~ "S11000029", geography == "East Ayrshire_ADP" ~ "S11000008", 
@@ -44,7 +45,7 @@ cwt <- read_csv(paste0(data_folder, "Received Data//Drug and alcohol treatment w
 
 
 # ADPs for North and South Lanarkshire need to be combined as they are still combined as Lanarkshire in Profiles lookups
-cwt <- cwt %>%
+awt <- awt %>%
   mutate(code = case_when(geography == "South Lanarkshire_ADP" ~ "S11000052",
                           geography == "North Lanarkshire_ADP" ~ "S11000052",
                           TRUE ~ as.character(code))) %>% 
@@ -56,13 +57,14 @@ cwt <- cwt %>%
   ungroup()
 
 
-saveRDS(cwt, file=paste0(data_folder, 'Temporary/Co-dependency_waiting_times_formatted.rds'))
+
+saveRDS(awt, file=paste0(data_folder, 'Temporary/Alcohol_waiting_times_formatted.rds'))
 
 ###############################################.
-## Part 2 - Call analysis macros ----
+## Part 3 - Call analysis macros ----
 ###############################################.
-analyze_second(filename = "Co-dependency_waiting_times", measure = "percent", 
-               time_agg = 1, ind_id = 4150, year_type = "financial")
+analyze_second(filename = "Alcohol_waiting_times", measure = "percent", 
+               time_agg = 1, ind_id = 4119, year_type = "financial")
 
 
 ##END
