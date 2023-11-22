@@ -1,66 +1,56 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####      Children looked after by local authority indicator prep         #####
-#########                                                              #########
-################################################################################
-################################################################################
+### Indicator name and definition -----------------------------------------------
 
-## This script analyses Scottish Government data on the number of children looked
-## after by a local authority.
+# This script prepares data for the following indicator:-
+# 20503 - Children looked after by local authority
 
-## The data at local authority level is not published routinely; this needs to be
-## requested from the Children and Families Directorate (email: 
-## childrens.statistics@gov.scot)
+# Full definition:
+# Children looked after by the local authority; number and rate per 1,000 children aged 0-17 years.
+# based on children looked after as at 31 July when snapshot taken
 
-################################################################################
-#####                          install packages etc                        #####
-################################################################################
-## remove any existing objects from global environment
-rm(list=ls()) 
+#   Part 1 - extract data and format to be used in analysis functions
+#   Part 2 - Run analysis functions 
 
-## install packages
-#install.packages("tidyverse")
-library(tidyverse) # all kinds of stuff 
-library(stringr) # for strings
 
-organisation <- "HS" 
 
-## set file pathways
-# NHS HS PHO Team Large File repository file pathways
-data_folder <- "X:/ScotPHO Profiles/Data/" 
-lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
+### Analyst notes ---------------------------------------------------------------
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-source("./1.indicator_analysis.R") #Normal indicator functions
-source("./2.deprivation_analysis.R") # deprivation function
+# Data is extracted using the 'opendatascot' package
 
-################################################################################
-#####                          read in prepared data                       #####
-################################################################################
-# read in csv
-looked_after<- read.csv(paste0(data_folder, "Received Data/looked_after_raw.csv"))
+# uncomment the 2 lines below to install package if required:-
+# install.packages("devtools")
+# devtools::install_github("datasciencescotland/opendatascot")
 
-saveRDS(looked_after, file=paste0(data_folder, "Prepared Data/looked_after_raw.rds"))
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-analyze_first(filename = "looked_after", geography = "council", 
-              measure = "crude", yearstart = 2011, yearend = 2018, time_agg = 1)
 
-looked_after_temp <- readRDS("X:/ScotPHO Profiles/Data/Temporary/looked_after_formatted.rds")
+### Part 1 - extract and prepare data ------------------------------------------
 
-write.csv (looked_after_temp, "X:/ScotPHO Profiles/Data/Temporary/looked_after_formatted_temp.csv")
+# 1.a load dependencies/functions ----
+source("1.indicator_analysis.R") 
+library(opendatascot)
 
-looked_after_formatted <- read.csv(paste0(data_folder, "Temporary/looked_after_formatted_temp.csv"))
 
-saveRDS(looked_after_formatted, file=paste0(data_folder, "Temporary/looked_after_formatted.rds"))
+#1.b extract data ----
+looked_after_children <- opendatascot::ods_dataset("looked-after-children",
+                                                   measureType="count",
+                                                   residentialStatus = "all",
+                                                   geography = "la") 
 
-# then complete analysis with the updated '_formatted.rds' file
+#1.c format data ----
+looked_after_children  %<>%
+  select(ca = refArea, year = refPeriod, numerator = value) %>%
+  mutate(across(c("year", "numerator"), as.numeric))
+  
+  
+  
+#1.d save file to be used in analysis functions ------
+saveRDS(looked_after_children, file=paste0(data_folder, 'Prepared Data/looked_after_raw.rds'))
+
+
+
+### Part 2 - Run analysis functions  ---------------------------------
+analyze_first(filename = "looked_after", geography = "council", pop = "CA_pop_under18",
+              measure = "crude", yearstart = 2009, yearend = 2022, time_agg = 1)
+
+
 analyze_second(filename = "looked_after", measure = "crude", time_agg = 1,
-              ind_id = 13038, year_type = "July snapshot", crude_rate = 1000)
-
-
+               ind_id = 20503, year_type = "July snapshot", crude_rate = 1000)
 
