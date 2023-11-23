@@ -54,7 +54,12 @@ data <- data %>%
          year = as.numeric(str_sub(trend_axis, start= 1, end = 4))+2,
          def_period = paste0("4-year aggregate (",trend_axis,")"),
          code = ifelse(code == "S92000003", "S00000001", code),
-         numerator = "") %>%
+         numerator = "",
+         ind_id = case_when(indicator == "food_insecurity" ~ 99105,
+                            indicator == "healthy_weight_adults" ~ 99106,
+                            indicator == "physical_activity" ~ 99107,
+                            indicator == "self_assessed_health" ~ 99108,
+                            indicator == "limiting_long_term_condition" ~ 99109)) %>%
   
   # Change sex from long to wide format
   pivot_wider(names_from = sex, values_from = value)
