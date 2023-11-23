@@ -75,7 +75,7 @@ prepare_shiny_file <- function(ind, sex_grp) {
   #  Select relevant data and change format
   dat <- data %>%
     filter(indicator == ind) %>%
-    select(sex_grp, code, year, measure, numerator, def_period, trend_axis) %>%
+    select(ind_id, sex_grp, code, year, measure, numerator, def_period, trend_axis) %>%
     pivot_wider(names_from = "measure", values_from = sex_grp) %>%
     arrange(year)
   
