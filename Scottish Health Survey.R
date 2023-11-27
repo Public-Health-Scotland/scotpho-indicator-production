@@ -1,36 +1,32 @@
-###   Update ScotPHO Care and Wellbeing indicators: 
+###   Update ScotPHO Care and Wellbeing indicators sourced from Scottish Health Survey: 
 #   Food insecurity
 #   Healthy Weight adults
 #   Physical Activity
 #   Self-assessed health of adults (age 16+)
 #   Limiting long-term conditions (age 16+)
 
-
+# all indicators available as male/female/all splits
 
 # Data source is the Scottish Health Survey open data on statistics.gov.scot
 # https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data
 
 
-
 ### functions/packages -----
 source("1.indicator_analysis.R") 
 library(devtools)
-library(janitor)
 library(opendatascot)
-
 
 
 ### 1. Read in SHeS open data using opendatascot package ----
 
-# Read in data
+# Read in data for required indicators
 data <- opendatascot::ods_dataset("scottish-health-survey-local-area-level-data",
                                   scottishHealthSurveyIndicator = c("food-insecurity-worried-would-run-out-of-food-yes",
                                                                     "healthy-weight-healthy-weight",
                                                                     "summary-activity-levels-meets-recommendations",
-                                                                    "good", # self-assessed health
+                                                                    "good", # self-assessed health (good or very good)
                                                                     "long-term-illness-limiting-long-term-illness")) %>%
                                   clean_names()
-
 
 
 ### 2. Prepare data  -----
@@ -66,7 +62,6 @@ data <- data %>%
 
 
 
-
 ### 3. Prepare final files -----
 
 # Create function to prepare final shiny outputs
@@ -77,12 +72,14 @@ prepare_shiny_file <- function(ind, sex_grp) {
     filter(indicator == ind) %>%
     select(ind_id, sex_grp, code, year, measure, numerator, def_period, trend_axis) %>%
     pivot_wider(names_from = "measure", values_from = sex_grp) %>%
-    arrange(year)
+    arrange(code, year, sex_grp) %>%
+    rename(rate=percent) # shiny file expects all measure fiedls to be named rate even if not strictly a rate
   
   # Save files in folder to be checked
   write.csv(dat, paste0(data_folder, "Data to be checked/", ind, "_", sex_grp, "_shiny.csv"), row.names = FALSE)
   write_rds(dat, paste0(data_folder, "Data to be checked/", ind, "_", sex_grp, "_shiny.rds"))
   
+  indicator_result <<- dat # make data file created available outside of function so it can be visually inspected if required
 }
 
 
@@ -95,4 +92,13 @@ for (i in unique(data$indicator)){
   }
 }
 
+# Run QA reports for each indicator check the output files
 
+run_qa(filename="food_insecurity_all")
+run_qa(filename="healthy_weight_adults_all")
+run_qa(filename="physical_activity_all")
+run_qa(filename="self_assessed_health_all")
+run_qa(filename="limiting_long_term_condition_all")
+
+
+#END
