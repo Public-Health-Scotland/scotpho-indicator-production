@@ -11,17 +11,31 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 
-#read in geography code names dictionary
+#Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
 #Add geography code names
-data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code")
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
+mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name to ease identification
 
-#Test which optional geographies are present in dataset
-board <- any(substr(data_indicator$code,1,3) == "S08")
+#Read in old indicator data file from network /Shiny data folder - if one exists
+old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.csv") #create value which is file path to old file
+
+# statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
+if(file.exists(old_indicator_filepath)) {
+  skip_historic_file_checks <-"n"
+  old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", filename, "_shiny.csv")) #read in file if one exists
+} else {
+  skip_historic_file_checks <-"y"
+  old_indicator_filepath <-"no historic file available for comparison" #if no historic file exists set value to no file available
+}
+
+#Logical test of which optional geographies are present in data set
+# values will return TRUE/FALSE according to whether each geogrpahy type is present
+board <- any(substr(data_indicator$code,1,3) == "S08") 
 ca <- any(substr(data_indicator$code,1,3) == "S12")
 hscp <- any(substr(data_indicator$code,1,3) == "S37")
 adp <- any(substr(data_indicator$code,1,3) == "S11")
@@ -42,36 +56,10 @@ if(iz==TRUE){check_codes <- c(check_codes,"S02001236")}
 ##If ADP true add ADP geography to check codes
 if(adp==TRUE){check_codes <- c(check_codes,"S11000006")}
 
-# #Optional parament allows for old indicator name to be different to current name.
-  # if (old_file == "default") {  #if no old_filename supplied default to new filename supplied
-  #   old_filename <- {{filename}}
-  # } else if (old_file != "default") {
-  #   old_filename <- {{old_file}}}
-
 #Recode missing CI to zeros rather than NA to allow report to run
 data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
 data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
   
-
-#Reading last shiny data file loaded for comparisons.
-# Need error handing if mathcing file name can't be found?
-# if (skip=="n"){
-#   old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", old_filename, "_shiny.csv")) 
-# } else if (skip=="y"){
-#   old_data_indicator <-"no comparison file"
-# }
-
-
-test_old_indicator_data <- paste0(data_folder, "Shiny Data/", filename, "_shiny.csv")
-
-if(file.exists(test_old_indicator_data)) {
-  skip_checks <-"n"
-  old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", filename, "_shiny.csv")) 
-} else {
-  skip_checks <-"y"
-  old_data_indicator <-"no comparison file"
-}
-
 
 ```
 
@@ -84,7 +72,7 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
 
-**Old** indicator file (for comparisons):  /`r (paste0(test_old_indicator_data)) `<br>
+**Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath)) `<br>
 
 **Check extras** (optional parameter) `r check_extras` <br>
 **Geography parameters** <br>
@@ -97,6 +85,7 @@ Intermediate zone: `r iz` <br>
 ------------------------------------------------------------------------------------
 
 ###Data check 1:
+<br>
 ####What geographical levels and years are present, how many unique geographies appear?
 
 ```{r include=FALSE}
@@ -113,51 +102,47 @@ geo_checks <- data_indicator %>%
 # Not sure how to handle indicators with ADP or only Council area - need to think about this...
 
 ft_geo_check <- flextable(geo_checks) %>%
-  color(~ S08!=14, ~S08, color = "red") # Should be 14 NHS board
+  color(~ S08!=14, ~S08, color = "red") # Applies conditional formatting - should be 14 NHS board
 
 if(ca == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S12!=32, ~S12, color = "red")}    #should be 32 councils
 if(adp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S11!=30, ~S11, color = "red")}   #should be 30 ADP
 if(hscp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S37!=31, ~S37, color = "red")}  #should be 31 hscp
 if(iz == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S02!=1279, ~S02, color = "red")}  #should be 1279 2011 IZ
 
-ft_geo_check <- ft_geo_check %>%
-  autofit()
-
-#saving flextable as image to work around pandoc issues
-save_as_image(ft_geo_check, path = "check1.png")
-
 ```  
 
 Are the expected geographies appearing for all expected years?<br>
-Cells contain the number of unique geography codes split by geography type.<br>
-Conditional formatting highlights where geographies present are not equal to expected (e.g. 14 NHS boards, 32 councils or 31 HSCP)<br>
-If some geographies are missing consider:<br>
-Is any suppression already applied to the dataset?<br>
-Might there legitimately be no data for that area (e.g. there might have been no deaths in that intermediate zone)?
+Conditional formatting shoudl highlight where geographies present are not equal to expected (e.g. 14 NHS boards, 32 councils or 31 HSCP)<br>
+If geographies are missing consider:<br>
+Has any suppression been applied to the dataset?<br>
+Are there legitimate reasons why be no data for some areas?
 
 ```{r, out.width = "400px", echo=FALSE}
 #knitr::include_graphics("check1.png")
 
 #print flextable - this method of printing flextables should work when pandoc gets updated
-ft_geo_check 
+ft_geo_check %>%
+  autofit()
 
 ```
 
 ------------------------------------------------------------------------------------  
 
 ###Data check 2:
+<br>
 ####How many new rows added in latest update?
 
 **Note** some indicators generate data for geographies that are not available in live tool
 (e.g. alcohol mortality we generate IZ data but this is not routinely published to avoid secondary disclosure)
 
 ```{r, include=FALSE}
-if(skip_checks=="n"){
+
+if(skip_historic_file_checks=="n"){
 new_row <- nrow(data_indicator)
 old_row <- nrow(old_data_indicator)
 } else {
 new_row <- nrow(data_indicator)
-old_row <- 0}   
+old_row <- nrow(data_indicator)}   
 
 
 ```
@@ -167,10 +152,11 @@ old_row <- 0}
 
 ------------------------------------------------------------------------------------  
 
-###Data check 3:
+###Data check 3:(optional)
+<br>
 ####How does new data compare to figures prepared last time (ie those in Shiny data folder)?
 
-The table below compares the numerator, measure and CI of the latest file against the last shiny data file prepared.<br>
+The table below compares the numerator, measure and CI of the latest file against the last shiny data file prepared (if historic file available).<br>
 Conditional formatting will highlight when figures do not match, tolerance is to 3 decimal places <br>
 New rows of data (e.g. the latest year of data) cannot be compared if it wasn't available in last year <br>
 Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences. <br>
@@ -179,7 +165,7 @@ Use your judgement to decide if any differences are acceptable.
 ```{r, include=FALSE}
 
 # Need to add function to skip this check if no old_data is available
-if (skip_checks=="n"){
+if (skip_historic_file_checks=="n"){
 
 new_scot <- data_indicator %>% subset(code %in% check_codes)
 old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
@@ -216,25 +202,25 @@ ft_check3 <- flextable(matched,
   color(~ lowci_match !=0,~lowci_match, color= "red") %>% 
   color(~ upci_match !=0,~upci_match, color = "red") %>%
   autofit()
-
-#saving flextable as image to work around pandoc issues
-save_as_image(ft_check3 , path = "check3.png")
-
-knitr::include_graphics("check3.png")
-
-
-} else {
-  test <-"y"
+} else { # if 
+#do nothing if checks to be skipped
 }
-
-
 ```
+```{r, out.width = "400px", echo=FALSE}
 
-
+if (skip_historic_file_checks=="n"){
+ft_check3%>%
+  autofit()
+  
+} else{ #if no historic file
+  paste0("No historic data file present to carry out comparisons")
+}
+  
+```
 
 ------------------------------------------------------------------------------------
 
-####Data check 4:
+###Data check 4:
 ####Rates & Confidence intervals
 Do any rates fall outwith the confidence limits - they shouldn't!?
 
@@ -254,7 +240,7 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 
 ------------------------------------------------------------------------------------
 
-####Data check 5:
+###Data check 5:
 ####Scotland & NHS boards
 Does Scotland rate seem like a sensible figure, how wide are the confidence intervals? <br>
 Does Scotland rate look about average of all NHS boards.<br>
@@ -413,7 +399,7 @@ Small shiny app to view data trends for one or more geography
 shinyApp(
 
   ui = fluidPage(
-     selectInput("code_selected", "Area:", choices = unique(data_indicator$code),multiple = TRUE, selected="S00000001"),
+     selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = TRUE, selected="S00000001: Scotland"),
      radioButtons("var_plot_trend", label =NULL,
                                        choices = c("Rate/Percentage"="rate",
                                                    "Numerator"="numerator")),
@@ -422,12 +408,14 @@ shinyApp(
     ),
   
   
+
+  
   server = function(input, output) {
 
       # Creating plot for ui side
   output$trend_plot <- renderPlotly({
 
-    trend_data <- data_indicator %>% subset(code %in% input$code_selected)
+    trend_data <- data_indicator %>% subset(code_name %in% input$code_selected)
 
     trend_palette <- c("#000000", "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99",
                          "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#b15928")
