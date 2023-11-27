@@ -62,6 +62,7 @@ library(plotly) # for data quality checking
 library(htmltools) # for data quality checking
 library(magrittr) # for other pipe operators
 library(stringr) # for manipulating strings
+library(janitor) #helps cleaning imported variable names
 
 # Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly
 if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) { #if session on server
@@ -586,7 +587,8 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
   ##  Part 6 - Checking results ----
   ##################################################.
   if (qa == FALSE) { #if no quality assurance desired
-    # Selecting Health boards and Scotland for latest year in dataset
+
+        # Selecting Health boards and Scotland for latest year in dataset
     ggplot(data = data_indicator %>% filter((substr(code, 1, 3)=="S08" | code=="S00000001") 
                                             & year== max(year)), aes(code, rate) ) +
       geom_point(stat = "identity") +
