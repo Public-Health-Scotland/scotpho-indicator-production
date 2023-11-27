@@ -2,35 +2,30 @@
 #   99111: Employees on the living wage
 
 
-
 # Data source is ONS Annual Survey of Hours and Earnings published on the Scottish Government website:
 # https://www.gov.scot/publications/annual-survey-of-hours-and-earnings-2022/
 
 
-
 ### functions/packages -----
 source("1.indicator_analysis.R") 
-library(readxl)
-library(dplyr)
-library(janitor)
-
 
 
 ### 1. Read in data ----
 
 # Identify file
-file <- paste0(data_folder, "Received Data/", list.files(path=paste0(data_folder,"Received Data/"), 
+source_file <- paste0(data_folder, "Received Data/", list.files(path=paste0(data_folder,"Received Data/"), 
                                                          pattern="Annual-Survey-of-Hours-and-Earnings-2022-Tables"))
 
-# Set ranges for all, men and women tables
+# Set ranges for all, men and women tables (Table 5.2)
+# as additional years of data are added data ranges will need to be adjusted
 ranges <- c("A5:F17", "A20:F31", "A34:F45")
 
 
 # Function to read in tables
 data <- lapply(ranges, function(i){
   
-  x = read_excel(file, sheet = "Table 5.2", range = i)
-  colnames(x) = c("year", "less_number", "more_number", "blank", "less_prop", "percent")
+  x = read_excel(source_file, sheet = "Table 5.2", range = i)
+  colnames(x) = c("year", "less_number", "more_number", "blank", "less_prop", "rate")
   x$sex = i
   x
   
@@ -47,10 +42,10 @@ data <- do.call("rbind.data.frame", data)
 data <- data %>%
   
   # Select relevant columns
-  select(sex, year, percent) %>%
+  select(sex, year, rate) %>%
   
-  # Remove NAs
-  na.omit() %>%
+  # Remove all
+  filter(year != "All") %>%
   
   # Transform range into sex and create columns
   mutate(sex = str_replace(sex, "A5:F17", "all"),
@@ -64,7 +59,8 @@ data <- data %>%
          numerator = NA) %>%
   
   # Filter for 2021 and 2022 (earlier data not directly comparable)
-  filter(year %in% c("2021", "2022"))
+  filter(year %in% c("2021", "2022")) %>%
+  arrange(code, year, sex)
   
 
 
