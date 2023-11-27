@@ -1,19 +1,13 @@
 ###   Update ScotPHO Care and Wellbeing indicator: 
 #   99110: Gender Pay Gap
 
-
-
 # Data source is ONS Annual Survey of Hours and Earnings:
 # https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/annualsurveyofhoursandearningsashegenderpaygaptables
-
-
 
 ### functions/packages -----
 source("1.indicator_analysis.R") 
 library(readxl)
 library(dplyr)
-library(janitor)
-
 
 
 ### 1. Read in data ----
@@ -54,10 +48,10 @@ data <- data %>%
          numerator = NA) %>%
   
   # Rename columns
-  rename(percent = median) %>%
+  rename(rate = median) %>%
   
   # Select relevant columns
-  select(ind_id, code, year, percent, lowci, upci,
+  select(ind_id, code, year, rate, lowci, upci,
          numerator, def_period, trend_axis) %>%
   
   # Filter for Scotland data
@@ -72,3 +66,8 @@ write.csv(data, paste0(data_folder, "Data to be checked/", "gender_pay_gap_shiny
 write_rds(data, paste0(data_folder, "Data to be checked/", "gender_pay_gap_shiny.rds"))
   
 
+# Run QA reports for each indicator check the output files
+run_qa(filename = "gender_pay_gap")
+
+
+# END
