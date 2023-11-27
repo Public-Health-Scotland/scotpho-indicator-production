@@ -79,10 +79,16 @@ data_drugmat <- data_drugmat %>%
 #change order of variables to match other inidcator data files
 
 data_drugmat <- data_drugmat %>% 
-  select(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)
+  select(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis) %>%
+  arrange(code,year)
 
 #Including both rds and csv file for now
 saveRDS(data_drugmat, file = paste0(data_folder, "Data to be checked/maternity_druguse_shiny.rds"))
-write_csv(data_drugmat, path = paste0(data_folder, "Data to be checked/maternity_druguse_shiny.csv"))
+write_csv(data_drugmat, file = paste0(data_folder, "Data to be checked/maternity_druguse_shiny.csv"))
+
+
+# This script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="maternity_druguse",old_file="default")
+
 
 ##END

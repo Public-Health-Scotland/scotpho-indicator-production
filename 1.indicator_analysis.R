@@ -64,21 +64,15 @@ library(magrittr) # for other pipe operators
 library(stringr) # for manipulating strings
 library(janitor) #helps cleaning imported variable names
 
-# Varies filepaths depending on if using server or not and what organisation uses it.
-if (exists("organisation") == TRUE) { #Health Scotland
-  if (organisation == "HS") { 
-    data_folder <- "X:/ScotPHO Profiles/Data/" 
-    lookups <- "X:/ScotPHO Profiles/Data/Lookups/"
-  }
-} else  { # ISD, first server then desktop
-  if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
+# Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly
+if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) { #if session on server
     data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
     lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
-  } else {
+    
+  } else { #else assumes using desktop
     data_folder <- "//stats/ScotPHO/Profiles/Data/"
     lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
   }
-}
 
 # Setting permissions so files can be overwritten, read without permission issues
 Sys.umask("006")
@@ -620,7 +614,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 #       of any geo type to Data Check 3 (comparing old and new figures)
 
 run_qa <- function(filename, old_file="default", check_extras=c()){
-   run("Data Quality Checks.Rmd")
+   run("3.Data Quality Checks.Rmd")
 }  
 
 ############################################################.

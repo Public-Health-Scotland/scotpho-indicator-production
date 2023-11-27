@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 
+
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
@@ -18,6 +19,7 @@ code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
 #Add geography code names
+
 data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
 mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name to ease identification
 
@@ -60,7 +62,6 @@ if(adp==TRUE){check_codes <- c(check_codes,"S11000006")}
 data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
 data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
   
-
 ```
 
 Indicator:  **`r filename`**
@@ -71,8 +72,8 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
 ------------------------------------------------------------------------------------
 
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
-
 **Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath)) `<br>
+
 
 **Check extras** (optional parameter) `r check_extras` <br>
 **Geography parameters** <br>
@@ -125,7 +126,6 @@ ft_geo_check %>%
   autofit()
 
 ```
-
 ------------------------------------------------------------------------------------  
 
 ###Data check 2:
@@ -144,13 +144,13 @@ old_row <- nrow(old_data_indicator)
 new_row <- nrow(data_indicator)
 old_row <- nrow(data_indicator)}   
 
-
 ```
 
 1.Rows in new shiny file: **`r new_row`** <br>
 2.Rows added compared to last file: **`r paste0(c(new_row-old_row))`**
 
 ------------------------------------------------------------------------------------  
+
 
 ###Data check 3:(optional)
 <br>
@@ -164,9 +164,7 @@ Use your judgement to decide if any differences are acceptable.
 
 ```{r, include=FALSE}
 
-# Need to add function to skip this check if no old_data is available
 if (skip_historic_file_checks=="n"){
-
 new_scot <- data_indicator %>% subset(code %in% check_codes)
 old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
   select (code, year, numerator, rate, lowci, upci)
@@ -202,6 +200,7 @@ ft_check3 <- flextable(matched,
   color(~ lowci_match !=0,~lowci_match, color= "red") %>% 
   color(~ upci_match !=0,~upci_match, color = "red") %>%
   autofit()
+
 } else { # if 
 #do nothing if checks to be skipped
 }
@@ -408,8 +407,6 @@ shinyApp(
     ),
   
   
-
-  
   server = function(input, output) {
 
       # Creating plot for ui side
@@ -462,3 +459,4 @@ shinyApp(
 **Don't forget to update technical document once checks are complete**
 <br>
 <br>
+

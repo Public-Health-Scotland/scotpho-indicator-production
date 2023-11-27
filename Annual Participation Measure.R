@@ -1,7 +1,8 @@
-### notes ----
+### analyst notes ----
 
 # this script produces data for the following indicator:- 13053- Annual participation (in education, training or employment) measure for 16 – 19 year olds
-
+# save latest supplementary tables in the 'data recieved folder' before running this script 
+# and make sure to update the year in the  filepath when reading in the data
 
 # data source: https://www.skillsdevelopmentscotland.co.uk/publications-statistics/statistics/annual-participation-measure/
 
@@ -21,7 +22,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-dat <- read_xlsx(paste0(data_folder, "Received Data/annual-participation-measure-2022-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
+dat <- read_xlsx(paste0(data_folder, "Received Data/annual-participation-measure-2023-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
@@ -44,7 +45,7 @@ dat <- dat %>%
          `local authority` = str_replace(`local authority`, "Edinburgh City","City of Edinburgh"),
          `local authority` = str_replace(`local authority`, "Eilean Siar","Na h-Eileanan Siar")) %>%
   filter(`local authority` != "Scotland") %>%
-  left_join(ca, by = c("local authority" = "areaname"), all.x = TRUE)
+  left_join(ca, by = c("local authority" = "areaname"))
 
 
 #final formatting of data to ensure works with analyse functions 
@@ -67,7 +68,7 @@ dat <- dat %>%
 ###############################################.
   
   analyze_first(filename = "participation", geography = "council", measure = "percent",  
-                yearstart = 2015, yearend = 2022, time_agg = 1)
+                yearstart = 2015, yearend = 2023, time_agg = 1)
   
   
   analyze_second(filename = "participation", measure = "percent", 

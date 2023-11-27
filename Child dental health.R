@@ -1,41 +1,82 @@
-# ScotPHO indicators: Child dental health at P1 and P7..
+# Analyst notes ----------------------------------------------------------------
 
-#   Part 1 - Prepare P1 data
-#   Part 2 - Prepare P7 data
+# This script updates the following indicators:
+# 21005 - Child dental health P1
+# 21006 - Child dental health P7
 
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+# A data request is sent to the dental team following the release of National Dental Inspection Programme (NDIP) publication
+# publication link: https://publichealthscotland.scot/publications/national-dental-inspection-programme/ 
+# (usually published in October)
+
+
+# The team usually sent on 1 year worth of data each year
+# file should then saved in the 'Child dental health' folder
+# This script will then combine the latest years data with the historic data and save a new historic data file, ready to be used the following year
+# Once you have finished step 3 (saving the new data files) move the latest years data into the 'Archive' sub-folder.
+
+
+# Missing data:
+# no 2020/21 data for Child Dental health P1, due to the pandemic
+# no 2020/21 and 2021/22 data for Child Dental health P1, due to the pandemic
+
+
+# script changes:
+# need to change the year being populated when creating the 'year' column in p1_new and p7_new
+# i.e. if the latest data is for school year 2022/23, the year should be 2022.
+
+
+# script outline:
+# 1 - Prepare data
+# 2 - Run analysis functions 
+# 3 - Save new historic data files
+
+
+
+# dependencies -----------------------------------------------------------------
+source("1.indicator_analysis.R") # Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
-
-###############################################.
-## Part 1 - Prepare P1 data  ----
-###############################################.
-
-# read in data received
-data_p1 <- read_csv(paste0(data_folder, "Received Data/Final_P1_Letter_2021.csv"))
-
-# remove gender column and aggregate
-data_p1 <- data %>% 
-  group_by(datazone2011) %>%
-  summarise(numerator = sum(numerator, na.rm =T), 
-            denominator = sum(denominator, na.rm =T)) %>%  ungroup() %>%
-  mutate(year = 2021) %>% # add year column
-  rename("datazone" = "datazone2011")
+dental_health_subfolder <- "Received Data/Child dental health/" # dental health folder
 
 
-#saving file for analyze_first and analyze_second functions
-saveRDS(data_p1, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
+# 1 - Prepare data  ------------------------------------------------------------
+
+# read in historic data 
+p1_historic <- readRDS(paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
+#p7_historic <- readRDS(paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
+
+# read in new data
+p1_new <- read_csv(paste0(data_folder, dental_health_subfolder, "Final_P1_Letter_2021.csv")) 
+# p7_new <- read_csv(paste0(data_folder, dental_health_subfolder, ".csv")) 
 
 
-#Saving file for deprivation function
-saveRDS( data_p1, file=paste0(data_folder, 'Prepared Data/child_dental_p1_depr_raw.rds'))
+# tidy up 
+p1_new <- p1_new %>%
+  mutate(year = 2021) %>%
+  rename(datazone = datazone2011) %>%
+  select(datazone,year, numerator, denominator) 
 
 
-# run analyse functions 
+# p7_new <- p7_new %>%
+#     mutate(year = )
+#   rename(datazone = datazone2011) %>%
+#   select(datazone,year, numerator, denominator)
+
+
+# combine data
+p1_combined <- rbind(p1_historic, p1_new)
+#p7_combined <- rbind(p7_historic, p7_new)
+
+# save file to be used in analysis function 
+saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
+#saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
+
+
+
+# Part 2: Run analysis functions  ----------------------------------------------
+
+# Child dental health P1
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
               yearstart = 2012, yearend = 2021, time_agg = 1) 
 
@@ -49,70 +90,25 @@ analyze_deprivation(filename="child_dental_p1_depr", measure="perc_pcf",
                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 
-# once run analyze_first() and analyze_second(), combine old data with latest year 
-old <- readRDS(paste0(data_folder, "Shiny Data/child_dental_p1_shiny.rds"))
-new <- readRDS(paste0(data_folder, "Data to be checked/child_dental_p1_shiny.rds"))
 
-final <- rbind(old, new)
-  
-#save final files to be checked 
-saveRDS(final, paste0(data_folder, "Data to be checked/child_dental_p1_shiny.rds"))
-write_csv(final, paste0(data_folder, "Data to be checked/child_dental_p1_shiny.csv"))
-
-
-# QA the final file
-run_qa("child_dental_p1", old_file = "default", check_extras = c())
-
-# once run analyze_deprivation, combine old data with latest year 
-old <- readRDS(paste0(data_folder, "Shiny Data/child_dental_p1_depr_ineq.rds"))
-new <- readRDS(paste0(data_folder, "Data to be checked/child_dental_p1_depr_ineq.rds"))
+# Child dental health P7
+# analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
+#               yearstart = 2012, yearend = 2020, time_agg = 1)
+# 
+# 
+# analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
+#                ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
+# 
+# analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",  
+#                     yearstart= 2014, yearend=2020, time_agg=1,
+#                     year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
 
 
-final <- rbind(old, new)
+# 3. Save new historic data files ----------------------------------------------
+
+# if everything looks fine fro DQ checks - overwrite the old historic data files
+saveRDS(p1_combined, paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
+#saveRDS(p7_combined, paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
 
 
-#save final deprivation file 
-saveRDS(final, paste0(data_folder, "Data to be checked/child_dental_p1_depr_ineq.rds"))
-
-
-
-###############################################.
-## Part 2 - Prepare P7 data ----
-###############################################.
-data_p7 <- as.data.frame(rbind(
-  read_excel_sheet(extract = "IR2019-01329", sheet = "2013_P7_C_DZ2011", range = "A5:E12816"),
-  read_excel_sheet(extract = "IR2019-01329", sheet = "2014_P7_C_DZ2011", range = "A5:E12775"),
-  read_excel_sheet(extract = "IR2019-01329", sheet = "2015_P7_C_DZ2011", range = "A5:E12721"),
-  read_excel_sheet(extract = "IR2019-01329", sheet = "2016_P7_C_DZ2011", range = "A5:E12836"),
-  read_excel_sheet(extract = "IR2021-00006", sheet = "2016.17_P7_letter_C", range = "A4:E12954"),
-  read_excel_sheet(extract = "IR2021-00006", sheet = "2017.18_P7_letter_C", range = "A4:E12968"),
-  read_excel_sheet(extract = "IR2021-00006", sheet = "2018.19_P7_letter_C", range = "A4:E13000"),
-  read_excel_sheet(extract = "IR2021-00006", sheet = "2019.20_P7_letter_C", range = "A4:E13000"))) %>% 
-  group_by(datazone, year) %>% #aggregating 
-  mutate(numerator = as.numeric(numerator)) %>% 
-  summarise(numerator = sum(numerator, na.rm =T), 
-            denominator = sum(denominator, na.rm =T)) %>% ungroup()
-
-saveRDS(data_p7, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
-
-#Saving file for deprivation, only from 2014 for simd2016
-saveRDS(data_p7 %>% filter(year>=2014), file=paste0(data_folder, 'Prepared Data/child_dental_p7_depr_raw.rds'))
-
-
-
-
-###############################################.
-#Children at P7
-analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2020, time_agg = 1)
-
-
-
-analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
-               ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
-
-analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend=2020, time_agg=1,
-                    year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
-
-##END
+# END
