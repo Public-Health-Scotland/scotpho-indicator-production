@@ -25,7 +25,7 @@ ranges <- c("A5:F17", "A20:F31", "A34:F45")
 data <- lapply(ranges, function(i){
   
   x = read_excel(source_file, sheet = "Table 5.2", range = i)
-  colnames(x) = c("year", "less_number", "more_number", "blank", "less_prop", "rate")
+  colnames(x) = c("year", "less_number", "more_number", "blank", "rate", "more_prop")
   x$sex = i
   x
   
