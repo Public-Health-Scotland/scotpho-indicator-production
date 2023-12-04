@@ -11,15 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 
-
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
-#Add geography code names
-
+#Add geography code names - useful when exploring outfiles in shiny
 data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
 mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name to ease identification
 
