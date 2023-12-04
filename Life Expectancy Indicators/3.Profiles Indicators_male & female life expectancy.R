@@ -21,8 +21,8 @@
 ## Packages/Filepaths ----
 ###############################################.
 
-source("1_functions for life expectancy.R") # Normal indicator functions
-
+source("Life Expectancy Indicators/1.Functions_life_expectancy.R")
+source("1.indicator_analysis.R") #doesn't use the functions, but quick way of getting packages and folders
 
 ##########################################################################################.
 ## Part 1 - read in file with life expectancy figures at IZ  ----
@@ -112,11 +112,17 @@ all_le_data<- bind_rows(le0_iz_profiles, NRS_data) %>%
 ## Male life expectancy file
 profile_data_male_LE <- all_le_data %>% subset(ind_id=="20101") 
 
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_male",old_file="default")
+
 write_csv(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.csv"))
 write_rds(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.rds"))
 
 ## Female life expectancy file
 profile_data_female_LE <- all_le_data %>% subset(ind_id=="20102") 
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_female",old_file="default")
 
 write_csv(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.csv"))
 write_rds(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.rds"))
