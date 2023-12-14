@@ -1,29 +1,25 @@
 ###SCRIPT CURRENTLY UNDER DEVELOPMENT!!
+# To do:
+  # Decide how inequalities data needs to be formatted
+  # Bind datazone codes
 
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
-#   Places to interact
-#   Loneliness 
-#   Children's voices
-#   Children have positive relationships
-#   Persistent poverty
-#   Child wellbeing and happiness
-#   Child material deprivation
-#   Access to green and blue space
-#   Journeys by active travel
-#   Health risk behaviours
-#   Quality of care experience
-#   Gender balance in organisations
+#   99113: Loneliness 
+#   99116: Persistent poverty
+#   99117: Child wellbeing and happiness
+#   99118: Child material deprivation
+#   99121: Health risk behaviours
+#   99122: Quality of care experience
+#   99123: Gender balance in organisations
 
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
 # https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fnational-performance-framework
 
 
-
 ### functions/packages ----
 source("1.indicator_analysis.R") 
-
 
 
 
