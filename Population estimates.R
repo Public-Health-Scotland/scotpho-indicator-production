@@ -70,7 +70,8 @@ allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.
   mutate(ind_id = 20001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
-         lowci = NA, upci = NA, rate = NA)   # blank variables are needed
+         lowci = NA, upci = NA, 
+         rate = numerator)   # blank variables are needed
 
 #Including both rds and csv file for now
 saveRDS(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.rds"))
