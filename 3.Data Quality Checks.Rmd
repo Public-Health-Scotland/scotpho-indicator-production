@@ -1,15 +1,18 @@
 ---
 title: "ScotPHO Profile indicator Data Quality Checks"
+subtitle: "Report looks for errors in files intended for ScotPHO profiles tool"
 output: html_document
 runtime: shiny
 
 ---
 
 ```{r setup, include=FALSE}
+#global options for markdown report
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
+library (reactable)
 
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
@@ -18,63 +21,53 @@ code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.
 data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
 
 #Add geography code names - useful when exploring outfiles in shiny
-data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
-mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name to ease identification
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>% 
+mutate(code_name=paste0(code,": ",as.character(areaname)),#add field with geography code & name to ease identification
+       geo_type=case_when(
+          substr(data_indicator$code,1,3) == "S00" ~ "Scotland (S00)",
+                substr(data_indicator$code,1,3) == "S08" ~ "NHS Board (S08)",
+                substr(data_indicator$code,1,3) == "S12" ~ "Council (S12)",
+                substr(data_indicator$code,1,3) == "S37" ~ "HSCP (S37)",
+                substr(data_indicator$code,1,3) == "S11" ~ "ADP (S11)",
+                substr(data_indicator$code,1,3) == "S99" ~ "HSCP Locality (S99)",
+                substr(data_indicator$code,1,3) == "S02" ~ "IZ (S02)",TRUE ~ "other")) 
 
-#Read in old indicator data file from network /Shiny data folder - if one exists
-old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.csv") #create value which is file path to old file
-
-# statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
-if(file.exists(old_indicator_filepath)) {
-  skip_historic_file_checks <-"n"
-  old_data_indicator <- read_csv(paste0(data_folder, "Shiny Data/", filename, "_shiny.csv")) #read in file if one exists
-} else {
-  skip_historic_file_checks <-"y"
-  old_indicator_filepath <-"no historic file available for comparison" #if no historic file exists set value to no file available
-}
-
-#Logical test of which optional geographies are present in data set
-# values will return TRUE/FALSE according to whether each geogrpahy type is present
+#Logical test of which geographies are present in data set
+# values will return TRUE/FALSE according to whether each geography type is present
 board <- any(substr(data_indicator$code,1,3) == "S08") 
 ca <- any(substr(data_indicator$code,1,3) == "S12")
 hscp <- any(substr(data_indicator$code,1,3) == "S37")
 adp <- any(substr(data_indicator$code,1,3) == "S11")
 locality <- any(substr(data_indicator$code,1,3) == "S99")
 iz <- any(substr(data_indicator$code,1,3) == "S02")
-  
-# Pre-defined geographies that will be used in 'Check 3' comparing old & new file 
-# All indicators include Scotland, NHS board, Council Area data so at least one geography included as    default.
-# check_extras is an optional parameter that can be used to supply additional bespoke geography codes to check
-check_codes <- c("S00000001","S08000015",check_extras) 
-
-##If ca true add ca geography to check codes
-if(ca==TRUE){check_codes <- c(check_codes,"S12000010")}
-
-##If IZ true add IZ geography to check codes
-if(iz==TRUE){check_codes <- c(check_codes,"S02001236")}
-
-##If ADP true add ADP geography to check codes
-if(adp==TRUE){check_codes <- c(check_codes,"S11000006")}
 
 #Recode missing CI to zeros rather than NA to allow report to run
 data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
 data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
-  
+
+#Read in old indicator data file from network /Shiny data folder - if one exists (new indicators won't have a historic file)
+old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.rds") #create value which is file path to old file
+
+# statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
+if(file.exists(old_indicator_filepath)) {
+  skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
+  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds")) #read in file if one exists
+} else {
+  skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
+  old_indicator_filepath <-"No historic file available for comparison. Check filename spelling or 'shiny data' network folder if you were expecting a comparison" #if no historic file exists set value to no file available
+}
+
 ```
 
-Indicator:  **`r filename`**
-<br>
-Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`**
-<br>
+Indicator:  **`r filename`** <br>
+Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
 ------------------------------------------------------------------------------------
 
 **New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
 **Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath)) `<br>
 
-
-**Check extras** (optional parameter) `r check_extras` <br>
-**Geography parameters** <br>
+**Geographies present in indicator output file** <br>
 NHS board: `r board` <br>
 Council area: `r ca` <br>
 Health and Social Care Partnership: `r hscp` <br>
@@ -83,9 +76,10 @@ HSC locality: `r locality`<br>
 Intermediate zone: `r iz` <br>
 ------------------------------------------------------------------------------------
 
-###Data check 1:
+
+###**Data check 1:**
 <br>
-####What geographical levels and years are present, how many unique geographies appear?
+####Which geographical levels and years are present & how many unique geographies appear?
 
 ```{r include=FALSE}
 #Aggegrate file to detect which geographies and years are present.
@@ -111,26 +105,25 @@ if(iz == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S02!=1279, ~S02, color
 ```  
 
 Are the expected geographies appearing for all expected years?<br>
-Conditional formatting shoudl highlight where geographies present are not equal to expected (e.g. 14 NHS boards, 32 councils or 31 HSCP)<br>
+Conditional formatting should highlight where geographies present are not equal to expected (e.g. 14 NHS boards, 32 councils or 31 HSCP)<br>
 If geographies are missing consider:<br>
 Has any suppression been applied to the dataset?<br>
 Are there legitimate reasons why be no data for some areas?
 
 ```{r, out.width = "400px", echo=FALSE}
-#knitr::include_graphics("check1.png")
 
-#print flextable - this method of printing flextables should work when pandoc gets updated
+#print flextable
 ft_geo_check %>%
   autofit()
 
 ```
 ------------------------------------------------------------------------------------  
 
-###Data check 2:
+###**Data check 2:**
 <br>
 ####How many new rows added in latest update?
 
-**Note** some indicators generate data for geographies that are not available in live tool
+**Note:** some indicators generate data for geographies that are not available in live tool
 (e.g. alcohol mortality we generate IZ data but this is not routinely published to avoid secondary disclosure)
 
 ```{r, include=FALSE}
@@ -150,74 +143,80 @@ old_row <- nrow(data_indicator)}
 ------------------------------------------------------------------------------------  
 
 
-###Data check 3:(optional)
+###**Data check 3:(optional)**
 <br>
 ####How does new data compare to figures prepared last time (ie those in Shiny data folder)?
 
-The table below compares the numerator, measure and CI of the latest file against the last shiny data file prepared (if historic file available).<br>
-Conditional formatting will highlight when figures do not match, tolerance is to 3 decimal places <br>
-New rows of data (e.g. the latest year of data) cannot be compared if it wasn't available in last year <br>
-Sometimes figures can change, maybe the SMR records are more complete or new references files like the postcode lookup have been used which make small differences. <br>
+Table below will show geographies where the values within latest indicator file differ by more than 5% from previous figures.
+If present in dataset rows will be grouped by geography type - these can be expanded to explore individual areas where differences exist.
+If the indicator includes small geographies (e.g. IZ)/rare event then possible that a difference of more than 5% is not an issue but may be worth a closer inspection.
 Use your judgement to decide if any differences are acceptable.
+
+There is also a table at the end of this checking report where you can see exactly comparisons of historic and latest indicator data for all geographies.
 
 ```{r, include=FALSE}
 
 if (skip_historic_file_checks=="n"){
-new_scot <- data_indicator %>% subset(code %in% check_codes)
-old_scot <- old_data_indicator %>% subset(code %in% check_codes)%>%
-  select (code, year, numerator, rate, lowci, upci)
 
+  #Find the last year in historic data file which can be used as filter in latest indicator data
+  old_data_max_year <-max(data_indicator$year)
+  
+  # join historic and latest indicator data files
+  matched_indicator_data <- left_join(x = data_indicator, y = old_data_indicator, by=c("code", "year")) %>%
+  filter (year <= old_data_max_year ) %>% # ensure comparisons run on data for years that should be in both dataset
+  mutate_if(is.numeric, round, 2) %>%
+  #calculate difference between old and new values
+  mutate(rate_match = round(rate.x-rate.y,2),
+        numerator_match = ifelse((numerator.x==""|numerator.y==""),0, round(numerator.x-numerator.y,2)),
+        lowci_match =ifelse((lowci.x ==""|lowci.y ==""),0,round(lowci.x-lowci.y,2)),
+        upci_match =ifelse((upci.x ==""|upci.y ==""),0,round(upci.x-upci.y,2)),
+        difference_flag = case_when(rate_match !=0 | numerator_match !=0 |lowci_match !=0 |upci_match!=0 ~ TRUE, TRUE~ FALSE),
+        year=as.factor(year))
+   
+  # calculate percentage differences between old and new figures
+  matched_summary <-  matched_indicator_data %>%
+  filter(difference_flag==TRUE) %>%
+  mutate(p_diff_n = round(numerator_match/numerator.x*100,1), #percent difference
+         p_diff_rate = round(rate_match/rate.x*100,1),
+         p_diff_lci = round(lowci_match/lowci.x*100,1),
+         p_diff_uci = round(upci_match/upci.x*100,1)) %>%
+  filter_at(vars(starts_with('p_diff')),  any_vars(abs(.) >5)) %>% #filters any percentage differences greater than +/- 5 %
+  group_by(geo_type) %>%
+  mutate(diff_larger_than_5_percent=n_distinct(code_name)) %>%
+  arrange(geo_type,code_name, year) %>%
+  ungroup() %>%
+  select(geo_type,code_name,year,p_diff_n,p_diff_rate,p_diff_lci,p_diff_uci,rate.x,rate.y,numerator.x,numerator.y,lowci.x,lowci.y,upci.x,upci.y,diff_larger_than_5_percent)
 
-# Calculate percentage differences between old and new figures
-# Need to adjust this merge to cope with some indicators that don't have numerator (e.g. life expectancy - this #causes a fail)
-matched <- merge(x = new_scot, y = old_scot, by=c("code", "year")) %>%
-  mutate(rate_match = round((rate.x-rate.y)/rate.x,3)) %>% #all indicators have rate
-  mutate(numerator_match = ifelse((numerator.x ==""|numerator.y ==""),
-                                  0,round((numerator.x-numerator.y)/numerator.x,3)),
-  lowci_match =ifelse((lowci.x ==""|lowci.y ==""),
-                                  0,round((lowci.x-lowci.y)/lowci.x,3)),
-  upci_match =ifelse((upci.x ==""|upci.y ==""),
-                                  0,round((upci.x-upci.y)/upci.x,3)),
-  year=as.factor(year))
+} else { # if no historic file then skip this step
 
-ft_check3 <- flextable(matched,
-  col_keys = c("code", "areaname","year","numerator.x", "numerator.y","numerator_match",
-               "rate.x", "rate.y","rate_match",
-               "lowci.x","lowci.y", "lowci_match",
-               "upci.x","upci.y","upci_match")) %>%
-  set_header_labels(numerator.x="numerator_new",
-                    numerator.y="numerator_old",
-                    rate.x ="rate_new",
-                    rate.y="rate_old",
-                    lowci.x="lowci_new",
-                    lowci.y="lowci_old",
-                    upci.x="upci_new",
-                    upci.y="upci_old") %>%
-  color(~ numerator_match !=0,~numerator_match, color = "red") %>% #
-  color(~ rate_match !=0,~rate_match, color = "red") %>% 
-  color(~ lowci_match !=0,~lowci_match, color= "red") %>% 
-  color(~ upci_match !=0,~upci_match, color = "red") %>%
-  autofit()
-
-} else { # if 
-#do nothing if checks to be skipped
+  # do nothing if historic checks are to be skipped 
 }
+
 ```
 ```{r, out.width = "400px", echo=FALSE}
 
 if (skip_historic_file_checks=="n"){
-ft_check3%>%
-  autofit()
   
+# insert reactable with expandable rows grouped by geography type.
+data <- unique(matched_summary[, c("geo_type","diff_larger_than_5_percent")])
+
+reactable(data, details = function(index) {
+  differences_summary_data <- matched_summary[matched_summary$geo_type == data$geo_type[index], ]
+  htmltools::div(style = "padding: 1rem",
+                 reactable(differences_summary_data, outlined = TRUE)
+  )
+})
+
 } else{ #if no historic file
-  paste0("No historic data file present to carry out comparisons")
+  paste0("No historic data file found in network folder")
 }
   
 ```
 
 ------------------------------------------------------------------------------------
 
-###Data check 4:
+###**Data check 4:**
+<br>
 ####Rates & Confidence intervals
 Do any rates fall outwith the confidence limits - they shouldn't!?
 
@@ -237,13 +236,15 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 
 ------------------------------------------------------------------------------------
 
-###Data check 5:
+###**Data check 5:**
+<br>
 ####Scotland & NHS boards
 Does Scotland rate seem like a sensible figure, how wide are the confidence intervals? <br>
-Does Scotland rate look about average of all NHS boards.<br>
-Are there any outliers or strange looking confidence intervals (expect island boards to have wide CI)
+Does Scotland rate look about average of all NHS boards?<br>
+Are there any outliers or strange looking confidence intervals (expect island boards to have wide CI)?
 
 ```{r, echo=FALSE}
+##Produce ggplot showing scotland and NHS board values (+CI) used as a sense check of figures and to see values are in middle of CI
 #Filter Scotland value for use in chart
 scot_value <-data_indicator %>% 
   filter((code=="S00000001") & year==max(year)) %>% 
@@ -267,7 +268,8 @@ scot_check
 
 ------------------------------------------------------------------------------------
 
-### Data check 6:
+###**Data check 6:**
+<br>
 #### Are geographies that ought to be the same matching?
 Most council areas are the same as HSC Partnerships.
 If these geographies are available, use the chart to look at whether the rates for council are and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
@@ -275,20 +277,20 @@ If these geographies are available, use the chart to look at whether the rates f
 ```{r, include=FALSE}
 
 #Selecting Council area, HSCP and its localities for latest year in dataset
+# filter based on areanames as these change less frequently than codes (hscp locality codes derived by scotpho so can change anytime boundaries updated)
 #city of edinburgh council = S1200036
-#city of edinburgh partnership = S37000012
+#Edinburgh partnership = S37000012
 #Edinburgh localities = S99000043,44,45,46
 
 #Filter City of Edinburgh value central line in chart below
 ed_value <- data_indicator %>% 
-  filter((code=="S12000036") & year==max(year)) %>% 
+  filter((areaname=="City of Edinburgh") & year==max(year)) %>% 
   select(rate)
 
 #Generate chart showing rates for all edinburgh geographies for latest year
 edinburgh_chart <- ggplot(data = data_indicator %>% 
-         filter((code =="S12000036" | code=="S37000012"
-                |code=="S99000043"|code=="S99000044"|code=="S99000045"|code=="S99000046") 
-                & year== max(year)), aes(areaname, rate)) +
+         filter((areaname =="City of Edinburgh" | areaname=="Edinburgh"
+                |areaname=="Edinburgh North East"|areaname=="Edinburgh North West"|areaname=="Edinburgh South East"|areaname=="Edinburgh South West") & year== max(year)), aes(areaname, rate)) +
   geom_point(stat = "identity") +
   geom_hline(yintercept= ed_value$rate, linetype="dashed", color = "red")+
   geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5) +
@@ -299,8 +301,8 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
 
 if(all(data_indicator$numerator != "", na.rm = TRUE)){    #if numerator column is not blank
 edinburgh_data <- data_indicator %>%        # create data frame filtered for edinburgh geographies
-  filter(code =="S12000036" | code=="S37000012" | code=="S99000043"| 
-           code=="S99000044"|code=="S99000045"|code=="S99000046") %>%
+  filter(areaname =="City of Edinburgh" | areaname=="Edinburgh" | areaname=="Edinburgh North East"| 
+           areaname=="Edinburgh North West"| areaname=="Edinburgh South East" | areaname=="Edinburgh South West") %>%
   mutate(geotype=substr(code,1,3)) %>%
   group_by(year, geotype) %>%
   summarise(numerator=sum(numerator)) %>%
@@ -308,7 +310,8 @@ edinburgh_data <- data_indicator %>%        # create data frame filtered for edi
   mutate(ca_partnership=ifelse((hscp==TRUE && ca==TRUE),(round(S12-S37,2)),0),  #create fields that test for differences - use rounded figures
          partnership_localities=ifelse(locality==TRUE,(round(S99-S37,2)),0), #if dataset includes localities check sum
          localities_ca=ifelse(locality==TRUE,(round(S99-S12,2)),0),
-         check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))}
+         check_tot=round(sum(ca_partnership,partnership_localities,localities_ca),2))
+}
 
 if(all(data_indicator$numerator == "", na.rm = TRUE)){
   ed_flex <- "No numerator to cross reference totals"
@@ -348,7 +351,8 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 
 ------------------------------------------------------------------------------------ 
 
-###Data check 7:
+###**Data check 7:**
+<br>
 ####Are numerators likely to generate a robust indicator?
 
 The table below shows area types where more than 40% of the rows contain numerators <5.
@@ -388,8 +392,9 @@ if(all(data_indicator$numerator == "")){
 
 ------------------------------------------------------------------------------------  
 
-###Data check 8:
-Small shiny app to view data trends for one or more geography
+###**Data check 8:**
+<br>
+Shiny app to view data trends for one or more geography - add geographies to filter box to view trends
 
 ```{r, echo=FALSE}
 
@@ -451,8 +456,75 @@ shinyApp(
 
 ```
 
+------------------------------------------------------------------------------------  
+
+###**Data check 9:**
+<br>
+Shiny app looking at differences between historic and latest indicator data output files - contains all geographies
+
+```{r, echo=FALSE}
+
+shinyApp(
+
+  ui = fluidPage(
+      selectizeInput("geo_type_selected", "Area type:", choices = unique(data_indicator$geo_type),multiple = TRUE, selected="Scotland (S00)"),
+      reactableOutput("comparisons_table"), 
+    ),
+  
+  
+  server = function(input, output) {
+
+  output$comparisons_table <- renderReactable({
+
+    matched_indicator_data <- left_join(x = data_indicator, y = old_data_indicator, by=c("code", "year")) %>%
+        filter(geo_type %in% input$geo_type_selected) %>% #
+        mutate_if(is.numeric, round,2) %>%
+        mutate(rate_match = round((rate.x-rate.y)/rate.x,2)) %>% #all indicators have rate -
+      # not all indicators have numerator,lci,uci so need to allow for null comparison
+        mutate(numerator_match = ifelse((numerator.x ==""|numerator.y ==""),0,round((numerator.x-numerator.y)/numerator.x,2)),
+            lowci_match =ifelse((lowci.x ==""|lowci.y ==""),0,round((lowci.x-lowci.y)/lowci.x,2)),
+            upci_match =ifelse((upci.x ==""|upci.y ==""),0,round((upci.x-upci.y)/upci.x,2)),
+            year=as.factor(year)) %>%
+  select(geo_type,code_name,year,numerator_match,rate_match,lowci_match,upci_match, numerator.x,numerator.y,rate.x,rate.y,lowci.x,lowci.y,upci.x,upci.y)
+    
+  ds_color=NULL   # set default column color to null - this gets reset if differences detected between old and new indicator data 
+  
+  matched_indicator_data %>%
+  reactable(filterable = TRUE,
+            columns = list(
+            code_name= colDef(),
+            year = colDef(width = 60),
+            numerator.x =colDef(name="N new",width = 65),
+            numerator.y = colDef(name="N old",width = 65),        
+            numerator_match = colDef(name="N",width = 30,style = function(value) {
+                            if (value != 0) {ds_color <- "lightCoral"} 
+              list(background = ds_color)}), # 
+            rate.x =colDef(name="R new",width = 60),
+            rate.y = colDef(name="R old",width = 60),
+            rate_match = colDef(name="R",width = 30,style = function(value) {
+                            if (value != 0) {ds_color <- "lightCoral"}
+              list(background = ds_color)}),
+            lowci.x =colDef(width = 60),
+            lowci.y = colDef(width = 60),
+            lowci_match = colDef(name="LC",width = 30,style = function(value) {
+                            if (value != 0) {ds_color <- "lightCoral"}
+              list(background = ds_color)}),
+            upci.x =colDef(width = 60),
+            upci.y = colDef(width = 60),
+            upci_match = colDef(name="UC",width = 30,style = function(value) {
+                            if (value != 0) {ds_color <- "lightCoral"} 
+              list(background = ds_color)})),
+            defaultPageSize = 20)})
+
+    },# server close
+  options = list(height = 1000)
+)
+
+```
+
+
 ###End of checks
-###Yay!
+
 <br>
 **Don't forget to update technical document once checks are complete**
 <br>
