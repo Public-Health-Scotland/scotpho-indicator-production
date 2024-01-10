@@ -25,7 +25,7 @@ ranges <- c("A5:F17", "A20:F31", "A34:F45")
 data <- lapply(ranges, function(i){
   
   x = read_excel(source_file, sheet = "Table 5.2", range = i)
-  colnames(x) = c("year", "less_number", "more_number", "blank", "rate", "more_prop")
+  colnames(x) = c("year", "less_number", "more_number", "blank", "less_prop", "rate")
   x$sex = i
   x
   
@@ -37,7 +37,7 @@ data <- do.call("rbind.data.frame", data)
 
 
 # Read in table of LA breakdowns (Table 5.7)
-data_ca <- read_excel(source_file, sheet = "Table 5.7", range = "X6:Y38", na = "x")
+data_ca <- read_excel(source_file, sheet = "Table 5.7", range = "X44:Y76", na = "..")
 
 
 # Read in LA lookup
