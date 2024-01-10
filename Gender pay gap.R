@@ -6,8 +6,6 @@
 
 ### functions/packages -----
 source("1.indicator_analysis.R") 
-library(readxl)
-library(dplyr)
 
 
 ### 1. Read in data ----
