@@ -39,10 +39,6 @@
 
 ## FUNCTION THREE: RUN_QA (Quality Assurance)
 # filename - required - determines which indicator_data file is used for checking
-# old_file - (optional - if the indicator file name has changed and you want to compare old and new files which have different names)
-#                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
-# check_extras - (optional) parameter can be used to add bespoke geographies 
-#           of any geo type to Data Check 3 (comparing old and new figures). Uses geography codes.
 
 ###############################################.
 ## Packages and filepaths ----

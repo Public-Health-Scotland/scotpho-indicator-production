@@ -435,20 +435,12 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 ## Function : Run Inequality Indicator Quality Assurance ----
 ############################################################.
 # Function below runs an rmarkdown report (.Rmd) that runs through standard checks of indicator data
-# The report requires one manadatory parameter (the indicator filename) to run but there are several optional
-#  parameters to adjust
-# new_ind - (default is false) if indicator is new there might be no historic file to check against - changing parameter to true will allow skipping of historic checks.
+# The report requires one mandatory parameter 
 # filename - required - determines which indicator_data file is used for checking
-# old_file - (optional - if the indicator has changed name and you want to compare old and new files which have different names)
-#                  - default set to "default", rmd code default will set "filename" parameter as the old_filename
-# check_extras - (default empty) parameter can be used to add bespoke geographies of any geo type to Data Check 3 (comparing old and new figures)
 
-run_ineq_qa <- function(filename, new_ind= FALSE, old_file="default", check_extras=c()){
+run_ineq_qa <- function(filename){
   run("4.Data Quality Checks_inequalities indicators.Rmd")
 }  
-
-
-
 
 
 
