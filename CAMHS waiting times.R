@@ -1,11 +1,8 @@
-### SCRIPT UNDER DEVELOPMENT!!!
-
-
 ### Update ScotPHO Care and Wellbeing indicators:
 # 99129: CAMHS waiting times
 
 
-# Data source is Public Health Scotland Child and Adolescent Mental Health Waiting Times data:
+# Data source is Public Health Scotland open data:
 # https://www.opendata.nhs.scot/dataset/child-and-adolescent-mental-health-waiting-times/resource/7a2fe10d-1339-41c1-a2f2-a469644fd619
 
 
@@ -38,16 +35,28 @@ data <- data %>%
          denominator = total_patients_seen,
          numerator = number_of_patients_seen0to18weeks) %>%
   
-         # Calculate percentage seen within 18 weeks
+  # Create year variable from date
+  mutate(year = str_sub(date, start= 1, end = 4)) %>% 
+  
+  # Group data by area code and year
+  group_by(code, year) %>% 
+  
+  # Sum for annual totals
+  summarise(numerator = sum(numerator),
+            denominator = sum(denominator)) %>% 
+  
+  # Calculate percentage seen within 18 weeks
   mutate(rate = numerator / denominator,
          
          # Amend Scotland area code
          code = ifelse(code == "S92000003", "S00000001", code),
          
          # Create new columns
-         year = as.numeric(str_sub(date, start= 1, end = 4)),
-         #def_period = as.Date(as.character(date), format = "%Y%m"),
-         ind_id = 99129)
+         def_period = year,
+         ind_id = 99129) %>% 
+  
+  # Remove 2023 data for now as it's incomplete
+  filter(year != 2023)
 
 
 
