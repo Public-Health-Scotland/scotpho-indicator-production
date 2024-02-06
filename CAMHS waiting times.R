@@ -52,7 +52,9 @@ data <- data %>%
          code = ifelse(code == "S92000003", "S00000001", code),
          
          # Create new columns
-         def_period = year,
+         trend_axis = year,
+         def_period = paste0(year, " calendar year"),
+         lowci = NA, upci = NA,
          ind_id = 99129) %>% 
   
   # Remove 2023 data for now as it's incomplete
