@@ -1,7 +1,7 @@
 ### SCRIPT UNDER DEVELOPMENT!!!
 
 # To do:
-# Find correct format to present monthly data - has this been done anywhere else in OPT?
+# Add ethnincity data once published at the end of 2023/2024 programme
 
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
@@ -47,54 +47,79 @@ flu_data <- dplyr::tbl(src = ckan$con, from = flu_res_id) %>%
 covid_data <- covid_data %>%
   
         # Select Winter 2023 booster programme
-  filter(dose == "Winter Booster 2023",
+  filter(dose %in% c("Winter Booster 2022", "Winter Booster 2023"),
          
          # Remove data with unknown residence
          hb_name != "Unknown") %>%
   
-  # Select relevant variables
-  select(hb, date, cumulative_number_vaccinated, population, cumulative_percent_coverage) %>%
-  
   # Rename variables
   rename(code = hb,
          numerator = cumulative_number_vaccinated,
-         denominator = population,
-         rate = cumulative_percent_coverage) %>%
+         denominator = population) %>%
   
         # Change Scotland area code
   mutate(code = ifelse(code == "S92000003", "S00000001", code),
          
-        # Create new columns
-        year = as.numeric(str_sub(date, start= 1, end = 4)),
-        def_period = as.Date(as.character(date), format = "%Y%m%d"),
-        ind_id = 99127)
+        # Create new year variable from dose variable
+        year = case_when(dose == "Winter Booster 2022" ~ 2022,
+                         dose == "Winter Booster 2023" ~ 2023)) %>% 
+  
+  # Group by area code and year
+  group_by(code, year) %>% 
+  
+  # Sum for vaccination programme totals
+  summarise(numerator = sum(numerator),
+            denominator = sum(denominator)) %>% 
+  
+  # Calculate rate and create new columns
+  mutate(rate = numerator / denominator,
+        trend_axis = paste0(year, "/", year+1),
+        def_period = paste0(year, "/", year+1, " Winter vaccination programme"),
+        ind_id = 99127,
+        lowci = NA, upci = NA) %>% 
+  
+  # Select relevant variables
+  select(code, ind_id, year, trend_axis, def_period, numerator, denominator, rate, lowci, upci)
+
 
 
 # Prepare flu data
 flu_data <- flu_data %>%
   
   # Select Winter 2023 booster programme
-  filter(dose == "Flu 2023",
+  filter(dose %in% c("Flu 2022", "Flu 2023"),
          
          # Remove data with unknown residence
          hb_name != "Unknown") %>%
   
-  # Select relevant variables
-  select(hb, date, cumulative_number_vaccinated, population, cumulative_percent_coverage) %>%
-  
   # Rename variables
   rename(code = hb,
          numerator = cumulative_number_vaccinated,
-         denominator = population,
-         rate = cumulative_percent_coverage) %>%
+         denominator = population) %>%
   
   # Change Scotland area code
   mutate(code = ifelse(code == "S92000003", "S00000001", code),
          
-         # Create new columns
-         year = as.numeric(str_sub(date, start= 1, end = 4)),
-         def_period = as.Date(as.character(date), format = "%Y%m%d"),
-         ind_id = 99128)
+         # Create new year variable from dose variable
+         year = case_when(dose == "Flu 2022" ~ 2022,
+                          dose == "Flu 2023" ~ 2023)) %>% 
+  
+  # Group by area code and year
+  group_by(code, year) %>% 
+  
+  # Sum for vaccination programme totals
+  summarise(numerator = sum(numerator),
+            denominator = sum(denominator)) %>% 
+  
+  # Calculate rate and create new columns
+  mutate(rate = numerator / denominator,
+         trend_axis = paste0(year, "/", year+1),
+         def_period = paste0(year, "/", year+1, " Winter vaccination programme"),
+         ind_id = 99128,
+         lowci = NA, upci = NA) %>% 
+  
+  # Select relevant variables
+  select(code, ind_id, year, trend_axis, def_period, numerator, denominator, rate, lowci, upci)
 
 
 
