@@ -57,7 +57,8 @@ data <- data %>%
          lowci = NA, upci = NA,
          ind_id = 99129) %>% 
   
-  # Remove 2023 data for now as it's incomplete
+  # Remove 2023 data for now as it's incomplete -
+  # this will need amended when new data released (Q4 2023 publication due 05/03/24)
   filter(year != 2023)
 
 
