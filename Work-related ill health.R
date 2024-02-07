@@ -49,7 +49,7 @@ data <- data %>%
          # Create new columns
          trend_axis = year,
          year = as.numeric(str_sub(year, start = 1, end = 4)) +1,
-         def_period = paste0(trend_axis, " financial years; 3-year average"),
+         def_period = paste0(trend_axis, " survey years; 3-year average"),
          ind_id = 99130) %>% 
   
   # Rename columns
