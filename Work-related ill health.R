@@ -58,7 +58,7 @@ data <- data %>%
          upci = prev_upci) %>% 
 
   # Select relevant columns
-  select(code, year, trend_axis, def_period, numerator, lowci, upci)
+  select(code, year, trend_axis, def_period, numerator, lowci, upci, ind_id)
 
 
 
