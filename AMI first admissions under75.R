@@ -104,8 +104,7 @@ analyze_second(filename = "ami75_dz11", measure = "stdrate", time_agg = 1,
 analyze_deprivation(filename="ami75_depr", measure="stdrate", time_agg=1, 
                     yearstart= 2002, yearend=2021,   year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age="normal",
-                    epop_total =182000, ind_id = 123456789)
-
+                    epop_total =182000, ind_id = 123456789,qa = FALSE)
 
 
 
