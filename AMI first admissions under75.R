@@ -94,6 +94,8 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/ami75_depr_raw.rds'))
 
 
 #4.Run analysis functions -------
+#TODO modify time agg, ind_id arguments
+
 analyze_first(filename = "ami75_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_under75", yearstart = 2001, yearend = 2021,
               time_agg = 1, epop_age = "normal")
@@ -109,7 +111,7 @@ analyze_deprivation(filename="ami75_depr", measure="stdrate", time_agg=1,
 
 
 
-# Rough .using dbplyr as in IR code 
+# Rough .using dbplyr as in original IR code 
 
 # AMI_codes = c("I21","I22","410","-410")
 # 
