@@ -12,7 +12,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-mat_obesity <- read_csv(paste0(data_folder, "Received Data/IR2024-00001_obesity.csv")) %>%
+mat_obesity <- read_csv(paste0(data_folder, "Received Data/Maternal Obesity/IR2024-00001_obesity.csv")) %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
   rename(year = finyear, datazone = datazone2011, numerator = obese, denominator = all_known) %>% 
   mutate(year = substr(year, start=1, stop=4)) # Fyear coded by year ending Mar31. Change to match profiles. 

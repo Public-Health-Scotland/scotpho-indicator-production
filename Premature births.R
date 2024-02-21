@@ -12,7 +12,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-premature <- read_csv(paste0(data_folder, "Received Data/IR2023-00065_premature.csv")) %>%
+premature <- read_csv(paste0(data_folder, "Received Data/Premature Births/IR2024-00001_premature.csv")) %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
   rename(year = finyear, datazone = datazone2011, numerator = live_pre_term, 
          denominator = all_live_births) %>% 
