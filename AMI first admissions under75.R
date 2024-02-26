@@ -1,5 +1,5 @@
 # **** ACUTE MYOCARDIAL INFARCTION (AMI) HOSPITAL DATA - EMERGENCY ADMISSIONS AGED UNDER 75. ONLY IF FIRST-EVER FOR PATIENT.
-# based on Long-term Monitoring of Health Inequalities IR routinely done for SG e.g IR2022-00912
+# approximately based on Long-term Monitoring of Health Inequalities IR routinely done for SG e.g IR2022-00912
 # data used in SG long-term-monitoring-of-health-inequalities publication
 
 #1.Setup ----
@@ -16,51 +16,45 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
   setNames(tolower(names(.)))  %>% 
   select(pc7, datazone2001, datazone2011, ca2019)
 
-#2.Extract and Process data ------
 
-# extract list of patients with AMI admissions in historic SMR database
-patients_historic <- tbl_df(dbGetQuery(channel, statement=
-                               "
-  SELECT DISTINCT link_no
+#2.Extract AMI admissions data ----
+
+# Extract historic (pre April 1997) emergency hospital admissions with main diagnosis of AMI from SMR01 historic file
+# We need this historic patient listing as a lookback to ensure our patient count relates to the first AMI admission for an individual that we can possibly identify
+# tadm - type of admission (values 4-8 correspond to emergency admissions)
+# 410/-410 ICD9 diagnostic codes for AMI
+# I21-I22 ICD10 diagnostic codes for AMI
+
+patients_historic <- as_tibble(dbGetQuery(channel, statement=
+  "SELECT DISTINCT link_no
   FROM ANALYSIS.SMR01_HISTORIC
   WHERE old_smr1_tadm_code between 4 and 8 
-    AND (old_disc_code <6 OR old_disc_code > 7)
-    AND regexp_like(main_condition, '^(I21|I22|410|-410)')
-              
- ")) %>%  
+    AND regexp_like(main_condition, '^(I21|I22|410|-410)')")) %>%  
   setNames(tolower(names(.)))
 
-# extract first time patient admissions from SMR01
-#### Emergency admissions are normally defined as:.
-######## SMR01A: OLD_SMR1_TADM_CODE 4-8.
-######## SMR01B: ADMISSION_TYPE 30-39.
-#### However, in this case, OLD_SMR1_TADM_CODE must also be used for SMR01B (without reference to ADMISSION_TYPE) to maintain consistency with previously .
-#### published data for 2013.
-patients_smr1 <- tbl_df(dbGetQuery(channel, statement=
-                           " 
-  WITH RankedData AS(
-          SELECT link_no,dob,age_in_years,sex,dr_postcode,admission_date,admission_type,discharge_date,main_condition,
+
+# Extract current (post April 1997) emergency hospital admissions with main diagnosis of AMI from SMR01 file
+# SQL extract returns link_nos which include admission in person aged 74 and under where main condition is AMI and admission type is emergency (30-39)
+# uses row_number function in SQL to order admissions and then select only the first row (i.e. first admission)
+
+patients_smr1 <- as_tibble(dbGetQuery(channel, statement=
+  "WITH RankedData AS(
+          SELECT link_no,age_in_years,sex,dr_postcode,admission_date,admission_type,discharge_date,main_condition,old_smr1_tadm_code,
                 row_number() over (partition by link_no order by admission_date,discharge_date,admission,discharge,uri) as rn
           FROM ANALYSIS.SMR01_PI
-          WHERE old_smr1_tadm_code between 4 and 8 
-            AND age_in_years <= 74
-            AND (
-                (discharge_date <= date '2020-12-31' AND discharge_type not between 40 AND 43) 
-                OR
-                discharge_date >= date '2021-01-01'
-              )
-            AND regexp_like(main_condition, '^(I21|I22|410|-410)')
-        )
-
+          WHERE age_in_years <= 74
+            AND regexp_like(main_condition, '^(I21|I22)')
+            AND admission_type between '30' and '39')
   SELECT * FROM RankedData WHERE rn = 1 ")) %>% 
-  setNames(tolower(names(.))) %>% select(-rn)
+  setNames(tolower(names(.))) %>% 
+  select(-rn) # remove row number column
 
 
 patients <- patients_smr1 %>%
 # check patient has not had an earlier admission recorded in SMR historic
 filter(!(link_no %in% patients_historic$link_no)) %>% 
 mutate(year = year(admission_date)) %>%
-filter(year>=2001) %>% 
+filter(year>=2002) %>% 
 select("link_no","year","sex","age"="age_in_years","pc7"="dr_postcode")
 
 # merge with postcode lookup, create age groups 
@@ -86,7 +80,7 @@ patients_dz01_dep <- patients %>%
   subset(year<=2013)
 
 dep_file <- rbind(patients_dz01_dep, patients_dz11 %>% 
-                    subset(year>=2014)) #joing dz01 and dz11
+                    subset(year>=2014)) #join dz01 and dz11
 
 #3.save files----- 
 saveRDS(patients_dz11, file=paste0(data_folder, 'Prepared Data/ami75_dz11_raw.rds'))
