@@ -36,8 +36,9 @@ analyze_second(filename = "healthy_birth", measure = "percent", time_agg = 3,
                ind_id = 21105, year_type = "financial")
 
 #Deprivation analysis function
-analyze_deprivation(filename="healthy_birth_depr", measure="percent", time_agg=3, 
-                    yearstart= 2014, yearend=2022, year_type = "financial", ind_id = 21105)
+#Deprivation function not applicable for this indicator
+#analyze_deprivation(filename="healthy_birth_depr", measure="percent", time_agg=3, 
+                    #yearstart= 2014, yearend=2022, year_type = "financial", ind_id = 21105)
 
 ##END
 
