@@ -18,8 +18,8 @@ extr_pupil <- function(filepath, sheet_name, heading_row_num, most_recent_year) 
   library("stringr")
   result <- read.xlsx(paste0(data_folder, filepath), sheet = sheet_name, 
                       startRow = heading_row_num , skipEmptyCols = T) %>% 
-    rename("council_area"="X1",{{ most_recent_year}}:="Total")%>% 
-    select(-c("Female","Male")) %>% 
+    rename("council_area"="Local.Authority",{{ most_recent_year}}:="2022.-.Total")%>% 
+    select(-c("2022.-.Female","2022.-.Male")) %>% 
     mutate(council_area=str_replace(council_area,pattern = "&",replacement = "and")) %>% 
     filter(`council_area`!="Grant aided",`council_area`!="Scotland",`council_area`!="All local authorities") %>% 
     pivot_longer(!council_area,names_to = "year",values_to = "numerator")
@@ -29,17 +29,17 @@ extr_pupil <- function(filepath, sheet_name, heading_row_num, most_recent_year) 
 ################################################ extracting data from file
 # just update the filepath (file should be in Scotpho Data folder), sheet name within the excel file and row number to use as column headers
 
-sec_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2021+V3.xlsx","Table 7.2",3,"2021")
-pri_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2021+V3.xlsx","Table 6.2",3,"2021")
+sec_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2022+V2.xlsx","Table 7.2",2,"2022")
+pri_pupils = extr_pupil("Received Data/Pupils+Census+Supplementary+Statistics+2022+V2.xlsx","Table 6.2",2,"2022")
 
 ###################### merging with council area lookup to retrieve council area codes
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) 
 
-sec_pupils =  sec_pupils %>%  left_join(ca, by = c("council_area" = "areaname"), all.x = TRUE) %>% 
+sec_pupils =  sec_pupils %>%  left_join(ca, by = c("council_area" = "areaname")) %>% 
   select(year,code,numerator) %>% rename("ca"="code") %>% 
   mutate(across(c("numerator", "year"), ~ as.numeric(.))) # formatting to the right data type so analyze functions work
 
-pri_pupils = pri_pupils %>%  left_join(ca, by = c("council_area" = "areaname"), all.x = TRUE) %>% 
+pri_pupils = pri_pupils %>%  left_join(ca, by = c("council_area" = "areaname")) %>% 
   select(year,code,numerator) %>% rename("ca"="code")%>% 
   mutate(across(c("numerator", "year"), ~ as.numeric(.))) # formatting to the right data type so analyze functions work
 
@@ -51,10 +51,10 @@ saveRDS(pri_pupils, file=paste0(data_folder, 'Prepared Data/cyp_primary_raw.rds'
 
 #####running analysis functions to first create gography aggregations and then create shiny files 
 analyze_first(filename = "cyp_secondary", geography = "council", measure = "percent", yearstart = 2005,
-              yearend = 2021, time_agg = 1, pop = "CA_pop_allages")
+              yearend = 2022, time_agg = 1, pop = "CA_pop_allages")
 
 analyze_first(filename = "cyp_primary", geography = "council", measure = "percent", yearstart = 2006,
-              yearend = 2021, time_agg = 1, pop = "CA_pop_allages")
+              yearend = 2022, time_agg = 1, pop = "CA_pop_allages")
 
 analyze_second(filename = "cyp_secondary", measure = "percent", time_agg = 1,
                ind_id = 13108, year_type = "calendar") # check if QA analysis shows some years missing
@@ -85,6 +85,5 @@ run_qa("cyp_primary") # run QA on new data file to ensure no missing years anymo
 
 merger("cyp_secondary",2004) # retrieve and create total data for secondary indicator
 run_qa("cyp_secondary") # run QA on new data file to ensure no missing years anymore
-
 
 

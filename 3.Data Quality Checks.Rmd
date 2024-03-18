@@ -438,6 +438,12 @@ shinyApp(
   
   
   server = function(input, output) {
+    
+      auto_invalidate <- reactiveTimer(10000) 
+  observe({ 
+    auto_invalidate() 
+    cat(".") 
+  })
 
       # Creating plot for ui side
   output$trend_plot <- renderPlotly({
