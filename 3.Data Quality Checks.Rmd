@@ -18,7 +18,8 @@ library (reactable)
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds")) 
+data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+data_indicator$year <- as.numeric(data_indicator$year)
 
 #check if all expected columns for shiny tool are present & count number of columns present
 columns_expected <-all(c("code","ind_id","year","numerator","rate","lowci","upci","def_period","trend_axis") %in% colnames(data_indicator))
@@ -55,7 +56,8 @@ old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.r
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
 if(file.exists(old_indicator_filepath)) {
   skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
-  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds")) #read in file if one exists
+  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
+  old_data_indicator$year <- as.numeric(old_data_indicator$year)#read in file if one exists
 } else {
   skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
   old_indicator_filepath <-"No historic file available for comparison. Check filename spelling or 'shiny data' network folder if you were expecting a comparison" #if no historic file exists set value to no file available
@@ -385,7 +387,7 @@ Use this table to assess if a particular geography type is likely to be robust a
 There is no definite point at which an indicator is no longer robust but if a large proportion of your data is small numbers then consider whether the data is worth publishing. <br>
 
 ```{r include=FALSE}
-ifelse(all(data_indicator$numerator == ""),
+ifelse(all(data_indicator$numerator == "" | is.na(data_indicator$numerator)),
        "No numerator available",        #if no numerator data available print statement
 small_count_data <- data_indicator  %>%# if numerator is available generate flextable data
   mutate(geo_type=substr(code,1,3)) %>%
@@ -401,7 +403,7 @@ small_count_data <- data_indicator  %>%# if numerator is available generate flex
 
 ```{r echo=FALSE}
 #if numerator column is available (i.e. not all blank) produce flextable summarising counts of small numbers
-if(all(data_indicator$numerator != "", na.rm = TRUE)){
+if(all(data_indicator$numerator != "" & !is.na(data_indicator$numerator))) {
   flextable(small_count_data)
 }
 
@@ -409,7 +411,7 @@ if(all(data_indicator$numerator != "", na.rm = TRUE)){
 
 ```{r, echo=FALSE}
 ##if numerator column is not available (i.e. all blank) skip check and notify user
-if(all(data_indicator$numerator == "")){
+if(all(data_indicator$numerator == "" | is.na(data_indicator$numerator))){
   "No numerators available in dataset"
 }
 
