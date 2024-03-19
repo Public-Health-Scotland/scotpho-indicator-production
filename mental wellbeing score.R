@@ -115,7 +115,7 @@ data_correct <- data_correct |>
 #Get a single year from the given range
 data_correct <- data_correct |>
   mutate(year = str_sub(year, start = -4, end = -1)) %>% 
-  mutate(numerator = "")
+  mutate(numerator = NA)
 
 
 #Make the year variable numeric rather than character
