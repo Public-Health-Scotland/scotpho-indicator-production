@@ -1,15 +1,11 @@
 ### notes ----
 
 # indicator: 20502 - People aged 65+ with high levels of care needs who are cared for at home
-# source: https://publichealthscotland.scot/publications/insights-in-social-care-statistics-for-scotland/ 
+# source: https://publichealthscotland.scot/publications/people-supported-through-social-care-services/people-supported-through-social-care-services-support-provided-or-funded-by-health-and-social-care-partnerships-in-scotland-202223/
 
 
 # required functions/packages
-source("1.indicator_analysis.R") 
-library(readxl)
-library(stringr)
-
-
+source("1.indicator_analysis.R")
 
 ###############################################.
 ## Part 1 - Prepare data ----
@@ -17,8 +13,8 @@ library(stringr)
 
 ### read in data file saved in "Data received" folder -----
 
-dat <- read_excel(paste0(data_folder, "Received Data/2023-02-28-balance-of-care.xlsm"), # change filename
-                  sheet = "T2 Data")
+dat <- read_excel(paste0(data_folder, "Received Data/High Care Needs/2024-balance-of-care.xlsm"), 
+                  sheet = 'T2 Data', range='A1:S133') 
 
 
 ca_lookup <- readRDS(paste0(lookups, "Geography/CAdictionary.rds")) # council area lookup 
@@ -88,3 +84,4 @@ final_result <- final_result %>%
 # save files again    
 saveRDS(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.rds"))  
 write_csv(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.csv"))   
+
