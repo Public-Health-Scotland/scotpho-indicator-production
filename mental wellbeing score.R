@@ -121,8 +121,8 @@ data_correct <- data_correct |>
 #Make the year variable numeric rather than character
 data_correct$year <- as.numeric(data_correct$year)
 
-#Change to required year by subtracting 1
-data_correct$year = data_correct$year - 1
+#Change to required year by subtracting 1 if before 2020 and 2 if after 2020 since the 4 year aggregate changes
+data_correct$year <- ifelse(data_correct$year < 2020, data_correct$year - 1, data_correct$year - 2)
 
 # split the data into 2 seperate indicator - one for males and one for females
 # then create an ind_id column which is populate with that indicators unique id
