@@ -24,7 +24,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-scqf_level <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition-supplementary-tables.xlsx"), sheet = "A2.3a_A2.3b")
+scqf_level <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"), sheet = "N2.2a_N2.2b")
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
@@ -33,7 +33,7 @@ ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
 scqf_level <- scqf_level %>%
   select(c(1, 2, 3, 4, 5, 7, 9)) %>%
-  tail(-4) %>% #remove metadata from top of spreadsheet
+  tail(-5) %>% #remove metadata from top of spreadsheet
   row_to_names(row_number = 1) %>% #set 1st row as column names
   setNames(tolower(names(.))) %>%
   mutate(`year` = str_sub(year,1,nchar(year)-3), #convert year from FY yy/yy to yyyy
