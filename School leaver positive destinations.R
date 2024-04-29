@@ -19,13 +19,13 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition-supplementary-tables.xlsx"), sheet = "L2.2") #positive destinations data
+positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"), sheet = "L2.1a") #positive destinations data
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
 ###1.c clean data ----
 
-positive_dest <- tail(positive_dest, -3) %>% # remove metadata from top of speadsheet
+positive_dest <- tail(positive_dest, -4) %>% # remove metadata from top of speadsheet
   row_to_names(row_number = 1) %>% #convert first row to headers
   setNames(tolower(names(.))) %>%
   mutate(`year` = str_sub(year,1,nchar(year)-3),#convert from FY YY/YY to YYYY
