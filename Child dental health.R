@@ -18,7 +18,9 @@
 
 # Missing data:
 # no 2020/21 data for Child Dental health P1, due to the pandemic
-# no 2020/21 and 2021/22 data for Child Dental health P1, due to the pandemic
+# no 2020/21 and 2021/22 data for Child Dental health P7, due to the pandemic
+# no 2021/22 P1 data for NHS Western Isles and partial data for NHS Highland, 
+# which has been excluded here.
 
 
 # script changes:
@@ -51,39 +53,54 @@ p1_new <- read.csv(paste0(data_folder, dental_health_subfolder, "Final P1 Letter
 p7_new <- read.csv(paste0(data_folder, dental_health_subfolder, "Final P7 Letter IIa.csv")) 
 
 
-#remove metadata p1
-names(p1_new) <- p1_new[8,]
-p1_new = p1_new[-(1:8),]
-p1_new = p1_new[,-(5:10)]
-
-# tidy up p1
-p1_new <- p1_new %>%
-  mutate(year = 2022) %>%
-  rename(datazone = `Datazone 2011`) %>%
-  rename(denominator = `Total Inspected`) %>%
-  rename(numerator = `Number of 'C' letters issued`) %>%
-  rename(gender = Gender) %>%
-  select(datazone, year, numerator, denominator)
-
-#convert numerator and denominator to numeric
-p1_new[, c(3:4)] <- sapply(p1_new[, c(3:4)], as.numeric)
-
-#remove metadata p7
-names(p7_new) <- p7_new[8,]
-p7_new = p7_new[-(1:8),]
-p7_new = p7_new[,-(5:10)]
+#tidy up p1
+p1_new <- p1_new |> 
+  select(c(1:4)) |> #keeps only first 4 cols w/ data and drops others
+  tail(-7) |>  #drops first 7 rows of metadata
+  row_to_names(row_number = 1) |>  #from janitor package, sets row as header by index
+  clean_names() |> 
+  mutate(year = 2022) |> #converting school year to single year 
+  rename('datazone' = datazone_2011, #standardising headings to be read into profiles tool
+         'denominator' = total_inspected,
+         'numerator' = number_of_c_letters_issued) |> 
+  mutate(numerator = as.numeric(numerator), #converting numerator and denominator to numeric from character
+         denominator = as.numeric(denominator)) |> 
+  select(1, 3, 4, 5)
 
 #tidy up p7
-p7_new <- p7_new %>%
-  mutate(year = 2022) %>%
-  rename(datazone = `Datazone 2011`) %>%
-  rename(denominator = `Total Inspected`) %>%
-  rename(numerator = `Number of 'C' letters issued`) %>%
-  rename(gender = Gender) %>%
-  select(datazone, year, numerator, denominator) 
+p7_new <- p7_new |> 
+  select(c(1:4)) |> 
+  tail(-7) |> 
+  row_to_names(row_number = 1) |> 
+  clean_names() |> 
+  mutate(year = 2022) |> 
+  rename('datazone' = datazone_2011,
+         'denominator' = total_inspected,
+         'numerator' = number_of_c_letters_issued) |> 
+  mutate(numerator = as.numeric(numerator), 
+         denominator = as.numeric(denominator)) |> 
+  select(1, 3, 4, 5)
 
-#convert numerator and denominator to numeric
-p7_new[, c(3:4)] <- sapply(p7_new[, c(3:4)], as.numeric)
+
+#tidy up p1 historic data to remove NHS Highland's data
+#remove this section after 
+# 
+# #read in lookup with all geography levels
+# lookup_all <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+# 
+# #join lookup to historic p1 data
+# p1_historic_noH <- p1_historic |> 
+#   left_join(lookup_all, by = c("datazone" = "datazone2011"))
+# 
+# p1_historic_noH_2<-p1_historic_noH |> 
+#   filter(!(hb2019 == c("S08000022") & year == c("2021"))) |> #excluding datazones with Highland HB code from 21/22
+#   select(c(1:4)) #Removing the additional lookup columns 
+# 
+# write.csv(p1_historic_noH_2, paste0(data_folder, "Data to be checked/p1-historic-fix.csv"))
+# write.csv(p1_historic, paste0(data_folder, "Data to be checked/p1_historic_original.csv"))
+# 
+# p1_historic <- p1_historic_noH_2
+
 
 # combine data
 p1_combined <- rbind(p1_historic, p1_new)
@@ -92,7 +109,6 @@ p7_combined <- rbind(p7_historic, p7_new)
 # save file to be used in analysis function 
 saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
 saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
-
 
 
 # Part 2: Run analysis functions  ----------------------------------------------
@@ -107,7 +123,7 @@ analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1,
 
 
 analyze_deprivation(filename="child_dental_p1_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend=2022, time_agg=1,
+                    yearstart= 2014, yearend = 2022, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 
@@ -128,6 +144,6 @@ analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",
 # 3. Save new historic data files ----------------------------------------------
 
 # if everything looks fine fro DQ checks - overwrite the old historic data files
-#saveRDS(p1_combined, paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
-#saveRDS(p7_combined, paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
+saveRDS(p1_combined, paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
+saveRDS(p7_combined, paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
 
