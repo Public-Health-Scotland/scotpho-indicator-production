@@ -11,11 +11,15 @@
 
 ### 1. load packages/dependencies ----------------------------------------------
 
+install.packages("reactable")
+library(reactable)
+
 ## 1.a load R script from this project which contains :-
 # custom functions
 # filepaths to scotpho folders
 # packages that are commonly used
 source("1.indicator_analysis.R") # sourcing custom indicator functions
+
 
 
 ## 1.b. load any other packages not included in the file above that you intend to use functions from 
@@ -26,7 +30,7 @@ library(janitor) # for cleaning column names
 ### 2. read in downloaded data -------------------------------------------------
 
 # In the quotation marks, add the rest of the file-path to where you saved the data
-raw_data_filepath <- paste0(data_folder, "")
+raw_data_filepath <- paste0(data_folder, "Received Data/Alcohol exceeding weekly limits/Alcohol_exceeding_limits.csv")
 
 # Then run this line of code to read the csv file in
 # You will now see it saved in your environment on the right hand side - if you click on it you can view the data
@@ -39,24 +43,26 @@ data <- raw_data |>
 
 
 ### 3. select columns  ---------------------------------------------------------
-data <- raw_data |>
-  select()
+data <- data |>
+  select(year, geographylevel, location, categories, sex, percent, lower_ci, upper_ci)
 
 
 ### 3. filter the sex column --------------------------------------------------
 # we only want males and females 
 data <- data |>
-  filter()
+  filter(sex == "Male" | sex == "Female") |>
+  filter(categories == "Hazardous/Harmful drinker")
 
 
+       
 ### 5. rename some of the existing columns to match what is required in the final output 
 data <- data |>
-  rename()
+  rename(lowci = lower_ci, upci = upper_ci, rate = percent)
 
 
 ### 6. read in geography lookup named 'codedictionary' from the scotpho lookups folder ------------
-geography_lookup <- 
-  
+geography_lookup <- readRDS(paste0(data_folder, "Lookups/Geography/codedictionary.rds"))
+
   
   # this lookup contains geography codes for multiple different geography levels
   # since our data only includes health boards, local authorities and scotland level, we can filter out a lot from here
@@ -66,7 +72,7 @@ geography_lookup <-
   # HINT: we can usually tell which geography code refers to which geography level by it's first few digits which will come useful for this step
   # ANOTHER HINT: Read up about the grepl() function.... ;)
   geography_lookup <- geography_lookup |>
-  filter()
+  filter(str_detect(code, "S08|S12|S00"))
 
 
 
@@ -77,8 +83,13 @@ data_wrong <- data |>
 
 # solution: paste NHS on the beginning health boards...
 data_correct <- data |>
-  mutate(location_new = case_when())
+  mutate(location_new = case_when(geographylevel == "Health Board" ~ paste("NHS", location), TRUE ~ location))
 
+data_correct <- data_correct |>
+  mutate(location_new = case_when(
+    location_new == "Edinburgh City" ~ "City of Edinburgh",
+    TRUE ~ location_new
+  ))
 
 # now try join the codes again 
 data_correct <- data_correct |>
@@ -87,7 +98,7 @@ data_correct <- data_correct |>
 
 # we can now get rid of the columns geographylevel and location as the final file should only have the geography code.
 data_correct <- data_correct |>
-  select(-c())
+  select(-c(geographylevel, location, categories))
 
 
 # create a def_period column 
@@ -95,24 +106,46 @@ data_correct <- data_correct |>
 # code you have used elsewhere already in this script should help you achieve this...?
 
 data_correct <- data_correct |>
-  mutate()
+  mutate(def_period= paste0("4-year aggregate"," (", year, ")")) %>%
+mutate(numerator = '') %>%
+mutate(trend_axis = year)
 
+#arrange
+data_correct <- data_correct %>% 
+  select(code, year, sex, numerator, def_period, trend_axis, upci, lowci, rate)
 
 # finally, we need to create a 'year' column. Unlike some of our other year columns (trend axis, def_period) which are strings
 # we want this to be in a numeric format. This column won't be displayed on the profiles tool dashboard itself, but will be used for filtering in the background 
 # for instance, in the summary tab of the tool, we use this column to filter on the latest data for each indicator
 # this would be hard to do with the other columns, since there wouldn't be an easy way to order the strings
+
+
+#Get a single year from the given range
 data_correct <- data_correct |>
-  mutate()
+  mutate(year = str_sub(year, start = -4))
+
+#Make the year variable numeric rather than character
+data_correct$year <- as.numeric(data_correct$year)
+
+#Change to required year by subtracting 1
+data_correct$year = data_correct$year - 1
+
+rows_to_modify <- data_correct$trend_axis == '2017-2021'
+data_correct$year[rows_to_modify] <- data_correct$year[rows_to_modify] - 1
 
 
 # split the data into 2 seperate indicator - one for males and one for females
 # then create an ind_id column which is populate with that indicators unique id
 # look at the technical document (the excel file containing the metdata for each indicator) to see what the indicator IDs are
 males <- data_correct |>
+  filter(sex == "Male") |>
+  mutate(ind_id="4163") |>
+  select(-sex)
   
-  
-  females <- data_correct |>
+females <- data_correct |>
+  filter(sex == "Female")|>
+mutate(ind_id = "4165") |>
+  select(-sex)
   
   
   
@@ -123,12 +156,12 @@ males <- data_correct |>
   # OR try and find the file in the 'Shiny data' folder
   
   # saving the male indicator data
-  write.csv(males, paste0(data_folder, "Data to be checked/"))
-saveRDS(males, paste0(data_folder, "Data to be checked/"))
+  write.csv(males, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-male_shiny.csv"), row.names = FALSE)
+saveRDS(males, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-male_shiny.rds"))
 
 # saving the female indicator data
-write.csv(females, paste0(data_folder, "Data to be checked/_shiny.csv"))
-saveRDS(females, paste0(data_folder, "Data to be checked/_shiny.csv"))
+write.csv(females, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-female_shiny.csv"), row.names = FALSE)
+saveRDS(females, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-female_shiny.rds"))
 
 
 # finally, we can quality assure the data, by checking how it compares to the previous data (i.e. what is currently in the tool)
@@ -137,10 +170,10 @@ saveRDS(females, paste0(data_folder, "Data to be checked/_shiny.csv"))
 # note this should only be the name of the file without _shiny.csv on the end
 # for instance, if the filename is mental-wellbeing-female_shiny.csv, the filename you would include below would be menal-wellbeing-female
 # run these lines seperately, when you are done QAing the first one you can hit the 'stop' button in the console and run the next line 
-run_qa(filename = "mental-wellbeing-female", old_file="default", check_extras=c())
+run_qa(filename = "alcohol-exceeding-weekly-limits-female", check_extras=c())
 
 
-run_qa(filename = "mental-wellbeing-female", old_file="default", check_extras=c())
+run_qa(filename = "alcohol-exceeding-weekly-limits-male", check_extras=c())
 
 
 # Once you are happy with your changes, commit them and push them to github. 
