@@ -1,101 +1,136 @@
-### 1. notes
+### notes --------------------------------------------------------------
 
 # 4165: Alcohol consumption exceeding weekly limits, females
 # 4163: Alcohol consumption exceeding weekly limits, males
 # 4164: Alcohol consumption exceeding weekly limits, all
 
-
 # source: https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data 
 
 # data is automatically extacted from statistics.gov.scot when this script is run 
-# just update the date period below to ensure the latest date period is extracted: - 
+# just update the date period below to ensure the latest date period is extracted: -
+
+### 1. load packages/dependencies ----------------------------------------------
+
+source("1.indicator_analysis.R") # sourcing custom indicator functions
+
+library(reactable)
+library(janitor) # for cleaning column names
 
 
-date_period <- "2017 - 2021" 
+### 2. read in downloaded data -------------------------------------------------
+
+# Set filepath and read in csv file
+raw_data_filepath <- paste0(data_folder, "Received Data/Alcohol exceeding weekly limits/Alcohol_exceeding_limits.csv")
+raw_data <- read.csv(raw_data_filepath)
 
 
-
-### 2. extract data -----
-
-source("1.indicator_analysis.R")
-
-start_year <- substring(date_period, 1, 4)
+# clean the column names 
+data <- raw_data |> 
+  clean_names() 
 
 
-data_extract <- bind_rows(
+### 3. tidy up the data --------------------------------------------------------
+
+#select columns
+data <- data |> 
+  select(year, geographylevel, location, categories, sex, percent, lower_ci, upper_ci)
+
   
-  # 95% upper confidence interval data
-  read_csv(paste0("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2F95-upper-confidence-limit&http%3A%2F%2Fpurl.org%2Flinked-data%2Fsdmx%2F2009%2Fdimension%23refPeriod=http%3A%2F%2Freference.data.gov.uk%2Fid%2Fgregorian-interval%2F",start_year,"-01-01T00%3A00%3A00%2FP5Y&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2FscottishHealthSurveyIndicator=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Fscottish-health-survey-indicator%2Falcohol-consumption-hazardous%2Fharmful-drinker"), skip = 8) %>%
-    mutate(measure = "upci"),
-  
-  # 95% lower confidence interval data
-  read_csv(paste0("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2F95-lower-confidence-limit&http%3A%2F%2Fpurl.org%2Flinked-data%2Fsdmx%2F2009%2Fdimension%23refPeriod=http%3A%2F%2Freference.data.gov.uk%2Fid%2Fgregorian-interval%2F",start_year,"-01-01T00%3A00%3A00%2FP5Y&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2FscottishHealthSurveyIndicator=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Fscottish-health-survey-indicator%2Falcohol-consumption-hazardous%2Fharmful-drinker"), skip = 8) %>%
-    mutate(measure = "lowci"),
-  
-  # % exceeding 14 units alcohol a week (hazardous/harmful drinking)
-  read_csv(paste0("https://statistics.gov.scot/slice/observations.csv?&dataset=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data&http%3A%2F%2Fpurl.org%2Flinked-data%2Fcube%23measureType=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fmeasure-properties%2Fpercent&http%3A%2F%2Fpurl.org%2Flinked-data%2Fsdmx%2F2009%2Fdimension%23refPeriod=http%3A%2F%2Freference.data.gov.uk%2Fid%2Fgregorian-interval%2F",start_year,"-01-01T00%3A00%3A00%2FP5Y&http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fdimension%2FscottishHealthSurveyIndicator=http%3A%2F%2Fstatistics.gov.scot%2Fdef%2Fconcept%2Fscottish-health-survey-indicator%2Falcohol-consumption-hazardous%2Fharmful-drinker"), skip = 8) %>%
-    mutate(measure = "rate")
-) %>%
-  setNames(tolower(names(.)))
+#filter out both combined sexes to leave male and female
+data <- data |> 
+  filter(sex == "Male" | sex == "Female") |>
+  filter(categories == "Hazardous/Harmful drinker")
 
 
-
-# add in additonal columns 
-data_extract <- data_extract %>%
-  rename_at(1,~"geography") %>%
-  mutate(code = gsub("http://statistics.gov.scot/id/statistical-geography/","", geography),
-         code = ifelse(code == "S92000003", "S00000001", code),
-         year = as.numeric(start_year) + 2,
-         numerator = "",
-         def_period = paste0("4-year aggregate (",date_period,")"),
-         trend_axis = date_period) %>%
-  filter_all(any_vars(grepl("S08|S00", .))) # remove council area figures - only available from 2015 onwards
+#rename some of the existing columns to match final output expected by profiles tool
+data <- data |>
+  rename(lowci = lower_ci, upci = upper_ci, rate = percent)
 
 
+### 4. use geography lookup to recode geography names --------------------------
 
-### 3. prepare final files -----
-
-# create function to prepare final shiny outputs
-prepare_shiny_file <- function(indicator, sex_grp) {
-  
-  # read in data from previous update
-  old_dat <- readRDS(paste0(data_folder, "Shiny Data/alcohol-exceeding-weekly-limits-",sex_grp,"_shiny.rds"))
-  
-  # combine new data with old update
-  dat <- data_extract %>%
-    select(sex_grp, code, year, measure, numerator, def_period, trend_axis) %>%
-    pivot_wider(names_from = "measure", values_from = sex_grp) %>%
-    mutate(ind_id = indicator) %>%
-    rbind(old_dat) %>%
-    arrange(year) %>%
-    mutate(numerator = "")
-  
-  # save files in folder to be checked
-  write.csv(dat, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-",sex_grp,"_shiny.csv"), row.names = FALSE)
-  write_rds(dat, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-",sex_grp,"_shiny.rds"))
-  
-  
-}
+#read in geography lookup named 'codedictionary' from the scotpho lookups folder
+geography_lookup <- readRDS(paste0(data_folder, "Lookups/Geography/codedictionary.rds"))
 
 
-prepare_shiny_file(indicator = "4163", sex_grp = "male")
-prepare_shiny_file(indicator = "4165", sex_grp = "female")
-prepare_shiny_file(indicator = "4164", sex_grp = "all")
+#filter geography lookup for healthboards, council areas and intermediate zones respectively
+geography_lookup <- geography_lookup |>
+  filter(str_detect(code, "S08|S12|S00"))
 
 
+#add "NHS" to the beginning of the HB names to match lookup
+data_correct <- data |>
+  mutate(location_new = case_when(geographylevel == "Health Board" ~ paste("NHS", location), TRUE ~ location))
 
-### 4. QA the indicators ------
+#recode City of Edinburgh to Edinburgh city to match lookup 
+data_correct <- data_correct |>
+  mutate(location_new = case_when(
+    location_new == "Edinburgh City" ~ "City of Edinburgh",
+    TRUE ~ location_new
+  ))
 
-run_qa <- function(filename, old_file="default", check_extras=c()){
-  run("Data Quality Checks.Rmd")
-}  
+#join the new data to the lookup 
+data_correct <- data_correct |>
+  left_join(geography_lookup, by = c("location_new" = "areaname"))
 
 
-# QA alcohol consumption exceeding weekly limits, females
-run_qa(filename = "alcohol-exceeding-weekly-limits-female", old_file="default", check_extras=c())
+# Remove unnecessary columns from joining the lookup to the data
+data_correct <- data_correct |>
+  select(-c(geographylevel, location, categories))
 
-# QA alcohol consumption exceeding weekly limits, males
-run_qa(filename = "alcohol-exceeding-weekly-limits-male", old_file="default", check_extras=c())
+### 5. format dates ------------------------------------------------------------
 
-# QA alcohol consumption exceeding weekly limits, all
-run_qa(filename = "alcohol-exceeding-weekly-limits-all", old_file="default", check_extras=c())
+#create a def_period column 
+data_correct <- data_correct |>
+  mutate(def_period= paste0("4-year aggregate"," (", year, ")")) %>%
+  mutate(numerator = '') %>%
+  mutate(trend_axis = year)
+
+#arrange the columns
+data_correct <- data_correct %>% 
+  select(code, year, sex, numerator, def_period, trend_axis, upci, lowci, rate)
+
+#get a single year from the given range
+data_correct <- data_correct |>
+  mutate(year = str_sub(year, start = -4))
+
+#make the year variable numeric rather than character
+data_correct$year <- as.numeric(data_correct$year)
+
+#change to required year by subtracting 1
+data_correct$year = data_correct$year - 1
+
+rows_to_modify <- data_correct$trend_axis == '2017-2021'
+data_correct$year[rows_to_modify] <- data_correct$year[rows_to_modify] - 1
+
+### 6. separate male and female data -------------------------------------------
+
+#separate into males and females and create indicator ID col based on tech doc
+
+males <- data_correct |>
+  filter(sex == "Male") |>
+  mutate(ind_id="4163") |>
+  select(-sex)
+
+females <- data_correct |>
+  filter(sex == "Female")|>
+  mutate(ind_id = "4165") |>
+  select(-sex)
+
+
+### 7. save output -------------------------------------------------------------
+
+# saving the male indicator data
+write.csv(males, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-male_shiny.csv"), row.names = FALSE)
+saveRDS(males, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-male_shiny.rds"))
+
+# saving the female indicator data
+write.csv(females, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-female_shiny.csv"), row.names = FALSE)
+saveRDS(females, paste0(data_folder, "Data to be checked/alcohol-exceeding-weekly-limits-female_shiny.rds"))
+
+### 8. run QA functions --------------------------------------------------------
+
+run_qa(filename = "alcohol-exceeding-weekly-limits-female", check_extras=c())
+run_qa(filename = "alcohol-exceeding-weekly-limits-male", check_extras=c())
+
+### END
