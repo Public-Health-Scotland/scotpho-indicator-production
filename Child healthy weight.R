@@ -13,35 +13,40 @@ source("2.deprivation_analysis.R") # deprivation function
 ## Part 1 - Prepare basefile ----
 ###############################################.
 # Reading data provided by child health team for datazones 2011
-child_weight11 <- read.spss( paste0(data_folder, "Received Data/IR2022-00007_DZ2011-child-weight.sav"), 
-                         to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>% #variable names to lower case
-  rename(datazone = datazone2011, numerator = healthy_weight, denominator = tot) %>% 
-  # reformat the year variable.
-  mutate(year = as.numeric(paste0("20", substr(schlyr_exam, 1, 2)))) %>% 
+child_weight11 <- readRDS(paste0(data_folder, "Received Data/Child Healthy Weight/IR2024-00254_DZ2011.rds"))
+  
+child_weight11 <- child_weight11 |> 
+  setNames(tolower(names(child_weight11))) |> 
+  rename(datazone = datazone2011, 
+         numerator = healthy_weight, 
+         denominator = tot) |> 
+  mutate(year = as.numeric(paste0("20", substr(schlyr_exam, 1, 2)))) |>  #reformat year variable
   # aggregate to get the count
-  group_by(year, datazone) %>% 
-  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) %>% ungroup()
+  group_by(year, datazone) |>  
+  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) |>  ungroup()
 
 saveRDS(child_weight11, file=paste0(data_folder, 'Prepared Data/child_healthyweight_raw.rds'))
 
 ###############################################.
 # Datazone2001 
-child_weight01 <- read.spss( paste0(data_folder, "Received Data/IR2022-00007_DZ2001-child-weight.sav"), 
-                             to.data.frame=TRUE, use.value.labels=FALSE)%>% 
-  setNames(tolower(names(.))) %>%  #variable names to lower case
-  rename(datazone = datazone2001, numerator = healthy_weight, denominator = tot) %>% 
-  # reformat the year variable.
-  mutate(year = as.numeric(paste0("20", substr(schlyr_exam, 1, 2)))) %>% 
+
+child_weight01 <- readRDS(paste0(data_folder, "Received Data/Child Healthy Weight/IR2024-00254_DZ2001.rds"))
+
+child_weight01 <- child_weight01 |> 
+  setNames(tolower(names(child_weight01))) |> 
+  rename(datazone = datazone2001, 
+         numerator = healthy_weight, 
+         denominator = tot) |> 
+  mutate(year = as.numeric(paste0("20", substr(schlyr_exam, 1, 2)))) |>  #reformat year variable
   # aggregate to get the count
-  group_by(year, datazone) %>% 
-  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) %>%  ungroup()
+  group_by(year, datazone) |>  
+  summarise_at(c("numerator", "denominator"), list(sum), na.rm =T) |>  ungroup()
 
 ###############################################.
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-child_weight_dep <- rbind(child_weight01 %>% subset(year<=2013), 
-                          child_weight11 %>% subset(year>=2014)) 
+child_weight_dep <- rbind(child_weight01 |>  subset(year<=2013), 
+                          child_weight11 |>  subset(year>=2014)) 
 
 saveRDS(child_weight_dep, file=paste0(data_folder, 'Prepared Data/child_healthyweight_depr_raw.rds'))
 
@@ -49,7 +54,7 @@ saveRDS(child_weight_dep, file=paste0(data_folder, 'Prepared Data/child_healthyw
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "child_healthyweight", geography = "datazone11", 
-              measure = "percent", yearstart = 2002, yearend = 2020, time_agg = 1)
+              measure = "percent", yearstart = 2002, yearend = 2022, time_agg = 1)
 
 # There are several boards and councils for which we only have incomplete data 
 # for certain years as they join to the CHSPS later on.
@@ -70,15 +75,15 @@ analyze_second(filename = "child_healthyweight", measure = "perc_pcf", time_agg 
 
 # Excluding data for boards, hscps, las, localities and izs with incomplete data
 # Merging final data with parent geographies lookup and then filtering
-geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.rds")) %>% 
+geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.rds")) |>  
   #TEMPORARY FIX. dealing with change in ca, hb and hscp codes
   mutate(hscp_partnership = recode(hscp_partnership, "S37000014"='S37000032', 
-                                   "S37000023"='S37000033')) %>% 
-  gather(geotype, code, c(intzone2011, hscp_locality)) %>% distinct() %>% 
-  select(-geotype) %>% rename(parent_area = hscp_partnership)
+                                   "S37000023"='S37000033')) |> 
+  gather(geotype, code, c(intzone2011, hscp_locality)) |>  distinct() |> 
+  select(-geotype) |>  rename(parent_area = hscp_partnership)
 
 data_shiny <- left_join(readRDS(file = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.rds")),
-                        geo_parents, by = "code") %>%
+                        geo_parents, by = "code")  |> 
   subset(!(((code %in% c('S37000001', 'S37000002', "S12000033", "S12000034", 'S12000020',
                          'S37000019', 'S08000020') | # Moray, Aberdeen, Aberdeenshire
                parent_area %in% c('S37000001', 'S37000002', 'S37000019')) & year <2009) |
@@ -98,9 +103,11 @@ data_shiny <- left_join(readRDS(file = paste0(data_folder, "Data to be checked/c
              ((code %in% c('S12000023', 'S37000022', 'S08000025') |#Orkney Islands
                  parent_area %in% c("S37000022") ) & year %in% c('2007', "2008", "2009"))
            ) #negation
-  ) %>% #subset
+  ) |>  #subset
   select(-parent_area)
 
+
+  
 saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.rds"))
 write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.csv"))
 
