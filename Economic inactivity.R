@@ -82,11 +82,28 @@ data <- raw_data %>%
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
-write.csv(data, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.csv"), row.names = FALSE)
-write_rds(data, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.rds"))
+
+# 1- main data file (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
+
+maindata <- data %>%
+  filter(split_name=="Total")
+
+write.csv(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.csv"), row.names = FALSE)
+write_rds(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.rds"))
 
 
-# Run QA reports and check the output files
+# 2- population group data file (ie data behind population groups tab)
+
+pop_grp_data <- data %>%
+  filter(split_name!="Total")
+
+write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.rds"))
+
+
+
+
+# Run QA reports and check the output files - QA report won't work until changes made to checking reports - come back to this
 run_qa(filename = "economic_inactivity")
 
 
