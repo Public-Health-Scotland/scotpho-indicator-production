@@ -86,7 +86,8 @@ data <- raw_data %>%
 # 1- main data file (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
 
 maindata <- data %>%
-  filter(split_name=="Total")
+  filter(split_name=="Total") %>%
+  select(-split_name,-split_code)
 
 write.csv(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.csv"), row.names = FALSE)
 write_rds(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.rds"))
