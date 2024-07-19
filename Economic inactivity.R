@@ -64,9 +64,10 @@ data <- raw_data %>%
          split_name = case_when(c_sex_name %in% c("Males", "Females") ~ "Sex",
                                 c_sex_name == "All persons" & age_name != "Aged 16-64" ~ "Age",
                                 c_sex_name == "All persons" & age_name == "Aged 16-64" ~ "Total"),
-         split_code = case_when(split_name == "Sex" ~ c_sex_name,
-                                split_name == "Age" ~ age_name,
-                                split_name == "Total" ~ "All persons")) %>% 
+         split_value = case_when(split_name == "Sex" ~ c_sex_name,
+                                split_name == "Age" ~ as.character(substr(age_name,6,10)),
+                                split_name == "Total" ~ "All persons")) %>%
+
   
   # Rename columns
   rename(year = date,
@@ -87,7 +88,7 @@ data <- raw_data %>%
 
 maindata <- data %>%
   filter(split_name=="Total") %>%
-  select(-split_name,-split_code)
+  select(-split_name,-split_value)
 
 write.csv(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.csv"), row.names = FALSE)
 write_rds(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.rds"))
