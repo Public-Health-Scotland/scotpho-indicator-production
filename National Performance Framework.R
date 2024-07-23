@@ -3,7 +3,6 @@
 #   99117: Child wellbeing and happiness
 #   99118: Child material deprivation
 #   99121: Health risk behaviours
-#   99122: Quality of care experience
 #   99123: Gender balance in organisations (for minority ethnic population)
 
 
@@ -18,55 +17,54 @@ source("1.indicator_analysis.R")
 
 ### 1 - Read in data -----
 
-# Read in NPF data 
-data <- read_xlsx(paste0(data_folder, "Received Data/NPF Database - 01.11.23.xlsx")) %>%
-  clean_names()
+# Specify url of the NPF file to download from stats.gov
+url <- "https://statistics.gov.scot/downloads/file?id=30a07b3c-762f-41ee-bc20-8d0468b92c7f%2FALL+NPF+INDICATORS+-+2023+-+statistics.gov.scot+NPF+database+excel+file+-+May+2024.xlsx"
 
+# Specify file name and where to save file to
+file_name <- "NPF_database.xlsx"
+file_path <- paste0(data_folder, "Received Data/")
 
-# Read in geography lookup
-dictionary <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>%
-  select(!c(parent_area, areaname_full))
+# Download file
+download.file(url = url, destfile = paste(file_path, file_name, sep = ""))
+
+# Read in data file
+dat <- read_xlsx(paste0(file_path, file_name))
 
 
 
 ### 2. Prepare data  -----
 
-data <- data %>%
+data <- dat %>%
+  
+  # Clean column names
+  clean_names() %>% 
   
   # Select relevant indicators
   filter(indicator %in% c("Persistent Poverty",
                           "Child Wellbeing and Happiness",
                           "Child material deprivation",
+                          "Children's material deprivation",
                           "Health risk behaviours",
-                          "Quality of care experience",
                           "Gender balance in organisations")) %>%
   
-         # Rename indicators
+         # Convert indicator names to lower case and hyphenate 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
          
-         # Ensure breakdowns are named consistently
-         disaggregation = str_replace_all(disaggregation, "Health and Social Care Partnership", "HSC partnership"),
-         disaggregation = str_replace_all(disaggregation, "Health Board", "Health board"),
-         disaggregation = str_replace_all(disaggregation, "SIMD", "Scottish Index of Multiple Deprivation"),
-         disaggregation = str_replace_all(disaggregation, "Total Difficulties Score X ", ""),
-         disaggregation = str_replace_all(disaggregation, "Gender", "Sex"),
-         disaggregation = if_else(indicator == "persistent_poverty" & breakdown == "Total", "Total", disaggregation),
-         disaggregation = if_else(str_detect(breakdown, "Ethnic minority"), "Total", disaggregation),
-
-         breakdown = if_else(str_detect(breakdown, "1|(?i)most"), "1 - most deprived", breakdown),
-         breakdown = if_else(str_detect(breakdown, "2$|2nd"), "2", breakdown),
-         breakdown = if_else(str_detect(breakdown, "3"), "3", breakdown),
-         breakdown = if_else(str_detect(breakdown, "4"), "4", breakdown),
-         breakdown = if_else(str_detect(breakdown, "5|(?i)least"), "5 - least deprived", breakdown),
+         indicator = str_replace_all(indicator, "children's", "child"),
          
-         breakdown = str_replace_all(breakdown, "Gender", "Sex"),
-         breakdown = str_replace_all(breakdown, "Male", "Men"),
-         breakdown = str_replace_all(breakdown, "Female", "Women"),
+         # Ensure age breakdowns are names consistently
+         breakdown = str_replace_all(breakdown, "Age ", ""),
+         breakdown = str_replace_all(breakdown, "-", " to "),
          
-         breakdown = if_else(disaggregation == "Health board" & !grepl("NHS", breakdown), paste0("NHS ", breakdown), breakdown),
-         breakdown = str_replace_all(breakdown, "\\band\\b", "&"),
-         breakdown = str_replace_all(breakdown, "Edinburgh, City of", "City of Edinburgh"),
+         # Ensure SIMD breakdowns are named consistently
+         breakdown = str_replace_all(breakdown, "SIMD ", ""),
+         breakdown = if_else(str_detect(breakdown, "$1$|1st|(?i)most"), "1 - most deprived", breakdown),
+         breakdown = if_else(str_detect(breakdown, "$2$|2nd"), "2", breakdown),
+         breakdown = if_else(str_detect(breakdown, "$3$|3rd"), "3", breakdown),
+         breakdown = if_else(str_detect(breakdown, "$4$|4th"), "4", breakdown),
+         breakdown = if_else(str_detect(breakdown, "$5$|5th|(?i)least"), "5 - least deprived", breakdown),
          
+         # Remove characters from year column
          year = if_else(str_detect(year, "(excl. 2020)"), "2017-2021", year),
          
          # Add indicator ids
@@ -74,41 +72,49 @@ data <- data %>%
                             indicator == "child_wellbeing_and_happiness" ~ 99117,
                             indicator == "child_material_deprivation" ~ 99118,
                             indicator == "health_risk_behaviours" ~ 99121,
-                            indicator == "quality_of_care_experience" ~ 99122,
                             indicator == "gender_balance_in_organisations" ~ 99123),
          
-         # Create new columns
-         areaname = if_else(str_detect(disaggregation, "Local Authority|Health board|HSC partnership"), breakdown, "Scotland"),
-         numerator = "",
-         rate = as.numeric(figure)) %>%
+         # Create date variables
+         trend_axis = year,
+         year = case_when(indicator %in% c("health_risk_behaviours", "gender_balance_in_organisations") ~ as.numeric(year),
+                          !indicator %in% c("health_risk_behaviours", "gender_balance_in_organisations") ~ as.numeric(str_sub(trend_axis, start= 1, end = 4))+2),
+         def_period = case_when(indicator == "persistent_poverty" ~ paste0("5-year aggregate (",trend_axis,")"),
+                                indicator == "child_wellbeing_and_happiness" ~ paste0("4-year aggregate (",trend_axis,")"),
+                                indicator == "child_material_deprivation" ~ paste0("4-year aggregate (",trend_axis,")"),
+                                indicator == "health_risk_behaviours" ~ paste0(year, " survey year"),
+                                indicator == "gender_balance_in_organisations" ~ paste0(year, " calendar year")),
+         
+         
+         # Create some other new variables
+         numerator = NA, 
+         lowci = NA, upci = NA,
+         rate = as.numeric(figure),
+         code = "S00000001") %>%
+  
+  # Rename columns
+  rename(split_name = disaggregation,
+         split_value = breakdown) %>% 
   
   # Select breakdowns of interest
-  filter(disaggregation %in% c("Total",
-                               "Scottish Index of Multiple Deprivation",
-                               "SIMD",
-                               "Local Authority",
-                               "HSC partnership",
-                               "Health board",
-                               "Gender",
-                               "Total Difficulties Score",
-                               "Total Difficulties Score X Sex",
-                               "Total Difficulties Score X SIMD"),
-         
-         # Remove duplicate rows
-         !(breakdown == "Total" & disaggregation == "Scottish Index of Multiple Deprivation"),
-         !(indicator == "gender_balance_in_organisations" & breakdown == "Total")) %>%
-  
-  # Also remove inequalities breakdowns for now until it's decided how they'll be presented on OPT
-  filter(disaggregation != "Scottish Index of Multiple Deprivation") %>%
-  
-  # Create new area type variable from disaggregation
-  mutate(areatype = if_else(str_detect(disaggregation, "Total"), "Scotland", disaggregation)) %>%
-  
-  # Join area codes
-  left_join(dictionary, by = c("areaname", "areatype")) %>%
+  filter(split_name %in% c("Total",
+                           "Age",
+                           "Scottish Index of Multiple Deprivation",
+                           "SIMD",
+                           "Local Authority",
+                           "HSC partnership",
+                           "Health board",
+                           "Gender",
+                           "Sex",
+                           "Total Difficulties Score",
+                           "Total Difficulties Score X Sex",
+                           "Total Difficulties Score X Scottish Index of Multiple Deprivation")) %>% 
+
+  # Further tidy breakdown names
+  mutate(split_name = str_replace_all(split_name, "Total Difficulties Score X ", ""),
+         split_name = str_replace_all(split_name, "Total Difficulties Score", "Total")) %>% 
   
   # Select relevant variables
-  select(c(ind_id, indicator, code, year, rate, numerator)) %>%
+  select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
   
   # Reorder data frame
   arrange(indicator, code, year)
@@ -117,71 +123,48 @@ data <- data %>%
 
 ### 3. Prepare final files -----
 
-# Create function to prepare final shiny outputs
-prepare_shiny_file <- function(ind) {
+# Function to prepare final files:
+# Creates two data files for each indicator (main data vs population group data)
+prepare_final_files <- function(ind){
   
-  #  Select indicator data
-  dat <- data %>% filter(indicator == ind)
-  
-  # Create different date variables depending on what indicator it is:
-  
-  # Single survey year
-  if (ind == "health_risk_behaviours") {
+    # Filter for main data 
+    # (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
+    maindata <- data %>%
+      filter(indicator == ind,
+             split_value == "Total") %>%
+      select(-split_name, -split_value) %>% 
+      unique()
     
-    dat <- dat %>%
-      mutate(trend_axis = year,
-             def_period = paste0(year, " survey year"))
+    # Filter for population group data
+    # (ie data behind population groups tab)
+    pop_grp_data <- data %>%
+      filter(indicator == ind,
+             split_value != "Total")
     
-  # Single calendar year
-  } else  if (ind == "gender_balance_in_organisations") {
-      
-      dat <- dat %>%
-        mutate(trend_axis = year,
-               def_period = paste0(year, " calendar year"))
-  
-  # Combined survey years  
-  } else if (ind == "quality_of_care_experience") {
+    # Save files in folder to be checked
+    write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
     
-    dat <- dat %>% 
-      mutate(trend_axis = year,
-             def_period = paste0(trend_axis, " survey year"),
-             year = as.numeric(str_sub(trend_axis, start= 1, end = 4)))
-  
-  # 5-year aggregate  
-  } else if (ind == "persistent_poverty") {
+    write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+    write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
     
-    dat <- dat %>%
-      mutate(trend_axis = year,
-             def_period = paste0("5-year aggregate (",trend_axis,")"),
-             year = as.numeric(str_sub(trend_axis, start= 1, end = 4))+2)
-  
-  # 4-year aggregate  
-  } else {
     
-    dat <- dat %>% 
-      mutate(trend_axis = year,
-             def_period = paste0("4-year aggregate (",trend_axis,")"),
-             year = as.numeric(str_sub(trend_axis, start= 1, end = 4))+2)
-  }
-  
-  # Save files in folder to be checked
-  write.csv(dat, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(dat, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  
-  # Make data file created available outside of function so it can be visually inspected if required
-  indicator_result <<- dat 
-  
+    # Make data created available outside of function so it can be visually inspected if required
+    maindata_result <<- maindata
+    popgrpdata_result <<- pop_grp_data
+    
 }
 
 
-# Create files for each indicator and run QA reports
+# Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 for (i in unique(data$indicator)){
-    
-    prepare_shiny_file(ind = i)
   
-    run_qa(filename = i)
-    
+  prepare_final_files(ind = i)
+  
+  #run_qa(filename = i)
+  
 }
+
 
 
 #END
