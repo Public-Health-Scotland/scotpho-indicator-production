@@ -132,14 +132,15 @@ prepare_final_files <- function(ind){
     maindata <- data %>%
       filter(indicator == ind,
              split_value == "Total") %>%
-      select(-split_name, -split_value) %>% 
+      select(code, ind_id, year,numerator,rate,lowci,upci,def_period, trend_axis) %>% #select fields required for maindata file (ie summary/trend/rank tab)
       unique()
     
     # Filter for population group data
     # (ie data behind population groups tab)
     pop_grp_data <- data %>%
       filter(indicator == ind,
-             split_value != "Total")
+             split_value != "Total") %>%
+      select(ind_id, code, year, numerator,rate,lowci,upci,def_period, trend_axis, split_name, split_value) #select fields required for popgroup data file (linked to pop group tab)
     
     # Save files in folder to be checked
     write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
@@ -157,13 +158,31 @@ prepare_final_files <- function(ind){
 
 
 # Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
-for (i in unique(data$indicator)){
-  
-  prepare_final_files(ind = i)
-  
-  #run_qa(filename = i)
-  
-}
+
+# Indicator 99116: Persistent povertyy
+prepare_final_files(ind = "persistent_poverty")
+
+#run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
+
+
+# Indicator 99117: Child wellbeing and happiness
+prepare_final_files(ind = "child_wellbeing_and_happiness")
+
+
+# Indicator 99118: Child material deprivation
+prepare_final_files(ind = "child_material_deprivation")
+
+
+# Indicator  99121: Health risk behaviours
+prepare_final_files(ind = "health_risk_behaviours")
+
+
+# Indicator 99123: Gender balance in organisations (for minority ethnic population)
+prepare_final_files(ind = "gender_balance_in_organisations")
+
+
+
+
 
 
 
