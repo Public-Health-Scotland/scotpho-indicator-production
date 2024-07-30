@@ -1,3 +1,7 @@
+#new indicators introduced for care and wellbeing portfolio
+# TO DO: enable automated checking at end of the indicator production
+#         create a deprivation data file output (for any indicators that may have sutiable data)
+
 ###   Update ScotPHO Care and Wellbeing indicators: 
 #   99116: Persistent poverty
 #   99117: Child wellbeing and happiness
