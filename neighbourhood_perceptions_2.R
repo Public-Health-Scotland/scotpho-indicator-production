@@ -34,11 +34,20 @@
 
 
 ###############################################.
-## Packages/Filepaths/Functions ----
+## Filepaths/Functions/Lookups ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+source("1.indicator_analysis.R") 
 
 filepath <- paste0(data_folder, "Received Data/Neighbourhood perceptions/Final tables 2024.xlsx")
+
+
+# The ADP lookup needs to be read in and matched to the data separately as there 
+# are some local authorities that have the same name.
+area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
+  filter(str_detect(code, "S00|S12|S00|S08"))
+
+area_codes_adp <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
+  filter(str_detect(code, "S11"))
 
 ###############################################.
 ## Read in all data ----
@@ -58,56 +67,82 @@ multiplesheets <- function(filepath) {
   # cleaning column names
   clean_names(data_frame)
   
+  #removing cover sheet and contents (first two sheets)
+  data_frame[-c(1,2)]
+  
 } 
 
 #running function
 all_data <- multiplesheets(filepath)
 
+
 ###############################################.
-## Create functions for cleaning data
+## Create function for cleaning data
 ###############################################.
 
-#Takes Scotland sheets for all 3 indicators and performs basic cleaning ready for combination w/ HB and CA
-scotland_cleaning <- function(data_frame){ 
+indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
   
-  data_frame <- data_frame |> 
+  #scotland dfs
+  scot_df <- scot_df |> 
     row_to_names(row_number = 1) |>  #set first row as headings
     mutate(areatype = c("Scotland")) |> #create areatype variable and set to Scotland
     mutate(areaname = c("Scotland")) |>  #create areaname variable and set to Scotland
-    clean_names() #cleans column names 
-    
-}
-
-#Takes HB and CA sheets for all 3 indicators and performs basic cleaning
-hb_ca_cleaning <- function(data_frame){
+    clean_names() #cleans column names
   
-  data_frame <- data_frame |> 
-    row_to_names(row_number = 1)
-    
-    
-}
+  #hb dfs
+  hb_df <- hb_df |> 
+    row_to_names(row_number = 1) |> 
+    mutate(areatype = c("Health board")) |> 
+    rename(areaname = `NHS Board`) |> 
+    clean_names()
+  
+  #function can only take adp OR ca, not both, 
+  # and produces 1 df containing whichever of ca/adp is passed into function
+  if(is.null(adp_df)){ 
+    ca_adp_df <- ca_df |> 
+      row_to_names(row_number = 1) |> 
+      mutate(areatype = c("Council area")) |> 
+      rename(areaname = `Local authority`) |> 
+      clean_names()
+  } else {
+    ca_adp_df <- adp_df |> 
+      row_to_names(row_number = 1) |> 
+      mutate(areatype = c("Alcohol & drug partnership")) |> 
+      rename(areaname = `Alcohol & Drug Partnership`) |> 
+      clean_names()
+  }
+  
+  #combine scot, hb and adp/ca dfs
+  cleaned_df <- rbind(scot_df, hb_df, ca_adp_df) 
+  
+  cleaned_df <- cleaned_df |> 
+    mutate_at(c(2:5), as.numeric) |> #convert columns with data to numeric
+    mutate(across(where(is.numeric), round, 1)) #round to 1dp
 
+  
+}
 
 
 ###############################################.
 ## Create drug misuse file ----
 ###############################################.
 
-drug_misuse_scot <- scotland_cleaning(all_data$table_1)
+drug_misuse <- indicator_cleaning(all_data$Table_1, all_data$Table_2, all_data$Table_3)
 
 
 ###############################################.
 ## Create rowdy behaviour file ----
 ###############################################.
 
-rowdy_behaviour_scot <- scotland_cleaning(all_data$table_4)
+rowdy_behaviour <- indicator_cleaning(all_data$Table_4, all_data$Table_5, all_data$Table_6)
 
 
 ###############################################.
 ## Create very good place to live file ----
 ###############################################.
 
-good_place_scot <- scotland_cleaning(all_data$table_7)
+good_place <- indicator_cleaning(all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9)
+
 
 
 
