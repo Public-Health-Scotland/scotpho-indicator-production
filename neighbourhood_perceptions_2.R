@@ -44,7 +44,7 @@ filepath <- paste0(data_folder, "Received Data/Neighbourhood perceptions/Final t
 # The ADP lookup needs to be read in and matched to the data separately as there 
 # are some local authorities that have the same name.
 area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
-  filter(str_detect(code, "S00|S12|S00|S08"))
+  filter(str_detect(code, "S00|S12|S08"))
 
 area_codes_adp <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
   filter(str_detect(code, "S11"))
@@ -77,16 +77,18 @@ all_data <- multiplesheets(filepath)
 
 
 ###############################################.
-## Create function for cleaning data
+## Create function for cleaning data ----
 ###############################################.
 
-indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
+indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL, area_codes, area_codes_adp){
   
   #scotland dfs
   scot_df <- scot_df |> 
     row_to_names(row_number = 1) |>  #set first row as headings
     mutate(areatype = c("Scotland")) |> #create areatype variable and set to Scotland
     mutate(areaname = c("Scotland")) |>  #create areaname variable and set to Scotland
+    mutate(code = c("S00000001")) |> #create code variable with Scotland code
+    select(areaname, everything()) |> #makes area name column first in line with other areatypes
     clean_names() #cleans column names
   
   #hb dfs
@@ -94,7 +96,17 @@ indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
     row_to_names(row_number = 1) |> 
     mutate(areatype = c("Health board")) |> 
     rename(areaname = `NHS Board`) |> 
+    mutate(areaname = case_when(areaname == "Orkney Islands" ~ "Orkney", 
+                                areaname == "Shetland Islands" ~ "Shetland",
+                                .default = areaname)) |> #removing "Islands" from Orkney and Shetland 
     clean_names()
+
+  hb_df$areaname = paste0("NHS ", hb_df$areaname) #pasting NHS onto hb names
+  
+  hb_df <- hb_df |> 
+    left_join(filter(area_codes, str_detect(code, "S08"))) #joining with lookup
+  
+  
   
   #function can only take adp OR ca, not both, 
   # and produces 1 df containing whichever of ca/adp is passed into function
@@ -102,13 +114,21 @@ indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
     ca_adp_df <- ca_df |> 
       row_to_names(row_number = 1) |> 
       mutate(areatype = c("Council area")) |> 
-      rename(areaname = `Local authority`) |> 
+      rename(areaname = `Local authority`) |>
+      mutate(areaname = case_when(str_detect(areaname, "&") ~ str_replace(areaname, "&", "and"),
+                                  areaname == "Edinburgh, City of" ~ "City of Edinburgh", 
+                                  .default = areaname)) |> 
+      left_join(filter(area_codes, str_detect(code, "S12"))) |>
       clean_names()
   } else {
     ca_adp_df <- adp_df |> 
       row_to_names(row_number = 1) |> 
       mutate(areatype = c("Alcohol & drug partnership")) |> 
-      rename(areaname = `Alcohol & Drug Partnership`) |> 
+      rename(areaname = `Alcohol & Drug Partnership`) |>
+      left_join(area_codes_adp) |>
+      mutate(code = case_when(areaname == "MALDEP" ~ "S11000051", 
+                                  areaname == "Lanarkshire ADP" ~ "S11000052",
+                                  .default = code)) |> 
       clean_names()
   }
   
@@ -116,7 +136,7 @@ indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
   cleaned_df <- rbind(scot_df, hb_df, ca_adp_df) 
   
   cleaned_df <- cleaned_df |> 
-    mutate_at(c(2:5), as.numeric) |> #convert columns with data to numeric
+    mutate_at(c(3:6), as.numeric) |> #convert columns with data to numeric
     mutate(across(where(is.numeric), round, 1)) #round to 1dp
 
   
@@ -127,21 +147,21 @@ indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL){
 ## Create drug misuse file ----
 ###############################################.
 
-drug_misuse <- indicator_cleaning(all_data$Table_1, all_data$Table_2, all_data$Table_3)
+drug_misuse <- indicator_cleaning(all_data$Table_1, all_data$Table_2, all_data$Table_3, area_codes = area_codes, area_codes_adp = area_codes_adp)
 
 
 ###############################################.
 ## Create rowdy behaviour file ----
 ###############################################.
 
-rowdy_behaviour <- indicator_cleaning(all_data$Table_4, all_data$Table_5, all_data$Table_6)
+rowdy_behaviour <- indicator_cleaning(all_data$Table_4, all_data$Table_5, all_data$Table_6, area_codes = area_codes, area_codes_adp = area_codes_adp)
 
 
 ###############################################.
 ## Create very good place to live file ----
 ###############################################.
 
-good_place <- indicator_cleaning(all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9)
+good_place <- indicator_cleaning(all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9, area_codes = area_codes, area_codes_adp = area_codes_adp)
 
 
 
