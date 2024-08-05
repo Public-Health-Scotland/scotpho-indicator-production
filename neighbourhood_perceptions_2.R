@@ -194,17 +194,19 @@ write.csv(good_place, file = paste0(data_folder, "Data to be checked/adults_rati
 
 
 
-# 4. Checks ---------------------------------------------------------------
+############################################.
+## Analyst notes ----
+############################################.
 
 ## As there is no analyse_second function used for these indicators, run the following to 
 ## check data against last years (may need to change the file names)
 
-# a) Read in last years data
+# Read in last years data
 last_year_rowdy_behaviour <- read.csv(paste0(data_folder, "Shiny Data/4115 Rowdy behaviour_shiny.csv"))
 last_year_good_place <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
 last_year_drug_misuse <- read.csv(paste0(data_folder, "Shiny Data/4203 Perception drug misuse_shiny.csv"))
 
-# b) function to check totals of shared years
+# Function to check totals of shared years
 
 check_year_totals <- function(last_year_data, this_year_data){
   
