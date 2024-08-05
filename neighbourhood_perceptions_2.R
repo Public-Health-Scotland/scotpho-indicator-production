@@ -80,7 +80,7 @@ all_data <- multiplesheets(filepath)
 ## Create function for cleaning data ----
 ###############################################.
 
-indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL, area_codes, area_codes_adp){
+indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, area_codes, area_codes_adp){
   
   #scotland dfs
   scot_df <- scot_df |> 
@@ -137,32 +137,122 @@ indicator_cleaning <- function(scot_df, hb_df, adp_df = NULL, ca_df = NULL, area
   
   cleaned_df <- cleaned_df |> 
     mutate_at(c(3:6), as.numeric) |> #convert columns with data to numeric
-    mutate(across(where(is.numeric), round, 1)) #round to 1dp
+    mutate(across(where(is.numeric), round, 1)) |>  #round to 1dp 
+    mutate(ind_id = id, #create indicator id col based on argument to function
+           numerator = "NA", #create numerator 
+           def_period = year, #duplicate year column
+           trend_axis = case_when(def_period == "2007-2008" ~ "2007/2008", #create trend axis col
+                                  def_period == "2009-2010" ~ "2009/2009",
+                                  .default = def_period),
+           def_period = case_when(def_period == "2007-2008" ~ "2007 to 2008 survey years; 2-year aggregates",
+                                  def_period == "2009-2010" ~ "2009 to 2010 survey years; 2-year aggregates",
+                                  .default = paste(def_period,"survey year")), #create def_period col 
+           year = substr(year, 1, 4), #keep only first year for multi-year rows
+           year = as.integer(year)) |>  
+    select(code, ind_id, year, numerator, percent, lower_95_percent_ci, upper_95_percent_ci, def_period, trend_axis) |> #drop unnecessary cols 
+    rename(rate = percent, #rename cols to align with shiny data
+           lowci = lower_95_percent_ci,
+           upci = upper_95_percent_ci)
 
   
 }
 
 
 ###############################################.
-## Create drug misuse file ----
+## Run function for drug misuse (4203) ----
 ###############################################.
 
-drug_misuse <- indicator_cleaning(all_data$Table_1, all_data$Table_2, all_data$Table_3, area_codes = area_codes, area_codes_adp = area_codes_adp)
+drug_misuse <- indicator_cleaning(id = "4203" ,
+                                  all_data$Table_1, all_data$Table_2, all_data$Table_3, 
+                                  area_codes = area_codes, area_codes_adp = area_codes_adp)
 
-
-###############################################.
-## Create rowdy behaviour file ----
-###############################################.
-
-rowdy_behaviour <- indicator_cleaning(all_data$Table_4, all_data$Table_5, all_data$Table_6, area_codes = area_codes, area_codes_adp = area_codes_adp)
-
+saveRDS(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.rds"))
+write.csv(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.csv"),row.names = F)
 
 ###############################################.
-## Create very good place to live file ----
+## Run function for rowdy behaviour (4115) ------
 ###############################################.
 
-good_place <- indicator_cleaning(all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9, area_codes = area_codes, area_codes_adp = area_codes_adp)
+rowdy_behaviour <- indicator_cleaning(id = "4115",
+                                      all_data$Table_4, all_data$Table_5, all_data$Table_6, 
+                                      area_codes = area_codes, area_codes_adp = area_codes_adp)
 
+saveRDS(rowdy_behaviour, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.rds"))
+write.csv(rowdy_behaviour, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"),row.names = F)
+
+###############################################.
+## Run function for neighbourhood good place (20903) ----
+###############################################.
+
+good_place <- indicator_cleaning(id = "20903",
+                                 all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9, 
+                                 area_codes = area_codes, area_codes_adp = area_codes_adp)
+
+saveRDS(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
+write.csv(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
+
+
+
+
+# 4. Checks ---------------------------------------------------------------
+
+## As there is no analyse_second function used for these indicators, run the following to 
+## check data against last years (may need to change the file names)
+
+# a) Read in last years data
+last_year_rowdy_behaviour <- read.csv(paste0(data_folder, "Shiny Data/4115 Rowdy behaviour_shiny.csv"))
+last_year_good_place <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
+last_year_drug_misuse <- read.csv(paste0(data_folder, "Shiny Data/4203 Perception drug misuse_shiny.csv"))
+
+# b) function to check totals of shared years
+
+check_year_totals <- function(last_year_data, this_year_data){
+  
+  last_year_max <- as.numeric(max(last_year_data$year))
+  
+  last_year <- last_year_data |> 
+    group_by(year) |> 
+    summarize(last_year_sum = sum(rate)) |> 
+    ungroup()
+  
+  this_year <- this_year_data |> 
+    filter(last_year_max >= year) |> 
+    group_by(year) |> 
+    summarize(this_year_sum = sum(rate)) |> 
+    ungroup()
+  
+  both_years <- last_year |> 
+    left_join(this_year, by = "year") |> 
+    mutate(check = case_when(last_year_sum == this_year_sum ~ 0,
+                             is.na(this_year_sum) ~1,
+                             is.na(last_year_sum) ~ 1,
+                             .default = 1 ))
+  
+  test <- both_years |> 
+    mutate(test_column = sum(check))
+  
+  # if last year matches, then 0 is returned. For the check if they all match,
+  # the sum of check should be 0, if not return all non-matching rows
+  
+  if(test$test_column[1] == 0) {
+    
+    print("All totals match")
+    
+    
+  } else {
+    non_match <- filter(both_years,
+                        check != 0) 
+    
+    return(non_match)
+    print("Totals don't match. See non_match dataframe.")
+  }
+}
+
+# Check totals
+
+check_year_totals(last_year_data = last_year_rowdy_behaviour, this_year_data = rowdy_behaviour)
+check_year_totals(last_year_data = last_year_good_place, this_year_data = good_place)
+check_year_totals(last_year_data = last_year_drug_misuse, this_year_data = drug_misuse)
 
 
 
