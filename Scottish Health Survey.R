@@ -1,104 +1,126 @@
 ###   Update ScotPHO Care and Wellbeing indicators sourced from Scottish Health Survey: 
-#   Food insecurity
-#   Healthy Weight adults
-#   Physical Activity
-#   Self-assessed health of adults (age 16+)
-#   Limiting long-term conditions (age 16+)
+#   99105: Food insecurity
+#   99106: Healthy Weight adults
+#   99108: Self-assessed health of adults (age 16+)
+#   99109: Limiting long-term conditions (age 16+)
 
 # all indicators available as male/female/all splits
 
-# Data source is the Scottish Health Survey open data on statistics.gov.scot
-# https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fscottish-health-survey-local-area-level-data
+# Data source is the Scottish Health Survey - received dashboard files from SHeS team (scottishhealthsurvey@gov.scot)
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R") 
-library(devtools)
-library(opendatascot)
+source("1.indicator_analysis.R")
 
 
-### 1. Read in SHeS open data using opendatascot package ----
 
-# Read in data for required indicators
-data <- opendatascot::ods_dataset("scottish-health-survey-local-area-level-data",
-                                  scottishHealthSurveyIndicator = c("food-insecurity-worried-would-run-out-of-food-yes",
-                                                                    "healthy-weight-healthy-weight",
-                                                                    "summary-activity-levels-meets-recommendations",
-                                                                    "good", # self-assessed health (good or very good)
-                                                                    "long-term-illness-limiting-long-term-illness")) %>%
-                                  clean_names()
+### 1. Read in data ----
+
+# Identify data folder
+shes_data_folder <- paste0(data_folder, "Received Data/Scottish Health Survey/")
+
+# Identify data file with geographic breakdowns and aggregated Scotland data
+geog_data_files <- paste0(shes_data_folder, list.files(path = shes_data_folder, pattern = "rank"))
+
+# Read in data file
+geog_data_raw <- read_spss(geog_data_files)
+
+
+# Read in geography lookup
+dictionary <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>% 
+  select(!c(parent_area, areaname_full))
 
 
 ### 2. Prepare data  -----
 
-data <- data %>%
-
-  # Rename columns
-  rename("trend_axis" = ref_period,
-         "code" = ref_area,
-         "measure" = measure_type,
-         "indicator" = scottish_health_survey_indicator) %>%
+geog_data <- geog_data_raw %>% 
   
-  # Rename indicators and create new columns
-  mutate(indicator = str_replace(indicator, "food-insecurity-worried-would-run-out-of-food-yes", "food_insecurity"),
-         indicator = str_replace(indicator, "healthy-weight-healthy-weight", "healthy_weight_adults"),
-         indicator = str_replace(indicator, "summary-activity-levels-meets-recommendations", "physical_activity"),
-         indicator = str_replace(indicator, "good", "self_assessed_health"),
-         indicator = str_replace(indicator, "long-term-illness-limiting-long-term-illness", "limiting_long_term_condition"),
-         measure = str_replace(measure, "95-lower-confidence-limit", "lowci"),
-         measure = str_replace(measure, "95-upper-confidence-limit", "upci"),
-         year = as.numeric(str_sub(trend_axis, start= 1, end = 4))+2,
-         def_period = paste0("4-year aggregate (",trend_axis,")"),
-         code = ifelse(code == "S92000003", "S00000001", code),
-         numerator = "",
-         ind_id = case_when(indicator == "food_insecurity" ~ 99105,
-                            indicator == "healthy_weight_adults" ~ 99106,
-                            indicator == "physical_activity" ~ 99107,
-                            indicator == "self_assessed_health" ~ 99108,
-                            indicator == "limiting_long_term_condition" ~ 99109)) %>%
+  # Clean variable names
+  clean_names() %>% 
   
-  # Change sex from long to wide format
-  pivot_wider(names_from = sex, values_from = value)
+  # Filter for relevant indicators
+  filter(indicator %in% c("Self-assessed general health",
+                          "Long-term conditions",
+                          "Healthy weight",
+                          "Food insecurity (worried would run out of food)"),
+         
+         # Filter for category of interest for each indicator
+         categories %in% c("Healthy weight", # Healthy weight
+                           "Very good/Good", # Self-assessed health
+                           "Limiting long-term conditions",
+                           "Yes")) %>% # Food insecurity
+  
+  # Rename variables
+  rename(areaname = location,
+         areatype = geographylevel,
+         rate = percent,
+         lowci = lower_ci,
+         upci = upper_ci) %>% 
+  
+        # Tidy area type and names
+  mutate(areatype = str_to_sentence(areatype),
+         areatype = if_else(areatype == "Local authority", "Council area", areatype),
+         areaname = str_replace_all(areaname, c(" and " = " & ")),
+         areaname = str_replace_all(areaname, c("Edinburgh City" = "City of Edinburgh")),
+         areaname = if_else(areatype == "Health board", paste0("NHS ", areaname), areaname),
+         
+         # Tidy indicator names
+         indicator = case_when(indicator == "Self-assessed general health" ~ "self_assessed_health",
+                               indicator == "Long-term conditions" ~ "limiting_long_term_condition",
+                               indicator == "Healthy weight" ~ "healthy_weight",
+                               indicator == "Food insecurity (worried would run out of food)" ~ "food_insecurity"),
+         
+         # Create new columns
+         ind_id = case_when(indicator == "self_assessed_health" ~ 99108,
+                            indicator == "limiting_long_term_condition" ~ 99109,
+                            indicator == "healthy_weight" ~ 99106,
+                            indicator == "food_insecurity" ~ 99105),
+         
+         trend_axis = year,
+         year = as.numeric(str_sub(year, start= 1, end = 4))+2,
+         def_period = paste0("4-year aggregate"," (", trend_axis, ")"),
+         numerator = NA) %>% 
+  
+  # Join geography codes
+  left_join(dictionary, by = c("areatype", "areaname"))
 
 
 
 ### 3. Prepare final files -----
 
-# Create function to prepare final shiny outputs
-prepare_shiny_file <- function(ind, sex_grp) {
-
-  #  Select relevant data and change format
-  dat <- data %>%
-    filter(indicator == ind) %>%
-    select(ind_id, sex_grp, code, year, measure, numerator, def_period, trend_axis) %>%
-    pivot_wider(names_from = "measure", values_from = sex_grp) %>%
-    arrange(code, year, sex_grp) %>%
-    rename(rate=percent) # shiny file expects all measure fiedls to be named rate even if not strictly a rate
+# Function to prepare main data files
+prepare_final_files <- function(ind){
   
+  # Filter for main data
+  # (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
+  maindata <- geog_data %>% 
+    filter(indicator == ind,
+           sex == "All") %>% 
+    select(ind_id, code, year, trend_axis, def_period, rate, lowci, upci, numerator)
+
   # Save files in folder to be checked
-  write.csv(dat, paste0(data_folder, "Data to be checked/", ind, "_", sex_grp, "_shiny.csv"), row.names = FALSE)
-  write_rds(dat, paste0(data_folder, "Data to be checked/", ind, "_", sex_grp, "_shiny.rds"))
+  write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+
+  # Make data created available outside of function so it can be visually inspected if required
+  maindata_result <<- maindata
   
-  indicator_result <<- dat # make data file created available outside of function so it can be visually inspected if required
 }
+  
 
+# Create final files
+prepare_final_files(ind = "food_insecurity")
+prepare_final_files(ind = "self_assessed_health")
+prepare_final_files(ind = "limiting_long_term_condition")
+prepare_final_files(ind = "healthy_weight_adults")
 
-# Create files for each indicator and sex
-for (i in unique(data$indicator)){
-  for(j in c("all", "male", "female")){
-    
-    prepare_shiny_file(ind = i, sex_grp = j)
-    
-  }
-}
-
-# Run QA reports for each indicator check the output files
-
-run_qa(filename="food_insecurity_all")
-run_qa(filename="healthy_weight_adults_all")
-run_qa(filename="physical_activity_all")
-run_qa(filename="self_assessed_health_all")
-run_qa(filename="limiting_long_term_condition_all")
+  
+# Run QA reports
+run_qa(filename = "food_insecurity")
+run_qa(filename = "self_assessed_health")
+run_qa(filename = "limiting_long_term_condition")
+run_qa(filename = "healthy_weight_adults")
 
 
 #END
+
