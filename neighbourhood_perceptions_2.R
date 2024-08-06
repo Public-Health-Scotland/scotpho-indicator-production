@@ -29,22 +29,23 @@
 #  The data just needs to be formatted to match the last updates format 
 #  (e.g /Shiny Data/4203 Perception drug misuse_shiny)
 #  
-#  Section 4 - Checks includes only a very rudimentary check of this years update
+#  Checks section includes only a very rudimentary check of this years update
 #  against last years, grouping by year
 
 
 ###############################################.
-## Filepaths/Functions/Lookups ----
+## Filepaths/Functions/Lookups/Packages ----
 ###############################################.
-source("1.indicator_analysis.R") 
+source("1.indicator_analysis.R") #functions not actually used - quicker way to load packages in 
 
-filepath <- paste0(data_folder, "Received Data/Neighbourhood perceptions/Final tables 2024.xlsx")
+filepath <- paste0(data_folder, "Received Data/Neighbourhood perceptions/Final tables 2024.xlsx") #setting filepath
 
+library(rio) #used for reading in data from various sheets
 
-# The ADP lookup needs to be read in and matched to the data separately as there 
+# ADP lookup needs to be read in and matched to the data separately as there 
 # are some local authorities that have the same name.
 area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
-  filter(str_detect(code, "S00|S12|S08"))
+  filter(str_detect(code, "S00|S12|S08|S11"))
 
 area_codes_adp <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
   filter(str_detect(code, "S11"))
@@ -53,28 +54,8 @@ area_codes_adp <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.r
 ## Read in all data ----
 ###############################################.
 
-## Create function to read in all sheets of received data file
-multiplesheets <- function(filepath) { 
-  
-  # getting info about all excel sheets 
-  sheets <- excel_sheets(filepath) 
-  tibble <- lapply(sheets, function(x) read_excel(filepath, sheet = x)) 
-  data_frame <- lapply(tibble, as.data.frame) 
-  
-  # assigning names to data frames 
-  names(data_frame) <- sheets 
-  
-  # cleaning column names
-  clean_names(data_frame)
-  
-  #removing cover sheet and contents (first two sheets)
-  data_frame[-c(1,2)]
-  
-} 
-
-#running function
-all_data <- multiplesheets(filepath)
-
+all_data <- import_list(filepath) #from rio package, converts each sheets into a df within a list
+all_data<- all_data[-c(1,2)] #drop cover page and contents
 
 ###############################################.
 ## Create function for cleaning data ----
