@@ -60,6 +60,7 @@ library(magrittr) # for other pipe operators
 library(stringr) # for manipulating strings
 library(janitor) #helps cleaning imported variable names
 library(haven) # for reading in .sav files 
+library(purrr) # for working with functions and vectors
 
 # Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly
 if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) { #if session on server
