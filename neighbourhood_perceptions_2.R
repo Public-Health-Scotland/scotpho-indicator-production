@@ -68,10 +68,9 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
     row_to_names(row_number = 1) |>  #set first row as headings
     mutate(areatype = c("Scotland")) |> #create areatype variable and set to Scotland
     mutate(areaname = c("Scotland")) |>  #create areaname variable and set to Scotland
-    mutate(code = c("S00000001")) |> #create code variable with Scotland code
-    select(areaname, everything()) |> #makes area name column first in line with other areatypes
-    clean_names() #cleans column names
-  
+    left_join(filter(area_codes, str_detect(code, "S00"))) |> #create code column from lookup
+    select(areaname, everything()) #makes area name column first in line with other areatypes
+
   #hb dfs
   hb_df <- hb_df |> 
     row_to_names(row_number = 1) |> 
@@ -80,15 +79,9 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
     mutate(areaname = case_when(areaname == "Orkney Islands" ~ "Orkney", 
                                 areaname == "Shetland Islands" ~ "Shetland",
                                 .default = areaname)) |> #removing "Islands" from Orkney and Shetland 
-    clean_names()
+    mutate(areaname = paste("NHS", areaname)) |> #paste NHS on HB names to match lookup
+    left_join(filter(area_codes, str_detect(code, "S08")))  #joining with lookup
 
-  hb_df$areaname = paste0("NHS ", hb_df$areaname) #pasting NHS onto hb names
-  
-  hb_df <- hb_df |> 
-    left_join(filter(area_codes, str_detect(code, "S08"))) #joining with lookup
-  
-  
-  
   #function can only take adp OR ca, not both, 
   # and produces 1 df containing whichever of ca/adp is passed into function
   if(is.null(adp_df)){ 
@@ -96,32 +89,31 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
       row_to_names(row_number = 1) |> 
       mutate(areatype = c("Council area")) |> 
       rename(areaname = `Local authority`) |>
-      mutate(areaname = case_when(str_detect(areaname, "&") ~ str_replace(areaname, "&", "and"),
+      mutate(areaname = case_when(str_detect(areaname, "&") ~ str_replace(areaname, "&", "and"), #replace all & with "and"
                                   areaname == "Edinburgh, City of" ~ "City of Edinburgh", 
                                   .default = areaname)) |> 
-      left_join(filter(area_codes, str_detect(code, "S12"))) |>
-      clean_names()
+      left_join(filter(area_codes, str_detect(code, "S12")))
   } else {
     ca_adp_df <- adp_df |> 
       row_to_names(row_number = 1) |> 
       mutate(areatype = c("Alcohol & drug partnership")) |> 
       rename(areaname = `Alcohol & Drug Partnership`) |>
-      left_join(area_codes_adp) |>
       mutate(code = case_when(areaname == "MALDEP" ~ "S11000051", 
-                                  areaname == "Lanarkshire ADP" ~ "S11000052",
-                                  .default = code)) |> 
-      clean_names()
+                              areaname == "Lanarkshire ADP" ~ "S11000052",
+                              .default = code) |> 
+      left_join(area_codes_adp)) 
   }
   
   #combine scot, hb and adp/ca dfs
   cleaned_df <- rbind(scot_df, hb_df, ca_adp_df) 
   
   cleaned_df <- cleaned_df |> 
+    clean_names() |> #clean col names
     mutate_at(c(3:6), as.numeric) |> #convert columns with data to numeric
     mutate(across(where(is.numeric), round, 1)) |>  #round to 1dp 
     mutate(ind_id = id, #create indicator id col based on argument to function
            numerator = "NA", #create numerator 
-           def_period = year, #duplicate year column
+           def_period = year, #duplicate year column to create trend axis col
            trend_axis = case_when(def_period == "2007-2008" ~ "2007/2008", #create trend axis col
                                   def_period == "2009-2010" ~ "2009/2009",
                                   .default = def_period),
@@ -133,9 +125,7 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
     select(code, ind_id, year, numerator, percent, lower_95_percent_ci, upper_95_percent_ci, def_period, trend_axis) |> #drop unnecessary cols 
     rename(rate = percent, #rename cols to align with shiny data
            lowci = lower_95_percent_ci,
-           upci = upper_95_percent_ci)
-
-  
+           upci = upper_95_percent_ci) 
 }
 
 
@@ -171,8 +161,6 @@ good_place <- indicator_cleaning(id = "20903",
 
 saveRDS(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
 write.csv(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
-
-
 
 
 ############################################.
@@ -220,7 +208,6 @@ check_year_totals <- function(last_year_data, this_year_data){
   if(test$test_column[1] == 0) {
     
     print("All totals match")
-    
     
   } else {
     non_match <- filter(both_years,
