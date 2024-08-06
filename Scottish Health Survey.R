@@ -158,8 +158,8 @@ prepare_final_files <- function(ind){
     filter(indicator == ind) %>% 
     select(!indicator)
 
-  write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
+  write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
   
 
   # Make data created available outside of function so it can be visually inspected if required
