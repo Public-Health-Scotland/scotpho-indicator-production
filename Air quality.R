@@ -53,14 +53,15 @@ data <- dat %>%
          numerator = total) %>%
 
   # Join area codes by area name
-  left_join(dictionary, by = "areaname") %>% 
-  
+  left_join(dictionary, by = "areaname") %>%
+  #air quality data only available for scotland and council area
+  droplevels() # remove all traces of non-matched geographies
+
   # Filter for Scottish data
   filter(str_detect(code, "^S")) %>% 
   
   # Select relevant columns
   select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci)
-
 
 
 ### 3. Prepare final files -----
