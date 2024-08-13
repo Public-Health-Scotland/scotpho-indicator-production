@@ -39,11 +39,11 @@ ods_structure("healthy-life-expectancy")
 # Set filter parameters to use in open data extraction
 # reminder: there is a limit on number of rows that can be extracted using this particular method - in case the extracted data doesn't look complete.
 age_select <- c("0-years") #include filter in a extraction as it is needed to ensure number of rows to extract is within limits however (annoyingly initial extratction returns '0 years' and '90 years' so need to filter again)
-urban_rural <- c("all")
+#urban_rural <- c("all")
 
 # extract data
 hle_data_raw <- ods_dataset("healthy-life-expectancy", 
-                            urbanRuralClassification = urban_rural,
+                            #urbanRuralClassification = urban_rural,
                             age = age_select)
 
 # prepare data
@@ -61,30 +61,38 @@ hle <- hle_data_raw %>%
   # rename columns
   rename("code" = ref_area, 
          "trend_axis" = ref_period,
-         "split_value" = simd_quintiles,
          "rate" = count,
          "lowci" = `95-lower-confidence-limit`,
          "upci" = `95-upper-confidence-limit`) %>% 
 
-  # recode standard geo code for scotland to the ScotPHO dictionary where S00000001 is Scotland
-  mutate(code = ifelse(code == "S92000003", "S00000001", code),
+         # create single split name column
+  mutate(split_name = case_when(urban_rural_classification != "all" ~ "Urban/Rural",
+                                simd_quintiles != "all" ~ "Scottish Index of Multiple Deprivation",
+                                urban_rural_classification == "all" & simd_quintiles == "all" ~ "Total"),
          
-         # create new split name column
-         split_name = if_else(split_value == "all", "Total", "Scottish Index of Multiple Deprivation"),
+         # create single split value column
+         split_value = case_when(split_name == "Urban/Rural" ~ urban_rural_classification,
+                                 split_name == "Scottish Index of Multiple Deprivation" ~ simd_quintiles,
+                                 split_name == "Total" ~ "Total"),
          
-         # Tidy SIMD names
-         split_value = str_replace_all(split_value, c("1-most-deprived" = "1 - most deprived",
-                                                      "5-least-deprived" = "5 - least deprived")),
+         # tidy split values
+         split_value = str_to_sentence(split_value), # capitalises first letter
+         split_value = str_replace_all(split_value, c("-" = " ",
+                                                      "1 most deprived" = "1 - most deprived",
+                                                      "5 least deprived" = "5 - least deprived")),
+
+         # recode standard geo code for scotland to the ScotPHO dictionary where S00000001 is Scotland
+         code = ifelse(code == "S92000003", "S00000001", code),
          
          # Create new columns
          numerator = NA, # insert column where numerator would ordinarily be - there is no numerator for LE
          ind_id = case_when(sex == "female" ~ 99101,
                             sex == "male" ~ 99102),
          def_period = paste0(trend_axis, " (3 year aggregate)"),
-         year= as.numeric(substr(trend_axis, 1, 4))+1) %>% # its 3 year average so take first year of time period then add 1 to find mid-year
+         year = as.numeric(substr(trend_axis, 1, 4)) +1) %>% # its 3 year average so take first year of time period then add 1 to find mid-year
 
   # remove irrelevant columns
-  select(!c(age, urban_rural_classification)) %>% 
+  select(!c(age, simd_quintiles, urban_rural_classification)) %>% 
   
   arrange(ind_id, year, code)
 
