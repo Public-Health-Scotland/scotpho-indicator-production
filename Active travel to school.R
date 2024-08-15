@@ -7,8 +7,8 @@
 
 ### 2. Packages/dependencies ------
 source("./1.indicator_analysis.R")
-library(purrr)
-library(rio) ##for reading in Excel data across multiple sheets
+library(purrr) #for applying functions across elements of a list
+library(rio) #for reading in Excel data across multiple sheets
 
 
 ### 3. Clean data ------
