@@ -59,7 +59,6 @@ library(htmltools) # for data quality checking
 library(magrittr) # for other pipe operators
 library(stringr) # for manipulating strings
 library(janitor) #helps cleaning imported variable names
-library(haven) # for reading in .sav files 
 library(purrr) # for working with functions and vectors
 
 # Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly

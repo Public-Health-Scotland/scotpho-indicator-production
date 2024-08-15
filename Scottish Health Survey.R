@@ -7,11 +7,11 @@
 # all indicators available as male/female/all splits
 
 # Data source is the Scottish Health Survey - received dashboard files from SHeS team (scottishhealthsurvey@gov.scot)
-
+# data supplied in .sav file format (this is file format used by SPSS - requires haven package to open in R).
 
 ### functions/packages -----
 source("1.indicator_analysis.R")
-
+library(haven) # for reading in .sav files 
 
 
 ### 1. Read in data ----
@@ -20,9 +20,10 @@ source("1.indicator_analysis.R")
 shes_data_folder <- paste0(data_folder, "Received Data/Scottish Health Survey/")
 
 
-## Main data -----
+## Main data  -----
+## This is dataset behind summary/trend/rank tabs of profiles tool
 
-# Identify main data file with geographic breakdowns and aggregated Scotland data
+# Identify main data file with geographic breakdowns and aggregated Scotland data (create list of data files)
 main_data_files <- paste0(shes_data_folder, list.files(path = shes_data_folder, pattern = "rank"))
 
 # Read in main data file
@@ -30,6 +31,7 @@ main_data_raw <- read_spss(main_data_files)
 
 
 ## Pop groups data -----
+## This is dataset behind population group tab of profiles tool
 
 # Identify data files with population group breakdowns at Scotland level (for single years)
 pop_grp_data_files <- paste0(shes_data_folder, list.files(path = shes_data_folder, pattern = "trend"))
