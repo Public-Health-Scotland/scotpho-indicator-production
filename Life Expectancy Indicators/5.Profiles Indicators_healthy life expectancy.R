@@ -1,3 +1,5 @@
+# To-do contains indicators saved in test output location- this should be updated to non-test folder when new profile designed is published. 
+
 #  ScotPHO indicators: 2 indicator outputs from this script 
 #  Healthy life expectancy, males
 #  Healthy life expectancy, females
