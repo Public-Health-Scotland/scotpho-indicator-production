@@ -5,24 +5,20 @@
 # They usually sent across without having to request as it's a regular request
 
 
-
 ### 2. Packages/dependencies ------
 source("./1.indicator_analysis.R")
-library(readxl)
-library(janitor)
 library(purrr)
-
+library(rio) ##for reading in Excel data across multiple sheets
 
 
 ### 3. Clean data ------
 
 # filepath 
-path <- paste0(data_folder,"Received Data/Copy of Hands Up Scotland data for ScotPHO_2008 to 2022.xlsx")
-
+path <- paste0(data_folder,"Received Data/Active Travel to School/Hands_up_Scotland.xlsx")
 
 # get name of sheets
 sheet <- excel_sheets(path)
-
+sheet <- sheet[-c(1, 18)] #dropping contents page and footnotes
 
 # read in data from each sheet and apply sheet names as a df column 
 # this is because each years data is on a seperate tab
@@ -32,12 +28,12 @@ data <- lapply(setNames(sheet, sheet),
                                                                    10:12, # active travel primary school
                                                                    18:20, # active travel secondary school
                                                                    45, # total survey respondents primary school
-                                                                   47)]) %>%  # total survey respondents secondary school
+                                                                   47)]) |>  # total survey respondents secondary school
   clean_names()
 
 
 # convert columns to class numeric, except local authority column
-data <- map(data, ~ .x %>%
+data <- map(data, ~ .x |>
               mutate(across(-`Local Authority`, as.numeric)))
 
 
@@ -46,9 +42,9 @@ data <- bind_rows(data, .id="Sheet")
 
 
 # calculate numerator and denominator
-data <- data %>%
-  mutate(numerator = rowSums(select(., contains(c("Walk", "Cycle", "Scooter")))),
-         denominator = rowSums(select(., contains(c("Responses")))),
+data <- data |>
+  mutate(numerator = rowSums(select(data, contains(c("Walk", "Cycle", "Scooter")))),
+         denominator = rowSums(select(data, contains(c("Responses")))),
          year = str_sub(Sheet, start = 2))
 
 
@@ -56,22 +52,22 @@ data <- data %>%
 la_lookup <- readRDS(paste0(lookups, "Geography/CAdictionary.rds"))
 
 
-data <- data %>%
+data <- data |>
   mutate(`Local Authority` = str_replace(`Local Authority`, "&","and"),
          `Local Authority` = str_replace(`Local Authority`, "Eilean Siar","Na h-Eileanan Siar"),
          `Local Authority` = str_replace(`Local Authority`, "Edinburgh City","City of Edinburgh")
-  ) %>%
-  left_join(la_lookup, by = c("Local Authority" = "areaname")) %>%
+  ) |>
+  left_join(la_lookup, by = c("Local Authority" = "areaname")) |>
   rename(ca = code)
 
 
 # select final columns 
-data <- data %>% 
+data <- data |> 
   select(ca, year, numerator, denominator)
 
 
 # drop N/A rows
-data <- data %>%
+data <- data |>
   filter(if_any(c(ca, numerator, denominator), complete.cases))
 
 
@@ -83,7 +79,7 @@ saveRDS(data, paste0(data_folder, "Prepared Data/active_travel_to_school_raw.rds
 
 ### 4. Run analysis functions ------
 analyze_first(filename = "active_travel_to_school", geography = "council", 
-              measure = "percent", yearstart = 2008, yearend = 2022, time_agg = 1)
+              measure = "percent", yearstart = 2008, yearend = 2023, time_agg = 1)
 
 
 analyze_second(filename = "active_travel_to_school", measure = "percent", time_agg = 1,
