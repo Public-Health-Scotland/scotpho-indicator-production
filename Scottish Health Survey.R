@@ -1,3 +1,5 @@
+# to do - update file paths to non-test output locations when profiles tool developments go live
+
 ###   Update ScotPHO Care and Wellbeing indicators sourced from Scottish Health Survey: 
 #   99105: Food insecurity
 #   99106: Healthy Weight adults
