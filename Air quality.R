@@ -48,14 +48,14 @@ data <- dat %>%
          # Create new columns
          trend_axis = year,
          def_period = paste0(year, " calendar year"),
-         lowci = NA, upci = NA, rate = NA,
+         lowci = NA, upci = NA, rate = total,
          ind_id = 99132,
          numerator = total) %>%
 
   # Join area codes by area name
   left_join(dictionary, by = "areaname") %>%
   #air quality data only available for scotland and council area
-  droplevels() # remove all traces of non-matched geographies
+  droplevels() %>% # remove all traces of non-matched geographies
 
   # Filter for Scottish data
   filter(str_detect(code, "^S")) %>% 
