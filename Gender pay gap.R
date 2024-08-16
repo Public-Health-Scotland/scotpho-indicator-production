@@ -1,6 +1,14 @@
 ###   Update ScotPHO Care and Wellbeing indicator: 
 #   99110: Gender Pay Gap
 
+# Definition: Difference between male and female full-time hourly median earnings (excluding overtime),
+# expressed as a percentage of male full-time hourly earnings. For example, a 4% GPG denotes that women earn 4% less, 
+# on average, than men. Conversely, a -4% GPG denotes that women earn 4% more, on average, than men.
+
+# Geographies: Scotland and local authority only
+# Population groups: age group for Scotland level only
+
+
 # Data source for Local Authority breakdowns is Annual Survey of Hours and 
 # Earnings (ASHE) - workplace analysis, downloaded from NOMIS:
 # https://www.nomisweb.co.uk/datasets/ashe
