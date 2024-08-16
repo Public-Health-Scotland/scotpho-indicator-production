@@ -3,6 +3,10 @@
 ###   Update ScotPHO Care and Wellbeing indicator: 
 #   99131: Economic inactivity due to long term illness
 
+# Geographies available: Scotland & local authority only 
+# No SIMD deprivation split available. 
+# Population group splits: Scotland (age & sex), Local Authority (sex)
+
 # Data source is Annual Population Survey downloaded from Nomis
 
 # For Scotland level with age and sex breakdowns:
@@ -92,7 +96,9 @@ data_scot <- raw_data_scot %>%
 data_la <- raw_data_la %>% 
   
   # Clean column names
-  clean_names() %>% 
+  clean_names() %>%
+  #remove scotland to avoid double counting
+  filter(geography_name != "Scotland") %>%
   
   # Select relevant columns
   select(date, geography_code, variable_name, measures_name, obs_value) %>% 
