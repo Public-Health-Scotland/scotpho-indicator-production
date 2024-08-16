@@ -6,6 +6,8 @@
 
 # HLE can only be generated at Scotland, NHS board and CA level.  It is NOT possibly to generate at smaller geographies as robust data on SAH (self assessed health is not available)
 
+# Population splits by SIMD quintile and Urban/rural split for male/female HLE available at Scotland level only.
+
 # HLE data published annually by NRS - usually in December - check website to see if new data has been published
 # https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/life-expectancy/healthy-life-expectancy-in-scotland
 # it may take some time before this data is then available in statistics.gov 
