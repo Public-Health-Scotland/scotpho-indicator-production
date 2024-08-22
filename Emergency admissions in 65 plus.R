@@ -13,6 +13,7 @@
 # supply data with an IR number to ensure data can be traced back to code used to generate
 # \\Isdsf00d03\cl-out\IR2020\IR2022-00429
 # \\Isdsf00d03\cl-out\IR2023\IR2023-00713
+# \\Isdsf00d03\cl-out\IR2023\IR2024-00602
 
 
 ###############################################.
@@ -60,7 +61,7 @@ emergency_cis <- as_tibble(dbGetQuery(channel, statement=paste0(
 WHERE rn = 1
 AND age > 64
 AND sex_grp not in ('9', '0')
-AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2022'
+AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2023'
 AND (adm_type between '20' and '22' or adm_type between '30' and '39')
 ORDER BY link_no, cis_marker"))) %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -75,7 +76,7 @@ emergency_cis <- emergency_cis %>%
          year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0))
 
 # open lookup that will allow attachment of postcode to datazone2011.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_1.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_1.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select (pc7, datazone2011, datazone2001)
 
@@ -120,6 +121,14 @@ dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce
   summarise(pop=sum(pop)) %>%
   ungroup() %>%
   rename(datazone2011=datazone)
+
+# temporary solution for delays in release of 2022 SAPE - reapply 2021 population to the 2022 data
+dz11_pop_2022 <-dz11_populations %>%
+  filter (year==2021) %>%
+  mutate (year=2022)
+
+dz11_populations <- rbind(dz11_populations,dz11_pop_2022)
+
 
 # open ScotPHO geography look-up that enables matching datazones to all parent geographies
 # (there should be no duplicate dz to parent matches ie. datazones dont map to more than one NHS board/CA)
