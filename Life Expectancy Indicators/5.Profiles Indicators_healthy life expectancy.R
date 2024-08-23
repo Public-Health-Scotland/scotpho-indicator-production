@@ -83,8 +83,13 @@ hle <- hle_data_raw %>%
          split_value = str_to_sentence(split_value), # capitalises first letter
          split_value = str_replace_all(split_value, c("-" = " ",
                                                       "1 most deprived" = "1 - most deprived",
-                                                      "5 least deprived" = "5 - least deprived")),
-
+                                                      "5 least deprived" = "5 - least deprived",
+                                                      "Large urban areas" = "1 Large urban areas",
+                                                      "Other urban areas" = "2 Other urban areas",
+                                                      "Accessible small towns" = "3 Acessible small towns",
+                                                      "Remote small towns" = "4 Remote small towns",
+                                                      "Accessible rural" = "5 Accessible rural",
+                                                      "Remote rural" = "6 Remote rural")),
          # recode standard geo code for scotland to the ScotPHO dictionary where S00000001 is Scotland
          code = ifelse(code == "S92000003", "S00000001", code),
          
@@ -98,7 +103,7 @@ hle <- hle_data_raw %>%
   # remove irrelevant columns
   select(!c(age, simd_quintiles, urban_rural_classification)) %>% 
   
-  arrange(ind_id, year, code)
+  arrange(ind_id, code, year, split_name, split_value)
 
 
 ###############################################.
@@ -110,6 +115,7 @@ hle_male_main <- hle %>%
   filter(sex == "male",
          split_name == "Total") %>%
   select(-c(sex, split_name, split_value))
+  
 
 write_csv(hle_male_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_male_shiny.csv"))
 write_rds(hle_male_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_male_shiny.rds"))
