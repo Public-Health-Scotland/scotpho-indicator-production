@@ -115,6 +115,13 @@ age_data <- raw_age_data %>%
   # Filter for 2021 onwards (previous estimates not comparable)
   filter(year >= 2021)
 
+# Add in Scotland totals (in order to display an "all" category for
+# breakdowns in the pop groups tab)
+age_data <- filter(data, code == "S00000001") %>% 
+              mutate(split_name = "Age",
+                     split_value = "All") %>% 
+              bind_rows(age_data,.)
+
 
 ### 3. Prepare final files -----
   

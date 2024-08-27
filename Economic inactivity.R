@@ -72,7 +72,7 @@ data_scot <- raw_data_scot %>%
                                 c_sex_name == "All persons" & age_name == "Aged 16-64" ~ "Total"),
          split_value = case_when(split_name == "Sex" ~ c_sex_name,
                                  split_name == "Age" ~ as.character(substr(age_name,6,10)),
-                                 split_name == "Total" ~ "Total")) %>% 
+                                 split_name == "Total" ~ "All")) %>% 
   
   # Select relevant columns
   select(date, geography_code, split_name, split_value, measure_name, measures_name, obs_value) %>% 
@@ -109,7 +109,7 @@ data_la <- raw_data_la %>%
          
          split_value = case_when(str_detect(variable_name, "\\bmale") ~ "Males",
                                  str_detect(variable_name, "female") ~ "Females",
-                                 !str_detect(variable_name, "male|female") ~ "Total")) %>% 
+                                 !str_detect(variable_name, "male|female") ~ "All")) %>% 
   
   # Pivot variables to wide format
   pivot_wider(names_from = measures_name, values_from = obs_value) %>% 
@@ -172,8 +172,21 @@ write_rds(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_
 
 # 2- population group data file (ie data behind population groups tab)
 
-pop_grp_data <- data %>%
-  filter(split_name!="Total")
+# Save the total rows as a separate data frame so we can include
+# them more than once (in order to display an "all" category for
+# breakdowns in the pop groups tab)
+pop_grp_all_data <- data %>%
+  filter(split_name=="Total")
+
+
+pop_grp_data <- data %>% 
+  
+  # Rename split_name for existing total rows as "Age"
+  mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+  
+  # Add in total rows again and rename for sex
+  bind_rows(pop_grp_all_data) %>% 
+  mutate(split_name = str_replace_all(split_name, "Total", "Sex"))
 
 write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.rds"))
