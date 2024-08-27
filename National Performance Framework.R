@@ -56,17 +56,22 @@ data <- dat %>%
          
          indicator = str_replace_all(indicator, "children's", "child"),
          
-         # Ensure age breakdowns are names consistently
+         # Ensure age breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "Age ", ""),
          breakdown = str_replace_all(breakdown, "-", " to "),
          
          # Ensure SIMD breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "SIMD ", ""),
+         disaggregation = str_replace_all(disaggregation, "SIMD", "Scottish Index of Multiple Deprivation"),
          breakdown = if_else(str_detect(breakdown, "$1$|1st|(?i)most"), "1 - most deprived", breakdown),
          breakdown = if_else(str_detect(breakdown, "$2$|2nd"), "2", breakdown),
          breakdown = if_else(str_detect(breakdown, "$3$|3rd"), "3", breakdown),
          breakdown = if_else(str_detect(breakdown, "$4$|4th"), "4", breakdown),
          breakdown = if_else(str_detect(breakdown, "$5$|5th|(?i)least"), "5 - least deprived", breakdown),
+         
+         disaggregation = str_replace_all(disaggregation, "Total Difficulties Score X ", ""),
+         disaggregation = str_replace_all(disaggregation, "Total Difficulties Score", "Total"),
+         breakdown = str_replace_all(breakdown, "Total", "All"),
          
          # Remove characters from year column
          year = if_else(str_detect(year, "(excl. 2020)"), "2017-2021", year),
@@ -100,22 +105,12 @@ data <- dat %>%
          split_value = breakdown) %>% 
   
   # Select breakdowns of interest
-  filter(split_name %in% c("Total",
-                           "Age",
+  filter(split_name %in% c("Total", "Age", "Gender", "Sex",
                            "Scottish Index of Multiple Deprivation",
-                           "SIMD",
-                           "Local Authority",
-                           "HSC partnership",
-                           "Health board",
-                           "Gender",
-                           "Sex",
-                           "Total Difficulties Score",
-                           "Total Difficulties Score X Sex",
-                           "Total Difficulties Score X Scottish Index of Multiple Deprivation")) %>% 
-
-  # Further tidy breakdown names
-  mutate(split_name = str_replace_all(split_name, "Total Difficulties Score X ", ""),
-         split_name = str_replace_all(split_name, "Total Difficulties Score", "Total")) %>% 
+                           "Disability", "Disability of household member(s)",
+                           "Religion", "Urban Rural classification",
+                           "Ethnicity", "Limiting Longstanding Illness", 
+                           "Equivalised Income")) %>%
   
   # Select relevant variables
   select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
@@ -134,17 +129,16 @@ prepare_final_files <- function(ind){
     # Filter for main data 
     # (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
     maindata <- data %>%
-      filter(indicator == ind,
-             split_value == "Total") %>%
-      select(code, ind_id, year,numerator,rate,lowci,upci,def_period, trend_axis) %>% #select fields required for maindata file (ie summary/trend/rank tab)
+      filter(ind_id == ind,
+             split_value == "All") %>%
+      select(!c(split_name, split_value)) %>% #select fields required for maindata file (ie summary/trend/rank tab)
       unique()
     
     # Filter for population group data
     # (ie data behind population groups tab)
     pop_grp_data <- data %>%
-      filter(indicator == ind,
-             split_value != "Total") %>%
-      select(ind_id, code, year, numerator,rate,lowci,upci,def_period, trend_axis, split_name, split_value) #select fields required for popgroup data file (linked to pop group tab)
+      filter(ind_id == ind,
+             split_name != "Total")
     
     # Save files in folder to be checked
     write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
@@ -164,25 +158,25 @@ prepare_final_files <- function(ind){
 # Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 
 # Indicator 99116: Persistent povertyy
-prepare_final_files(ind = "persistent_poverty")
+prepare_final_files(ind_id = 99116)
 
 #run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
 
 
 # Indicator 99117: Young people's mental wellbeing
-prepare_final_files(ind = "child_wellbeing_and_happiness")
+prepare_final_files(ind_id = 99117)
 
 
 # Indicator 99118: Child material deprivation
-prepare_final_files(ind = "child_material_deprivation")
+prepare_final_files(ind_id = 99118)
 
 
 # Indicator  99121: Health risk behaviours
-prepare_final_files(ind = "health_risk_behaviours")
+prepare_final_files(ind_id = 99121)
 
 
 # Indicator 99123: Gender balance in organisations (for minority ethnic population)
-prepare_final_files(ind = "gender_balance_in_organisations")
+prepare_final_files(ind_id = 99123)
 
 
 
