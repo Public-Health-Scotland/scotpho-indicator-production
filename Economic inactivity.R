@@ -1,7 +1,7 @@
 # todo - change final output file location away from test once new tool ready to deploy
 
 ###   Update ScotPHO Care and Wellbeing indicator: 
-#   99131: Economic inactivity due to long term illness
+#   99131: Economic inactivity due to long-term ill health
 
 # Geographies available: Scotland & local authority only 
 # No SIMD deprivation split available. 

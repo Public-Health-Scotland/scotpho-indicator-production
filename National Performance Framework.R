@@ -4,7 +4,7 @@
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
 #   99116: Persistent poverty
-#   99117: Child wellbeing and happiness
+#   99117: Young people's mental wellbeing
 #   99118: Child material deprivation
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
@@ -169,7 +169,7 @@ prepare_final_files(ind = "persistent_poverty")
 #run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
 
 
-# Indicator 99117: Child wellbeing and happiness
+# Indicator 99117: Young people's mental wellbeing
 prepare_final_files(ind = "child_wellbeing_and_happiness")
 
 
