@@ -99,39 +99,66 @@ data <- data_raw %>%
 
 ### 3. Prepare final files -----
 
-## Discrimination ----
+# 1 - main data (ie data behind summary/trend/rank tab)
 
-# Filter for discrimination data (id 99134)
-dis_data <- data %>% 
+# Remove pop groups breakdowns and associated columns
+main_data <- data %>%
+  filter(split_name == "Total") %>% 
+  select(!c(split_name, split_value))
+
+# Save discrimination main data (id 99134)
+dis_main_data <- main_data %>% 
   filter(ind_id == 99134)
 
-# 1 - main data (ie data behind summary/trend/rank tab)
-dis_main_data <- dis_data %>%
-  filter(split_name == "Total") %>% 
-  select(!c(split_name, split_value))
-
 write.csv(dis_main_data, paste0(data_folder, "Data to be checked/experienced_discrimination_shiny.csv"), row.names = FALSE)
-write_rds(dis_main_data, paste0(data_folder, "Data to be checked/experienced_discrimination_shiny.rds"))  
-  
-# 2 - population groups data (ie data behind population groups tab)
-write.csv(dis_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny_popgrp.csv"), row.names = FALSE)
-write_rds(dis_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny_popgrp.rds"))
+write_rds(dis_main_data, paste0(data_folder, "Data to be checked/experienced_discrimination_shiny.rds")) 
 
-
-## Harassment ----
-
-# Filter for harassment data (id 99135)
-har_data <- data %>% 
+# Save harassment main data (id 99135)
+har_main_data <- main_data %>% 
   filter(ind_id == 99135)
-
-# 1 - main data (ie data behind summary/trend/rank tab)
-har_main_data <- har_data %>%
-  filter(split_name == "Total") %>% 
-  select(!c(split_name, split_value))
 
 write.csv(har_main_data, paste0(data_folder, "Data to be checked/experienced_harassment_shiny.csv"), row.names = FALSE)
 write_rds(har_main_data, paste0(data_folder, "Data to be checked/experienced_harassment_shiny.rds"))  
 
+
+
 # 2 - population groups data (ie data behind population groups tab)
-write.csv(har_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.csv"), row.names = FALSE)
-write_rds(har_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.rds"))
+
+# Save the total rows as a separate data frame so we can add them
+# back in more than once (in order to display an "all" category for
+# breakdowns in the pop groups tab)
+pop_grp_all_data <- data %>% 
+  filter(split_name == "Total")
+
+
+# Add total rows back into data frame for each breakdown (excl. SIMD)
+pop_grp_data <- data %>% 
+  
+  # Rename split_name for existing total rows as "Age"
+  mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+  
+  # Add in total rows again and rename for gender
+  bind_rows(pop_grp_all_data) %>% 
+  mutate(split_name = str_replace_all(split_name, "Total", "Gender")) %>% 
+  
+  # Add in total rows again and rename for long-term conditions
+  bind_rows(pop_grp_all_data) %>% 
+  mutate(split_name = str_replace_all(split_name, "Total", "Long-term physical/mental health condition"))
+
+
+# Save discrimination pop groups data (id 99134)
+dis_pop_grp_data <- pop_grp_data %>% 
+  filter(ind_id == 99134)
+
+write.csv(dis_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(dis_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny_popgrp.rds"))
+
+
+# Save harassment pop groups data (id 99135)
+har_pop_grp_data <- pop_grp_data %>% 
+  filter(ind_id == 99135)
+
+write.csv(har_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(har_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.rds"))
+  
+
