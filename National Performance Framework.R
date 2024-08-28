@@ -126,19 +126,81 @@ data <- dat %>%
 # Creates two data files for each indicator (main data vs population group data)
 prepare_final_files <- function(ind){
   
-    # Filter for main data 
+    # Save total rows (to later add back in to pop groups data)
+    total <- data %>% 
+      filter(indicator == ind,
+             split_value == "All") # uses split_value instead of split_name as persistent poverty doesn't have "total" in split_name
+  
+    # 1 - Main data 
     # (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
-    maindata <- data %>%
-      filter(ind_id == ind,
-             split_value == "All") %>%
-      select(!c(split_name, split_value)) %>% #select fields required for maindata file (ie summary/trend/rank tab)
+    maindata <- total %>%
+      select(!c(indicator, split_name, split_value)) %>% 
       unique()
     
-    # Filter for population group data
+    
+    # 2 - Population group data 
     # (ie data behind population groups tab)
-    pop_grp_data <- data %>%
-      filter(ind_id == ind,
-             split_name != "Total")
+    
+    # Young people's mental wellbeing
+    # Add additional total rows (to show an "all" category) for age, sex and LLI breakdowns
+    if(ind == "child_wellbeing_and_happiness"){
+      
+      pop_grp_data <- data %>%
+        filter(indicator == ind) %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+        bind_rows(total) %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Sex")) %>% 
+        bind_rows(total) %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Limiting Longstanding Illness")) %>% 
+        select(!indicator)
+      
+    # Child material deprivation
+    # Add additional total rows (to show an "all" category) for age and disability breakdowns
+    } else if(ind == "child_material_deprivation"){
+      
+      pop_grp_data <- data %>%
+        filter(indicator == ind) %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+        bind_rows(total) %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Disability of household member(s)")) %>% 
+        select(!indicator)
+      
+    # Health risk behaviours
+    # Add additional total rows (to show an "all" category) for age, gender, disability and urban/rural breakdowns
+    } else if(ind == "health_risk_behaviours"){
+      
+      pop_grp_data <- data %>%
+        filter(indicator == "health_risk_behaviours") %>% 
+        mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+        filter(!split_value == "All" | !year %in% c(2012, 2013, 2014, 2016, 2021)) %>% # Removes total rows for years with no age breakdowns
+        bind_rows(total %>% filter(year %in% c(2016, 2017, 2018, 2019))) %>%  # Only bind new rows of total data for years with gender breakdowns
+        mutate(split_name = str_replace_all(split_name, "Total", "Gender")) %>% 
+        bind_rows(total %>% filter(year %in% c(2017, 2018, 2019))) %>%  # Only bind new rows of total data for years with disability breakdowns
+        mutate(split_name = str_replace_all(split_name, "Total", "Disability")) %>% 
+        bind_rows(total %>% filter(year %in% c(2017, 2018, 2019))) %>%  # Only bind new rows of total data for years with urban/rural breakdowns
+        mutate(split_name = str_replace_all(split_name, "Total", "Urban Rural classification")) %>% 
+        select(!indicator)
+    
+    # Gender balance in organisations
+    # Already have "all" categories for each breakdown
+    # Remove "total" from split_name so it doesn't show as a breakdown
+    } else if(ind == "gender_balance_in_organisations"){
+      
+      pop_grp_data <- data %>%
+        filter(indicator == ind,
+               split_name != "Total") %>% 
+        select(!indicator)
+    
+    # Persistent poverty
+    # Already includes "all" category for age breakdown and no "total" under split name to remove
+    } else {
+      
+      pop_grp_data <- data %>%
+        filter(indicator == ind) %>% 
+        select(!indicator)
+      
+    }
+    
     
     # Save files in folder to be checked
     write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
@@ -157,26 +219,26 @@ prepare_final_files <- function(ind){
 
 # Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 
-# Indicator 99116: Persistent povertyy
-prepare_final_files(ind_id = 99116)
+# Indicator 99116: Persistent poverty
+prepare_final_files(ind = "persistent_poverty")
 
 #run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
 
 
 # Indicator 99117: Young people's mental wellbeing
-prepare_final_files(ind_id = 99117)
+prepare_final_files(ind = "child_wellbeing_and_happiness")
 
 
 # Indicator 99118: Child material deprivation
-prepare_final_files(ind_id = 99118)
+prepare_final_files(ind = "child_material_deprivation")
 
 
 # Indicator  99121: Health risk behaviours
-prepare_final_files(ind_id = 99121)
+prepare_final_files(ind = "health_risk_behaviours")
 
 
 # Indicator 99123: Gender balance in organisations (for minority ethnic population)
-prepare_final_files(ind_id = 99123)
+prepare_final_files(ind = "gender_balance_in_organisations")
 
 
 
