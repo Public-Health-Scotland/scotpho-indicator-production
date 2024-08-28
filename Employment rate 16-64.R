@@ -109,8 +109,8 @@ maindata <- data %>%
   select(-split_name,-split_value)
 
 # Save files in folder for checking
-write.csv(maindata, paste0(data_folder, "Data to be checked/unemployment_rate_shiny.csv"), row.names = FALSE)
-write_rds(maindata, paste0(data_folder, "Data to be checked/unemployment_rate_shiny.rds"))
+write.csv(maindata, paste0(data_folder, "Data to be checked/employment_rate_shiny.csv"), row.names = FALSE)
+write_rds(maindata, paste0(data_folder, "Data to be checked/employment_rate_shiny.rds"))
 
 
 # 2- population group data file (ie data behind population groups tab)
@@ -133,12 +133,12 @@ pop_grp_data <- data %>%
   arrange(code, year)
 
 # Save files in folder for checking
-write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/unemployment_rate_shiny_popgrp.csv"), row.names = FALSE)
-write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/unemployment_rate_shiny_popgrp.rds"))
+write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/employment_rate_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/employment_rate_shiny_popgrp.rds"))
 
 
 # Run QA reports and check the output files - QA report won't work until changes made to checking reports - come back to this
-run_qa(filename = "unemployment_rate")
+run_qa(filename = "employment_rate")
 
 
 
