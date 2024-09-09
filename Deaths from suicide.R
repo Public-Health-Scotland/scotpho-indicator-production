@@ -24,14 +24,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
-      WHERE  year_of_registration between '2002' and '2021'
+      WHERE  year_of_registration between '2002' and '2022'
       AND sex <> 9
       AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'X[67]|X8[01234]|Y1|Y2|Y3[01234]|Y870|Y872')" )) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_1.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
@@ -111,7 +111,7 @@ analyze_deprivation(filename="suicide_depr", measure="stdrate", time_agg=5,
 # Female and male suicides
 mapply(analyze_first, filename = c("suicides_female", "suicides_male"), 
        geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
-       yearstart = 2002, yearend = 2021, time_agg = 5, epop_age = "normal")
+       yearstart = 2002, yearend = 2022, time_agg = 5, epop_age = "normal")
 
 #Female suicides: epop is only 100000 as only female half population
 analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
@@ -125,7 +125,7 @@ analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5,
 # Young people suicides
 # Crude rates as numbers are too small for standardization.
 analyze_first(filename = "suicides_young", geography = "council", measure = "crude", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2021,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2022,
               time_agg = 5, epop_age = "11to25")
 
 analyze_second(filename = "suicides_young", measure = "crude", time_agg = 5, crude_rate = 100000,
