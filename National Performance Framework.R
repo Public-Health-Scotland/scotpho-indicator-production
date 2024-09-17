@@ -43,12 +43,12 @@ data <- dat %>%
   
   # Select relevant indicators
   filter(indicator %in% c("Persistent Poverty",
-                          "Child Wellbeing and Happiness",
+                          "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                           "Child material deprivation",
                           "Children's material deprivation",
                           "Health risk behaviours",
                           "Gender balance in organisations")) %>%
-  
+
          # Convert indicator names to lower case and hyphenate 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
          
@@ -117,6 +117,9 @@ data <- dat %>%
   
   # Select relevant variables
   select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
+  
+  #rename indicator to fit new name that NPF will adopt
+  mutate(indicator = case_when (indicator=="child_wellbeing_and_happiness" ~ "young_peoples_mental_wellbeing", TRUE ~indicator)) %>%
   
   # Reorder data frame
   arrange(indicator, code, year)
