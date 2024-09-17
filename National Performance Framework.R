@@ -4,7 +4,7 @@
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
 #   99116: Persistent poverty
-#   99117: Child wellbeing and happiness
+#   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
 #   99118: Child material deprivation
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
