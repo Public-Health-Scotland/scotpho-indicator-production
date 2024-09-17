@@ -18,7 +18,6 @@
 ### functions/packages -----
 source("1.indicator_analysis.R")
 
-
 ### 1. Read in data ----
 
 # Identify data folder
@@ -110,15 +109,15 @@ main_data <- data %>%
 dis_main_data <- main_data %>% 
   filter(ind_id == 99134)
 
-write.csv(dis_main_data, paste0(data_folder, "Data to be checked/experienced_discrimination_shiny.csv"), row.names = FALSE)
-write_rds(dis_main_data, paste0(data_folder, "Data to be checked/experienced_discrimination_shiny.rds")) 
+write.csv(dis_main_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny.csv"), row.names = FALSE)
+write_rds(dis_main_data, paste0(data_folder, "Test Shiny Data/experienced_discrimination_shiny.rds")) 
 
 # Save harassment main data (id 99135)
 har_main_data <- main_data %>% 
   filter(ind_id == 99135)
 
-write.csv(har_main_data, paste0(data_folder, "Data to be checked/experienced_harassment_shiny.csv"), row.names = FALSE)
-write_rds(har_main_data, paste0(data_folder, "Data to be checked/experienced_harassment_shiny.rds"))  
+write.csv(har_main_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny.csv"), row.names = FALSE)
+write_rds(har_main_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny.rds"))  
 
 
 
