@@ -18,7 +18,6 @@
 source("1.indicator_analysis.R") 
 
 
-
 ### 1 - Read in data -----
 
 # Specify url of the NPF file to download from stats.gov
@@ -33,7 +32,6 @@ download.file(url = url, destfile = paste(file_path, file_name, sep = ""))
 
 # Read in data file
 dat <- read_xlsx(paste0(file_path, file_name))
-
 
 
 ### 2. Prepare data  -----
@@ -147,8 +145,8 @@ prepare_final_files <- function(ind){
       select(ind_id, code, year, numerator,rate,lowci,upci,def_period, trend_axis, split_name, split_value) #select fields required for popgroup data file (linked to pop group tab)
     
     # Save files in folder to be checked
-    write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
-    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+    write.csv(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
+    write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
     
     write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
     write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
@@ -169,8 +167,8 @@ prepare_final_files(ind = "persistent_poverty")
 #run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
 
 
-# Indicator 99117: Child wellbeing and happiness
-prepare_final_files(ind = "child_wellbeing_and_happiness")
+# Indicator 99117: Young peoples mental wellbeing
+prepare_final_files(ind = "young_peoples_mental_wellbeing")
 
 
 # Indicator 99118: Child material deprivation
@@ -183,8 +181,6 @@ prepare_final_files(ind = "health_risk_behaviours")
 
 # Indicator 99123: Gender balance in organisations (for minority ethnic population)
 prepare_final_files(ind = "gender_balance_in_organisations")
-
-
 
 
 
