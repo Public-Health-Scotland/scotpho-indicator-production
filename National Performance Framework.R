@@ -86,7 +86,6 @@ data <- dat %>%
                                 indicator == "health_risk_behaviours" ~ paste0(year, " survey year"),
                                 indicator == "gender_balance_in_organisations" ~ paste0(year, " calendar year")),
          
-         
          # Create some other new variables
          numerator = NA, 
          lowci = NA, upci = NA,
@@ -107,14 +106,28 @@ data <- dat %>%
                            "Health board",
                            "Gender",
                            "Sex",
-                           "Total Difficulties Score",
+                           "Disability", #gender balance
+                           "Ethnicity", #gender balance
+                           "Total Difficulties Score",  
                            "Total Difficulties Score X Sex",
-                           "Total Difficulties Score X SIMD")) %>% 
-
-
+                           "Total Difficulties Score X Age",
+                           "Total Difficulties Score X SIMD",
+                           "Total Difficulties Score X Equivalised Income",
+                           "Total Difficulties Score X Limiting Longstanding Illness",
+                           	"Disability of household member(s)" # child mat deprivation
+                           )) %>% 
+  
   # Further tidy breakdown names
   mutate(split_name = str_replace_all(split_name, "Total Difficulties Score X ", ""),
-         split_name = str_replace_all(split_name, "Total Difficulties Score", "Total")) %>% 
+         split_name = str_replace_all(split_name, "Total Difficulties Score", "Total"),
+         split_name = case_when(split_name=="Equivalised Income" ~ "Income (equivalised)",
+                                split_name=="SIMD" ~"Deprivation (SIMD)",
+                                TRUE ~ split_name)) %>%
+  
+  # Ensure equivalised income quintiles are named consistently
+  mutate(split_value = case_when(split_value=="Top Quintile" ~ "1 - highest income",
+                                 split_value=="Bottom Quintile" ~ "5 - Lowest income", 
+                                 TRUE ~ split_value)) %>%
   
   # Select relevant variables
   select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
@@ -165,21 +178,47 @@ prepare_final_files <- function(ind){
 
 # Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 
-# Indicator 99116: Persistent povertyy
+# Indicator 99116: Persistent poverty ----
 prepare_final_files(ind = "persistent_poverty")
 
 #run_qa(filename = "persistent_poverty") #come back to fix qa report - failing because no NHS board or ca geographies ins some of these indcators
 
-
-# Indicator 99117: Young peoples mental wellbeing
+# Indicator 99117: Young peoples mental wellbeing  ----
 prepare_final_files(ind = "young_peoples_mental_wellbeing")
 
+  # horrible fix for the age band sort order within this indicator - can't think of a way to implement in main
+  # body of code since this would disturb sort order across other indicators or splits
+  # age groups are character strings and won't sort correctly - could convert to a factor but this method works
 
-# Indicator 99118: Child material deprivation
+  popgrpdata_result_age <- popgrpdata_result |>
+  filter(split_name =="Age") |>
+  mutate(split_value = case_when(split_value == "4 to 6" ~ "a_4 to 6", 
+                                 split_value == "7 to 9" ~ "b_7 to 9",
+                                 split_value == "10 to 12" ~ "c_10 to 12", TRUE ~ split_value)) %>%
+  arrange(ind_id,code,year,split_name, split_value) |>
+  mutate(split_value = trimws(substr(split_value,3,11))) #trim white space and remove sort precursor
+
+
+    popgrpdata_result <- popgrpdata_result |>
+      filter(split_name !="Age") |>
+      arrange(ind_id,code,year,split_name, split_value)
+  
+  popgrpdata_result <-rbind(popgrpdata_result,popgrpdata_result_age)
+  
+  rm(popgrpdata_result_age)
+  
+  write.csv(popgrpdata_result, paste0(data_folder, "Test Shiny Data/young_peoples_mental_wellbeing_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(popgrpdata_result, paste0(data_folder, "Test Shiny Data/young_peoples_mental_wellbeing_shiny_popgrp.rds"))
+
+
+  
+# Indicator 99118: Child material deprivation ----
 prepare_final_files(ind = "child_material_deprivation")
 
 
-# Indicator  99121: Health risk behaviours
+
+
+# Indicator  99121: Health risk behaviours ----
 prepare_final_files(ind = "health_risk_behaviours")
 
 
