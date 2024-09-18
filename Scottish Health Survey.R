@@ -42,7 +42,7 @@ pop_grp_data_files <- paste0(shes_data_folder, list.files(path = shes_data_folde
 pop_grp_data_list <- lapply(pop_grp_data_files, read_spss)
 
 # Name each file (for later use in the split_name column)
-names(pop_grp_data_list) <- c("Age", "Equivalised income", "Long-term conditions", 
+names(pop_grp_data_list) <- c("Age", "Income (equivalised)", "Long-term conditions", 
                               "Sex", "Scottish Index of Multiple Deprivation")
 
 # Rename columns so they're consistent across files and rows can be combined
