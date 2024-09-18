@@ -109,7 +109,8 @@ data <- dat %>%
                            "Sex",
                            "Total Difficulties Score",
                            "Total Difficulties Score X Sex",
-                           "Total Difficulties Score X Scottish Index of Multiple Deprivation")) %>% 
+                           "Total Difficulties Score X SIMD")) %>% 
+
 
   # Further tidy breakdown names
   mutate(split_name = str_replace_all(split_name, "Total Difficulties Score X ", ""),
