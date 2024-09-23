@@ -45,7 +45,6 @@ age_file <- paste0(data_folder, "Received Data/", list.files(path=paste0(data_fo
 raw_age_data <- read_excel(age_file, sheet = "Table_2_4", skip = 4)
 
 
-
 ### 2. Prepare data  -----
 
 ## Main data ----
@@ -115,12 +114,20 @@ age_data <- raw_age_data %>%
   # Filter for 2021 onwards (previous estimates not comparable)
   filter(year >= 2021)
 
+# Add in Scotland totals (in order to display an "all" category for
+# breakdowns in the pop groups tab)
+age_data <- filter(data, code == "S00000001") %>% 
+  mutate(split_name = "Age",
+         split_value = "All") %>% 
+  bind_rows(age_data,.)
+
+
 
 ### 3. Prepare final files -----
   
 # Main data
-write.csv(data, paste0(data_folder, "Data to be checked/gender_pay_gap_shiny.csv"), row.names = FALSE)
-write_rds(data, paste0(data_folder, "Data to be checked/gender_pay_gap_shiny.rds"))
+write.csv(data, paste0(data_folder, "Test Shiny Data/gender_pay_gap_shiny.csv"), row.names = FALSE)
+write_rds(data, paste0(data_folder, "Test Shiny Data/gender_pay_gap_shiny.rds"))
 
 # Population groups data
 write.csv(age_data, paste0(data_folder, "Test Shiny Data/gender_pay_gap_shiny_popgrp.csv"), row.names = FALSE)
