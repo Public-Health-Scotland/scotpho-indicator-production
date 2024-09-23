@@ -2,7 +2,7 @@
 
 ###   Update ScotPHO Care and Wellbeing indicators sourced from Scottish Health Survey: 
 #   99105: Food insecurity
-#   99106: Healthy Weight adults
+#   99106: Adult Healthy Weight 
 #   99108: Self-assessed health of adults (age 16+)
 #   99109: Limiting long-term conditions (age 16+)
 
