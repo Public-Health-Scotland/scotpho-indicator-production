@@ -1,7 +1,7 @@
 # todo - change final output file location away from test once new tool ready to deploy
 
 ###   Update ScotPHO Care and Wellbeing indicator: 
-#   99131: Economic inactivity due to long term illness
+#   99131: Economic inactivity due to long term ill health
 
 # Geographies available: Scotland & local authority only 
 # No SIMD deprivation split available. 
@@ -20,7 +20,6 @@
 
 source("1.indicator_analysis.R") 
 
-
 ### 1. Read in data ----
 
 ## Create a new Nomis query for Scotland level data ##
@@ -32,13 +31,11 @@ source("1.indicator_analysis.R")
 # Sex: all persons, males, females
 # Reasons: long-term sick
 
-
 # Link to download the Nomis data query using an API
 API_link_scot <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_181_1.data.csv?geography=2092957701&date=latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&c_sex=0...2&age=0...3&einact=4&c_wants=0&measure=1,3&measures=20100,20701")
 
 # Read in data
 raw_data_scot <- read_csv(API_link_scot)
-
 
 ## Create Nomis query for LA level data ##
 # Data source: annual population survey
@@ -51,7 +48,6 @@ API_link_la <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?ge
 
 # Read in data
 raw_data_la <- read_csv(API_link_la)
-
 
 
 ### 2. Prepare data  -----
@@ -72,7 +68,7 @@ data_scot <- raw_data_scot %>%
                                 c_sex_name == "All persons" & age_name == "Aged 16-64" ~ "Total"),
          split_value = case_when(split_name == "Sex" ~ c_sex_name,
                                  split_name == "Age" ~ as.character(substr(age_name,6,10)),
-                                 split_name == "Total" ~ "Total")) %>% 
+                                 split_name == "Total" ~ "All")) %>% #split name total (labelled all to denote all sexes or all age groups)
   
   # Select relevant columns
   select(date, geography_code, split_name, split_value, measure_name, measures_name, obs_value) %>% 
@@ -88,7 +84,6 @@ data_scot <- raw_data_scot %>%
   
   # Remove column no longer needed
   select(!c(Count_Value))
-
 
 
 ## Local authority level data ----
@@ -109,7 +104,7 @@ data_la <- raw_data_la %>%
          
          split_value = case_when(str_detect(variable_name, "\\bmale") ~ "Males",
                                  str_detect(variable_name, "female") ~ "Females",
-                                 !str_detect(variable_name, "male|female") ~ "Total")) %>% 
+                                 !str_detect(variable_name, "male|female") ~ "All")) %>% 
   
   # Pivot variables to wide format
   pivot_wider(names_from = measures_name, values_from = obs_value) %>% 
@@ -155,7 +150,6 @@ data <- data_scot %>%
 
 
 
-
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
@@ -166,14 +160,27 @@ maindata <- data %>%
   filter(split_name=="Total") %>%
   select(-split_name,-split_value)
 
-write.csv(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.csv"), row.names = FALSE)
-write_rds(maindata, paste0(data_folder, "Data to be checked/economic_inactivity_shiny.rds"))
+write.csv(maindata, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny.csv"), row.names = FALSE)
+write_rds(maindata, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny.rds"))
 
 
 # 2- population group data file (ie data behind population groups tab)
 
-pop_grp_data <- data %>%
-  filter(split_name!="Total")
+# Save the total rows as a separate data frame so we can include
+# them more than once (in order to display an "all" category for
+# breakdowns in the pop groups tab)
+pop_grp_all_data <- data %>%
+  filter(split_name=="Total")
+
+pop_grp_data <- data %>% 
+  
+  # Rename split_name for existing total rows as "Age"
+  mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
+  
+  # Add in total rows again and rename for sex
+  bind_rows(pop_grp_all_data) %>% 
+  mutate(split_name = str_replace_all(split_name, "Total", "Sex"))
+
 
 write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/economic_inactivity_shiny_popgrp.rds"))
