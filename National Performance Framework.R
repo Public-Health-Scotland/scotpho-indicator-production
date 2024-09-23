@@ -54,7 +54,7 @@ data <- dat %>%
          
          indicator = str_replace_all(indicator, "children's", "child"),
          
-         # Ensure age breakdowns are names consistently
+         # Ensure age breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "Age ", ""),
          breakdown = str_replace_all(breakdown, "-", " to "),
          
@@ -214,8 +214,6 @@ prepare_final_files(ind = "young_peoples_mental_wellbeing")
   
 # Indicator 99118: Child material deprivation ----
 prepare_final_files(ind = "child_material_deprivation")
-
-
 
 
 # Indicator  99121: Health risk behaviours ----
