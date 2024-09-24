@@ -427,7 +427,8 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
     
   } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
     
-    run_ineq_qa(filename={{filename}},old_file="default")} 
+    run_ineq_qa(filename={{filename}}#,old_file="default"
+                )} 
 
 }
 
@@ -492,15 +493,16 @@ inequality_measures <- function(dataset){
     mutate(model = map(data, ~ lm(rate_sqr_proppop ~ sqr_proportion_pop + relrank_sqr_proppop + 0, data = .)),
            #extracting sii from model, a bit fiddly but it works
            sii = -1 * as.numeric(map(map(model, "coefficients"), "relrank_sqr_proppop")),
-           cis = map(model, confint_tidy)) %>% #calculating confidence intervals
-    ungroup() %>% unnest(cis) %>% #Unnesting the CIs 
-    #selecting only even row numbers which are the ones that have the sii cis
-    filter(row_number() %% 2 == 0) %>% 
+      #     cis = map(model, confint_tidy) # deprecated. next two lines do the same thing
+           conf.low = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[2])),
+           conf.high = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[1]))) %>% #calculating confidence intervals
+    ungroup() %>% 
     mutate(lowci_sii = -1 * conf.high, #fixing interpretation
            upci_sii = -1 * conf.low) %>% 
     select(-conf.low, -conf.high, -model, -data) %>% #taking out results as not needed anymore
     mutate_at(c("sii", "lowci_sii", "upci_sii"), ~replace(., is.na(.), NA_real_)) #recoding NAs
-  
+
+ 
   #Merging sii with main data set
   data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
   
