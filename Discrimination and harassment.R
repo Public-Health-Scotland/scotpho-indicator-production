@@ -132,6 +132,10 @@ pop_grp_all_data <- data %>%
 
 # Add total rows back into data frame for each breakdown (excl. SIMD)
 pop_grp_data <- data %>% 
+  #rename some of the pop groups to keep consistency with others in profiles tool
+  mutate(split_name = case_when(split_name=="Scottish Index of Multiple Deprivation"~"Deprivation (SIMD)",
+                                split_name=="Long-term physical/mental health condition" ~"Long term condition",
+                                TRUE ~ split_name))|>
   
   # Rename split_name for existing total rows as "Age"
   mutate(split_name = str_replace_all(split_name, "Total", "Age")) %>% 
@@ -142,7 +146,9 @@ pop_grp_data <- data %>%
   
   # Add in total rows again and rename for long-term conditions
   bind_rows(pop_grp_all_data) %>% 
+
   mutate(split_name = str_replace_all(split_name, "Total", "Long term conditions"))
+
 
 
 # Save discrimination pop groups data (id 99134)
