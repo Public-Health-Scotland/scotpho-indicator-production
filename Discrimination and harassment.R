@@ -23,7 +23,7 @@ source("1.indicator_analysis.R")
 # Identify data folder
 shs_data_folder <- paste0(data_folder, "Received Data/Scottish Household Survey/")
 
-# Identify data filse (create list of data files)
+# Identify data file (create list of data files)
 data_files <- paste0(shs_data_folder, list.files(path = shs_data_folder, pattern = "discrimination and harassment"))
 
 # Define column names
@@ -50,7 +50,7 @@ data <- data_raw %>%
   # Pivot discrimination and harassment values into long format
   pivot_longer(cols = c("yes_dis", "yes_har"), names_to = "indicator", values_to = "rate") %>% 
   
-         # Create required date columns
+  # Create required date columns
   mutate(trend_axis = year,
          def_period = paste0(year, " survey year"),
          
@@ -63,8 +63,8 @@ data <- data_raw %>%
          split_name = case_when(split_value == "All" ~ "Total",
                                 split_value %in% c("Male", "Female", "Another way", "Refused") ~ "Gender",
                                 split_value %in% c("16-39", "40-59", "60+") ~ "Age",
-                                split_value %in% c("20% most deprived", "2", "3", "4", "20% least deprived") ~ "Scottish Index of Multiple Deprivation",
-                                str_detect(split_value, "condition") ~ "Long-term physical/mental health condition"),
+                                split_value %in% c("20% most deprived", "2", "3", "4", "20% least deprived") ~ "Deprivation (SIMD)",
+                                str_detect(split_value, "condition") ~ "Long term conditions"),
          
          # Tidy split value for long-term condition and SIMD
          split_value = str_replace_all(split_value, "Long-term physical/mental health condition - ", ""),
@@ -79,7 +79,7 @@ data <- data_raw %>%
          numerator = NA,
          lowci = NA, upci = NA) %>% 
   
-         # Remove breakdowns other than total, age, gender, SIMD, and long-term condition
+  # Remove breakdowns other than total, age, gender, SIMD, and long-term condition
   filter(!is.na(split_name),
          
          # Remove categories of breakdowns not of interest (suppressed due to small sample sizes)
@@ -142,7 +142,7 @@ pop_grp_data <- data %>%
   
   # Add in total rows again and rename for long-term conditions
   bind_rows(pop_grp_all_data) %>% 
-  mutate(split_name = str_replace_all(split_name, "Total", "Long-term physical/mental health condition"))
+  mutate(split_name = str_replace_all(split_name, "Total", "Long term conditions"))
 
 
 # Save discrimination pop groups data (id 99134)
@@ -159,5 +159,5 @@ har_pop_grp_data <- pop_grp_data %>%
 
 write.csv(har_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(har_pop_grp_data, paste0(data_folder, "Test Shiny Data/experienced_harassment_shiny_popgrp.rds"))
-  
+
 
