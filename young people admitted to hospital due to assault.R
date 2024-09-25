@@ -25,7 +25,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2022' 
+  WHERE admission_date between '1 April 2005' and '31 March 2024' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -39,7 +39,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, ca2019)
 
