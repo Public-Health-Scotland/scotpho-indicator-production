@@ -13,7 +13,7 @@
 # supply data with an IR number to ensure data can be traced back to code used to generate
 # \\Isdsf00d03\cl-out\IR2020\IR2022-00429
 # \\Isdsf00d03\cl-out\IR2023\IR2023-00713
-# \\Isdsf00d03\cl-out\IR2023\IR2024-00602
+# \\Isdsf00d03\cl-out\IR2024\IR2024-00602
 
 
 ###############################################.
@@ -207,7 +207,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/emergency_stays65_depr
 # Emergency hospital stays in >=65years 
 
 analyze_first(filename = "emergency_stays65_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2021,
+              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2022,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_agg = 3, 
@@ -217,7 +217,7 @@ analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_ag
 
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="emergency_stays65_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2021,year_type = "financial", 
+                    yearstart= 2002, yearend=2022,year_type = "financial", 
                     pop = "depr_pop_65+", epop_age="normal",
                     epop_total =39000, ind_id = 99103)
 
