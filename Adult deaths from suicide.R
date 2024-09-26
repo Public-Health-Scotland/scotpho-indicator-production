@@ -415,7 +415,9 @@ m_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_M_16plus_i
 
 dep <- rbind(total_dep, f_dep, m_dep) %>%
   filter(substr(code, 1, 3) %in% c("S00"))
-main <- rbind(total, female, male) %>%
+main <- total %>%
+  filter(substr(code, 1, 3) %in% c("S00", "S08", "S12"))
+popgrp <- rbind(female, male) %>%
   filter(substr(code, 1, 3) %in% c("S00", "S08", "S12"))
 
 ftable(dep$sex, dep$code, dep$quint_type, dep$year)
@@ -439,5 +441,7 @@ saveRDS(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.rds"))
 write_csv(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.csv"))
 saveRDS(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.rds")) 
 write_csv(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.csv"))
+saveRDS(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.rds")) 
+write_csv(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.csv"))
 
 ##END
