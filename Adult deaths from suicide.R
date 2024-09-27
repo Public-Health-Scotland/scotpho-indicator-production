@@ -1,8 +1,10 @@
-# ScotPHO indicators: Deaths from suicide #
+# ScotPHO indicators: Adult deaths from suicide #
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run analysis functions
+
+# Data for all-age rates are also processed for comparison with the adult rates.
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -406,9 +408,9 @@ compare %>%
   
 # Get all 16+ data, check coverage, trim, and combine
 
-total <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_16plus_shiny.rds")) %>% mutate(sex="Total")
-female <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_F_16plus_shiny.rds")) %>% mutate(sex="Female")
-male <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_M_16plus_shiny.rds")) %>% mutate(sex="Male")
+total <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_16plus_shiny.rds")) 
+female <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_F_16plus_shiny.rds")) %>% mutate(split_value="Female", split_name="Sex")
+male <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_M_16plus_shiny.rds")) %>% mutate(split_value="Male", split_name="Sex")
 total_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_16plus_ineq.rds")) %>% mutate(sex="Total")
 f_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_F_16plus_ineq.rds")) %>% mutate(sex="Female")
 m_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_M_16plus_ineq.rds")) %>% mutate(sex="Male")
@@ -421,11 +423,17 @@ popgrp <- rbind(female, male) %>%
   filter(substr(code, 1, 3) %in% c("S00", "S08", "S12"))
 
 ftable(dep$sex, dep$code, dep$quint_type, dep$year)
-ftable(main$sex, main$code, main$year)
+ftable(main$code, main$year)
 
 main %>%
   filter(code=="S00000001") %>%
-  ggplot(aes(x=year, y=rate, color=as.factor(sex), group=as.factor(sex))) +
+  ggplot(aes(x=year, y=rate)) +
+  geom_line() +
+  expand_limits(y=0)
+
+popgrp %>%
+  filter(code=="S00000001") %>%
+  ggplot(aes(x=year, y=rate, colour=split_value, group=split_value)) +
   geom_line() +
   expand_limits(y=0)
 
