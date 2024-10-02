@@ -98,10 +98,10 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
       row_to_names(row_number = 1) |> 
       mutate(areatype = c("Alcohol & drug partnership")) |> 
       rename(areaname = `Alcohol & Drug Partnership`) |>
+      left_join(area_codes_adp) |>
       mutate(code = case_when(areaname == "MALDEP" ~ "S11000051", 
                               areaname == "Lanarkshire ADP" ~ "S11000052",
-                              .default = code) |> 
-      left_join(area_codes_adp)) 
+                              .default = code))  
   }
   
   #combine scot, hb and adp/ca dfs
@@ -115,7 +115,7 @@ indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, 
            numerator = "NA", #create numerator 
            def_period = year, #duplicate year column to create trend axis col
            trend_axis = case_when(def_period == "2007-2008" ~ "2007/2008", #create trend axis col
-                                  def_period == "2009-2010" ~ "2009/2009",
+                                  def_period == "2009-2010" ~ "2009/2010",
                                   .default = def_period),
            def_period = case_when(def_period == "2007-2008" ~ "2007 to 2008 survey years; 2-year aggregates",
                                   def_period == "2009-2010" ~ "2009 to 2010 survey years; 2-year aggregates",
