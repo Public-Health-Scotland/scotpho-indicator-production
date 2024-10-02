@@ -18,6 +18,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 # Extracts one row per admission of people between 15 and 25 with known sex
 # and a diagnosis of assault
+#1 subtracted from year for admissions in Jan-March to get first year of financial year (line 29)
 young_assault <- as_tibble(dbGetQuery(channel, statement=
   "SELECT distinct link_no linkno, cis_marker cis, min(AGE_IN_YEARS) age, 
       min(SEX) sex_grp, min(DR_POSTCODE) pc7,
@@ -25,7 +26,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2024' 
+  WHERE admission_date between '1 April 2005' and '31 March 2023' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
