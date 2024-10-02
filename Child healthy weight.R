@@ -64,6 +64,7 @@ child_formatted <- readRDS(file=paste0(data_folder, "Temporary/child_healthyweig
           !(numerator < 50 & substr(code,1,3) %in% c('S12', 'S08', 'S37')))
 
 saveRDS(child_formatted, file=paste0(data_folder, "Temporary/child_healthyweight_formatted.rds")) 
+
 analyze_second(filename = "child_healthyweight", measure = "perc_pcf", time_agg = 1,
                pop="DZ11_pop_5", ind_id = 21106, year_type = "financial")
 
