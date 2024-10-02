@@ -14,7 +14,7 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 # Reading data provided by child health team for datazones 2011
 child_weight11 <- read.spss( paste0(data_folder, "Received Data/IR2022-00007_DZ2011-child-weight.sav"), 
-                             to.data.frame=TRUE, use.value.labels=FALSE) %>% 
+                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
   setNames(tolower(names(.))) %>% #variable names to lower case
   rename(datazone = datazone2011, numerator = healthy_weight, denominator = tot) %>% 
   # reformat the year variable.
@@ -61,10 +61,9 @@ analyze_first(filename = "child_healthyweight", geography = "datazone11",
 child_formatted <- readRDS(file=paste0(data_folder, "Temporary/child_healthyweight_formatted.rds")) %>%
   filter(numerator>4 &  # Excluding years/areas where the data is very incomplete or absent
            # This excludes all the incomplete years at council and hb levels.
-           !(numerator < 50 & substr(code,1,3) %in% c('S12', 'S08', 'S37')))
+          !(numerator < 50 & substr(code,1,3) %in% c('S12', 'S08', 'S37')))
 
 saveRDS(child_formatted, file=paste0(data_folder, "Temporary/child_healthyweight_formatted.rds")) 
-
 analyze_second(filename = "child_healthyweight", measure = "perc_pcf", time_agg = 1,
                pop="DZ11_pop_5", ind_id = 21106, year_type = "financial")
 
