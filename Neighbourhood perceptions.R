@@ -1,16 +1,12 @@
-################################################################################
-################################################################################
-#########                                                              #########
-#####                      Neighbourhood perceptions                       #####
-#########                                                              #########
-################################################################################
-################################################################################
+############################################.
+## Analyst notes ----
+############################################.
 
 # This script covers three indicators:
 # 
-# - People perceiving rowdy behaviour very/fairly common in their neighbourhood
-# - Adults rating neighbourhood as very good place to live
-# - Perception of drug misuse in neighbourhood
+# - People perceiving rowdy behaviour very/fairly common in their neighbourhood (4115)
+# - Adults rating neighbourhood as very good place to live (20903)
+# - Perception of drug misuse in neighbourhood (4203)
 #  
 #  Data is sourced from the Scottish Household Survey - contact
 #   Hannah.Wolfram@gov.scot
@@ -33,143 +29,158 @@
 #  The data just needs to be formatted to match the last updates format 
 #  (e.g /Shiny Data/4203 Perception drug misuse_shiny)
 #  
-#  Section 4 - Checks includes only a very rudimentary check of this years update
+#  Checks section includes only a very rudimentary check of this years update
 #  against last years, grouping by year
 
 
-# Libraries ---------------------------------------------------------------
+###############################################.
+## Filepaths/Functions/Lookups/Packages ----
+###############################################.
+source("1.indicator_analysis.R") #functions not actually used - quicker way to load packages in 
 
-library(dplyr)
-library(stringr)
-library(stringr)
-library(janitor)
+filepath <- paste0(data_folder, "Received Data/Neighbourhood perceptions/Final tables 2024.xlsx") #setting filepath
 
-source("1.indicator_analysis.R") 
+library(rio) #used for reading in data from various sheets
 
-# 1. Read in data ------------------------------------------------------------
-
-# a) Received data:
-neighbour <- read.csv(paste0(data_folder,"Received Data/Neighbourhood perceptions 2023/",
-                             "SHS perception of drug missuse neighbourhood rating",
-                             " perception of rowdiness.csv")) |> 
-  clean_names()
-
-# b) Area lookups to match codes to given geographies
-# The ADP needs to be read in and matched to the data separately as there 
-# are some local authorities that have the same name. 
+# ADP lookup needs to be read in and matched to the data separately as there 
+# are some local authorities that have the same name.
 area_codes <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
-  filter(str_detect(code, "S00|S12|S00|S08"))
+  filter(str_detect(code, "S00|S12|S08|S11"))
 
 area_codes_adp <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) |> 
   filter(str_detect(code, "S11"))
 
-# 2. Data manipulation -------------------------------------------------------
+###############################################.
+## Read in all data ----
+###############################################.
 
-# a) Join ADP data with area code lookup (fixing instances where names differ)
-# select only relevant columns 
- 
-# NB: some instances where numerator is ".". Is it safe to assume these are 0? 
-# NA's in a numeric vector will be incorrectly handled. 
+all_data <- import_list(filepath) #from rio package, converts each sheets into a df within a list
+all_data<- all_data[-c(1,2)] #drop cover page and contents
 
-neighbourADP <- neighbour |> 
-  filter(geography_type == "Alcohol & Drug Partnership") |> 
-  left_join(area_codes_adp, by = c("geography" = "areaname")) |> 
-  mutate(code = case_when(geography == "MALDEP" ~ "S11000051",
-                          geography == "Lanarkshire ADP" ~ "S11000052",
-                          .default = code)) 
+###############################################.
+## Create function for cleaning data ----
+###############################################.
 
-# b) Join the remaining area data (excluding the ADP) to neighbour ADP
-neighbour2 <- neighbour |>  
-  filter(geography_type != "Alcohol & Drug Partnership") |> 
-  # Fix issues with geography names
-  mutate(geography = case_when(str_detect(geography, "&") ~ str_replace(geography, "&", "and"),
-                               geography_type == "Health Board" ~ paste("NHS",geography),
-                               .default = geography),
-        geography = case_match(geography, "Edinburgh, City of" ~ "City of Edinburgh",
-                               "Eilean Siar"~ "Na h-Eileanan Siar",
-                               .default = geography),
-         geography = case_when(geography_type == "Health Board" & str_detect(geography, "NHS Orkney Islands") ~ "NHS Orkney",
-                              geography_type == "Health Board" & str_detect(geography, "NHS Shetland Islands") ~ "NHS Shetland",
-                              .default = geography))|> 
-  full_join(area_codes, by = c("geography" = "areaname")) |> 
-  bind_rows(neighbourADP) |> 
-  mutate(code = case_when(geography == "MALDEP" ~ "S11000051",
-                   geography== "Lanarkshire ADP" ~ "S11000052",
-                   .default = code)) |> 
-  # select only the columns used in the shiny data (excluding ind_id which is 
-  # added later) and then rename them
-  # 
-  # columns in shiny data:
-  # code	ind_id	year	numerator rate	lowci	upci	def_period	trend_axis
-  select(indicator, code, year, percentage, lower_95_ci, upper_95_ci) |> 
-  rename(def_period = year,  
-         rate = percentage, 
-         lowci = lower_95_ci,
-         upci = upper_95_ci) |> 
-  # create remaining columns for extract:
-  mutate(year = as.numeric(case_when(def_period == "2007-2008" ~ "2007",
-                          def_period == "2009-2010" ~ "2009",
-                          .default = def_period)),
-         trend_axis = case_when(def_period == "2007-2008" ~ "2007/2008",
-                                def_period == "2009-2010" ~ "2009/2009",
-                                .default = def_period),
-         def_period = case_when(def_period == "2007-2008" ~ "2007 to 2008 survey years; 2-year aggregates",
-                                def_period == "2009-2010" ~ "2009 to 2010 survey years; 2-year aggregates",
-                                .default = paste(def_period,"survey year")),
-         numerator = "NA")
-
-test<- neighbour2 |> 
-  filter(is.na(rate))
-
-
-# 3. Final indicator data sets -------------------------------------------
-
-# a) 4115 data for People perceiving rowdy behaviour very/fairly common
-#  in their neighbourhood 
-rowdy <- neighbour2 |> 
-  filter(str_detect(indicator, "rowdy"))|> 
-  mutate(ind_id = 4115) |> 
-  select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
-
-saveRDS(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.rds"))
-write.csv(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"),row.names = F)
-
-
-# c) 20903 data for Adults rating neighbourhood as very good place to live
-very_good <- neighbour2 |> 
-  filter(str_detect(indicator, "very good"))|> 
-  mutate(ind_id = 20903) |> 
-  select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
-
-saveRDS(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
-write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
+indicator_cleaning <- function(id, scot_df, hb_df, adp_df = NULL, ca_df = NULL, area_codes, area_codes_adp){
+  
+  #scotland dfs
+  scot_df <- scot_df |> 
+    row_to_names(row_number = 1) |>  #set first row as headings
+    mutate(areatype = c("Scotland")) |> #create areatype variable and set to Scotland
+    mutate(areaname = c("Scotland")) |>  #create areaname variable and set to Scotland
+    left_join(filter(area_codes, str_detect(code, "S00"))) |> #create code column from lookup
+    select(areaname, everything()) #makes area name column first in line with other areatypes
+  
+  #hb dfs
+  hb_df <- hb_df |> 
+    row_to_names(row_number = 1) |> 
+    mutate(areatype = c("Health board")) |> 
+    rename(areaname = `NHS Board`) |> 
+    mutate(areaname = case_when(areaname == "Orkney Islands" ~ "Orkney", 
+                                areaname == "Shetland Islands" ~ "Shetland",
+                                .default = areaname)) |> #removing "Islands" from Orkney and Shetland 
+    mutate(areaname = paste("NHS", areaname)) |> #paste NHS on HB names to match lookup
+    left_join(filter(area_codes, str_detect(code, "S08")))  #joining with lookup
+  
+  #function can only take adp OR ca, not both, 
+  # and produces 1 df containing whichever of ca/adp is passed into function
+  if(is.null(adp_df)){ 
+    ca_adp_df <- ca_df |> 
+      row_to_names(row_number = 1) |> 
+      mutate(areatype = c("Council area")) |> 
+      rename(areaname = `Local authority`) |>
+      mutate(areaname = case_when(str_detect(areaname, "&") ~ str_replace(areaname, "&", "and"), #replace all & with "and"
+                                  areaname == "Edinburgh, City of" ~ "City of Edinburgh", 
+                                  .default = areaname)) |> 
+      left_join(filter(area_codes, str_detect(code, "S12")))
+  } else {
+    ca_adp_df <- adp_df |> 
+      row_to_names(row_number = 1) |> 
+      mutate(areatype = c("Alcohol & drug partnership")) |> 
+      rename(areaname = `Alcohol & Drug Partnership`) |>
+      left_join(area_codes_adp) |>
+      mutate(code = case_when(areaname == "MALDEP" ~ "S11000051", 
+                              areaname == "Lanarkshire ADP" ~ "S11000052",
+                              .default = code))  
+  }
+  
+  #combine scot, hb and adp/ca dfs
+  cleaned_df <- rbind(scot_df, hb_df, ca_adp_df) 
+  
+  cleaned_df <- cleaned_df |> 
+    clean_names() |> #clean col names
+    mutate_at(c(3:6), as.numeric) |> #convert columns with data to numeric
+    mutate(across(where(is.numeric), round, 1)) |>  #round to 1dp 
+    mutate(ind_id = id, #create indicator id col based on argument to function
+           numerator = "NA", #create numerator 
+           def_period = year, #duplicate year column to create trend axis col
+           trend_axis = case_when(def_period == "2007-2008" ~ "2007/2008", #create trend axis col
+                                  def_period == "2009-2010" ~ "2009/2010",
+                                  .default = def_period),
+           def_period = case_when(def_period == "2007-2008" ~ "2007 to 2008 survey years; 2-year aggregates",
+                                  def_period == "2009-2010" ~ "2009 to 2010 survey years; 2-year aggregates",
+                                  .default = paste(def_period,"survey year")), #create def_period col 
+           year = substr(year, 1, 4), #keep only first year for multi-year rows
+           year = as.integer(year)) |>  
+    select(code, ind_id, year, numerator, percent, lower_95_percent_ci, upper_95_percent_ci, def_period, trend_axis) |> #drop unnecessary cols 
+    rename(rate = percent, #rename cols to align with shiny data
+           lowci = lower_95_percent_ci,
+           upci = upper_95_percent_ci) 
+}
 
 
-# d) 4203 Perception of drug misuse in neighbourhood
-drug_misuse <- neighbour2 |> 
-  filter(str_detect(indicator, "drug")) |> 
-  mutate(ind_id = 4203) |> 
-  select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
+###############################################.
+## Run function for drug misuse (4203) ----
+###############################################.
+
+drug_misuse <- indicator_cleaning(id = "4203" ,
+                                  all_data$Table_1, all_data$Table_2, all_data$Table_3, 
+                                  area_codes = area_codes, area_codes_adp = area_codes_adp)
 
 saveRDS(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.rds"))
 write.csv(drug_misuse, file = paste0(data_folder, "Data to be checked/perception_drug_misuse_shiny.csv"),row.names = F)
 
-# 4. Checks ---------------------------------------------------------------
+###############################################.
+## Run function for rowdy behaviour (4115) ------
+###############################################.
+
+rowdy_behaviour <- indicator_cleaning(id = "4115",
+                                      all_data$Table_4, all_data$Table_5, all_data$Table_6, 
+                                      area_codes = area_codes, area_codes_adp = area_codes_adp)
+
+saveRDS(rowdy_behaviour, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.rds"))
+write.csv(rowdy_behaviour, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"),row.names = F)
+
+###############################################.
+## Run function for neighbourhood good place (20903) ----
+###############################################.
+
+good_place <- indicator_cleaning(id = "20903",
+                                 all_data$Table_7, all_data$Table_8, ca_df = all_data$Table_9, 
+                                 area_codes = area_codes, area_codes_adp = area_codes_adp)
+
+saveRDS(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
+write.csv(good_place, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
+
+
+############################################.
+## Analyst notes ----
+############################################.
 
 ## As there is no analyse_second function used for these indicators, run the following to 
 ## check data against last years (may need to change the file names)
 
-# a) Read in last years data
-last_year_rowdy <- read.csv(paste0(data_folder, "Shiny Data/4115 Rowdy behaviour_shiny.csv"))
-last_year_very_good <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
+# Read in last years data
+last_year_rowdy_behaviour <- read.csv(paste0(data_folder, "Shiny Data/4115 Rowdy behaviour_shiny.csv"))
+last_year_good_place <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
 last_year_drug_misuse <- read.csv(paste0(data_folder, "Shiny Data/4203 Perception drug misuse_shiny.csv"))
 
-# b) function to check totals of shared years
+# Function to check totals of shared years
 
 check_year_totals <- function(last_year_data, this_year_data){
   
   last_year_max <- as.numeric(max(last_year_data$year))
-
+  
   last_year <- last_year_data |> 
     group_by(year) |> 
     summarize(last_year_sum = sum(rate)) |> 
@@ -197,12 +208,11 @@ check_year_totals <- function(last_year_data, this_year_data){
   if(test$test_column[1] == 0) {
     
     print("All totals match")
-   
-
+    
   } else {
     non_match <- filter(both_years,
                         check != 0) 
-      
+    
     return(non_match)
     print("Totals don't match. See non_match dataframe.")
   }
@@ -210,6 +220,6 @@ check_year_totals <- function(last_year_data, this_year_data){
 
 # Check totals
 
-check_year_totals(last_year_data = last_year_rowdy, this_year_data = rowdy)
-check_year_totals(last_year_data = last_year_very_good, this_year_data = very_good)
+check_year_totals(last_year_data = last_year_rowdy_behaviour, this_year_data = rowdy_behaviour)
+check_year_totals(last_year_data = last_year_good_place, this_year_data = good_place)
 check_year_totals(last_year_data = last_year_drug_misuse, this_year_data = drug_misuse)
