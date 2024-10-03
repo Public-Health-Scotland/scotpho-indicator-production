@@ -497,61 +497,61 @@ Shiny app looking at differences between historic and latest indicator data outp
 
 ```{r, echo=FALSE}
 
-shinyApp(
-
-  ui = fluidPage(
-      selectizeInput("geo_type_selected", "Area type:", choices = unique(data_indicator$geo_type),multiple = TRUE, selected="Scotland (S00)"),
-      reactableOutput("comparisons_table"), 
-    ),
-  
-  
-  server = function(input, output) {
-
-  output$comparisons_table <- renderReactable({
-
-    matched_indicator_data <- left_join(x = data_indicator, y = old_data_indicator, by=c("code", "year")) %>%
-        filter(geo_type %in% input$geo_type_selected) %>% #
-        mutate_if(is.numeric, round,2) %>%
-        mutate(rate_match = round((rate.x-rate.y)/rate.x,2)) %>% #all indicators have rate -
-      # not all indicators have numerator,lci,uci so need to allow for null comparison
-        mutate(numerator_match = ifelse((numerator.x ==""|numerator.y ==""),0,round((numerator.x-numerator.y)/numerator.x,2)),
-            lowci_match =ifelse((lowci.x ==""|lowci.y ==""),0,round((lowci.x-lowci.y)/lowci.x,2)),
-            upci_match =ifelse((upci.x ==""|upci.y ==""),0,round((upci.x-upci.y)/upci.x,2)),
-            year=as.factor(year)) %>%
-  select(geo_type,code_name,year,numerator_match,rate_match,lowci_match,upci_match, numerator.x,numerator.y,rate.x,rate.y,lowci.x,lowci.y,upci.x,upci.y)
-    
-  ds_color=NULL   # set default column color to null - this gets reset if differences detected between old and new indicator data 
-  
-  matched_indicator_data %>%
-  reactable(filterable = TRUE,
-            columns = list(
-            code_name= colDef(),
-            year = colDef(width = 60),
-            numerator.x =colDef(name="N new",width = 65),
-            numerator.y = colDef(name="N old",width = 65),        
-            numerator_match = colDef(name="N",width = 30,style = function(value) {
-                            if (value != 0) {ds_color <- "lightCoral"} 
-              list(background = ds_color)}), # 
-            rate.x =colDef(name="R new",width = 60),
-            rate.y = colDef(name="R old",width = 60),
-            rate_match = colDef(name="R",width = 30,style = function(value) {
-                            if (value != 0) {ds_color <- "lightCoral"}
-              list(background = ds_color)}),
-            lowci.x =colDef(width = 60),
-            lowci.y = colDef(width = 60),
-            lowci_match = colDef(name="LC",width = 30,style = function(value) {
-                            if (value != 0) {ds_color <- "lightCoral"}
-              list(background = ds_color)}),
-            upci.x =colDef(width = 60),
-            upci.y = colDef(width = 60),
-            upci_match = colDef(name="UC",width = 30,style = function(value) {
-                            if (value != 0) {ds_color <- "lightCoral"} 
-              list(background = ds_color)})),
-            defaultPageSize = 20)})
-
-    },# server close
-  options = list(height = 1000)
-)
+# shinyApp(
+# 
+#   ui = fluidPage(
+#       selectizeInput("geo_type_selected", "Area type:", choices = unique(data_indicator$geo_type),multiple = TRUE, selected="Scotland (S00)"),
+#       reactableOutput("comparisons_table"), 
+#     ),
+#   
+#   
+#   server = function(input, output) {
+# 
+#   output$comparisons_table <- renderReactable({
+# 
+#     matched_indicator_data <- left_join(x = data_indicator, y = old_data_indicator, by=c("code", "year")) %>%
+#         filter(geo_type %in% input$geo_type_selected) %>% #
+#         mutate_if(is.numeric, round,2) %>%
+#         mutate(rate_match = round((rate.x-rate.y)/rate.x,2)) %>% #all indicators have rate -
+#       # not all indicators have numerator,lci,uci so need to allow for null comparison
+#         mutate(numerator_match = ifelse((numerator.x ==""|numerator.y ==""),0,round((numerator.x-numerator.y)/numerator.x,2)),
+#             lowci_match =ifelse((lowci.x ==""|lowci.y ==""),0,round((lowci.x-lowci.y)/lowci.x,2)),
+#             upci_match =ifelse((upci.x ==""|upci.y ==""),0,round((upci.x-upci.y)/upci.x,2)),
+#             year=as.factor(year)) %>%
+#   select(geo_type,code_name,year,numerator_match,rate_match,lowci_match,upci_match, numerator.x,numerator.y,rate.x,rate.y,lowci.x,lowci.y,upci.x,upci.y)
+#     
+#   ds_color=NULL   # set default column color to null - this gets reset if differences detected between old and new indicator data 
+#   
+#   matched_indicator_data %>%
+#   reactable(filterable = TRUE,
+#             columns = list(
+#             code_name= colDef(),
+#             year = colDef(width = 60),
+#             numerator.x =colDef(name="N new",width = 65),
+#             numerator.y = colDef(name="N old",width = 65),        
+#             numerator_match = colDef(name="N",width = 30,style = function(value) {
+#                             if (value != 0) {ds_color <- "lightCoral"} 
+#               list(background = ds_color)}), # 
+#             rate.x =colDef(name="R new",width = 60),
+#             rate.y = colDef(name="R old",width = 60),
+#             rate_match = colDef(name="R",width = 30,style = function(value) {
+#                             if (value != 0) {ds_color <- "lightCoral"}
+#               list(background = ds_color)}),
+#             lowci.x =colDef(width = 60),
+#             lowci.y = colDef(width = 60),
+#             lowci_match = colDef(name="LC",width = 30,style = function(value) {
+#                             if (value != 0) {ds_color <- "lightCoral"}
+#               list(background = ds_color)}),
+#             upci.x =colDef(width = 60),
+#             upci.y = colDef(width = 60),
+#             upci_match = colDef(name="UC",width = 30,style = function(value) {
+#                             if (value != 0) {ds_color <- "lightCoral"} 
+#               list(background = ds_color)})),
+#             defaultPageSize = 20)})
+# 
+#     },# server close
+#   options = list(height = 1000)
+# )
 
 ```
 
