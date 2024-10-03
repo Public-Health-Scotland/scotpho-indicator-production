@@ -494,8 +494,8 @@ inequality_measures <- function(dataset){
            #extracting sii from model, a bit fiddly but it works
            sii = -1 * as.numeric(map(map(model, "coefficients"), "relrank_sqr_proppop")),
       #     cis = map(model, confint_tidy) # deprecated. next two lines do the same thing
-           conf.low = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[2])),
-           conf.high = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[1]))) %>% #calculating confidence intervals
+           conf.low = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[1])),
+           conf.high = as.numeric(map(model, ~confint(., parm = "relrank_sqr_proppop")[2]))) %>% #calculating confidence intervals
     ungroup() %>% 
     mutate(lowci_sii = -1 * conf.high, #fixing interpretation
            upci_sii = -1 * conf.low) %>% 
