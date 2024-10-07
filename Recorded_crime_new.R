@@ -3,17 +3,23 @@
 #   Part 1 - Prepare basefile
 #   Part 2 - Run analysis functions
 
+#Note - add link to FOI page on Police Scotland website if the indicator continues to be udpated this way.
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 source("1.indicator_analysis.R") #normal indicator functions
 source("2.deprivation_analysis.R") #deprivation function
 
-filepath <- paste0(data_folder, "Received Data/Crime data/data/recorded-2020.xlsx")
+filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime data folder
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
+
+#read in historic data
+crime_historic <- readRDS(paste0(filepath, "crime_data_historic_DO_NOT_DELETE.rds"))
+
 
 recorded_crime <- read_excel(filepath, sheet = 2) |>
   select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
