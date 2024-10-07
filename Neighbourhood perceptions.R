@@ -1,3 +1,10 @@
+# N.B. Indicator 20903 has been replaced by indicator 30046 
+# It is now produced by the script Scottish Household Survey.R, along with 
+# another 11 mental health indicators, because the data for all were provided by SHoS team
+# Code for prep of indicator 20903 has been commented out of this file. 
+
+
+
 ################################################################################
 ################################################################################
 #########                                                              #########
@@ -135,14 +142,14 @@ saveRDS(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_b
 write.csv(rowdy, file = paste0(data_folder, "Data to be checked/perceiving_rowdy_behaviour_shiny.csv"),row.names = F)
 
 
-# c) 20903 data for Adults rating neighbourhood as very good place to live
-very_good <- neighbour2 |> 
-  filter(str_detect(indicator, "very good"))|> 
-  mutate(ind_id = 20903) |> 
-  select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
-
-saveRDS(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
-write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
+# # c) 20903 data for Adults rating neighbourhood as very good place to live
+# very_good <- neighbour2 |> 
+#   filter(str_detect(indicator, "very good"))|> 
+#   mutate(ind_id = 20903) |> 
+#   select(code, ind_id, year, numerator, rate,	lowci,	upci,	def_period,	trend_axis)
+# 
+# saveRDS(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.rds"))
+# write.csv(very_good, file = paste0(data_folder, "Data to be checked/adults_rating_neighbourhood_very_good_shiny.csv"),row.names = F)
 
 
 # d) 4203 Perception of drug misuse in neighbourhood
@@ -161,7 +168,7 @@ write.csv(drug_misuse, file = paste0(data_folder, "Data to be checked/perception
 
 # a) Read in last years data
 last_year_rowdy <- read.csv(paste0(data_folder, "Shiny Data/4115 Rowdy behaviour_shiny.csv"))
-last_year_very_good <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
+#last_year_very_good <- read.csv(paste0(data_folder, "Shiny Data/20903_Neighbourhood_rating_shiny.csv"))
 last_year_drug_misuse <- read.csv(paste0(data_folder, "Shiny Data/4203 Perception drug misuse_shiny.csv"))
 
 # b) function to check totals of shared years
@@ -211,5 +218,5 @@ check_year_totals <- function(last_year_data, this_year_data){
 # Check totals
 
 check_year_totals(last_year_data = last_year_rowdy, this_year_data = rowdy)
-check_year_totals(last_year_data = last_year_very_good, this_year_data = very_good)
+#check_year_totals(last_year_data = last_year_very_good, this_year_data = very_good)
 check_year_totals(last_year_data = last_year_drug_misuse, this_year_data = drug_misuse)
