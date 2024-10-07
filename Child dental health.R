@@ -106,9 +106,12 @@ p7_new <- p7_new |>
 p1_combined <- rbind(p1_historic, p1_new)
 p7_combined <- rbind(p7_historic, p7_new)
 
-# save file to be used in analysis function 
+# save files to be used in analysis and deprivation functions
 saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
 saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
+
+saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_depr_raw.rds'))
+saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_depr_raw.rds'))
 
 
 # Part 2: Run analysis functions  ----------------------------------------------
@@ -137,7 +140,7 @@ analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1,
                ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
 
 analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend=2022, time_agg=1,
+                    yearstart= 2014, yearend = 2022, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
 
 
