@@ -110,8 +110,8 @@ p7_combined <- rbind(p7_historic, p7_new)
 saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
 saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
 
-saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_depr.rds'))
-saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_depr.rds'))
+saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_depr_raw.rds'))
+saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_depr_raw.rds'))
 
 
 # Part 2: Run analysis functions  ----------------------------------------------
