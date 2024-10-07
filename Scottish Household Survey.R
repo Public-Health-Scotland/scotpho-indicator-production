@@ -1,4 +1,6 @@
+#########################################################
 # Scottish Household Survey data import
+#########################################################
 
 # Update ScotPHO indicators for mental health profile:
 
@@ -27,7 +29,8 @@
 # purposes and it may be worth excluding them from your final dashboards.
 
 #   Part 1 - Read in data
-#   Part 2 - Run analysis function (for inequals analysis)
+#   Part 2 - Prepare data for shiny
+#   Part 3 - Prepare final files for checking
 
 ### functions/packages ----
 
@@ -60,6 +63,7 @@ vars <- c("SERV1H", "HK2", "COMMBEL", "RB1", "SOCIAL32",
           "GREENUSE13", "VOLUN", "SOCIAL2",
           "ASB2A", "CREDIT", "DISCRIM", "HARASS")
 
+
 # Function to read in worksheets and perform common processing
 import_shos_xlsx <- function(suffix, filename) {
   import_list(paste0(data_folder,"Received Data", filename),  
@@ -89,6 +93,18 @@ import_shos_xlsx <- function(suffix, filename) {
                               indicator == "CREDIT" ~ 30045, 
                               indicator == "DISCRIM" ~ 30038, 
                               indicator == "HARASS" ~ 30041)) %>%
+    mutate(ind_name = case_when(ind_id == 30022  ~	"influence_local_decisions",
+                                ind_id == 30043	~	"managing_well_financially",
+                                ind_id == 30024	~	"neighbourhood_belonging",
+                                ind_id == 30046	~	"neighbourhood_good_place",
+                                ind_id == 30027	~	"neighbourhood_trust",
+                                ind_id == 30047	~	"open_space_use",
+                                ind_id == 30020	~	"volunteering",
+                                ind_id == 30038	~	"discrimination",
+                                ind_id == 30041	~	"harassment",
+                                ind_id == 30025	~	"feeling_lonely",
+                                ind_id == 30049	~	"noisy_neighbours",
+                                ind_id == 30045	~	"high_risk_loans")) %>%
     select(-Base, -RowStdErr, -indicator) 
 }
 
@@ -107,21 +123,20 @@ shos_hb <- import_shos_xlsx("_3", file) %>%
 
 shos_simd <- import_shos_xlsx("_4", file) %>%
   rename(split_value = mdquin_ts) %>%
-  mutate(geographylevel="Scotland",
-         areaname = "Scotland",
+  mutate(code="S00000001", # Scotland only
          split_name= "Deprivation (SIMD)") 
 
 shos_sex <- import_shos_xlsx("_5", file) %>%
   rename(split_value = randgender_ts) %>%
-  mutate(geographylevel="Scotland",
-         areaname = "Scotland",
+  mutate(code="S00000001", # Scotland only
          split_name= "Sex") %>%
   filter(is.na(hihgender_ts)) %>% # drop the indicators measured at hhd level (sex=meaningless)
   select(-hihgender_ts)
 
 
-### 1 - Prepare data for shiny ----
+### 2 - Prepare data for shiny ----
 
+# a) main data
 
 # Combine main data (no splits apart from geographies)
 shos_main <- bind_rows(shos_ca, shos_hb, shos_scot) %>%
@@ -136,96 +151,162 @@ shos_main <- bind_rows(shos_ca, shos_hb, shos_scot) %>%
   mutate(code=case_when(geographylevel=="Scotland" ~ "S00000001", TRUE~code)) %>%
   select(-areaname, -geographylevel)
 
+# b) popgroup data
 
-# Combine popgroup data (splits = sex and SIMD, National level)
-shos_popgrp <- bind_rows(shos_simd, shos_sex) %>%
-  filter(!(ind_id==30045)) %>% # too few cases for splits (many are suppressed) (loans)
-  filter(!(split_value %in% c("Identify in another way", "Prefer not to say"))) %>% # keep M and F sex only
-  mutate(code=case_when(geographylevel=="Scotland" ~ "S00000001", TRUE~"")) %>%
-  select(-areaname, -geographylevel)
+# popgroup data (split = sex, National level)
+shos_popgrp <- shos_sex %>%
+  filter(!(split_value %in% c("Identify in another way", "Prefer not to say")))  # keep M and F sex only
 
-# get and add in totals for the splits
+# get totals for the splits (because no 'all' in the sex data)
 shos_total_sex <- shos_popgrp %>%
-  select(code, trend_axis) %>%
-  distinct() %>%
-  merge(y=shos_main, by=c("code", "trend_axis")) %>%
+  select(code, trend_axis) %>% 
+  distinct() %>% # the groups we need totals for
+  merge(y=shos_main, by=c("code", "trend_axis")) %>% # the totals for those groups
   mutate(split_name="Sex",
-         split_value = "Total") %>%
-  filter(!(ind_id==30045))  # too few cases for splits (many are suppressed) (loans)
+         split_value = "Total") 
 
+# Add totals in
+shos_popgrp <- bind_rows(shos_popgrp, shos_total_sex) 
 
-# Add in to popgrps file
-shos_popgrp_sex <- bind_rows(shos_popgrp, shos_total_sex) %>%
-  filter(split_name=="Sex")
-
-# Add in to inequals file (raw, before running deprivation analysis)
-shos_total_simd <- shos_total_sex %>%
-  mutate(split_name="Deprivation (SIMD)")
-
-shos_popgrp_simd <- bind_rows(shos_popgrp, shos_total_simd) %>%
-  filter(split_name=="Deprivation (SIMD)") %>%
+# c) inequals data (raw, before running deprivation analysis)
+# National level only 
+shos_simd <- shos_simd %>%
   mutate(quintile = case_when(split_value=="Quintile 1- 20% most deprived" ~ "1",
                               split_value=="Quintile 2" ~ "2",
                               split_value=="Quintile 3" ~ "3",
                               split_value=="Quintile 4" ~ "4",
-                              split_value=="Quintile 5 - 20% least deprived" ~ "5",
-                              TRUE ~ split_value)) %>%
+                              split_value=="Quintile 5 - 20% least deprived" ~ "5")) %>%
   mutate(quint_type="sc_quin") %>%
   select(-split_name, -split_value)
-# Data are provided at quintile level (sc_quin)  
-# Match to quintile pops
-# code       year quintile numerator quint_type
+
+# get totals for the splits (because no 'all' in the simd data)
+shos_total_simd <- shos_simd %>%
+  select(code, trend_axis) %>% 
+  distinct() %>% # the groups we need totals for
+  merge(y=shos_main, by=c("code", "trend_axis")) %>% # the totals for those groups
+  mutate(quint_type="sc_quin",
+         quintile = "Total") 
+
+# Add totals in
+shos_simd <- bind_rows(shos_simd, shos_total_simd) 
 
 
-# Save files
+### 3. Prepare final files -----
 
-# Main
-saveRDS(shos_main, file = paste0(data_folder, "Data to be checked/shos_main_shiny.rds"))
-write_csv(shos_main, file = paste0(data_folder, "Data to be checked/shos_main_shiny.csv"))
+# Function to prepare final files: main_data, popgroup, and ineq
+prepare_final_files <- function(indicator_name){
+  
+  # 1 - main data (ie data behind summary/trend/rank tab)
+  # Contains Scotland, LA and HB data (single years, or 2yr aggregates)
+  main_data_final <- shos_main %>% 
+    filter(ind_name == indicator_name) %>% 
+    unique() %>%
+    select(-ind_name)
+  
+  # Save files
+  write.csv(main_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny.csv"), row.names = FALSE)
+  write_rds(main_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny.rds"))
+  # save to folder that QA script accesses:
+  write_rds(main_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny.rds"))
+  
+  # Make data created available outside of function so it can be visually inspected if required
+  main_data_result <<- main_data_final
 
-# Pop groups
-saveRDS(shos_popgrp_sex, file = paste0(data_folder, "Data to be checked/shos_shiny_popgrp.rds"))
-write_csv(shos_popgrp_sex, file = paste0(data_folder, "Data to be checked/shos_shiny_popgrp.csv"))
+  
+  if(indicator_name!="high_risk_loans") { # don't run for the loans indicator, as too few obs
+    
+  # 2 - population groups data (ie data behind population groups tab)
+  # Contains Scotland data by sex (single year or 2y aggregate)
+    pop_grp_data_final <- shos_popgrp %>% 
+      filter(ind_name == indicator_name) %>% 
+      unique() %>%
+      select(-ind_name)
 
-# Ineq file
-saveRDS(shos_popgrp_simd, file = paste0(data_folder, "Prepared Data/shos_shiny_depr_raw.rds"))
-write_csv(shos_popgrp_simd, file = paste0(data_folder, "Prepared Data/shos_shiny_depr_raw.csv"))
+  # Save
+  write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny_popgrp.rds"))
+  # save to folder that QA script accesses: (though no QA for popgroups files?)
+  write_rds(pop_grp_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny_popgrp.rds"))
+  
+  # 3 - SIMD data (ie data behind deprivation tab)
+  # Contains Scotland data by SIMD quintile (single year or 2y aggregate)
+  
+  # Process SIMD data
+  simd_data <- shos_simd %>% 
+    filter(ind_name == indicator_name) %>% 
+    unique() %>%
+    select(-ind_name)
+  
+  
+  # Save intermediate SIMD file
+  write_rds(simd_data, file = paste0(data_folder, "Prepared Data/", indicator_name, "_shiny_depr_raw.rds"))
+  write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", indicator_name, "_shiny_depr_raw.csv"), row.names = FALSE)
+  
+  #get ind_id argument for the analysis function 
+  ind_id <- unique(simd_data$ind_id)
+
+  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
+  analyze_deprivation_aggregated(filename = paste0(indicator_name, "_shiny_depr"), 
+                                 pop = "depr_pop_16+", # these are adult (16+) indicators, with no sex split for SIMD
+                                 ind_id, 
+                                 indicator_name
+                                 )
+  
+  # Make data created available outside of function so it can be visually inspected if required
+  pop_grp_data_result <<- pop_grp_data_final
+  simd_data_result <<- simd_data
+  
+  
+  }
+  
+}
 
 
-shos_popgrp_simd <- readRDS(file = paste0(data_folder, "Prepared Data/shos_shiny_depr_raw.rds"))
-# 2. Run analysis functions ----
-# all data are in the same input file
-# function splits them out and saves separately
 
-# create lookup to pass to function:
-ind_lookup <- list("30022" =	"influence_local_decisions",
-                   "30043"	=	"managing_well_financially",
-                   "30024"	=	"neighbourhood_belonging",
-                   "30046"	=	"neighbourhood_good_place",
-                   "30027"	=	"neighbourhood_trust",
-                   "30047"	=	"open_space_use",
-                   "30020"	=	"volunteering",
-                   "30038"	=	"discrimination",
-                   "30041"	=	"harassment",
-                   "30025"	=	"feeling_lonely",
-                   "30049"	=	"noisy_neighbours",
-                   "30045"	=	"high_risk_loans") 
-
-analyze_deprivation_aggregated(filename="shos_shiny_depr", pop = "depr_pop_16+", ind = 30022, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30043, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30024, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30046, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30027, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30047, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30020, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30038, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30041, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30025, lookup = ind_lookup)
-analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30049, lookup = ind_lookup)
-#analyze_deprivation_aggregated("shos_shiny_depr", pop = "depr_pop_16+", ind = 30045, lookup = ind_lookup) # no SIMD for this indicator
+# Prepare the final files 
+prepare_final_files(indicator_name = "influence_local_decisions")
+prepare_final_files(indicator_name = "managing_well_financially")
+prepare_final_files(indicator_name = "neighbourhood_belonging")
+prepare_final_files(indicator_name = "neighbourhood_good_place")
+prepare_final_files(indicator_name = "neighbourhood_trust")
+prepare_final_files(indicator_name = "open_space_use")
+prepare_final_files(indicator_name = "volunteering")
+prepare_final_files(indicator_name = "discrimination")
+prepare_final_files(indicator_name = "harassment")
+prepare_final_files(indicator_name = "feeling_lonely")
+prepare_final_files(indicator_name = "noisy_neighbours")
+prepare_final_files(indicator_name = "high_risk_loans") 
 
 
+# Run QA reports 
+# main data
+run_qa(filename = "influence_local_decisions")
+run_qa(filename = "managing_well_financially")
+run_qa(filename = "neighbourhood_belonging")
+run_qa(filename = "neighbourhood_good_place")
+run_qa(filename = "neighbourhood_trust")
+run_qa(filename = "open_space_use")
+run_qa(filename = "volunteering")
+run_qa(filename = "discrimination")
+run_qa(filename = "harassment")
+run_qa(filename = "feeling_lonely")
+run_qa(filename = "noisy_neighbours")
+run_qa(filename = "high_risk_loans") # "Warning: Error in eval: object 'S08' not found"
 
+
+# ineq data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
+run_ineq_qa(filename = "influence_local_decisions") # Warning: Error in eval: object 'S08' not found"
+run_ineq_qa(filename = "managing_well_financially")
+run_ineq_qa(filename = "neighbourhood_belonging")
+run_ineq_qa(filename = "neighbourhood_good_place")
+run_ineq_qa(filename = "neighbourhood_trust")
+run_ineq_qa(filename = "open_space_use")
+run_ineq_qa(filename = "volunteering")
+run_ineq_qa(filename = "discrimination")
+run_ineq_qa(filename = "harassment")
+run_ineq_qa(filename = "feeling_lonely")
+run_ineq_qa(filename = "noisy_neighbours")
+run_ineq_qa(filename = "high_risk_loans") 
 
 
 # # Some QA charts:
