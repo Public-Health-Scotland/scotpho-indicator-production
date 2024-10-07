@@ -1,26 +1,35 @@
+#########################################################
 # Scottish Health Survey data import
+#########################################################
 
-# to do - update file paths to non-test output locations when profiles tool developments go live
+# to do - 
+# transfer files to non-test output locations 
+# fix ineq_qa to take data without HBs
 
 ### Update ScotPHO indicators sourced from Scottish Health Survey: 
+
 ### Care and Wellbeing indicators: 
 #   99105: Food insecurity
 #   99106: Adult Healthy Weight 
+#   99107: Summary activity levels (also MEN)
 #   99108: Self-assessed health of adults (age 16+) (also MEN)
 #   99109: Limiting long-term conditions (age 16+) (also MEN)
 ### Adult mental health indicators:
 #   30013: Fruit & vegetable consumption (guidelines) 
 #   30003: General health questionnaire (GHQ-12) 
 #   30001: Mental wellbeing (WEMWBS)
-#   30012: Summary activity levels
 
-# all indicators available as male/female/all splits
+# all indicators available as male/female/all splits (Scotland, HB, CA)
+# all indicators also available for age, SIMD, income and long-term conditions splits (Scotland only).
+# This script runs the deprivation analysis on the SIMD-level data.
 
 # Data source is the Scottish Health Survey - received dashboard files from SHeS team (scottishhealthsurvey@gov.scot)
 # data supplied in .sav file format (this is file format used by SPSS - requires haven package to open in R).
 
 ### functions/packages -----
 source("1.indicator_analysis.R")
+source("2.deprivation_analysis.R") 
+
 library(haven) # for reading in .sav files 
 
 
@@ -152,7 +161,7 @@ data <- all_data %>%
                             indicator == "fruit_veg_consumption" ~ 30013, 
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
-                            indicator == "physical_activity" ~ 30012),
+                            indicator == "physical_activity" ~ 99107),
          trend_axis = year,
          year = if_else(str_detect(trend_axis, "-"), as.numeric(str_sub(year, start = 1, end = 4))+2, as.numeric(year)),
          def_period = if_else(str_detect(trend_axis, "-"), paste0("4-year aggregate"," (", trend_axis, ")"), paste0(year, " survey year")),
@@ -168,7 +177,7 @@ data <- all_data %>%
 
 ### 3. Prepare final files -----
 
-# Function to prepare final files
+# Function to prepare final files: main_data, popgroup, and ineq
 prepare_final_files <- function(ind){
   
   # 1 - main data (ie data behind summary/trend/rank tab)
@@ -182,7 +191,8 @@ prepare_final_files <- function(ind){
   
   write.csv(main_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  
+  # save to folder that QA script accesses:
+  write_rds(main_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
   
   # 2 - population groups data (ie data behind population groups tab)
   # Contains LA/HB data by sex (4-year aggregate) and Scotland data by sex/age/condition/income/simd (single year)
@@ -223,6 +233,8 @@ prepare_final_files <- function(ind){
   # Save
   write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
+  # save to folder that QA script accesses: (though no QA for popgroups files?)
+  write_rds(pop_grp_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
   
   # Process SIMD data
   simd_data <- pop_grp_data %>%
@@ -256,7 +268,6 @@ prepare_final_files <- function(ind){
   
 }
 
-# run inequality_analysis on SIMD data.
 
 # Run function to create final files
 prepare_final_files(ind = "food_insecurity")
@@ -271,7 +282,8 @@ prepare_final_files(ind = "physical_activity")
 
 
 
-# Run QA reports (after copying rds versions to Data to be Checked)
+# Run QA reports 
+# main data
 run_qa(filename = "food_insecurity")
 run_qa(filename = "self_assessed_health")
 run_qa(filename = "limiting_long_term_condition")
@@ -280,6 +292,17 @@ run_qa(filename = "fruit_veg_consumption")
 run_qa(filename = "common_mh_probs")
 run_qa(filename = "mental_wellbeing")
 run_qa(filename = "physical_activity") 
+
+# ineq data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
+run_ineq_qa(filename = "food_insecurity")
+run_ineq_qa(filename = "self_assessed_health")
+run_ineq_qa(filename = "limiting_long_term_condition")
+run_ineq_qa(filename = "healthy_weight")
+run_ineq_qa(filename = "fruit_veg_consumption")
+run_ineq_qa(filename = "common_mh_probs")
+run_ineq_qa(filename = "mental_wellbeing")
+run_ineq_qa(filename = "physical_activity") 
+
 
 #END
 
