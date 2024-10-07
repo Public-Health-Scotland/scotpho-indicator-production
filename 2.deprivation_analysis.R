@@ -564,50 +564,30 @@ data_depr <<- data_depr
 
 
 
-## HOW TO USE THIS FUNCTION
-# 
-# 
-# Arguments of the function:
-# filename -  Name of the raw file the function reads without the "_raw.sav" at the end
-# required fields: 
-  # "year"       "rate"       "lowci"      "upci"       "numerator"  "def_period"
-  # "trend_axis" "ind_id"     "code"       "quintile"   "quint_type"
-  # quintile is in format "1" to "5" and "Total".
-# pop - Name of the population file. 
-# ind_id - indicator code/number
-# qa - parameter can be true/false - governs if inequalities indicator QA should be run 
-# lookup - a lookup list for looking up the indicator name (for file saving purposes). ind_id is string in this list.
-# e.g. of lookup creation: 
-# ind_lookup <- list("30022"="influence_local_decisions","30043"="managing_well_financially")
-
 
 #' Function: analyze_deprivation_aggregated()
 #' ##############################################
-#' A deprivation analysis function for pre-aggregated data.
-#' Takes a file with multiple indicators in it that are already aggregated to SIMD level.
-#' Currently only takes Scotland-level data: amend if to be used for HB/CA level.
-#' NEEDS A TEST TO ENSURE EITHER IND_NAME OR A LOOKUP HAS BEEN PROVIDED
+#' A version of the analyze_deprivation() function for pre-aggregated data.
+#' Takes a file with indicator data already aggregated to SIMD level.
+#' N.B. Currently only takes Scotland-level data: amend if to be used for HB/CA level.
+#' N.B. Currently only takes total population data: needs amending for male/female splits
 #'
 #' @param filename 
 #' Name of the raw file the function reads without the "_raw.sav" at the end
 #'  required fields: "year"       "rate"       "lowci"      "upci"       "numerator"  "def_period"
 #'                  "trend_axis" "ind_id"     "code"       "quintile"   "quint_type"
-#'  quintile is in format "1" to "5" and "Total".
+#'  quintile is in format "1" to "5" and "Total" (total must be provided).
 #' @param pop Name of the population file.
-#' @param ind indicator code/number
-#' @param lookup 
-#' a lookup list for looking up the indicator name (for file saving purposes). ind_id is string in this list.
-#'  e.g. of lookup creation: 
-#' ind_lookup <- list("30022"="influence_local_decisions","30043"="managing_well_financially")
+#' @param ind_id indicator code/number
+#' @param ind_name indicator name for the final files
 #' @param qa parameter can be true/false - governs if inequalities indicator QA should be run 
 #'
-#' @return prepared data file saved to paste0("Data to be checked/", indicator_name, "_ineq.rds")
+#' @return prepared data file saved to paste0("Data to be checked/", ind_name, "_ineq.rds")
 #' 
 analyze_deprivation_aggregated <- function(filename, # the prepared data, without _raw.rds suffix
                                            pop, # what population file to use for denominators
-                                           ind, # the ind_id
-                                           ind_name = NULL, # user provides either the indicator name (if input file has one indicator), or a lookup (if contains multiple indicators)
-                                           lookup = NULL, # lookup for ind_id to ind_name (indicator name used if not provided)
+                                           ind_id, # the ind_id
+                                           ind_name, # the indicator name (abbreviated, for output file) 
                                            qa = FALSE) {
   
   ###############################################.
@@ -617,14 +597,8 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
   # read in raw data. 
   data_depr <- readRDS(paste0(data_folder, "Prepared Data/" ,filename, "_raw.rds")) %>% 
     mutate(year = as.numeric(year)) %>% 
-    filter(ind_id == ind) 
+    filter(ind_id == ind_id) 
   
-  indicator_name <- ifelse(is.null(ind_name),
-                           recode(as.character(ind_id), !!!ind_lookup, .default = as.character(NA)),
-                           ind_name)
-  
-  #indicator_name <- recode(as.character(ind), !!!ind_lookup, .default = as.character(NA))
-
   yearstart = min(data_depr$year)
   yearend = max(data_depr$year)
   
@@ -654,7 +628,7 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
   #call function to generate measures of inequality 
   data_depr <- data_depr %>% inequality_measures()
   
-  saveRDS(data_depr, paste0(data_folder, "Temporary/", indicator_name, "_final.rds"))
+  saveRDS(data_depr, paste0(data_folder, "Temporary/", ind_name, "_final.rds"))
   
   #Preparing data for Shiny tool
   data_shiny <- data_depr %>% 
@@ -662,7 +636,7 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
               least_rate, par_rr, count))
   
   #Saving file
-  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", indicator_name, "_ineq.rds"))
+  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", ind_name, "_ineq.rds"))
   
   #Making final dataset available outside the function
   final_result <<- data_shiny
