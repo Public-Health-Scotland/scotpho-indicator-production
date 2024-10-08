@@ -119,7 +119,7 @@ analyze_second(filename = "Single_Dwellings_all", measure = "percent", time_agg 
 
 #Deprivation analysis function
 analyze_deprivation(filename="Single_Dwellings_depr", measure="percent", time_agg=1, 
-                    yearstart= 2007, yearend=2023,   year_type = "calendar", 
+                    yearstart= 2007, yearend=2022,   year_type = "calendar", 
                     ind_id = 20504)
 
 ##END
