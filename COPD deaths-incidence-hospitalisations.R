@@ -23,14 +23,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 ###############################################.
 #Extracting deaths with a main cause of copd, excluding unknown sex, for 16 and over, 
 # Scottish residents by financial and calendar year. 
-copd_deaths <- tbl_df(dbGetQuery(channel, statement=
+copd_deaths <- as_tibble(dbGetQuery(channel, statement=
   "SELECT LINK_NO linkno, YEAR_OF_REGISTRATION year, AGE, SEX sex_grp, 
       POSTCODE pc7, date_of_registration dodth,
       CASE WHEN extract(month from date_of_registration) > 3 
           THEN extract(year from date_of_registration) 
           ELSE extract(year from date_of_registration) -1 END as finyear 
    FROM ANALYSIS.GRO_DEATHS_C
-   WHERE date_of_registration between '1 January 2002' and '31 March 2022'
+   WHERE date_of_registration between '1 January 2002' and '31 March 2023'
       AND sex <> 9 
       AND age>=16 
       AND country_of_residence= 'XS'
@@ -39,7 +39,7 @@ copd_deaths <- tbl_df(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazones and LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -67,7 +67,7 @@ copd_deaths_fin <- copd_deaths %>%
 # Extracts admissions with a copd main diagnosis and valid sex. Selecting only record per admission.
 # select from 1992 as for incidence it only counts one admission every 10 years.
 # this requires using historical data and icd9 codes for the earlier years
-copd_adm <- tbl_df(dbGetQuery(channel, statement=
+copd_adm <- as_tibble(dbGetQuery(channel, statement=
    "SELECT distinct link_no linkno,cis_marker cis, min(AGE_IN_YEARS) age, 
       min(SEX) sex_grp, min(DR_POSTCODE) pc7, min(admission_date) doadm,
       max(discharge_date) dodis,
@@ -79,7 +79,7 @@ copd_adm <- tbl_df(dbGetQuery(channel, statement=
       AND sex <> 9 
       AND exists (select * from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and admission_date between '1 January 1997' and '31 March 2022'
+            and admission_date between '1 January 1997' and '31 March 2023'
             and regexp_like(main_condition, 'J4[0-4]') )
    GROUP BY link_no, cis_marker
   UNION ALL 
@@ -156,7 +156,7 @@ saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_r
 ###############################################.
 #COPD deaths
 analyze_first(filename = "copd_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2021,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2022,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3, 
@@ -165,7 +165,7 @@ analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3,
 ###############################################.
 # COPD incidence
 analyze_first(filename = "copd_incidence", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2021,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2022,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3, 
@@ -174,7 +174,7 @@ analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3,
 ###############################################.
 # COPD hospitalisations 
 analyze_first(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2021,
+              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2022,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 3, 
@@ -182,7 +182,7 @@ analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 
 
 #Deprivation analysis function
 analyze_deprivation(filename="copd_hospital_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2021,   year_type = "financial", 
+                    yearstart= 2002, yearend=2022,   year_type = "financial", 
                     pop = "depr_pop_16+", epop_age="normal",
                     epop_total =165800, ind_id = 20302)
 
