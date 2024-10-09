@@ -260,15 +260,13 @@ prepare_final_files <- function(ind){
     select(ind_id, code, year, numerator,rate,lowci,upci,def_period, trend_axis, split_name, split_value) #select fields required for popgroup data file (linked to pop group tab)
    
     # Save files in folder to be checked
-    write.csv(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-    write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds")) 
+    write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds")) 
     
-    write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-    write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
+    write.csv(pop_grp_data, paste0(data_folder,  "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+    write_rds(pop_grp_data, paste0(data_folder,  "Data to be checked/", ind, "_shiny_popgrp.rds"))
     
-    # save main data to folder that QA script accesses:
-    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-    
+  
     # Make data created available outside of function so it can be visually inspected if required
     maindata_result <<- maindata
     popgrpdata_result <<- pop_grp_data
