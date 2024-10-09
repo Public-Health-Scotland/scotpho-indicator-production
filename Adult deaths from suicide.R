@@ -1,6 +1,7 @@
 # ScotPHO indicators: Adult deaths from suicide #
 
 # Oct 2024 new adult deaths from suicide script created to produce indicators reporting suicide rates in those age 16+
+# To-do : Could ammend the processing to allow generation of suicides for all (ie both male and female) at HSCP & HSCP locality (but not IZ as numbers too small)
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
