@@ -227,7 +227,13 @@ prepare_final_files <- function(ind){
   
   # remove SIMD data for further analysis
   pop_grp_data_final <- pop_grp_data %>%
-    filter(split_name!="Deprivation (SIMD)")
+    filter(split_name!="Deprivation (SIMD)") %>%
+    mutate(split_value = case_when(split_value=="1st-Top quintile" ~ "1 - highest income",
+                                split_value=="2nd quintile" ~ "2",
+                                split_value=="3rd quintile" ~ "3",
+                                split_value=="4th quintile" ~ "4",
+                                split_value=="5th-Bottom quintile" ~ "5 - lowest income",
+                                TRUE ~ split_value))
 
   # Save
   write.csv(pop_grp_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
