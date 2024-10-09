@@ -30,7 +30,7 @@
 source("1.indicator_analysis.R")
 source("2.deprivation_analysis.R") 
 
-library(haven) # for reading in .sav files 
+library(haven) # for reading in .sav files supplied by SG
 
 
 ### 1. Read in data ----

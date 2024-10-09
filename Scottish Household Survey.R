@@ -37,8 +37,8 @@
 source("1.indicator_analysis.R") 
 source("2.deprivation_analysis.R") 
 
-library(stringr)
-library(rio)
+library(stringr) #for string manipulation
+library(rio) #for importing data
 
 
 ### Lookups
