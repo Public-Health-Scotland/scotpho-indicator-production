@@ -189,9 +189,8 @@ prepare_final_files <- function(ind){
     select(!c(split_name, split_value, indicator)) %>% 
     unique() 
   
-  write.csv(main_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
+  # save data
+  write.csv(main_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
   
   # 2 - population groups data (ie data behind population groups tab)
@@ -228,12 +227,10 @@ prepare_final_files <- function(ind){
   
   # remove SIMD data for further analysis
   pop_grp_data_final <- pop_grp_data %>%
-    filter(split_name!="Deprivation (SIMD")
+    filter(split_name!="Deprivation (SIMD)")
 
   # Save
-  write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
+  write.csv(pop_grp_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
   
   # Process SIMD data
