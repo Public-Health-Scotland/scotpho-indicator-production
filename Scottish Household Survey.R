@@ -11,8 +11,8 @@
 # 30027	Adults trusting most people in their neighbourhood
 # 30047	Adults regularly using or passing through local open space
 # 30020	Adults volunteering in past year
-# 30038	Adults experiencing discrimination in past year
-# 30041	Adults experiencing harassment in past year
+# 30038	Adults experiencing discrimination in past year (use CWB ind_id of 99134)
+# 30041	Adults experiencing harassment in past year (use CWB ind_id of 99135)
 # 30025	Adults feeling lonely in past week
 # 30049	Adults experiencing noisy neighbours in past year
 # 30045	Adults using high-risk loans in past year (household level: sex==Total)
@@ -91,8 +91,8 @@ import_shos_xlsx <- function(suffix, filename) {
                               indicator == "SOCIAL2" ~ 30025,
                               indicator == "ASB2A" ~ 30049,
                               indicator == "CREDIT" ~ 30045, 
-                              indicator == "DISCRIM" ~ 30038, 
-                              indicator == "HARASS" ~ 30041)) %>%
+                              indicator == "DISCRIM" ~ 99134, 
+                              indicator == "HARASS" ~ 99135)) %>%
     mutate(ind_name = case_when(ind_id == 30022  ~	"influence_local_decisions",
                                 ind_id == 30043	~	"managing_well_financially",
                                 ind_id == 30024	~	"neighbourhood_belonging",
@@ -100,8 +100,8 @@ import_shos_xlsx <- function(suffix, filename) {
                                 ind_id == 30027	~	"neighbourhood_trust",
                                 ind_id == 30047	~	"open_space_use",
                                 ind_id == 30020	~	"volunteering",
-                                ind_id == 30038	~	"discrimination",
-                                ind_id == 30041	~	"harassment",
+                                ind_id == 99134	~	"discrimination",
+                                ind_id == 99135	~	"harassment",
                                 ind_id == 30025	~	"feeling_lonely",
                                 ind_id == 30049	~	"noisy_neighbours",
                                 ind_id == 30045	~	"high_risk_loans")) %>%
