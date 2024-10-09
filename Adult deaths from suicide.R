@@ -1,5 +1,7 @@
 # ScotPHO indicators: Adult deaths from suicide #
 
+# Oct 2024 new adult deaths from suicide script created to produce indicators reporting suicide rates in those age 16+
+
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run analysis functions
@@ -214,6 +216,7 @@ saveRDS(dep_file_M_16plus, file=paste0(data_folder, 'Prepared Data/suicide_depr_
 analyze_first(filename = "suicides_ca_16plus", geography = "council", measure = "stdrate", 
               pop = "CA_pop_16+", yearstart = 2000, yearend = 2022,
               time_agg = 5, epop_age = "16+")
+
 analyze_second(filename = "suicides_ca_16plus", measure = "stdrate", time_agg = 5, 
                epop_total = 165800, ind_id = 30008, year_type = "calendar")
 
@@ -276,6 +279,8 @@ total_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_16plus
 f_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_F_16plus_ineq.rds")) %>% mutate(sex="Female")
 m_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_M_16plus_ineq.rds")) %>% mutate(sex="Male")
 
+
+# prepare main dataset
 main <- total %>%
   filter(substr(code, 1, 3) %in% c("S00", "S08", "S12")) # Scot, HB and CA data have sufficient numerators
 popgrp <- rbind(female, male) %>%
@@ -283,6 +288,7 @@ popgrp <- rbind(female, male) %>%
 dep <- rbind(total_dep, f_dep, m_dep) %>%
   filter(substr(code, 1, 3) %in% c("S00")) # only Scotland data have sufficient numerators
 
+# frequency tables and charts to cheack data appearance
 ftable(dep$sex, dep$code, dep$quint_type, dep$year) # 6 records in each cell (5 quintiles plus total)
 ftable(main$code, main$year) # single records
 
