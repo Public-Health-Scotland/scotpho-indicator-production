@@ -1,4 +1,6 @@
-#Function to create data for indicators by deprivation quintile (SIMD).
+#Functions to create data for indicators by deprivation quintile (SIMD).
+# analyze_deprivation() = for data at datazone level
+# analyze_deprivation_aggregated() = for data already aggregated to SIMD level. 
 
 #TODO:
 #Instead of showing RII and SII use translation as percentage
@@ -563,5 +565,99 @@ data_depr <<- data_depr
 
 
 
+#' Function: analyze_deprivation_aggregated()
+#' ##############################################
+#' A version of the analyze_deprivation() function for pre-aggregated data.
+#' Takes a file with indicator data already aggregated to SIMD level.
+#' N.B. Currently only takes Scotland-level data: amend if to be used for HB/CA level.
+#' N.B. Currently only takes total population data: needs amending for male/female splits
+#'
+#' @param filename 
+#' Name of the raw file the function reads without the "_raw.sav" at the end
+#'  required fields: "year"       "rate"       "lowci"      "upci"       "numerator"  "def_period"
+#'                  "trend_axis" "ind_id"     "code"       "quintile"   "quint_type"
+#'  quintile is in format "1" to "5" and "Total" (total must be provided).
+#' @param pop Name of the population file.
+#' @param ind_id indicator code/number
+#' @param ind_name indicator name for the final files
+#' @param qa parameter can be true/false - governs if inequalities indicator QA should be run 
+#'
+#' @return prepared data file saved to paste0("Data to be checked/", ind_name, "_ineq.rds")
+#' 
+analyze_deprivation_aggregated <- function(filename, # the prepared data, without _raw.rds suffix
+                                           pop, # what population file to use for denominators
+                                           ind_id, # the ind_id
+                                           ind_name, # the indicator name (abbreviated, for output file) 
+                                           qa = FALSE) {
+  
+  ###############################################.
+  ## Read in data----
+  ###############################################.
+  
+  # read in raw data. 
+  data_depr <- readRDS(paste0(data_folder, "Prepared Data/" ,filename, "_raw.rds")) %>% 
+    mutate(year = as.numeric(year)) %>% 
+    filter(ind_id == ind_id) 
+  
+  yearstart = min(data_depr$year)
+  yearend = max(data_depr$year)
+  
+  ###############################################.
+  ## Matching with population lookup----
+  ###############################################.
+  
+  # Matching with population lookup (denominator required for SIMD analysis)
+  pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
+    subset(year >= yearstart & year <= yearend) #Reading population file and selecting the right year range
+  
+  # Matching population with data
+  data_depr <- right_join(x=data_depr, y=pop_depr_lookup, 
+                          by = c("year", "code", "quintile", "quint_type")) %>%
+    filter(code=="S00000001") # these data are just Scotland level. Change this if HB/CA data included.
+  
+  #selecting only years of interest
+  data_depr <- data_depr %>% subset(year >= yearstart & year <= yearend) %>%
+    filter(!is.na(rate)) # some data biennial, so need this fix
+  
+  data_depr$numerator[is.na(data_depr$numerator)] <- 0 # Converting NAs to 0s
+  
+  ##################################################.
+  ##  Create SII and RII ----
+  ##################################################.
+  
+  #call function to generate measures of inequality 
+  data_depr <- data_depr %>% inequality_measures()
+  
+  saveRDS(data_depr, paste0(data_folder, "Temporary/", ind_name, "_final.rds"))
+  
+  #Preparing data for Shiny tool
+  data_shiny <- data_depr %>% 
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
+              least_rate, par_rr, count))
+  
+  #Saving file
+  saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", ind_name, "_ineq.rds"))
+  
+  #Making final dataset available outside the function
+  final_result <<- data_shiny
+  
+  ##################################################.
+  ##  Checking results ----
+  ##################################################.
+  
+  if (qa == FALSE) { #if you don't want to run full data quality checks set qa=false then only scotland chart will be produced
+    #Selecting Health boards and Scotland for latest year in dataset
+    ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                       & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
+           aes(code, rate) ) +
+      geom_point(stat = "identity") +
+      geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+    
+  } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
+    
+    run_ineq_qa(filename={{filename}}
+    )} 
+  
+}
 
 ##END
