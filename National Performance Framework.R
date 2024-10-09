@@ -261,10 +261,13 @@ prepare_final_files <- function(ind){
    
     # Save files in folder to be checked
     write.csv(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-    write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
+    write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds")) 
     
     write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
     write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
+    
+    # save main data to folder that QA script accesses:
+    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
     
     # Make data created available outside of function so it can be visually inspected if required
     maindata_result <<- maindata
@@ -296,7 +299,12 @@ prepare_final_files(ind = "health_risk_behaviours")
 prepare_final_files(ind = "gender_balance_in_organisations")
 
 
-
+# # Run QA reports (these don't run because no HB data)
+# run_qa(filename = "persistent_poverty")
+# run_qa(filename = "young_peoples_mental_wellbeing")
+# run_qa(filename = "child_material_deprivation")
+# run_qa(filename = "health_risk_behaviours")
+# run_qa(filename = "gender_balance_in_organisations")
 
 
 #END
