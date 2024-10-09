@@ -11,8 +11,7 @@
 
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
-# https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fnational-performance-framework
-
+# 2024 update: https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
 
 ### functions/packages ----
 source("1.indicator_analysis.R") 
@@ -21,10 +20,10 @@ source("1.indicator_analysis.R")
 ### 1 - Read in data -----
 
 # Specify url of the NPF file to download from stats.gov
-url <- "https://statistics.gov.scot/downloads/file?id=30a07b3c-762f-41ee-bc20-8d0468b92c7f%2FALL+NPF+INDICATORS+-+2023+-+statistics.gov.scot+NPF+database+excel+file+-+May+2024.xlsx"
+url <- "https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx"
 
 # Specify file name and where to save file to
-file_name <- "NPF_database.xlsx"
+file_name <- "NPF_database_2024.xlsx"
 file_path <- paste0(data_folder, "Received Data/")
 
 # Download file
@@ -42,12 +41,22 @@ data <- dat %>%
   clean_names() %>% 
   
   # Select relevant indicators
-  filter(indicator %in% c("Persistent Poverty",
+  filter(indicator %in% c("Persistent poverty", # capitalisation change in 2024 data?
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                           "Child material deprivation",
                           "Children's material deprivation",
                           "Health risk behaviours",
                           "Gender balance in organisations")) %>%
+  
+  # Persistent poverty has splits labelled the wrong way round in 2024 data: reverse these
+  mutate(temp_breakdown = ifelse(indicator=="Persistent poverty", disaggregation, breakdown),
+         temp_disagg = ifelse(indicator=="Persistent poverty", breakdown, disaggregation)) %>%
+  
+  select(-c(breakdown, disaggregation)) %>%
+  
+  rename(breakdown = temp_breakdown,
+         disaggregation = temp_disagg) %>%
+
 
          # Convert indicator names to lower case and hyphenate 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
@@ -57,6 +66,10 @@ data <- dat %>%
          # Ensure age breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "Age ", ""),
          breakdown = str_replace_all(breakdown, "-", " to "),
+         # Add hyphen back in where needed:
+         breakdown = if_else(breakdown == "Non to Limiting Longstanding Illness", "Non-Limiting Longstanding Illness", breakdown),
+         breakdown = if_else(breakdown == "Working to age adults", "Working-age adults", breakdown),
+         
          
          # Ensure SIMD breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "SIMD ", ""),
@@ -131,7 +144,7 @@ data <- dat %>%
   
   # Ensure equivalised income quintiles are named consistently
   mutate(split_value = case_when(split_value=="Top Quintile" ~ "1 - highest income",
-                                 split_value=="Bottom Quintile" ~ "5 - Lowest income", 
+                                 split_value=="Bottom Quintile" ~ "5 - lowest income", 
                                  TRUE ~ split_value)) %>%
   
   # Select relevant variables
@@ -247,12 +260,13 @@ prepare_final_files <- function(ind){
     select(ind_id, code, year, numerator,rate,lowci,upci,def_period, trend_axis, split_name, split_value) #select fields required for popgroup data file (linked to pop group tab)
    
     # Save files in folder to be checked
-    write.csv(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-    write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
+    write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+    write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds")) 
     
-    write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-    write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
+    write.csv(pop_grp_data, paste0(data_folder,  "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+    write_rds(pop_grp_data, paste0(data_folder,  "Data to be checked/", ind, "_shiny_popgrp.rds"))
     
+  
     # Make data created available outside of function so it can be visually inspected if required
     maindata_result <<- maindata
     popgrpdata_result <<- pop_grp_data
@@ -283,7 +297,12 @@ prepare_final_files(ind = "health_risk_behaviours")
 prepare_final_files(ind = "gender_balance_in_organisations")
 
 
-
+# # Run QA reports (these don't run because no HB data)
+# run_qa(filename = "persistent_poverty")
+# run_qa(filename = "young_peoples_mental_wellbeing")
+# run_qa(filename = "child_material_deprivation")
+# run_qa(filename = "health_risk_behaviours")
+# run_qa(filename = "gender_balance_in_organisations")
 
 
 #END
