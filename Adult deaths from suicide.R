@@ -4,7 +4,6 @@
 #   Part 2 - Create the different geographies basefiles
 #   Part 3 - Run analysis functions
 
-# Data for all-age rates are also processed for comparison with the adult rates.
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -61,14 +60,6 @@ suicides_ca_16plus <- deaths_suicide %>%
 
 saveRDS(suicides_ca_16plus, file=paste0(data_folder, 'Prepared Data/suicides_ca_16plus_raw.rds'))
 
-# all ages
-suicides_ca_all <- deaths_suicide %>%
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
-
-saveRDS(suicides_ca_all, file=paste0(data_folder, 'Prepared Data/suicides_ca_all_raw.rds'))
 
 ###############################################.
 # Deprivation basefile
@@ -86,14 +77,6 @@ suicides_dz11_16plus <- deaths_suicide %>%
 saveRDS(suicides_dz11_16plus, file=paste0(data_folder, 'Prepared Data/suicides_dz11_16plus_raw.rds'))
 
 
-# all ages
-suicides_dz11_all <- deaths_suicide %>% 
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%  
-  rename(datazone = datazone2011)
-
-saveRDS(suicides_dz11_all, file=paste0(data_folder, 'Prepared Data/suicides_dz11_all_raw.rds'))
 
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 
@@ -110,17 +93,6 @@ dep_file_16plus <- rbind(suicides_dz01_16plus, suicides_dz11_16plus %>% subset(y
 
 saveRDS(dep_file_16plus, file=paste0(data_folder, 'Prepared Data/suicide_depr_16plus_raw.rds'))
 
-# all ages
-suicides_dz01_all <- deaths_suicide %>% 
-  group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>% 
-  rename(datazone = datazone2001) %>% 
-  subset(year<=2013)
-
-dep_file_all <- rbind(suicides_dz01_all, suicides_dz11_all %>% subset(year>=2014)) #joining dz01 and dz11
-
-saveRDS(dep_file_all, file=paste0(data_folder, 'Prepared Data/suicide_depr_all_raw.rds'))
 
 
 ###############################################.
@@ -140,14 +112,6 @@ suicides_ca_F_16plus <- deaths_suicide %>%
 
 saveRDS(suicides_ca_F_16plus, file=paste0(data_folder, 'Prepared Data/suicides_ca_F_16plus_raw.rds'))
 
-suicides_ca_F_all <- deaths_suicide %>%
-  subset(sex_grp==2) %>%
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
-
-saveRDS(suicides_ca_F_all, file=paste0(data_folder, 'Prepared Data/suicides_ca_F_all_raw.rds'))
 
 
 ###############################################.
@@ -167,15 +131,6 @@ suicides_dz11_F_16plus <- deaths_suicide %>%
 saveRDS(suicides_dz11_F_16plus, file=paste0(data_folder, 'Prepared Data/suicides_dz11_F_16plus_raw.rds'))
 
 
-# all ages
-suicides_dz11_F_all <- deaths_suicide %>% 
-  subset(sex_grp==2) %>%
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%  
-  rename(datazone = datazone2011)
-
-saveRDS(suicides_dz11_F_all, file=paste0(data_folder, 'Prepared Data/suicides_dz11_F_all_raw.rds'))
 
 
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -194,22 +149,6 @@ dep_file_F_16plus <- rbind(suicides_dz01_F_16plus, suicides_dz11_F_16plus %>% su
 
 saveRDS(dep_file_F_16plus, file=paste0(data_folder, 'Prepared Data/suicide_depr_F_16plus_raw.rds'))
 
-# all ages
-suicides_dz01_F_all <- deaths_suicide %>% 
-  subset(sex_grp==2) %>%
-  group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>% 
-  rename(datazone = datazone2001) %>% 
-  subset(year<=2013)
-
-dep_file_F_all <- rbind(suicides_dz01_F_all, suicides_dz11_F_all %>% subset(year>=2014)) #joining dz01 and dz11
-
-saveRDS(dep_file_F_all, file=paste0(data_folder, 'Prepared Data/suicide_depr_F_all_raw.rds'))
-
-
-
-
 
 
 ###############################################.
@@ -225,17 +164,6 @@ suicides_ca_M_16plus <- deaths_suicide %>%
   rename(ca = ca2019)
 
 saveRDS(suicides_ca_M_16plus, file=paste0(data_folder, 'Prepared Data/suicides_ca_M_16plus_raw.rds'))
-
-
-# all ages
-suicides_ca_M_all <- deaths_suicide %>%
-  subset(sex_grp==1) %>%
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
-
-saveRDS(suicides_ca_M_all, file=paste0(data_folder, 'Prepared Data/suicides_ca_M_all_raw.rds'))
 
 
 ###############################################.
@@ -255,17 +183,6 @@ suicides_dz11_M_16plus <- deaths_suicide %>%
 saveRDS(suicides_dz11_M_16plus, file=paste0(data_folder, 'Prepared Data/suicides_dz11_M_16plus_raw.rds'))
 
 
-# all ages
-suicides_dz11_M_all <- deaths_suicide %>% 
-  subset(sex_grp==1) %>%
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%  
-  rename(datazone = datazone2011)
-
-saveRDS(suicides_dz11_M_all, file=paste0(data_folder, 'Prepared Data/suicides_dz11_M_all_raw.rds'))
-
-
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 
 # 16+
@@ -281,19 +198,6 @@ suicides_dz01_M_16plus <- deaths_suicide %>%
 dep_file_M_16plus <- rbind(suicides_dz01_M_16plus, suicides_dz11_M_16plus %>% subset(year>=2014)) #joining dz01 and dz11
 
 saveRDS(dep_file_M_16plus, file=paste0(data_folder, 'Prepared Data/suicide_depr_M_16plus_raw.rds'))
-
-# all ages
-suicides_dz01_M_all <- deaths_suicide %>% 
-  subset(sex_grp==1) %>%
-  group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>% 
-  rename(datazone = datazone2001) %>% 
-  subset(year<=2013)
-
-dep_file_M_all <- rbind(suicides_dz01_M_all, suicides_dz11_M_all %>% subset(year>=2014)) #joining dz01 and dz11
-
-saveRDS(dep_file_M_all, file=paste0(data_folder, 'Prepared Data/suicide_depr_M_all_raw.rds'))
 
 
 
@@ -313,12 +217,6 @@ analyze_first(filename = "suicides_ca_16plus", geography = "council", measure = 
 analyze_second(filename = "suicides_ca_16plus", measure = "stdrate", time_agg = 5, 
                epop_total = 165800, ind_id = 30008, year_type = "calendar")
 
-# All suicides
-analyze_first(filename = "suicides_ca_all", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2000, yearend = 2022,
-              time_agg = 5, epop_age = "normal")
-analyze_second(filename = "suicides_ca_all", measure = "stdrate", time_agg = 5, 
-               epop_total = 200000, ind_id = 30108, year_type = "calendar")
 
 #Deprivation analysis function
 
@@ -327,10 +225,6 @@ analyze_deprivation(filename="suicide_depr_16plus", measure="stdrate", time_agg=
                     pop = "depr_pop_16+", epop_total =165800, epop_age="16+",
                     yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30008)
 
-# all age suicides
-analyze_deprivation(filename="suicide_depr_all", measure="stdrate", time_agg=5,
-                    pop = "depr_pop_allages", epop_total =200000, epop_age = "normal",
-                    yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30108)
 
 
 ###############################################.
@@ -344,13 +238,6 @@ analyze_first(filename = "suicides_ca_F_16plus",
 analyze_second(filename = "suicides_ca_F_16plus", measure = "stdrate", time_agg = 5, 
                epop_total = 82900, ind_id = 30008, year_type = "calendar")
 
-# all ages
-analyze_first(filename = "suicides_ca_F_all", 
-              geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
-              yearstart = 2000, yearend = 2022, time_agg = 5, epop_age = "normal")
-analyze_second(filename = "suicides_ca_F_all", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 30108, year_type = "calendar")
-# Warning: Duplicate levels detected
 
 # #Deprivation analysis function
 
@@ -358,11 +245,9 @@ analyze_second(filename = "suicides_ca_F_all", measure = "stdrate", time_agg = 5
 analyze_deprivation(filename="suicide_depr_F_16plus", measure="stdrate", time_agg=5,
                     pop = "depr_pop_16+", epop_total =82900, epop_age="16+",
                     yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30008)
-# all age suicides
-analyze_deprivation(filename="suicide_depr_F_all", measure="stdrate", time_agg=5,
-                    pop = "depr_pop_allages", epop_total =100000, epop_age = "normal",
-                    yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30108)
 
+
+###############################################.
 
 # Male  suicides
 
@@ -373,13 +258,6 @@ analyze_first(filename = "suicides_ca_M_16plus",
 analyze_second(filename = "suicides_ca_M_16plus", measure = "stdrate", time_agg = 5, 
                epop_total = 82900, ind_id = 30008, year_type = "calendar")
 
-# all ages
-analyze_first(filename = "suicides_ca_M_all", 
-              geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
-              yearstart = 2000, yearend = 2022, time_agg = 5, epop_age = "normal")
-analyze_second(filename = "suicides_ca_M_all", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 30108, year_type = "calendar")
-# Warning: Duplicate levels detected
 
 # #Deprivation analysis function
 
@@ -387,26 +265,9 @@ analyze_second(filename = "suicides_ca_M_all", measure = "stdrate", time_agg = 5
 analyze_deprivation(filename="suicide_depr_M_16plus", measure="stdrate", time_agg=5,
                     pop = "depr_pop_16+", epop_total =82900, epop_age="16+",
                     yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30008)
-# all age suicides
-analyze_deprivation(filename="suicide_depr_M_all", measure="stdrate", time_agg=5,
-                    pop = "depr_pop_allages", epop_total =100000, epop_age = "normal",
-                    yearstart= 2000, yearend = 2022, year_type = "calendar", ind_id = 30108)
 
 
-# compare all age w 16+
-
-all <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_all_shiny.rds"))
-adults <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_16plus_shiny.rds"))
-
-compare <- rbind(all, adults)
-
-compare %>%
-  filter(code=="S00000001") %>%
-  ggplot(aes(x=year, y=rate, color=as.factor(ind_id), group=as.factor(ind_id))) +
-  geom_line() +
-  expand_limits(y=0)
-  
-# Get all 16+ data, check coverage, trim, and combine
+# Get all 16+ data, add relevant columns, filter to robust measures (based on QA), and combine
 
 total <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_16plus_shiny.rds")) 
 female <- readRDS(paste0(data_folder, "Data to be checked/suicides_ca_F_16plus_shiny.rds")) %>% mutate(split_value="Female", split_name="Sex")
@@ -415,15 +276,15 @@ total_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_16plus
 f_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_F_16plus_ineq.rds")) %>% mutate(sex="Female")
 m_dep <- readRDS(paste0(data_folder, "Data to be checked/suicide_depr_M_16plus_ineq.rds")) %>% mutate(sex="Male")
 
-dep <- rbind(total_dep, f_dep, m_dep) %>%
-  filter(substr(code, 1, 3) %in% c("S00"))
 main <- total %>%
-  filter(substr(code, 1, 3) %in% c("S00", "S08", "S12"))
+  filter(substr(code, 1, 3) %in% c("S00", "S08", "S12")) # Scot, HB and CA data have sufficient numerators
 popgrp <- rbind(female, male) %>%
-  filter(substr(code, 1, 3) %in% c("S00", "S08", "S12"))
+  filter(substr(code, 1, 3) %in% c("S00", "S08", "S12")) # Scot, HB and CA data have sufficient numerators
+dep <- rbind(total_dep, f_dep, m_dep) %>%
+  filter(substr(code, 1, 3) %in% c("S00")) # only Scotland data have sufficient numerators
 
-ftable(dep$sex, dep$code, dep$quint_type, dep$year)
-ftable(main$code, main$year)
+ftable(dep$sex, dep$code, dep$quint_type, dep$year) # 6 records in each cell (5 quintiles plus total)
+ftable(main$code, main$year) # single records
 
 main %>%
   filter(code=="S00000001") %>%
@@ -444,12 +305,19 @@ dep %>%
   facet_wrap(~sex)
 
 
-# write to the shiny aoo data file
-saveRDS(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.rds")) 
-write_csv(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.csv"))
-saveRDS(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.rds")) 
-write_csv(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.csv"))
-saveRDS(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.rds")) 
-write_csv(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.csv"))
+# Save files
+
+# main data
+write.csv(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.csv"), row.names = FALSE)
+write_rds(main, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny.rds"))
+
+# popgroups data
+write.csv(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(popgrp, paste0(data_folder, "Test Shiny Data/suicides_16plus_shiny_popgrp.rds"))
+
+# inequalities data
+write.csv(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.csv"), row.names = FALSE)
+write_rds(dep, paste0(data_folder, "Test Shiny Data/suicides_16plus_ineq.rds"))
+
 
 ##END
