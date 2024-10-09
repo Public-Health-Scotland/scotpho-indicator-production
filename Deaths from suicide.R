@@ -24,14 +24,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
   "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
-      WHERE  year_of_registration between '2002' and '2021'
+      WHERE  year_of_registration between '2002' and '2022'
       AND sex <> 9
       AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, 'X[67]|X8[01234]|Y1|Y2|Y3[01234]|Y870|Y872')" )) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2022_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 # join the data sets with postcode info
@@ -62,25 +62,25 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/suicide_depr_raw.rds')
 
 ###############################################.
 # FEMALE
-suicides_female <- deaths_suicide %>%
-  subset(sex_grp==2) %>% 
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
-
-saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female_raw.rds'))
-
-###############################################.
-# MALE
-suicides_male <- deaths_suicide %>%
-  subset(sex_grp==1) %>% 
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
-
-saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw.rds'))
+# suicides_female <- deaths_suicide %>%
+#   subset(sex_grp==2) %>% 
+#   group_by(year, age_grp, sex_grp, ca2019) %>%  
+#   summarize(numerator = n()) %>% 
+#   ungroup() %>%   
+#   rename(ca = ca2019)
+# 
+# saveRDS(suicides_female, file=paste0(data_folder, 'Prepared Data/suicides_female_raw.rds'))
+# 
+# ###############################################.
+# # MALE
+# suicides_male <- deaths_suicide %>%
+#   subset(sex_grp==1) %>% 
+#   group_by(year, age_grp, sex_grp, ca2019) %>%  
+#   summarize(numerator = n()) %>% 
+#   ungroup() %>%   
+#   rename(ca = ca2019)
+# 
+# saveRDS(suicides_male, file=paste0(data_folder, 'Prepared Data/suicides_male_raw.rds'))
 
 ###############################################
 # YOUNG PEOPLE
@@ -94,38 +94,41 @@ saveRDS(suicides_young, file=paste0(data_folder, 'Prepared Data/suicides_young_r
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
-# All suicides
-analyze_first(filename = "deaths_suicide_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
-              time_agg = 5, epop_age = "normal")
-
-analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg = 5, 
-               epop_total = 200000, ind_id = 20403, year_type = "calendar")
-
-#Deprivation analysis function
-analyze_deprivation(filename="suicide_depr", measure="stdrate", time_agg=5,
-                    pop = "depr_pop_allages", epop_total =200000, epop_age="normal",
-                    yearstart= 2002, yearend=2021, year_type = "financial", ind_id = 20403)
+# # All suicides - Oct 2024 this indicator now archived and ScotPHO switched to 'Adult deaths from suicide' 
+# The new indicator reports suicide rates in those aged 16+ rather than all ages
+# analyze_first(filename = "deaths_suicide_dz11", geography = "datazone11", measure = "stdrate", 
+#               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2021,
+#               time_agg = 5, epop_age = "normal")
+# 
+# analyze_second(filename = "deaths_suicide_dz11", measure = "stdrate", time_agg = 5, 
+#                epop_total = 200000, ind_id = 20403, year_type = "calendar")
+# 
+# #Deprivation analysis function
+# analyze_deprivation(filename="suicide_depr", measure="stdrate", time_agg=5,
+#                     pop = "depr_pop_allages", epop_total =200000, epop_age="normal",
+#                     yearstart= 2002, yearend=2021, year_type = "financial", ind_id = 20403)
 
 ###############################################.
-# Female and male suicides
-mapply(analyze_first, filename = c("suicides_female", "suicides_male"), 
-       geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
-       yearstart = 2002, yearend = 2021, time_agg = 5, epop_age = "normal")
+# # Male/Female suicides - Oct 2024 this indicator now archived and ScotPHO switched to 'Male/Female deaths from suicide' 
+# The new indicator reports suicide rates in those aged 16+ rather than all ages
 
-#Female suicides: epop is only 100000 as only female half population
-analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12539, year_type = "calendar")
-                                      
-#Male suicides: epop is only 100000 as only male half population
-analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12538, year_type = "calendar")
+# mapply(analyze_first, filename = c("suicides_female", "suicides_male"), 
+#        geography = "council", measure = "stdrate", pop = "CA_pop_allages", 
+#        yearstart = 2002, yearend = 2021, time_agg = 5, epop_age = "normal")
+# 
+# #Female suicides: epop is only 100000 as only female half population
+# analyze_second(filename = "suicides_female", measure = "stdrate", time_agg = 5, 
+#                epop_total = 100000, ind_id = 12539, year_type = "calendar")
+#                                       
+# #Male suicides: epop is only 100000 as only male half population
+# analyze_second(filename = "suicides_male", measure = "stdrate", time_agg = 5, 
+#                epop_total = 100000, ind_id = 12538, year_type = "calendar")
 
 ###############################################.
 # Young people suicides
 # Crude rates as numbers are too small for standardization.
 analyze_first(filename = "suicides_young", geography = "council", measure = "crude", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2021,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2022,
               time_agg = 5, epop_age = "11to25")
 
 analyze_second(filename = "suicides_young", measure = "crude", time_agg = 5, crude_rate = 100000,
