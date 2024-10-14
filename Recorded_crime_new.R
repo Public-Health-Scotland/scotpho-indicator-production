@@ -11,7 +11,44 @@
 source("1.indicator_analysis.R") #normal indicator functions
 source("2.deprivation_analysis.R") #deprivation function
 
+library(lubridate) #convert to date format
+library(phsmethods) #for extracting financial year from calendar year
+
 filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime data folder
+
+
+##############################################.
+## First run set up - delete after
+###############################################.
+
+#read in 2011 data
+rec_crime_2011 <- read_excel(paste0(filepath, "recorded-2011.xlsx"), sheet = 2) |>
+  select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
+  rename(year = Calendar_Year, #rename for analysis functions
+         datazone = dzone_code) |> 
+  filter(datazone != "NULL") |>  #drop NULL datazones - mostly driving offences
+  mutate(rec_date = my(paste(Calendar_Month, year)), #convert month and year columns to date format
+         fin_year = extract_fin_year(rec_date)) #extract financial year from date
+  
+#Separate Jan-March data out
+crime_current_fy <- rec_crime_2011 |> 
+  filter(rec_date <= '2011-03-31')
+#keep this one
+
+
+#Separate Apr-Dec data out and save 
+crime_next_fy <- rec_crime_2011 |> 
+  filter(rec_date > '2011-03-31')
+
+saveRDS(crime_next_fy, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+
+
+
+#group_by(year, datazone) |> #aggregate the months to get whole year totals
+  #summarise(numerator = sum(`Number of Recorded Crimes`))
+
+
+
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
