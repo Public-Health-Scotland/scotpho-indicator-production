@@ -1,3 +1,6 @@
+## N.B. THIS MEASURE ALSO IN THE NPF DATA READ IN IN THE NPF SCRIPT. COULD DO ALL PROCESSING THERE IF COVERAGE IS THE SAME.
+###############################################################################################################################
+
 ### analyst notes ----
 
 # this script produces data for the following indicator:- 13053- Annual participation (in education, training or employment) measure for 16 – 19 year olds
