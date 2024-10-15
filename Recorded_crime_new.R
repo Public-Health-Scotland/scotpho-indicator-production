@@ -21,8 +21,8 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ## First run set up - delete after
 ###############################################.
 
-#read in 2011 data
-rec_crime_2011 <- read_excel(paste0(filepath, "recorded-2011.xlsx"), sheet = 2) |>
+#read in data from newest calendar year
+rec_crime_2012 <- read_excel(paste0(filepath, "recorded-2012.xlsx"), sheet = 2) |>
   select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
   rename(year = Calendar_Year, #rename for analysis functions
          datazone = dzone_code) |> 
@@ -30,22 +30,29 @@ rec_crime_2011 <- read_excel(paste0(filepath, "recorded-2011.xlsx"), sheet = 2) 
   mutate(rec_date = my(paste(Calendar_Month, year)), #convert month and year columns to date format
          fin_year = extract_fin_year(rec_date)) #extract financial year from date
   
-#Separate Jan-March data out
-crime_current_fy <- rec_crime_2011 |> 
-  filter(rec_date <= '2011-03-31')
-#keep this one
+#Extract Jan-March data to use
+crime_12 <- rec_crime_2012 |> 
+  filter(rec_date <= '2012-03-31')
+
+#Read in current FY data from previous calendar year (Apr-Dec)
+crime_current_fy <- readRDS(paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+
+#Combine both calendar years to get financial year
+crime_11.12 <- rbind(crime_12, crime_current_fy)
+
+#Tidy up financial year
+crime_11.12 <- crime_11.12 |> 
+  group_by(datazone) |> #aggregate the months to get whole year totals by dz
+  summarise(numerator = sum('Number of Recorded Crimes'))
 
 
-#Separate Apr-Dec data out and save 
-crime_next_fy <- rec_crime_2011 |> 
-  filter(rec_date > '2011-03-31')
+#Extract Apr-Dec data and save for next year 
+crime_12.13 <- rec_crime_2012 |> 
+  filter(rec_date > '2012-03-31')
+
 
 saveRDS(crime_next_fy, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
 
-
-
-#group_by(year, datazone) |> #aggregate the months to get whole year totals
-  #summarise(numerator = sum(`Number of Recorded Crimes`))
 
 
 
