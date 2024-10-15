@@ -22,7 +22,7 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_2019 <- read_excel(paste0(filepath, "recorded-2019.xlsx"), sheet = 2) |>
+rec_crime_2020 <- read_excel(paste0(filepath, "recorded-2020.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
   select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
   rename(datazone = dzone_code) |> #rename for analysis functions
@@ -31,17 +31,17 @@ rec_crime_2019 <- read_excel(paste0(filepath, "recorded-2019.xlsx"), sheet = 2) 
          fin_year = extract_fin_year(rec_date)) #extract financial year from date
   
 #Extract Jan-Mar data to use
-crime_janmar_19 <- rec_crime_2019 |> 
-  filter(rec_date <= '2019-03-31')
+crime_janmar_20 <- rec_crime_2020 |> 
+  filter(rec_date <= '2020-03-31')
 
 #Read in current fy data from previous calendar year (Apr-Dec)
-crime_aprdec_18 <- readRDS(paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+crime_aprdec_19 <- readRDS(paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
 
 #Combine both calendar years to get current financial year
-crime_18_19 <- rbind(crime_janmar_19, crime_aprdec_18)
+crime_19_20 <- rbind(crime_janmar_20, crime_aprdec_19)
 
 #Tidy up current financial year
-crime_18_19 <- crime_18_19 |> 
+crime_19_20 <- crime_19_20 |> 
   group_by(datazone, fin_year) |> #aggregate the months to get whole year totals by dz
   summarise(numerator = sum(number_of_recorded_crimes)) |> 
   rename(year = fin_year) #rename for analysis functions
@@ -50,7 +50,7 @@ crime_18_19 <- crime_18_19 |>
 #Read in historic data and combine with new data
 crime_historic <- readRDS(paste0(filepath, "recorded_crime_historic_data_DO_NOT_DELETE.rds"))
 
-recorded_crime <- rbind(crime_historic, crime_18_19)
+recorded_crime <- rbind(crime_historic, crime_19_20)
 
 
 #Save new historic data file
@@ -63,11 +63,11 @@ saveRDS(crime_11_12, file=paste0(data_folder, 'Prepared Data/recorded_crime_depr
 
 
 #Extract Apr-Dec data and save for next year 
-crime_aprdec_19 <- rec_crime_2019 |> 
-  filter(rec_date > '2019-03-31')
+crime_aprdec_20 <- rec_crime_2020 |> 
+  filter(rec_date > '2020-03-31')
 
 
-saveRDS(crime_aprdec_19, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+saveRDS(crime_aprdec_20, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
 
 
 
