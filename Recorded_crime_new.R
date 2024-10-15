@@ -44,7 +44,9 @@ crime_21_22 <- rbind(crime_janmar_22, crime_aprdec_21)
 crime_21_22 <- crime_21_22 |> 
   group_by(datazone, fin_year) |> #aggregate the months to get whole year totals by dz
   summarise(numerator = sum(number_of_recorded_crimes)) |> 
-  rename(year = fin_year) #rename for analysis functions
+  rename(year = fin_year) |>  #rename for analysis functions
+  mutate(year = substr(year, 1, 4)) |> 
+  mutate(year = as.numeric(year))
 
 
 #Read in historic data and combine with new data
@@ -52,8 +54,9 @@ crime_21_22 <- crime_21_22 |>
 crime_historic <- readRDS(paste0(filepath, "recorded_crime_historic_data_DO_NOT_DELETE.rds"))
 
 recorded_crime <- rbind(crime_historic, crime_21_22) |> 
-  mutate(year = substr(year, 1, 4)) |> 
-  mutate(year = as.numeric(year))
+  mutate(year = substr(year, 1, 4),
+         year = as.numeric(year)) 
+
 
 
 #Save new historic data file
