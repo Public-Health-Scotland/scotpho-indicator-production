@@ -55,9 +55,9 @@ crime_historic <- readRDS(paste0(filepath, "recorded_crime_historic_data_DO_NOT_
 saveRDS(crime_11_12, file = paste0(filepath, 'recorded_crime_historic_data_DO_NOT_DELETE.rds'))
 
 #Save prepared data for analysis functions
-saveRDS(crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_raw.rds'))
+saveRDS(crime_11_12, file=paste0(data_folder, 'Prepared Data/recorded_crime_raw.rds'))
 
-saveRDS(crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_depr_raw.rds'))
+saveRDS(crime_11_12, file=paste0(data_folder, 'Prepared Data/recorded_crime_depr_raw.rds'))
 
 
 #Extract Apr-Dec data and save for next year 
