@@ -58,7 +58,6 @@ recorded_crime <- rbind(crime_historic, crime_21_22) |>
          year = as.numeric(year)) 
 
 
-
 #Save new historic data file
 saveRDS(recorded_crime, file = paste0(filepath, 'recorded_crime_historic_data_DO_NOT_DELETE.rds'))
 
@@ -89,5 +88,5 @@ analyze_second(filename = "recorded_crime", measure = "crude", time_agg = 1,
 #Deprivation analysis function
 analyze_deprivation(filename="recorded_crime", measure="crude",  crude_rate = 1000,
                     time_agg=1, pop = "depr_pop_allages", 
-                    yearstart= 2020, yearend=2020, 
-                    year_type = "calendar", ind_id = 99104)
+                    yearstart= 2011, yearend=2021, 
+                    year_type = "financial", ind_id = 99999)
