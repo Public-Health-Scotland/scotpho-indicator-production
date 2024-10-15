@@ -22,7 +22,7 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_2021 <- read_excel(paste0(filepath, "recorded-2021.xlsx"), sheet = 2) |>
+rec_crime_2022 <- read_excel(paste0(filepath, "recorded-2022.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
   select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
   rename(datazone = dzone_code) |> #rename for analysis functions
@@ -31,43 +31,46 @@ rec_crime_2021 <- read_excel(paste0(filepath, "recorded-2021.xlsx"), sheet = 2) 
          fin_year = extract_fin_year(rec_date)) #extract financial year from date
   
 #Extract Jan-Mar data to use
-crime_janmar_21 <- rec_crime_2021 |> 
-  filter(rec_date <= '2021-03-31')
+crime_janmar_22 <- rec_crime_2022 |> 
+  filter(rec_date <= '2022-03-31')
 
 #Read in current fy data from previous calendar year (Apr-Dec)
-crime_aprdec_20 <- readRDS(paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+crime_aprdec_21 <- readRDS(paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
 
 #Combine both calendar years to get current financial year
-crime_20_21 <- rbind(crime_janmar_21, crime_aprdec_20)
+crime_21_22 <- rbind(crime_janmar_22, crime_aprdec_21)
 
 #Tidy up current financial year
-crime_20_21 <- crime_20_21 |> 
+crime_21_22 <- crime_21_22 |> 
   group_by(datazone, fin_year) |> #aggregate the months to get whole year totals by dz
   summarise(numerator = sum(number_of_recorded_crimes)) |> 
   rename(year = fin_year) #rename for analysis functions
 
 
 #Read in historic data and combine with new data
+#Final fix to year - remove 2nd year - possibly move to another section
 crime_historic <- readRDS(paste0(filepath, "recorded_crime_historic_data_DO_NOT_DELETE.rds"))
 
-recorded_crime <- rbind(crime_historic, crime_20_21)
+recorded_crime <- rbind(crime_historic, crime_21_22) |> 
+  mutate(year = substr(year, 1, 4)) |> 
+  mutate(year = as.numeric(year))
 
 
 #Save new historic data file
 saveRDS(recorded_crime, file = paste0(filepath, 'recorded_crime_historic_data_DO_NOT_DELETE.rds'))
 
 #Save prepared data for analysis functions
-saveRDS(crime_11_12, file=paste0(data_folder, 'Prepared Data/recorded_crime_raw.rds'))
+saveRDS(recorded_crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_raw.rds'))
 
-saveRDS(crime_11_12, file=paste0(data_folder, 'Prepared Data/recorded_crime_depr_raw.rds'))
+saveRDS(recorded_crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_depr_raw.rds'))
 
 
 #Extract Apr-Dec data and save for next year 
-crime_aprdec_21 <- rec_crime_2021 |> 
-  filter(rec_date > '2021-03-31')
 
+crime_aprdec_22 <- rec_crime_2022 |> 
+  filter(rec_date > '2022-03-31')
 
-saveRDS(crime_aprdec_21, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
+saveRDS(crime_aprdec_22, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DELETE.rds'))
 
 
 
@@ -75,10 +78,10 @@ saveRDS(crime_aprdec_21, file=paste0(filepath, 'recorded_crime_next_fy_DO_NOT_DE
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "recorded_crime", geography = "datazone11", adp = TRUE, hscp = TRUE, measure = "crude",
-              yearstart = 2020, yearend = 2020, pop = 'DZ11_pop_allages', time_agg = 1)
+              yearstart = 2011, yearend = 2021, pop = 'DZ11_pop_allages', time_agg = 1)
 
 analyze_second(filename = "recorded_crime", measure = "crude", time_agg = 1, 
-               crude_rate = 1000, ind_id = 99104, year_type = "calendar")
+               crude_rate = 1000, ind_id = 99999, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="recorded_crime", measure="crude",  crude_rate = 1000,
