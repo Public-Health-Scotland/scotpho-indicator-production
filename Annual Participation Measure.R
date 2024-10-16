@@ -22,7 +22,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-dat <- read_xlsx(paste0(data_folder, "Received Data/annual-participation-measure-2023-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
+dat <- read_xlsx(paste0(data_folder, "Received Data/Annual participation measure/annual-participation-measure-2024-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
@@ -68,7 +68,7 @@ dat <- dat %>%
 ###############################################.
   
   analyze_first(filename = "participation", geography = "council", measure = "percent",  
-                yearstart = 2015, yearend = 2023, time_agg = 1)
+                yearstart = 2015, yearend = 2024, time_agg = 1)
   
   
   analyze_second(filename = "participation", measure = "percent", 
