@@ -22,7 +22,7 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_newest_cal_year <- read_excel(paste0(filepath, "recorded-2011.xlsx"), sheet = 2) |>
+rec_crime_newest_cal_year <- read_excel(paste0(filepath, "recorded-2012.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
   select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
   rename(datazone = dzone_code) |> #rename for analysis functions
@@ -68,7 +68,7 @@ saveRDS(recorded_crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_d
 
 
 #Extract Apr-Dec data and save for next year 
-crime_apr_dec <- rec_crime_2011 |> 
+crime_apr_dec <- rec_crime_newest_cal_year |> 
   filter(month(rec_date) > 3)
 
 saveRDS(crime_apr_dec, file=paste0(filepath, 'recorded_crime_next_fin_year_DO_NOT_DELETE.rds'))
