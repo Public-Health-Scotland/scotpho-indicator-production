@@ -1,3 +1,16 @@
+############################.
+## ARCHIVED OCTOBER 2024 ----
+############################.
+
+# Note these indicators were archived in October 2024 under the advise of the PHS maternity team.
+
+# Maternal smoking status data sourced from SMR02 was previously published in the Births in Scotland annual publication up to financial year 2020/21.
+# From March 2022 maternal smoking status at antenatal booking appointment has been published by calendar year using data sourced from the 
+# Antenatal Booking Collection (ABC) dataset. The ABC data is thought to be a better and more timely source and is now used for the annual
+# Antenatal booking in Scotland PHS publication: https://publichealthscotland.scot/publications/antenatal-booking-in-scotland/ 
+
+
+
 # ScotPHO indicators: smoking during pregnancy quintile 1
 
 ## Part 1 - Format raw data ready for analysis functions 
