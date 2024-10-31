@@ -22,7 +22,7 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_newest_cal_year <- read_excel(paste0(filepath, "foi-23-1198-2013-recorded.xlsx"), sheet = 2) |>
+rec_crime_newest_cal_year <- read_excel(paste0(filepath, "foi-23-1198-2014-recorded.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
   select(c(1:2,3:5)) |>  #drop unnecessary variables e.g. crime type
   mutate(rec_date = my(paste(month_number, year_2)), #convert month and year columns to date format
@@ -42,11 +42,14 @@ crime_fin_year <- rbind(crime_jan_mar, crime_apr_dec)
 #Tidy up current financial year
 crime_current_fin_year <- crime_fin_year |> 
   group_by(datazone, fin_year) |> #aggregate the months to get whole year totals by dz
-  summarise(numerator = sum(number_of_recorded_crimes)) |> 
+  summarise(numerator = sum(number_of_crimes)) |> 
   rename(year = fin_year) |>  #rename for analysis functions
   mutate(year = substr(year, 1, 4)) |> 
   mutate(year = as.numeric(year))
 
+#Join with datazone lookup
+dz_lookup <- read_excel(paste0(data_folder, "Received Data/Crime data/dz_lookup.xlsx"))
+crime_current_fin_year <- left_join(crime_current_fin_year, dz_lookup) |> 
 
 #Read in historic data and combine with new data
 #Final fix to year - remove 2nd year - possibly move to another section
