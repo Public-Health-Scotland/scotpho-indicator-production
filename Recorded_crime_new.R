@@ -22,11 +22,10 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_newest_cal_year <- read_excel(paste0(filepath, "recorded-2012.xlsx"), sheet = 2) |>
+rec_crime_newest_cal_year <- read_excel(paste0(filepath, "foi-23-1198-2013-recorded.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
-  select(-c(2:3,6:8)) |>  #drop unnecessary variables e.g. crime type
-  rename(datazone = dzone_code) |> #rename for analysis functions
-  mutate(rec_date = my(paste(calendar_month, calendar_year)), #convert month and year columns to date format
+  select(c(1:2,3:5)) |>  #drop unnecessary variables e.g. crime type
+  mutate(rec_date = my(paste(month_number, year_2)), #convert month and year columns to date format
          fin_year = extract_fin_year(rec_date)) #extract financial year from date
   
 #Extract Jan-Mar data to use
