@@ -22,7 +22,7 @@ filepath <- paste0(data_folder, "Received Data/Crime data/data/") #general crime
 ###############################################.
 
 #Read in and tidy up data for most recent calendar year 
-rec_crime_newest_cal_year <- read_excel(paste0(filepath, "foi-23-1198-2014-recorded.xlsx"), sheet = 2) |>
+rec_crime_newest_cal_year <- read_excel(paste0(filepath, "foi-23-1198-2022-recorded.xlsx"), sheet = 2) |>
   clean_names() |> #simplify col names
   select(c(1:2,3:5)) |>  #drop unnecessary variables e.g. crime type
   mutate(rec_date = my(paste(month_number, year_2)), #convert month and year columns to date format
@@ -45,23 +45,24 @@ crime_current_fin_year <- crime_fin_year |>
   summarise(numerator = sum(number_of_crimes)) |> 
   rename(year = fin_year) |>  #rename for analysis functions
   mutate(year = substr(year, 1, 4)) |> 
-  mutate(year = as.numeric(year))
+  mutate(year = as.numeric(year)) |> 
+  ungroup()
 
-#Join with datazone lookup
-dz_lookup <- read_excel(paste0(data_folder, "Received Data/Crime data/dz_lookup.xlsx"))
-crime_current_fin_year <- left_join(crime_current_fin_year, dz_lookup) |> 
+#Join with datazone lookup and tidy
+dz_lookup <- read_excel(paste0(data_folder, "Received Data/Crime data/dz_lookup.xlsx")) |> 
+  rename(datazone = DZ2011_Name) #rename to join on "datazone
+
+crime_dz_code <- left_join(crime_current_fin_year, dz_lookup) |> 
+  select(c(2:4)) |>  #select only dz, year and numerator
+  rename(datazone = DZ2011_Code) |> #change name for analysis functions
+  select(datazone, everything()) #move datazone to first col
 
 #Read in historic data and combine with new data
 #Final fix to year - remove 2nd year - possibly move to another section
 crime_historic <- readRDS(paste0(filepath, "recorded_crime_historic_data_DO_NOT_DELETE.rds"))
 
-recorded_crime <- rbind(crime_historic, crime_current_fin_year) |> 
-  mutate(year = substr(year, 1, 4),
-         year = as.numeric(year)) 
+recorded_crime <- rbind(crime_historic, crime_dz_code)
 
-
-#Save new historic data file
-saveRDS(recorded_crime, file = paste0(filepath, 'recorded_crime_historic_data_DO_NOT_DELETE.rds'))
 
 #Save prepared data for analysis functions
 saveRDS(recorded_crime, file=paste0(data_folder, 'Prepared Data/recorded_crime_raw.rds'))
@@ -84,13 +85,13 @@ saveRDS(recorded_crime, file = paste0(filepath, 'recorded_crime_historic_data_DO
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "recorded_crime", geography = "datazone11", adp = TRUE, hscp = TRUE, measure = "crude",
-              yearstart = 2011, yearend = 2022, pop = 'DZ11_pop_16to64', time_agg = 1)
+              yearstart = 2013, yearend = 2021, pop = 'DZ11_pop_16to64', time_agg = 1)
 
 analyze_second(filename = "recorded_crime", measure = "crude", time_agg = 1, 
-               crude_rate = 10000, ind_id = 99999, year_type = "financial")
+               crude_rate = 10000, ind_id = 21108, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="recorded_crime", measure="crude",  crude_rate = 10000,
                     time_agg=1, pop = "depr_pop_16to64", 
-                    yearstart= 2011, yearend=2022, 
-                    year_type = "financial", ind_id = 99999)
+                    yearstart= 2013, yearend=2021, 
+                    year_type = "financial", ind_id = 21108)
