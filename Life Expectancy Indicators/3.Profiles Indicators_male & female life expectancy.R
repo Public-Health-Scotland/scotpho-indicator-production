@@ -1,12 +1,13 @@
 # ScotPHO Profiles Indicators- Male & Female Life expectancy
 
 # Before this script can be run the R script 'LE_generate small area estimates.R' must be run (script should be found within same folder)
-# This script will generate IZ 2011 and HSCP locality level life expectancy figures which are joined to 
+# This script will generate IZ 2011 and HSCP locality level life expectancy figures which are joined to larger geography LE estimates.
+# Depending on if new SAPE files are available you may wish tp update  the profiles indicator for only larger geographies - this will result
+# in longer time trend for indicators for the larger geographies than the IZ/HSCP locality data.
 
 # ScotPHO health and wellbeing profile includes 2 Life Expectancy indicators (Male and Female)
 # ScotPHO calculate life expectancy for IZ level geographies which are 5 year aggregates, using 85+ as max age band.
 # We use NRS life expectancy estimates for Scotland, NHS Board and LA level which are 3 year aggregates and use 90+ as max age band.
-
 
 # Using NRS LE estimates avoids confusion caused by having different LE to those that many users expect (ie the national statistic)
 # New annual NRS life expectancy figures are sourced from NRS website or by request to NRS and manually formatted then added to previous years data file.
@@ -29,6 +30,7 @@ source("1.indicator_analysis.R") #doesn't use the functions, but quick way of ge
 ##########################################################################################.
 
 # Set run name - this will dictate which iteration of IZ level life expectancy source data to use
+# if no IZ/Hscp locality update is available then reuse last run.
 run_name="2001to2021 IZ&Locality LE(85+)_20210927"
 
 le0_data<- readRDS(paste0(output_network,"4_Intermediate Zone LE (annual)/",run_name,"_life expectancy at birth.rds"))
@@ -54,7 +56,7 @@ rm(le0_data)
 ## Figures orginally supplied by population & migration team at NRS but in future may be available online.
 ##########################################################################################. 
 
-NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2021.csv")) %>%
+NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023.csv")) %>%
   arrange(code, time_period, sex_grp)
 
 NRS_data <- NRS_data %>%
@@ -112,17 +114,19 @@ all_le_data<- bind_rows(le0_iz_profiles, NRS_data) %>%
 ## Male life expectancy file
 profile_data_male_LE <- all_le_data %>% subset(ind_id=="20101") 
 
-# This indicator script doesn't use analysis functions but indicator checking report can still be called:
-run_qa(filename="life_expectancy_male",old_file="default")
-
+#save files to profiles indicator data to be checked folder on network
 write_csv(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.csv"))
 write_rds(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.rds"))
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_male")
+
 
 ## Female life expectancy file
 profile_data_female_LE <- all_le_data %>% subset(ind_id=="20102") 
 
-# This indicator script doesn't use analysis functions but indicator checking report can still be called:
-run_qa(filename="life_expectancy_female",old_file="default")
-
 write_csv(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.csv"))
 write_rds(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.rds"))
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_female")
