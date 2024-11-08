@@ -1,4 +1,5 @@
 # ScotPHO indicators: Percentage of Scottish population meeting the MPVA physical activity guidelines (#88007)
+#Potentially renumber indicators in this profile
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -49,6 +50,8 @@ mvpa <- left_join(mvpa, lookup) |>
 saveRDS(mvpa, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny.rds"))
 write.csv(mvpa, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny.csv"),row.names = F)
 
+run_qa(filename = "mvpa")
+
 ###############################################.
 ## Part 2 - Prepare deprivation file ----
 ###############################################.
@@ -60,6 +63,7 @@ depr <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend
 ###############################################.
 
 #Aggregates - HB and CA reporting 4-year aggregate vs. single year figures here. 
+#Disability - does there need to be a total? Also do we want 2 disability groups or 3? How would we aggregate anyway?
 
 #read in data files
 Sex_split <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend_data_sex_2012_2022.csv"))
@@ -93,6 +97,7 @@ data_cleaning <- function(df){
 Sex_split_cleaned <- data_cleaning(Sex_split)
 Age_split_cleaned <- data_cleaning(Age_split)
 Disability_split_cleaned <- data_cleaning(Disability_split)
+
 
 #join dfs for sex, age and disability
 meeting_mvpa_shiny_popgrp <- rbind(Sex_split_cleaned, Age_split_cleaned, Disability_split_cleaned)
