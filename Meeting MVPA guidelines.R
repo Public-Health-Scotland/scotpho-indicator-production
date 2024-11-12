@@ -1,5 +1,6 @@
 # ScotPHO indicators: Percentage of Scottish population meeting the MPVA physical activity guidelines (#88007)
 #Potentially renumber indicators in this profile
+#Haven't calculated total for disability or deprivation
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -45,7 +46,8 @@ mvpa <- left_join(mvpa, lookup) |>
          lowci = LowerCI,
          upci = UpperCI) |> 
   select(c(9:10, 12, 11, 6:8, 13, 1)) #dropping and reordering columns
-  
+
+
 #save files
 saveRDS(mvpa, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny.rds"))
 write.csv(mvpa, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny.csv"),row.names = F)
@@ -53,13 +55,7 @@ write.csv(mvpa, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shin
 run_qa(filename = "mvpa")
 
 ###############################################.
-## Part 2 - Prepare deprivation file ----
-###############################################.
-depr <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend_data_simd_2012_2022.csv"))
-
-
-###############################################.
-## Part 3 - Prepare population groups file ----
+## Part 2 - Prepare population groups file ----
 ###############################################.
 
 #Aggregates - HB and CA reporting 4-year aggregate vs. single year figures here. 
@@ -105,4 +101,32 @@ meeting_mvpa_shiny_popgrp <- rbind(Sex_split_cleaned, Age_split_cleaned, Disabil
 #save files
 saveRDS(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.rds"))
 write.csv(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.csv"),row.names = F)
+
+###############################################.
+## Part 3 - Prepare deprivation file ----
+###############################################.
+
+#read in data file
+SIMD_split <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend_data_simd_2012_2022.csv"))
+
+#use pop groups data cleaning function from Part 2 to start with 
+SIMD_split_cleaned <- data_cleaning(SIMD_split)
+
+#final tweaks for deprivation file
+SIMD_split_cleaned <- SIMD_split_cleaned |> 
+  select(-c(3)) |>  #Drop split name col as not relevant
+  rename(quintile = split_value) |> 
+  mutate(quintile = str_sub(quintile, 1, 1),  #Drop additional text from quintile col
+         quint_type = c("sc_quin")) #create quintile type col - Scotland or local, in this case Scotland as only Scotland data available
+
+
+#save basefile
+saveRDS(SIMD_split_cleaned, file=paste0(data_folder, 'Prepared Data/meeting_mvpa_depr_raw.rds'))
+
+#run aggregate analysis function
+analyze_deprivation_aggregated(filename = "meeting_mvpa", pop = "depr_pop_16+", 
+                               ind_id = 88007, ind_name = "meeting_mvpa", qa = TRUE)
+
+
+
 
