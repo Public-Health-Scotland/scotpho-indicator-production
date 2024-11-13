@@ -1,13 +1,13 @@
 # ScotPHO indicators: Percentage of Scottish population meeting the MPVA physical activity guidelines (#88007)
 #Potentially renumber indicators in this profile
-#Haven't calculated total for disability or deprivation
+#Rurality data presented in existing PA tool but unavailable for download thru Scottish Health Survey Shiny App
+
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 source("1.indicator_analysis.R") #normal indicator functions
 source("2.deprivation_analysis.R") #deprivation function
-
 
 ###############################################.
 ## Part 1 - Prepare file for main dataset ----
@@ -30,8 +30,7 @@ mvpa <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/shs_a
          Sex == "All") |>  #filter for both sexes combined and for only meets recommendations
   mutate(Location = case_when(Geographylevel == "Health Board"~ paste0("NHS ", Location), #Paste NHS onto the front of HB names to match lookup
                               Location == "Edinburgh City" ~ "City of Edinburgh", #Change Edinburgh City to City of Edinburgh to match lookup
-                              TRUE ~ Location) 
-         )
+                              TRUE ~ Location))
 
 
 mvpa <- left_join(mvpa, lookup) |> 
@@ -94,6 +93,12 @@ Sex_split_cleaned <- data_cleaning(Sex_split)
 Age_split_cleaned <- data_cleaning(Age_split)
 Disability_split_cleaned <- data_cleaning(Disability_split)
 
+#Extract annual totals from sex_split and append to disability as no totals in this dataset
+Sex_split_totals <- Sex_split_cleaned |> 
+  filter(split_value == "All") |> 
+  mutate(split_name = c("Disability")) 
+
+Disability_split_cleaned <- rbind(Disability_split_cleaned, Sex_split_totals)
 
 #join dfs for sex, age and disability
 meeting_mvpa_shiny_popgrp <- rbind(Sex_split_cleaned, Age_split_cleaned, Disability_split_cleaned)
@@ -101,6 +106,8 @@ meeting_mvpa_shiny_popgrp <- rbind(Sex_split_cleaned, Age_split_cleaned, Disabil
 #save files
 saveRDS(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.rds"))
 write.csv(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.csv"),row.names = F)
+
+run_qa(filename = "meeting_mvpa_shiny_popgrp")
 
 ###############################################.
 ## Part 3 - Prepare deprivation file ----
@@ -119,12 +126,21 @@ SIMD_split_cleaned <- SIMD_split_cleaned |>
   mutate(quintile = str_sub(quintile, 1, 1),  #Drop additional text from quintile col
          quint_type = c("sc_quin")) #create quintile type col - Scotland or local, in this case Scotland as only Scotland data available
 
+#using sex splits data to add SIMD all quintiles figures
+SIMD_splits_totals <- Sex_split_totals |> 
+  rename(quintile = split_name,
+         quint_type = split_value) |> 
+  mutate(quintile = c("Total"), #must be named total rather than all for aggregate deprivation function to work
+         quint_type = c("sc_quin"))
+
+#append onto basefile
+SIMD_split_cleaned <- rbind(SIMD_split_cleaned, SIMD_splits_totals)
 
 #save basefile
 saveRDS(SIMD_split_cleaned, file=paste0(data_folder, 'Prepared Data/meeting_mvpa_depr_raw.rds'))
 
 #run aggregate analysis function
-analyze_deprivation_aggregated(filename = "meeting_mvpa", pop = "depr_pop_16+", 
+analyze_deprivation_aggregated(filename = "meeting_mvpa_depr", pop = "depr_pop_16+", 
                                ind_id = 88007, ind_name = "meeting_mvpa", qa = TRUE)
 
 
