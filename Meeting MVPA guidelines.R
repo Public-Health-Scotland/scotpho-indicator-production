@@ -13,7 +13,7 @@ source("2.deprivation_analysis.R") #deprivation function
 ## Part 1 - Prepare file for main dataset ----
 ###############################################.
 
-#read in HB/CA lookups
+#read in HB/CA lookups and combine
 ca_codes <- readRDS(paste0(lookups, "Geography/CAdictionary.rds")) |> 
   mutate(Geographylevel = "Local Authority") #adding area type col
 hb_codes <- readRDS(paste0(lookups, "Geography/HBdictionary.rds")) |> 
@@ -33,8 +33,9 @@ mvpa <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/shs_a
                               TRUE ~ Location))
 
 
+#data cleaning
 mvpa <- left_join(mvpa, lookup) |> 
-  mutate(code = case_when(Location == "Scotland" ~ "S00000001", #Add in Scotland code
+  mutate(code = case_when(Location == "Scotland" ~ "S00000001", #add in Scotland code
                           TRUE ~ code)) |> 
   mutate(ind_id = c("88007"), #add indicator id
          numerator = "NA", #add numerator
@@ -58,7 +59,6 @@ run_qa(filename = "mvpa")
 ###############################################.
 
 #Aggregates - HB and CA reporting 4-year aggregate vs. single year figures here. 
-#Disability - does there need to be a total? Also do we want 2 disability groups or 3? How would we aggregate anyway?
 
 #read in data files
 Sex_split <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend_data_sex_2012_2022.csv"))
@@ -107,6 +107,7 @@ meeting_mvpa_shiny_popgrp <- rbind(Sex_split_cleaned, Age_split_cleaned, Disabil
 saveRDS(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.rds"))
 write.csv(meeting_mvpa_shiny_popgrp, file = paste0(data_folder, "Data to be checked/meeting_mvpa_shiny_popgrp.csv"),row.names = F)
 
+#run qa
 run_qa(filename = "meeting_mvpa_shiny_popgrp")
 
 ###############################################.
@@ -116,10 +117,10 @@ run_qa(filename = "meeting_mvpa_shiny_popgrp")
 #read in data file
 SIMD_split <- read.csv(paste0(data_folder, "Received Data/Physical Activity/MVPA/trend_data_simd_2012_2022.csv"))
 
-#use pop groups data cleaning function from Part 2 to start with 
+#start with using pop groups data cleaning function from Part 2
 SIMD_split_cleaned <- data_cleaning(SIMD_split)
 
-#final tweaks for deprivation file
+#final tweaks to match deprivation file formatting
 SIMD_split_cleaned <- SIMD_split_cleaned |> 
   select(-c(3)) |>  #Drop split name col as not relevant
   rename(quintile = split_value) |> 
