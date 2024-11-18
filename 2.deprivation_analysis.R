@@ -473,7 +473,7 @@ inequality_measures <- function(dataset){
 ##################################################.
   
   #Splitting into two files: one with quintiles for SII and one without to keep the total values
-  data_depr_sii <- dataset %>% group_by(pick(group_args)) %>% 
+  data_depr_sii <- dataset %>% group_by(pick(all_of(group_args))) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
     filter(quintile != "Total") %>% 
     #This variables are used for SII, RII and PAR calculation
@@ -489,7 +489,7 @@ inequality_measures <- function(dataset){
   #https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   #The dataframe sii_model will have a column for sii, lower ci and upper ci for each
   # geography, year and quintile type
-  sii_model <- data_depr_sii %>% group_by(pick(group_args)) %>% 
+  sii_model <- data_depr_sii %>% group_by(pick(all_of(group_args))) %>% 
     #Checking that all quintiles are present, if not excluding as we are not showing
     #RII and SII for those. Calculations would need to be adjusted and thought well if we wanted to include them
     mutate(count= n()) %>% filter(count == 5) %>% 
@@ -548,7 +548,7 @@ least_depr <- data_depr %>% filter(quintile == "5") %>%
 data_depr <- left_join(data_depr, most_depr, by = group_args)
 data_depr <- left_join(data_depr, least_depr, by = group_args)
 
-data_depr <- data_depr %>%  group_by(pick(group_args)) %>%
+data_depr <- data_depr %>%  group_by(pick(all_of(group_args))) %>%
   mutate(#calculating PAR. PAR of incomplete groups to NA
     #CI calculation missing, this can help https://onlinelibrary.wiley.com/doi/pdf/10.1002/sim.2779
     #https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
