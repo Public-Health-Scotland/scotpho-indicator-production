@@ -67,6 +67,13 @@ NRS_data <- NRS_data %>%
   select(-sex_grp, -geography, -time_period) %>%
   rename(sex_grp=sex)
 
+# NRS data contains geography name and GSS geography codes - however the GSS codes not necessarily the latest available
+# geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+# 
+# 
+# NRS_data2 <- NRS_data %>%
+#  arrange()
+
 ## Create HSCP geography data file from council figures 
 #  One HSCP (Stirling & Clacks) is formed of two council areas combined
 #  This HSCP will be excluded as it is not possible to average LE, NRS do not produce HSCP geography estimates and ScotPHO cannot exactly replicate NRS methodology which uses modelling
