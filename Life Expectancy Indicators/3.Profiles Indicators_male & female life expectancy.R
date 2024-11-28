@@ -59,6 +59,15 @@ rm(le0_data)
 NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023.csv")) %>%
   arrange(code, time_period, sex_grp)
 
+# NRS data contains geography name and GSS geography codes - however the GSS are out of date for some areas
+NRS_data <-NRS_data |>
+  mutate(code = case_when(code=="S08000018" ~"S08000029", #2019 fife code
+                          code=="S08000013" ~"S08000030", # tayside
+                          code=="S08000007" ~"S08000031", # GGC 2019 boundary change
+                          code=="S08000021" ~"S08000031", # GGC 2019 boundary change
+                          code=="S08000009" ~"S08000032", # lanarkshire
+                          TRUE ~ code))
+
 NRS_data <- NRS_data %>%
   mutate(def_period=paste0(time_period," (3 year aggregate)"),
          year=as.numeric(substr(time_period,1,4))+1,# year should be mid-point of time series - this forumla assumes 3 year time period
@@ -66,13 +75,6 @@ NRS_data <- NRS_data %>%
          sex=as.character(sex_grp)) %>%
   select(-sex_grp, -geography, -time_period) %>%
   rename(sex_grp=sex)
-
-# NRS data contains geography name and GSS geography codes - however the GSS codes not necessarily the latest available
-# geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
-# 
-# 
-# NRS_data2 <- NRS_data %>%
-#  arrange()
 
 ## Create HSCP geography data file from council figures 
 #  One HSCP (Stirling & Clacks) is formed of two council areas combined
