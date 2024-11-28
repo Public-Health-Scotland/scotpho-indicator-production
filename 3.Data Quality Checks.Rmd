@@ -55,10 +55,15 @@ old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.r
 
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
 if(file.exists(old_indicator_filepath)) {
+ 
+   if(filename=="life_expectancy_male" |filename=="life_expectancy_female" ){
+  skip_historic_file_checks <-"y" #
+  old_indicator_filepath <-"life expectancy indicators hard to check against historic files" #if no historic file exists
+  } else {
   skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
   old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
   old_data_indicator$year <- as.numeric(old_data_indicator$year)#read in file if one exists
-} else {
+}} else {
   skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
   old_indicator_filepath <-"No historic file available for comparison. Check filename spelling or 'shiny data' network folder if you were expecting a comparison" #if no historic file exists set value to no file available
 }
