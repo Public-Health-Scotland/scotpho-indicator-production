@@ -31,7 +31,7 @@ source("1.indicator_analysis.R") #doesn't use the functions, but quick way of ge
 
 # Set run name - this will dictate which iteration of IZ level life expectancy source data to use
 # if no IZ/Hscp locality update is available then reuse last run.
-run_name="2001to2021 IZ&Locality LE(85+)_20210927"
+run_name="2001to2023 IZ&Locality LE(85+)_20241127"
 
 le0_data<- readRDS(paste0(output_network,"4_Intermediate Zone LE (annual)/",run_name,"_life expectancy at birth.rds"))
 
@@ -53,7 +53,7 @@ rm(le0_data)
 ##########################################################################################.
 ## Part 2 - Read in Life Expectancy estimates from NRS at Scotland, NHS Board and LA level ----
 ## Note these estimates are the official national statistics and are 3 year rolling averages.
-## Figures orginally supplied by population & migration team at NRS but in future may be available online.
+## Figures orignally supplied by population & migration team at NRS but in future may be available online.
 ##########################################################################################. 
 
 NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023.csv")) %>%
