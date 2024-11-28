@@ -36,14 +36,14 @@ saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "prescriptions_anxiety", geography = "datazone11", pop= "DZ11_pop_allages",
-              measure = "percent", yearstart = 2010, yearend = 2022, time_agg = 1)
+              measure = "percent", yearstart = 2010, yearend = 2023, time_agg = 1)
 
 analyze_second(filename = "prescriptions_anxiety", measure = "percent", time_agg = 1, 
                ind_id = 20401, year_type = "financial")
 
 #Deprivation analysis function
 analyze_deprivation(filename="prescriptions_anxiety_depr", measure="percent", time_agg=1, 
-                    yearstart= 2014, yearend=2021,   year_type = "financial", 
+                    yearstart= 2014, yearend=2023,   year_type = "financial", 
                     pop= "depr_pop_allages", ind_id = 20401)
 
 ##END
