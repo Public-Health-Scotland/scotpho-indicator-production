@@ -7,7 +7,11 @@
 # the following publication (typically published in March):
 # https://publichealthscotland.scot/publications/antenatal-booking-in-scotland/
 
-# temporary note: The data is taken from the latest ABC extract so will be different to the 2024 annual publication figures, 
+# Important note: whenever there are changes to geography boundaries, the old smoking during pregnancy indicator
+# needs to be re-run as it is still used within the profiles tool (see Smoking during pregnancy.R script in the 'Archived indicators' folder)
+
+
+# temporary note November 2024: The data is taken from the latest ABC extract so will be different to the 2024 annual publication figures, 
 # the figures should all align with 2025 annual publication figures at the next indicator update. 
 
 
