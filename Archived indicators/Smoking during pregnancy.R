@@ -2,16 +2,16 @@
 ## ARCHIVED OCTOBER 2024 ----
 ############################.
 
-# Note these indicators were archived in October 2024 under the advise of the PHS maternity team.
+# Note these 6 indicators were archived in October 2024 under the advise of the PHS maternity team.
+# Historically, there was 1 overall smoking during pregnancy indicator and 5 other indicators (one for each SIMD quintile)
+# As of October 2024 there is just 1 overall smoking during pregnancy indicator.
+
 
 # Maternal smoking status data sourced from SMR02 was previously published in the Births in Scotland annual publication up to financial year 2020/21.
 # From March 2022 maternal smoking status at antenatal booking appointment has been published by calendar year using data sourced from the 
 # Antenatal Booking Collection (ABC) dataset. The ABC data is thought to be a better and more timely source and is now used for the annual
 # Antenatal booking in Scotland PHS publication: https://publichealthscotland.scot/publications/antenatal-booking-in-scotland/ 
 
-
-
-# ScotPHO indicators: smoking during pregnancy quintile 1
 
 ## Part 1 - Format raw data ready for analysis functions 
 ## Part 2 - calling the analysis functions 
@@ -39,7 +39,7 @@ create_quintile_data <- function(quint_number) {
 ###############################################.
 
 # Bringing both dz01 and dz11 data as we use dz01 for period before 2014 and dz11 onwards
-smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2023-00065_smoking_smr02.csv")) %>%
+smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/Smoking during pregnancy (Archived - do not delete)/IR2023-00065_smoking_smr02.csv")) %>%
   setNames(tolower(names(.))) %>%
   rename(year = finyear, datazone = datazone2011, numerator = smoker, 
          denominator = known_status) %>%
@@ -51,7 +51,7 @@ smoking_pregnant_dz11 <- read_csv(paste0(data_folder, "Received Data/IR2023-0006
 saveRDS(smoking_pregnant_dz11, file=paste0(data_folder, 'Prepared Data/smoking_preg_raw.rds'))
 
 # Datazone 2001 data
-smoking_pregnant_dz01 <- read_excel(paste0(data_folder, "Received Data/smoking pregnancy (IR2015-02431) dz01-dont delete.xlsx"), 
+smoking_pregnant_dz01 <- read_excel(paste0(data_folder, "Received Data/Smoking during pregnancy (Archived - do not delete)/smoking pregnancy (IR2015-02431) dz01-dont delete.xlsx"), 
                                     sheet = "smoking pregnancy (IR2015-02431") %>%
   setNames(tolower(names(.))) %>%
   rename(year = finyear, datazone = datazone2001, numerator = smk, 
