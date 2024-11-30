@@ -129,6 +129,9 @@ hle_male_popgrp <- hle %>%
 write_csv(hle_male_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_male_shiny_popgrp.csv"))
 write_rds(hle_male_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_male_shiny_popgrp.rds"))
 
+# make a copy of the popgrp data as a basis for the subsequent deprivation analysis
+# this analysis will remove the SIMD data and overwrite the healthy_life_expectancy_male_shiny_popgrp files
+write_rds(hle_male_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_male_shiny_popgrp_ORIGINAL.rds"))
 
 ###############################################.
 ## Generate Female healthy life expectancy files ----
@@ -151,6 +154,72 @@ hle_female_popgrp <- hle %>%
 
 write_csv(hle_female_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_female_shiny_popgrp.csv"))
 write_rds(hle_female_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_female_shiny_popgrp.rds"))
+
+# make a copy of the popgrp data as the _shiny_popgrp files will get overwritten during the subsequent deprivation analysis (after SIMD data have been removed)
+write_rds(hle_female_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_female_shiny_popgrp_ORIGINAL.rds"))
+
+######################################################.
+# Prepare data for Deprivation tab ----
+######################################################.
+
+# ER: I was unable to install opendatascot, so used the files that had already been prepared
+
+# This function opens the popgroup and maindata files that were saved above.
+# The non-SIMD data are retained in the popgroup file.
+# The SIMD data are extracted, and totals are added to these from the maindata file.
+# The deprivation analysis function is then run, producing an _ineq.rds file -> Data to be checked
+
+split_popgrp_file <- function(indicator){
+
+  # Read in the data processed above
+  # Check these are the paths to the latest data
+  popgroup_df <- readRDS(paste0(data_folder, "Test Shiny Data/", indicator, "_shiny_popgrp_ORIGINAL.rds")) # use the copy so that it won't get overwritten by this function
+  maindata_df <- read_csv(paste0(data_folder, "Data to be checked/", indicator, "_shiny.csv")) # the rds had the wrong ind_id, so use csv until fixed
+  
+  # get SIMD data from the popgroup df:
+  simd_df <- popgroup_df %>%
+    filter(split_name=="Scottish Index of Multiple Deprivation") %>%
+    rename(quintile = split_value) %>%
+    mutate(quint_type="sc_quin",
+           quintile = substr(quintile, 1, 1)) %>%
+    select(-split_name)
+  
+  # no totals here, so get from maindata df:
+  simd_totals <- simd_df %>%
+    select(ind_id, code, year, trend_axis, def_period) %>%
+    distinct()  %>%
+    merge(y=maindata_df, by=c("ind_id", "code", "year", "trend_axis", "def_period")) %>%
+    mutate(quintile = "Total",
+           quint_type="sc_quin")
+  
+  # combine these:
+  simd_df <- rbind(simd_df, simd_totals) 
+
+  # Save intermediate SIMD file
+  write_rds(simd_df, file = paste0(data_folder, "Prepared Data/", indicator, "_shiny_depr_raw.rds"))
+  write.csv(simd_df, file = paste0(data_folder, "Prepared Data/", indicator, "_shiny_depr_raw.csv"), row.names = FALSE)
+  
+  # Get ind_id argument for the analysis function 
+  ind_id <- unique(simd_df$ind_id)
+  
+  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
+  analyze_deprivation_aggregated(filename = paste0(indicator, "_shiny_depr"), 
+                                 pop = "depr_pop_allages", # these are all-age indicators, with no sex split for SIMD
+                                 ind_id, 
+                                 indicator)
+  
+  # Remove SIMD data from original popgrp file and resave
+  popgroup_df <- popgroup_df %>%
+    filter(split_name!="Scottish Index of Multiple Deprivation") 
+  
+  write_csv(popgroup_df, file = paste0(data_folder, "Test Shiny Data/", indicator, "_shiny_popgrp.csv")) 
+  write_rds(popgroup_df, file = paste0(data_folder, "Test Shiny Data/", indicator, "_shiny_popgrp.rds"))
+
+}
+
+# run the function:
+split_popgrp_file("healthy_life_expectancy_female")
+split_popgrp_file("healthy_life_expectancy_male")
 
 
 
