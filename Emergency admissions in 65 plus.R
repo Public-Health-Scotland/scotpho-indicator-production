@@ -61,7 +61,7 @@ emergency_cis <- as_tibble(dbGetQuery(channel, statement=paste0(
 WHERE rn = 1
 AND age > 64
 AND sex_grp not in ('9', '0')
-AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2023'
+AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2024'
 AND (adm_type between '20' and '22' or adm_type between '30' and '39')
 ORDER BY link_no, cis_marker"))) %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -76,7 +76,7 @@ emergency_cis <- emergency_cis %>%
          year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0))
 
 # open lookup that will allow attachment of postcode to datazone2011.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_1.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select (pc7, datazone2011, datazone2001)
 
@@ -124,8 +124,8 @@ dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce
 
 # temporary solution for delays in release of 2022 SAPE - reapply 2021 population to the 2022 data
 dz11_pop_2022 <-dz11_populations %>%
-  filter (year==2021) %>%
-  mutate (year=2022)
+  filter (year==2022) %>%
+  mutate (year=2023)
 
 dz11_populations <- rbind(dz11_populations,dz11_pop_2022)
 
@@ -207,7 +207,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/emergency_stays65_depr
 # Emergency hospital stays in >=65years 
 
 analyze_first(filename = "emergency_stays65_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2022,
+              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_agg = 3, 
@@ -217,7 +217,7 @@ analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_ag
 
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="emergency_stays65_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2022,year_type = "financial", 
+                    yearstart= 2002, yearend=2023,year_type = "financial", 
                     pop = "depr_pop_65+", epop_age="normal",
                     epop_total =39000, ind_id = 99103)
 
