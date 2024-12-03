@@ -75,8 +75,7 @@ allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
          lowci = NA, upci = NA, 
-         rate = numerator)  #|>  # blank variables are needed
-  #filter(!(str_detect(code, "S02") & year == "2023")) #temporary line of code to exclude 2023 figures at IMZ level 
+         rate = numerator)   # blank variables are needed
 
 #Including both rds and csv file for now
 saveRDS(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.rds"))
