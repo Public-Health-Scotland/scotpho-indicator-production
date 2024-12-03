@@ -62,11 +62,15 @@ mapply(analyze_second, filename = file_list, measure = "percent",
        ind_id = c(20002, 4162, 20003, 20005, 1504, 20006, 20007, 20004, 4161, 
                   13101, 13105, 13102, 13103, 13104, 1502, 1503))
 
+filepath <- paste0(data_folder, "/Data to be checked/")
+
+
+
 ###############################################.
 ## Part 3 - Preparing data for all ages indicator ----
 ###############################################.
-allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.rds")) %>% 
-  rename(numerator = denominator) %>% 
+allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.rds")) |>  
+  rename(numerator = denominator) |> 
   mutate(ind_id = 20001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
@@ -75,6 +79,6 @@ allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.
 
 #Including both rds and csv file for now
 saveRDS(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.rds"))
-write_csv(allages_pop, path = paste0(data_folder, "Data to be checked/pop_allages_shiny.csv"))
+write_csv(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.csv"))
 
 ##END
