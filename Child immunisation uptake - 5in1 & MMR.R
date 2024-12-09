@@ -84,7 +84,7 @@ immunisation_mmr_dz01 <-readRDS(paste0(data_folder,"Received Data/childhood immu
 ## phs.immunisation@phs.scot
 
 # Read in datazone2011 immunisation uptake at 24 month provided by child health team and aggregate
-immunisations_data_dz11 <- readRDS(paste0(data_folder,"Received Data/childhood immunisation/2004_2022_scotpho_childhoodimms_dz_dz2011.rds"))
+immunisations_data_dz11 <- readRDS(paste0(data_folder,"Received Data/childhood immunisation/2004_2023_scotpho_childhoodimms_dz_dz2011.rds"))
 
 
 ###############################################.
@@ -136,7 +136,7 @@ rm(immunisations_data_dz11)
 ###############################################.
 
 analyze_first(filename = "Immunisation_5in1_dz11", geography = "datazone11", measure = "percent",
-              yearstart = 2004, yearend = 2022, time_agg = 3)
+              yearstart = 2004, yearend = 2023, time_agg = 3)
 
 analyze_second(filename = "Immunisation_5in1_dz11", measure = "percent", time_agg = 3,
                ind_id = 21103, year_type = "calendar")
@@ -144,7 +144,7 @@ analyze_second(filename = "Immunisation_5in1_dz11", measure = "percent", time_ag
 #Deprivation analysis function
 # 23/10/2023 delays to NRS publication of 2022 MYE mean we can't update inequalities part of this indicator yet
 analyze_deprivation(filename="Immunisation_5in1_depr", measure="percent", time_agg=3,
-                    yearstart= 2003, yearend=2021,   year_type = "calendar",
+                    yearstart= 2003, yearend=2023,   year_type = "calendar",
                     ind_id = 21103)
 
 ###############################################.
@@ -152,7 +152,7 @@ analyze_deprivation(filename="Immunisation_5in1_depr", measure="percent", time_a
 ###############################################.
 
 analyze_first(filename = "Immunisation_MMR_dz11", geography = "datazone11", measure = "percent",
-              yearstart = 2004, yearend = 2022, time_agg = 3)
+              yearstart = 2004, yearend = 2023, time_agg = 3)
 
 analyze_second(filename = "Immunisation_MMR_dz11", measure = "percent", time_agg = 3,
                ind_id = 21104, year_type = "calendar")
@@ -160,7 +160,7 @@ analyze_second(filename = "Immunisation_MMR_dz11", measure = "percent", time_agg
 #Deprivation analysis function
 # 23/10/2023 delays to NRS publication of 2022 MYE mean we can't update inequalities part of this indicator yet
 analyze_deprivation(filename="Immunisation_MMR_depr", measure="percent", time_agg=3,
-                    yearstart= 2003, yearend=2021,   year_type = "calendar",
+                    yearstart= 2003, yearend=2023,   year_type = "calendar",
                     ind_id = 21104)
 
 ##END

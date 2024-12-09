@@ -360,7 +360,8 @@ shinyApp(
     #Create trend plot
     rate_trend <- plot_ly(data= simd_trend_data(), x=~year,hoverinfo="text") %>%
       add_lines(y = ~rate, name = ~quintile, type = 'scatter',text = tooltiptext_trend,
-                mode = 'lines', color = ~quintile,  colors = pal_simd_trend)
+                mode = 'lines', color = ~quintile,  colors = pal_simd_trend) %>%
+              layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
     })
     
     # SII
@@ -373,6 +374,7 @@ shinyApp(
           add_lines(y = ~sii, name = "Absolute inequality (SII)", type = 'scatter', 
                     text = tooltiptext_sii, mode = 'lines',
                     line = list(color = '#74add1'))  %>%
+        layout(yaxis = list(rangemode = "tozero")) %>% # force yaxis to start at zero
           config(displayModeBar = FALSE, displaylogo = F,  editable =F) # taking out toolbar
     })
     
@@ -384,6 +386,7 @@ shinyApp(
     plot_ly(data=index_data, x=~year,hoverinfo="text") %>%
           add_lines(y = ~rii, name = "Relative gap", type = 'scatter',
                     text = tooltiptext_rii, mode = 'lines',line = list(color = '#313695')) %>%
+              layout(yaxis = list(rangemode = "tozero")) %>% # force yaxis to start at zero
           config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
     
     })
@@ -417,7 +420,8 @@ output$par_trend <- renderPlotly({
   par_trend_plot <- plot_ly(data=simd_partrend_data, x=~year,
                               hoverinfo="text") %>%
       add_lines(y = ~par, type = 'scatter', mode = 'lines', line = list(color = "#4575b4")) %>%
-      layout(margin = list(b = 140)) %>% #to avoid labels getting cut out
+      layout(margin = list(b = 140),
+            yaxis = list(rangemode = "tozero")) %>% # force yaxis to start at zero) %>% #to avoid labels getting cut out
       config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
     })
   

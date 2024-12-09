@@ -31,7 +31,7 @@ data_asthma <- tbl_df(dbGetQuery(channel, statement=
       CASE WHEN extract(month from admission_date) > 3 THEN extract(year from admission_date) 
         ELSE extract(year from admission_date) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 April 2002' and '31 March 2023'
+   WHERE admission_date between '1 April 2002' and '31 March 2024'
       AND sex <> 0 
       AND regexp_like(main_condition, 'J4[5-6]') ")) %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
@@ -79,7 +79,7 @@ asthma_dz01_dep <- data_asthma %>%
   subset(year<=2013)
 
 dep_file <- rbind(asthma_dz01_dep, asthma_dz11 %>% 
-                    subset(year>=2014)) #joing dz01 and dz11
+                    subset(year>=2014)) #joining dz01 and dz11
 
 saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
@@ -89,7 +89,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/asthma_depr_raw.rds'))
 
 #All patients asthma
 analyze_first(filename = "asthma_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2022,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3, 
@@ -97,13 +97,13 @@ analyze_second(filename = "asthma_dz11", measure = "stdrate", time_agg = 3,
 
 #Deprivation analysis function
 analyze_deprivation(filename="asthma_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2022,   year_type = "financial", 
+                    yearstart= 2002, yearend=2023,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20304)
 
 #Under 16 asthma patients
 analyze_first(filename = "asthma_under16", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2022, hscp = T,
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2023, hscp = T,
               time_agg = 3, epop_age = '<16')
 
 analyze_second(filename = "asthma_under16", measure = "stdrate", time_agg = 3, 

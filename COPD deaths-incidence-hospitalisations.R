@@ -30,7 +30,7 @@ copd_deaths <- as_tibble(dbGetQuery(channel, statement=
           THEN extract(year from date_of_registration) 
           ELSE extract(year from date_of_registration) -1 END as finyear 
    FROM ANALYSIS.GRO_DEATHS_C
-   WHERE date_of_registration between '1 January 2002' and '31 March 2023'
+   WHERE date_of_registration between '1 January 2002' and '31 March 2024'
       AND sex <> 9 
       AND age>=16 
       AND country_of_residence= 'XS'
@@ -48,13 +48,13 @@ copd_deaths <- left_join(copd_deaths, postcode_lookup, by = "pc7") %>%
 
 #Creating basefile for COPD deaths indicator by calendar year.
 copd_deaths_cal <- copd_deaths %>% 
-  filter(year<=2021) %>% #excluding incomplete year 
+  filter(year<=2023) %>% #excluding incomplete year for the copd deaths indicator which is calendar year not financial year
   group_by(year, age_grp, sex_grp, ca2019) %>% count() %>% #aggregating
   ungroup() %>% rename(ca = ca2019, numerator = n)
 
 saveRDS(copd_deaths_cal, file=paste0(data_folder, 'Prepared Data/copd_deaths_raw.rds'))
 
-#Creating deaths file for COPD incidence indicator by finantial year.
+#Creating deaths file for COPD incidence indicator by financial year.
 copd_deaths_fin <- copd_deaths %>% 
   filter(finyear>2001) %>% #excluding incomplete year 
   select(finyear, linkno, age, age_grp, sex_grp, dodth, ca2019) %>% 
@@ -75,11 +75,11 @@ copd_adm <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from min(admission_date)) 
         ELSE extract(year from min(admission_date)) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 January 1997' and '31 March 2022'
+   WHERE admission_date between '1 January 1997' and '31 March 2024'
       AND sex <> 9 
       AND exists (select * from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and admission_date between '1 January 1997' and '31 March 2023'
+            and admission_date between '1 January 1997' and '31 March 2024'
             and regexp_like(main_condition, 'J4[0-4]') )
    GROUP BY link_no, cis_marker
   UNION ALL 
@@ -156,7 +156,7 @@ saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_r
 ###############################################.
 #COPD deaths
 analyze_first(filename = "copd_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2022,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3, 
@@ -165,16 +165,16 @@ analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3,
 ###############################################.
 # COPD incidence
 analyze_first(filename = "copd_incidence", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2022,
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "16+")
 
 analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3, 
                epop_total = 165800, ind_id = 1550, year_type = "financial")
 
 ###############################################.
-# COPD hospitalisations 
+# COPD hospitalizations 
 analyze_first(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2022,
+              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 3, 
@@ -182,7 +182,7 @@ analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 
 
 #Deprivation analysis function
 analyze_deprivation(filename="copd_hospital_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2022,   year_type = "financial", 
+                    yearstart= 2002, yearend=2023,   year_type = "financial", 
                     pop = "depr_pop_16+", epop_age="normal",
                     epop_total =165800, ind_id = 20302)
 
