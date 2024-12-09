@@ -21,8 +21,8 @@ library(data.table) # for reading in and combining files
 # filepaths 
 data_filepath <- paste0(data_folder, "Received Data/Population within 500 metres of derelict site/") # derelict site data filepath
 data_clean_filepath <- paste0(data_filepath, "data clean/") # filepath to sub-folder containing data from previous years that has been cleaned
-new_data_filepath <- paste0(data_filepath, "latest extract/") # filepath to sub-folder containing latest recieved data that needs cleaned
-new_data_filename <- "SVDLS - 2023 - Ad Hoc - Public Health Scotland" # name of latest recieved data
+new_data_filepath <- paste0(data_filepath, "latest extract/") # filepath to sub-folder containing latest received data that needs cleaned
+new_data_filename <- "SVDLS - 2023 - Ad Hoc - Public Health Scotland" # name of latest received data
 
 ###################################################.
 # Step 1 - clean latest provided data extract ----
@@ -43,10 +43,10 @@ new_data <- new_data |>
   mutate(numerator = if_else(numerator < 0, 0, numerator))
 
 ## get year of data
-new_data_year <- new_data_year$year[1]
+new_data_year <- new_data$year[1]
 
 ## save clean data
-write.csv(new_data, file = paste0(data_clean_filepath, "data ", data_year, ".csv"), row.names = FALSE)
+write.csv(new_data, file = paste0(data_clean_filepath, "data ", new_data_year, ".csv"), row.names = FALSE)
 
 
 ###########################################.
@@ -87,7 +87,21 @@ analyze_second(filename = "derelict_site", measure = "percent",
 
 ## get pre-2016 data from shiny file
 data_pre_2016 <- read_csv(paste0(data_folder, "Shiny Data/derelict_site_shiny.csv")) |> 
-  subset(year<=2015)
+  subset(year<=2015) |>
+  ## Historic files contain reference to outdated GSS codes
+  ## We can't rederive the data so we just have to recode data and ignore the fact they will be imperfect presentations of these geographie
+  ## details of archived GSS codes 
+  ## https://www.gov.scot/collections/small-area-statistics/
+  mutate(code = case_when(code=="S08000018" ~"S08000029", #2019 fife code
+                          code=="S08000021" ~"S08000031", # GGC
+                          code=="S08000023" ~"S08000032", # Lanarkshire
+                          code=="S08000027" ~"S08000030", # Tayside
+                          # recode council areas affected by boundary changes
+                          code=="S12000015" ~"S12000047", # Fife council
+                          code=="S12000024" ~"S12000048", # Perth and Kinross
+                          code=="S12000044" ~"S12000050", # North Lanarkshire
+                          code=="S12000046" ~"S12000049", # Glasgow City
+                          TRUE ~ code))
 
 ## get latest prepared file
 data_2016_onwards <- readRDS(paste0(data_folder, "Data to be checked/derelict_site_shiny.rds"))
