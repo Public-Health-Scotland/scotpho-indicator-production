@@ -68,6 +68,8 @@ saveRDS(child_formatted, file=paste0(data_folder, "Temporary/child_healthyweight
 analyze_second(filename = "child_healthyweight", measure = "perc_pcf", time_agg = 1,
                pop="DZ11_pop_5", ind_id = 21106, year_type = "financial")
 
+
+
 # Excluding data for boards, hscps, las, localities and izs with incomplete data
 # Merging final data with parent geographies lookup and then filtering
 geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.rds")) %>% 
@@ -79,6 +81,8 @@ geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.
 
 data_shiny <- left_join(readRDS(file = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.rds")),
                         geo_parents, by = "code") %>%
+  #negate subset (i.e. select where the following conditions are not met)
+  # local authority or council area is moray, aberdeen, aberdeenshire, or the parent area one of these & the year is less than 2009 
   subset(!(((code %in% c('S37000001', 'S37000002', "S12000033", "S12000034", 'S12000020',
                          'S37000019', 'S08000020') | # Moray, Aberdeen, Aberdeenshire
                parent_area %in% c('S37000001', 'S37000002', 'S37000019')) & year <2009) |
@@ -103,6 +107,9 @@ data_shiny <- left_join(readRDS(file = paste0(data_folder, "Data to be checked/c
 
 saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.rds"))
 write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/child_healthyweight_shiny.csv"))
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="child_healthyweight")
 
 ###############################################.
 # # Deprivation analysis function 
