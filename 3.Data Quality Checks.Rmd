@@ -126,9 +126,10 @@ geo_checks <- data_indicator %>%
 # Not sure how many localities there are supposed to be?
 # Not sure how to handle indicators with ADP or only Council area - need to think about this...
 
-ft_geo_check <- flextable(geo_checks) %>%
-  color(~ S08!=14, ~S08, color = "red") # Applies conditional formatting - should be 14 NHS board
+ft_geo_check <- flextable(geo_checks)
+  #color(~ S08!=14, ~S08, color = "red") # Applies conditional formatting - should be 14 NHS board
 
+if(board == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S08!=14, ~S08, color = "red")}    #should be 32 councils
 if(ca == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S12!=32, ~S12, color = "red")}    #should be 32 councils
 if(adp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S11!=30, ~S11, color = "red")}   #should be 30 ADP
 if(hscp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S37!=31, ~S37, color = "red")}  #should be 31 hscp
