@@ -112,7 +112,8 @@ prepare_final_files <- function(ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(code, year)
   
   write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
@@ -124,7 +125,8 @@ prepare_final_files <- function(ind){
   pop_grp_data <- all_data %>% 
     filter(!(split_name %in% c("None", "Deprivation (SIMD)"))) %>% 
     select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value,) 
+           lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(code, year, split_name)
   
   # Save
   write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
@@ -145,11 +147,9 @@ prepare_final_files <- function(ind){
 prepare_final_files(ind = "unmanageable_debt")
 
 # # Run QA reports 
-# # main data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
-# run_qa(filename = "underemployment")
+run_qa(filename = "unmanageable_debt")
 
-# So let's plot the series instead:
-
+# Manual plot checks as pop group automated checks not written yet
 
 # Plot the indicator(s)
 # =================================================================================================================
