@@ -19,7 +19,7 @@ library("stringr")#for string_replace() function
 
 ###1.b read in data ----
 
-positive_dest <- read_xlsx(paste0(data_folder, "Received Data/summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"), sheet = "L2.1a") #positive destinations data
+positive_dest <- read_xlsx(paste0(data_folder, "Received Data/School leaver positive destinations/summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"), sheet = "L2.1a") #positive destinations data
 
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
 
