@@ -12,9 +12,11 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-birthweight <- read_csv(paste0(data_folder, "Received Data/Healthy birth weight/IR2024-00846_live_singleton_births.csv")) %>%
+
+
+birthweight <- read_csv(paste0(data_folder, "Received Data/Healthy birth weight/IR2024-00846_live_singleton_births_amended.csv")) %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
-  rename(datazone = datazone2011, numerator = fullterm_appropriate_weight, denominator = total_singleton_births) %>% 
+  rename(datazone = datazone2011, numerator = live_fullterm_singletons_appropriate_weight, denominator = live_fullterm_singleton_births) %>% 
   mutate(year = substr(finyear, start=1, stop=4)) %>%  # Fyear coded by year ending Mar31. Change to match profiles. 
   select(datazone, year, numerator, denominator)
 
