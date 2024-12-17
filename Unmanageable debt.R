@@ -115,11 +115,9 @@ prepare_final_files <- function(ind){
     unique() %>%
     arrange(code, year)
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
+  write.csv(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  
+
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland data by population groups (including total)
   pop_grp_data <- all_data %>% 
@@ -129,12 +127,9 @@ prepare_final_files <- function(ind){
     arrange(code, year, split_name)
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
+  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
-  
-  
+
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
   pop_grp_data_result <<- pop_grp_data

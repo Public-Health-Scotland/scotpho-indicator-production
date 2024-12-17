@@ -204,11 +204,9 @@ prepare_final_files <- function(indicator_name){
     select(-ind_name)
   
   # Save files
-  write.csv(main_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny.rds"))
-  # save to folder that QA script accesses:
+  write.csv(main_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny.rds"))
-  
+
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data_final
 
@@ -223,11 +221,9 @@ prepare_final_files <- function(indicator_name){
       select(-ind_name)
 
   # Save
-  write.csv(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data_final, paste0(data_folder, "Test Shiny Data/", indicator_name, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
+  write.csv(pop_grp_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data_final, paste0(data_folder, "Data to be checked/", indicator_name, "_shiny_popgrp.rds"))
-  
+
   # 3 - SIMD data (ie data behind deprivation tab)
   # Contains Scotland data by SIMD quintile (single year or 2y aggregate)
   
