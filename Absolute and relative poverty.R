@@ -110,8 +110,24 @@ adultpov <- adultpov_raw %>%
                                                       "No-religion" = "No religion",
                                                       "Other-christian" = "Other Christian",
                                                       "Roman-catholic" = "Roman Catholic")),
-  
-  # Create new columns
+  # sort split values correctly
+  split_value_sort = case_when(split_value == "16-24 years" ~ "a 16-24 years"  ,
+                               split_value == "25-34 years" ~  "b 25-34 years" ,
+                               split_value == "35-44 years" ~  "c 35-44 years" ,
+                               split_value == "45-54 years" ~ "d 45-54 years"  ,
+                               split_value == "55-64 years" ~ "e 55-64 years"  ,
+                               split_value == "65-74 years" ~ "f 65-74 years"  ,
+                               split_value == "75-84 years" ~  "g 75-84 years" ,
+                               split_value == "85 years+" ~ "h 85 years+", 
+                               split_value == "Church of Scotland" ~ "a Church of Scotland", 
+                               split_value == "Roman Catholic" ~ "b Roman Catholic", 
+                               split_value == "Other Christian" ~ "c Other Christian",
+                               split_value == "Muslim" ~ "d Muslim", 
+                               split_value == "No religion" ~ "e No religion", 
+                               split_value == "Other" ~ "f Other", 
+                               TRUE ~ split_value),
+
+    # Create new columns
          code = "S00000001", #all are Scotland
          numerator = as.numeric(NA), # insert column where numerator would ordinarily be 
          def_period = paste0(trend_axis, " (", 
@@ -121,9 +137,10 @@ adultpov <- adultpov_raw %>%
          ind_id = case_when(indicator == "relative-poverty" ~ 30031,
                             indicator == "absolute-poverty" ~ 30035)
   ) %>%
-  
+  #ensure pop groups sort in desired order
+  arrange(code,year,split_name,split_value_sort) %>%
   # Drop vars not needed
-  select(-c(age, religion, gender, samplesize, ci_wald))
+  select(-c(age, religion, gender, samplesize, ci_wald, split_value_sort)) 
 
 
 
