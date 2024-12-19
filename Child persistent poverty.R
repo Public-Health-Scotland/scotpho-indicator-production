@@ -66,8 +66,8 @@ data <- dat %>%
   write.csv(data, paste0(data_folder, "Test Shiny Data/cyp_persistent_poverty_shiny.csv"), row.names = FALSE)
   
   
-# # Run QA reports (these don't run because no HB data)
-# run_qa(filename = "cyp_persistent_poverty")
+# Run QA reports 
+run_qa(filename = "cyp_persistent_poverty")
 
 #END
 

@@ -242,3 +242,20 @@ prepare_final_files(ind = "cyp-absolute-poverty")
 prepare_final_files(ind = "cyp-relative-poverty")
 prepare_final_files(ind = "cyp-combined-low-income-and-material-deprivation")
 
+
+# Run QA reports 
+
+# main data:
+run_qa(filename = "cyp-absolute-poverty")
+run_qa(filename = "cyp-relative-poverty")
+run_qa(filename = "cyp-combined-low-income-and-material-deprivation")
+
+
+# # ineq data: RUN WHEN HAVE SIMD QUINTILE DATA AVAILABLE
+# run_ineq_qa(filename = "cyp-absolute-poverty")
+# run_ineq_qa(filename = "cyp-relative-poverty")
+# run_ineq_qa(filename = "cyp-combined-low-income-and-material-deprivation")
+
+
+#END
+
