@@ -1,5 +1,5 @@
 ##  ScotPHO Profiles Tool: Indicator update script.
-##  Indicator: Climate change action (Inidicator ID 99136) ---- 
+##  Indicator: Climate change action (Indicator ID 99136) ---- 
 
 # Description: Percentage of adults agreeing with the statement 
 # 'I understand what actions people like myself should take to help tackle climate change
@@ -11,13 +11,11 @@
 #https://www.gov.scot/binaries/content/documents/govscot/publications/statistics/2023/12/scottish-household-survey-2022-key-findings/documents/shs-2022-annual-report-tables-7-environment/shs-2022-annual-report-tables-7-environment/govscot%3Adocument/SHS%2B2022%2B-%2BAnnual%2BReport%2B-%2BTables%2B-%2B7%2BEnvironment.ods
 
 
-
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 
 source("1.indicator_analysis.R") 
-
 
 
 ###############################################.
@@ -46,8 +44,8 @@ left_join(dictionary, by = "areaname")
 
 climate_data <- climate_data %>%
   
-  # filter response where strongly agree
-  filter(answer == "Strongly agree") %>%
+  # filter response where strongly agree or tend to agree
+  filter(answer == "Strongly agree" | answer == "Tend to agree") %>%
   
   # format & transpose data to long format 
   mutate(across(c("2015", "2017", "2018","2022"), as.numeric)) %>%
@@ -70,13 +68,11 @@ climate_data <- climate_data %>%
   select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci)
 
 
-
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
 write.csv(climate_data, paste0(data_folder, "Data to be checked/climate_action_shiny.csv"), row.names = FALSE)
 write_rds(climate_data, paste0(data_folder, "Data to be checked/climate_action_shiny.rds"))
-
 
 
 #END
