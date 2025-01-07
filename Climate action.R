@@ -41,7 +41,6 @@ left_join(dictionary, by = "areaname")
 # CHECK ALL GEOGRAPHIES HAVE FOUND A MATCH
 
 
-
 climate_data <- climate_data %>%
   
   # filter response where strongly agree or tend to agree
@@ -65,14 +64,28 @@ climate_data <- climate_data %>%
          numerator = NA) %>%
   
   # Select relevant columns
-  select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci)
+  select(answer, ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci)
 
+
+#mutate the responses and sum up their respective rates
+climate_data_main <- climate_data %>%
+  mutate(response = case_when(answer %in% c("Strongly agree", "Tend to agree") ~ "Agree", TRUE ~ "other")) %>%
+  filter(response=="Agree") |> #ensure only desired reponses kept
+  # Group by the new generalized category and other character columns
+  group_by(ind_id, code,year,trend_axis,def_period,numerator,lowci,upci) %>%
+  # Summarize by summing the `rate` column and taking the first value for character columns
+  summarize(rate = sum(rate)) %>%
+  ungroup()
 
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
-write.csv(climate_data, paste0(data_folder, "Data to be checked/climate_action_shiny.csv"), row.names = FALSE)
-write_rds(climate_data, paste0(data_folder, "Data to be checked/climate_action_shiny.rds"))
+write.csv(climate_data_main, paste0(data_folder, "Data to be checked/climate_action_shiny.csv"), row.names = FALSE)
+write_rds(climate_data_main, paste0(data_folder, "Data to be checked/climate_action_shiny.rds"))
+
+
+# Run QA reports and check the output files 
+run_qa(filename = "climate_action")
 
 
 #END
