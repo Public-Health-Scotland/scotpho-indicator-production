@@ -243,8 +243,8 @@ pop_df <- hle %>%
     hle_pop_final_male <<- pop_final #save sex specific dataframe as this will be overwritten by next function call
   }
  
-  write_csv(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "shiny_popgrp.csv"))
-  write_rds(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "shiny_popgrp.rds"))
+  write_csv(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny_popgrp.csv"))
+  write_rds(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny_popgrp.rds"))
    
 }
 
