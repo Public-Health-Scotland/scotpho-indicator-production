@@ -3,7 +3,8 @@
 #         create a deprivation data file output (for any indicators that may have sutiable data)
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
-#   99116: Persistent poverty
+#   99116: Persistent poverty (includes both adults and children)
+#   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
 #   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
 #   99118: Child material deprivation
 #   99121: Health risk behaviours
@@ -43,8 +44,8 @@ data <- dat %>%
   # Select relevant indicators
   filter(indicator %in% c("Persistent poverty", # capitalisation change in 2024 data?
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
-                          "Child material deprivation",
-                          "Children's material deprivation",
+                          #"Child material deprivation", # now source direct from stats.gov
+                          #"Children's material deprivation", #now sourced direct from stats.gov
                           "Health risk behaviours",
                           "Gender balance in organisations")) %>%
   
@@ -61,7 +62,7 @@ data <- dat %>%
          # Convert indicator names to lower case and hyphenate 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
          
-         indicator = str_replace_all(indicator, "children's", "child"),
+         #indicator = str_replace_all(indicator, "children's", "child"),
          
          # Ensure age breakdowns are named consistently
          breakdown = str_replace_all(breakdown, "Age ", ""),
@@ -87,7 +88,7 @@ data <- dat %>%
          # Add indicator ids
          ind_id = case_when(indicator == "persistent_poverty" ~ 99116,
                             indicator == "child_wellbeing_and_happiness" ~ 99117,
-                            indicator == "child_material_deprivation" ~ 99118,
+                            #indicator == "child_material_deprivation" ~ 99118,
                             indicator == "health_risk_behaviours" ~ 99121,
                             indicator == "gender_balance_in_organisations" ~ 99123),
          
@@ -97,7 +98,7 @@ data <- dat %>%
                           !indicator %in% c("health_risk_behaviours", "gender_balance_in_organisations") ~ as.numeric(str_sub(trend_axis, start= 1, end = 4))+2),
          def_period = case_when(indicator == "persistent_poverty" ~ paste0("5-year aggregate (",trend_axis,")"),
                                 indicator == "child_wellbeing_and_happiness" ~ paste0("4-year aggregate (",trend_axis,")"),
-                                indicator == "child_material_deprivation" ~ paste0("4-year aggregate (",trend_axis,")"),
+                                #indicator == "child_material_deprivation" ~ paste0("4-year aggregate (",trend_axis,")"),
                                 indicator == "health_risk_behaviours" ~ paste0(year, " survey year"),
                                 indicator == "gender_balance_in_organisations" ~ paste0(year, " calendar year")),
          
