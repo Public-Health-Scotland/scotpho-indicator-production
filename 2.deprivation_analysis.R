@@ -411,7 +411,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_ineq.rds"))
-  saveRDS(data_shiny, file = paste0(data_folder, "Test Shiny Data/", filename, "_ineq.rds"))
+
   
   #Making final dataset available outside the function
   final_result <<- data_shiny
