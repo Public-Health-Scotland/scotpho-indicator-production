@@ -164,7 +164,7 @@ hle_depr_file <- function(indicator, sex_filter ){
       select(-sex)
   
     # Get ind_id argument for the analysis function 
-    ind_id <- unique(simd_df$ind_id)
+    ind_id <- unique(depr_df$ind_id)
     
   # Save intermediate SIMD file so that files can be run through deprivation function to calculate SII/RII/PAF
   write_rds(depr_df, file = paste0(data_folder, "Prepared Data/", indicator, "_shiny_depr_raw.rds"))
