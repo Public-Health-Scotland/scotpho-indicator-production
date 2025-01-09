@@ -54,13 +54,13 @@ data_alcohol_episodes <- as_tibble(dbGetQuery(channel, statement= paste0(
   "SELECT link_no linkno, cis_marker cis, AGE_IN_YEARS age, admission_date, 
       discharge_date, DR_POSTCODE pc7, SEX sex_grp, ADMISSION, DISCHARGE, URI
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2001' and '31 March 2024'
+  WHERE discharge_date between  '1 April 2001' and '31 March 2025'
       and sex <> 9
       and exists (
           select * 
           from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and discharge_date between '1 April 2001' and '31 March 2024'
+            and discharge_date between '1 April 2001' and '31 March 2025'
             and (regexp_like(main_condition, '", alc_diag ,"')
               or regexp_like(other_condition_1,'", alc_diag ,"')
               or regexp_like(other_condition_2,'", alc_diag ,"')
@@ -80,7 +80,7 @@ data_alcoholstays <- data_alcohol_episodes  %>%
             ddisch=last(discharge_date),
             staymonth=month(ddisch),
             year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0)) %>% # generate financial year of stay field
-  subset(year>=2002 & year <2023) %>% # this is where you restrict the dataset to only the years you need for the profile indicator (the SQl extraction returns extra years to cover the fact some CIS will span more than one FYE)
+  subset(year>=2002 & year <2024) %>% # this is where you restrict the dataset to only the years you need for the profile indicator (the SQl extraction returns extra years to cover the fact some CIS will span more than one FYE)
   ungroup() %>% 
   # Creating age groups for standardization.
   create_agegroups()
@@ -146,7 +146,7 @@ saveRDS(alcoholstays_11to25, file=paste0(data_folder, 'Prepared Data/alcohol_sta
 ##Run macros to generate HWB and Alcohol Profile indicator data
 # All ages alcohol related hospital stays 
 analyze_first(filename = "alcohol_stays_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2022,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
               time_agg = 1, epop_age = "normal",  adp = TRUE)
 
 analyze_second(filename = "alcohol_stays_dz11", measure = "stdrate", time_agg = 1, 
@@ -156,7 +156,7 @@ apply_stats_disc("alcohol_stays_dz11_shiny") # statistical disclosure applied to
 
 #Deprivation analysis function (runs against admissions all ages)
 analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1, 
-                    yearstart= 2002, yearend=2022,   year_type = "financial", 
+                    yearstart= 2002, yearend=2023,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20203)
 
@@ -166,7 +166,7 @@ apply_stats_disc("alcohol_stays_depr_ineq") # statistical disclosure applied to 
 ##Run macros again to generate CYP indicator data
 # Alcohol related stays in 11 to 25 year olds
 analyze_first(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2022,
+              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = '11to25', adp=TRUE)
 
 analyze_second(filename = "alcohol_stays_11to25", measure = "stdrate", time_agg = 3, 
