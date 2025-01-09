@@ -15,12 +15,13 @@ source("2.deprivation_analysis.R") # deprivation function
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
-breastfed <- readRDS(paste0(data_folder, "Received Data/Babies exclusively breastfed/IR2024-00355.rds")) 
+breastfed <- read_csv(paste0(data_folder, "Received Data/Babies exclusively breastfed/IR2025-00009.csv")) 
 
 breastfed <- breastfed |> 
   setNames(tolower(names(breastfed))) |> 
-  mutate(datazone = as.factor(datazone2011)) |> 
-  mutate(year = as.numeric(paste0("20", substr(fin_year, 1, 2)))) |>  #reformat financial year
+  mutate(datazone = as.factor(datazone2011),
+         year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
+                               TRUE ~ paste0("20",substr(fin_year,1,2)))) |>  #format year to display financial year
   group_by(year, datazone) |> 
   summarise(numerator = sum(excbf_6to8wk), denominator = sum(tot_6to8wk))
 
@@ -30,7 +31,7 @@ saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds'))
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
-              yearstart = 2002, yearend = 2022, time_agg = 3 )
+              yearstart = 2002, yearend = 2023, time_agg = 3 )
 
 ## Exclusions at this point for geographies where denominator <=5 for an area  
 data_indicator <- readRDS(file=paste0(data_folder, "Temporary/breastfed_formatted.rds"))  |> 
