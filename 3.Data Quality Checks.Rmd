@@ -12,7 +12,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-library (reactable)
+library(reactable)
+
+
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
@@ -497,6 +500,7 @@ Shiny app looking at differences between historic and latest indicator data outp
 
 ```{r, echo=FALSE}
 
+
 # shinyApp(
 # 
 #   ui = fluidPage(
@@ -563,3 +567,10 @@ Shiny app looking at differences between historic and latest indicator data outp
 <br>
 <br>
 
+
+```{r, echo=FALSE}
+# stop running shiny when close QA report
+onStop(function() {
+  stopApp()
+})
+```
