@@ -380,7 +380,8 @@ main_analysis <- function(filename,
     run_main_analysis_qa(filename={{filename}})
   }
   
-  # this message not appearing - why won't QA stop running?!
+  
+  # all steps finished
   cli::cli_alert_success("All steps complete :)")
 
 }
