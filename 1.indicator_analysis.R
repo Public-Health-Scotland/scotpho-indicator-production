@@ -611,7 +611,14 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 #       of any geo type to Data Check 3 (comparing old and new figures)
 
 run_qa <- function(filename, old_file="default", check_extras=c()){
-   run("3.Data Quality Checks.Rmd")
+   
+  if(substr(getwd(), nchar(getwd())-27, nchar(getwd()))=="scotpho-indicator-production") {
+    run("3.Data Quality Checks.Rmd")
+  } else {
+    # adding "../scotpho-indicator-production/" to the path allows this to be run from a different project in the same repo folder
+    # (e.g., the repo where the UK Data Service data are now processed)
+    run("../scotpho-indicator-production/3.Data Quality Checks.Rmd")
+  }
 }  
 
 ############################################################.

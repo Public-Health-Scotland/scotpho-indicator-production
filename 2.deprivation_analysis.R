@@ -52,6 +52,7 @@ library(rmarkdown) #for data quality checking
 library(shiny) #for data quality checking
 library(flextable) # for output tables
 library(plotly) #for data quality checking
+library(tibble) # for adding a column (conditionally) when running the QA (so can handle with data with/without sex column)
 
 # Detects if session is using Posit Workbench/server or RStudio and sets commonly used filepaths accordingly
 if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) { #if session on server
@@ -442,9 +443,15 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 # filename - required - determines which indicator_data file is used for checking
 
 run_ineq_qa <- function(filename){
-  run("4.Data Quality Checks_inequalities indicators.Rmd")
-}  
 
+  if(substr(getwd(), nchar(getwd())-27, nchar(getwd()))=="scotpho-indicator-production") {
+    run("4.Data Quality Checks_inequalities indicators.Rmd")
+  } else {
+    # adding "../scotpho-indicator-production/" to the path allows this to be run from a different project in the same repo folder
+    # (e.g., the repo where the UK Data Service data are now processed)
+    run("../scotpho-indicator-production/4.Data Quality Checks_inequalities indicators.Rmd")
+    }
+}  
 
 
 ##################################################.
