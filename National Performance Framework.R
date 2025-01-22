@@ -3,7 +3,8 @@
 #         create a deprivation data file output (for any indicators that may have sutiable data)
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
-#   99116: Persistent poverty
+#   99116: Persistent poverty (includes both adults and children)
+#   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
 #   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
 #   99118: Child material deprivation
 #   99121: Health risk behaviours
@@ -57,6 +58,8 @@ data <- dat %>%
   # Select relevant indicators 
   filter(indicator %in% c("Persistent poverty", 
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
+                          #"Child material deprivation", # now source direct from stats.gov
+                          #"Children's material deprivation", #now sourced direct from stats.gov
                           #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future
                           "Contractually secure work",
                           "Health risk behaviours",
@@ -120,9 +123,18 @@ data <- dat %>%
   
   # Standardise/simplify breakdown names
 
-  # Age breakdowns 
+        # Convert indicator names to lower case and hyphenate 
+  mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
+         
+        
+         # Ensure age breakdowns are named consistently
+        # breakdown = str_replace_all(breakdown, "Age ", ""),
+        # breakdown = str_replace_all(breakdown, "-", " to "),
+
+      # Age breakdowns 
   mutate(split_value = str_replace_all(split_value, "Age ", ""),
          split_value = str_replace_all(split_value, "-", " to "),
+
          # Add hyphen back in where needed:
          split_value = if_else(split_value == "Non to Limiting Longstanding Illness", "Non-Limiting Longstanding Illness", split_value),
          split_value = if_else(split_value == "Working to age adults", "Working-age adults", split_value)) %>% 
@@ -158,7 +170,7 @@ data <- dat %>%
                             indicator == "child_wellbeing_and_happiness" ~ 99117,
                             #indicator == "child_material_deprivation" ~ 99118,
                             indicator == "health_risk_behaviours" ~ 99121,
-                            indicator == "gender_balance_in_organisations" ~ 99123#,
+                            indicator == "gender_balance_in_organisations" ~ 99123,
                             # These indicators need IDs, and adding to techdoc:
                             # indicator == "contractually_secure_work" ~ xxxxx,
                             # indicator == "access_to_green_and_blue_space" ~ xxxxx,

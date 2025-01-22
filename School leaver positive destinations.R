@@ -1,4 +1,4 @@
-### notes ----
+## notes ----
 
 # this script produces data for indicator 13030 - school leavers in positive destinations
 # source of data: https://www.gov.scot/publications/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition/documents/
@@ -54,8 +54,6 @@ analyze_first(filename = "school_leaver_destinations", measure = "percent",
 
 analyze_second(filename = "school_leaver_destinations", measure = "percent", 
                time_agg = 1, ind_id = "13010",year_type = "school")
-
-
 
 
 
