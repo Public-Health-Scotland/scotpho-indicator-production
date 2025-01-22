@@ -60,7 +60,6 @@ data <- dat %>%
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                           #"Child material deprivation", # now source direct from stats.gov
                           #"Children's material deprivation", #now sourced direct from stats.gov
-                          #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future
                           "Contractually secure work",
                           "Health risk behaviours",
                           "Gender balance in organisations",
@@ -124,7 +123,7 @@ data <- dat %>%
   # Standardise/simplify breakdown names
 
         # Convert indicator names to lower case and hyphenate 
-  mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
+  #mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
          
         
          # Ensure age breakdowns are named consistently
