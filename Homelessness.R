@@ -1,3 +1,5 @@
+# to-do: consider if NHS board data can be constructed from Council level data
+
 # ============================================================================
 # ===== Processing SG HOMELESSNESS STATS =====
 # ============================================================================
@@ -187,8 +189,8 @@ prepare_final_files <- function(input_file, ind){
     unique() 
   
   # Save
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE) #delete when live
+  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds")) #delete when live
   # save to folder that QA script accesses:
   write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
   
@@ -201,8 +203,8 @@ prepare_final_files <- function(input_file, ind){
            lowci, def_period, trend_axis, split_name, split_value,) 
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)#delete when live
+  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))#delete when live
   # save to folder that QA script accesses: (though no QA for popgroups files?)
   write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
   
