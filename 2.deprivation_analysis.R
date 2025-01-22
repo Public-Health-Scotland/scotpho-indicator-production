@@ -412,6 +412,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
   #Saving file
   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", filename, "_ineq.rds"))
 
+  
   #Making final dataset available outside the function
   final_result <<- data_shiny
   
@@ -647,11 +648,16 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
   
   if (qa == FALSE) { #if you don't want to run full data quality checks set qa=false then only scotland chart will be produced
     #Selecting Health boards and Scotland for latest year in dataset
-    ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
+    qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
                                        & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
-           aes(code, rate) ) +
-      geom_point(stat = "identity") +
-      geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+                      aes(code, rate) ) +
+      geom_point(stat = "identity") 
+    
+    if (is.numeric(data_shiny$lowci)) {
+      qa_plot <- qa_plot +
+        geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
+    }
+    qa_plot
     
   } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
     
