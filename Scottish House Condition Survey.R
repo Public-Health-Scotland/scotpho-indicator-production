@@ -140,11 +140,12 @@ prepare_final_files <- function(ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(code,year)
 
   # Save the indicator data
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind_name, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind_name, "_shiny.rds"))
+  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind_name, "_shiny.csv"), row.names = FALSE) #once indicator is live saving to test can be deleted
+  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind_name, "_shiny.rds"))#once indicator is live saving to test can be deleted
   # save to folder that QA script accesses:
   write_rds(main_data, paste0(data_folder, "Data to be checked/", ind_name, "_shiny.rds"))
   
