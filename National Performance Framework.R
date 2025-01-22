@@ -57,7 +57,7 @@ data <- dat %>%
   # Select relevant indicators 
   filter(indicator %in% c("Persistent poverty", 
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
-                          "Child material deprivation", "Children's material deprivation",
+                          #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future
                           "Contractually secure work",
                           "Health risk behaviours",
                           "Gender balance in organisations",
@@ -84,8 +84,8 @@ data <- dat %>%
   filter(!(indicator=="Child Wellbeing and Happiness" & substr(disaggregation, 1, 18)!="Total Difficulties")) %>% # remove the SDQ subsection data, keep only Total Diffs
   
   # Convert indicator names to lower case and add underscore 
-  mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
-         indicator = str_replace_all(indicator, "children's", "child")) %>% #standardise these two indicators
+  mutate(indicator = str_replace_all(tolower(indicator), " ", "_")) %>%
+         #indicator = str_replace_all(indicator, "children's", "child")) %>% #standardise these two indicators - not needed relates to child material deprivation which has moved
 
   # Standardise/simplify disaggregation names
   
@@ -156,7 +156,7 @@ data <- dat %>%
   # Add indicator ids
   mutate(ind_id = case_when(indicator == "persistent_poverty" ~ 99116,
                             indicator == "child_wellbeing_and_happiness" ~ 99117,
-                            indicator == "child_material_deprivation" ~ 99118,
+                            #indicator == "child_material_deprivation" ~ 99118,
                             indicator == "health_risk_behaviours" ~ 99121,
                             indicator == "gender_balance_in_organisations" ~ 99123#,
                             # These indicators need IDs, and adding to techdoc:
@@ -292,6 +292,7 @@ prepare_final_files <- function(ind){
   write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
   write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
 
+  #remove saving to test location once all indicators are approved and live in tool.
   write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
   write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   
@@ -338,7 +339,8 @@ prepare_final_files(ind = "young_peoples_mental_wellbeing")
 
   
 # Indicator 99118: Child material deprivation ----
-prepare_final_files(ind = "child_material_deprivation")
+# will switch to sourcing data from stas.gov ind_id 30154 - slight name change but this is actually a better description
+#prepare_final_files(ind = "child_material_deprivation")
 
 
 # Indicator  99121: Health risk behaviours ----
@@ -352,7 +354,6 @@ prepare_final_files(ind = "gender_balance_in_organisations")
 # # Run QA reports (these don't run because no HB data)
 # run_qa(filename = "persistent_poverty")
 # run_qa(filename = "young_peoples_mental_wellbeing")
-# run_qa(filename = "child_material_deprivation")
 # run_qa(filename = "health_risk_behaviours")
 # run_qa(filename = "gender_balance_in_organisations")
 
