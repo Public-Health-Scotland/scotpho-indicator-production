@@ -1,3 +1,5 @@
+# consider if possible to generate NHS board level data from the CA figures (should be possible if raw numerator and denmoniator are published)
+
 #########################################################
 # SG Curriculum for Excellence attainment: P1, P4 and P7 - data import
 #########################################################
