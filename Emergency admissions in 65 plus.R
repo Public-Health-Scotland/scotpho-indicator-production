@@ -179,7 +179,7 @@ data_ea65<- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency65_basefil
 # Datazone2011
 dz11 <- data_ea65 %>% 
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
+  summarize(numerator = sum(numerator)) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/emergency_stays65_dz11_raw.rds'))
 
@@ -190,7 +190,7 @@ saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/emergency_stays65_dz11_raw
 
 dz01_dep <- data_ea65 %>% 
   group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+  summarize(numerator = sum(numerator)) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
 dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joining dz01 and dz11
