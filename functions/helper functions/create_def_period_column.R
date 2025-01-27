@@ -9,7 +9,8 @@ create_def_period_column <- function(data, year_type = c("calendar", "financial"
     data |>
       mutate(
         def_period = case_when(agg == 1 ~  as.character(year), 
-                               TRUE ~ paste0(year - (agg - 1), " - ", year)))
+                               TRUE ~ paste0(year - (agg - 1), " - ", year, "; ", agg, " year rolling average"))
+        )
     
   } else if(year_type %in% c("financial", "school")){
     
