@@ -74,11 +74,11 @@ source("functions/helper functions/run_main_analysis_QA.R") # for running QA rma
 #'@param year_type type of year data refers to, for creating time period columns - one of `financial`, `calendar`, `survey`, `snapshot` or `school`.
 #'@param pop name of population file to read in from population lookups folder
 #'@param yearstart start year to filter data by - 4-digit number
-#'@param yearend end year to filter data by - 4-digit number
+#'@param yearend end year to filter data by - 4-digit number - -this should be the last complete year of source data as functions will adjust indicator time series & remove any with partial coverage   
 #'@param ind_id unique numeric id for indicator. Should match that assigned to the indicator in the technical document
-#'@param test_file whether to save file to test folder or not - either `TRUE` or `FALSE`. Se to `FALSE` by default
+#'@param test_file whether to save file to test folder or not - either `TRUE` or `FALSE`. Set to `FALSE` by default
 #'@param QA = whether to run QA checks on the dataset - either `TRUE` or `FALSE`. Set to `TRUE` by default
-#'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25`
+#'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25` = 'normal' if the age groupings are fit standard 5 year banding 0-4,5-9,10-14 etc
 #'@param epop_total only applicable to standardised rates
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
 
@@ -181,7 +181,7 @@ main_analysis <- function(filename,
     area_types <- switch(geography,
                          "scotland" =  c("scotland"),
                          "board" = c("hb2019", "scotland"),
-                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland", "adp", "hscp2019"),
+                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland", "hscp2019"),
                          "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality"),
                          "datazone11" = c("datazone2011", "intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality")
                          )
