@@ -10,7 +10,6 @@ calculate_easr <- function(data, epop_total, epop_age = c("normal", "16+", "<16"
   epop_age <- rlang::arg_match(epop_age)
   
   
-  
   if (epop_age == "normal") {
     data$epop <- recode(as.character(data$age_grp), 
                         "1" = 5000, "2" = 5500, "3" = 5500, "4" = 5500, 
@@ -52,7 +51,7 @@ calculate_easr <- function(data, epop_total, epop_age = c("normal", "16+", "<16"
   # aggregating by year, code and time
   data <- data |>
     select(-c(age_grp, sex_grp))|>
-    group_by(year, code) |>
+    group_by(across(all_of(c("year", "code", "quintile", "quint_type")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
 
@@ -71,7 +70,7 @@ calculate_easr <- function(data, epop_total, epop_age = c("normal", "16+", "<16"
 
   # remove temporary variables
   data <- data |>
-    select(-c(var, easr, epop_total, o_lower, o_upper, easr_first, epop, var_dsr, denominator))
+    select(-c(var, easr, epop_total, o_lower, o_upper, easr_first, epop, var_dsr))
 
 
   data <- data |>
