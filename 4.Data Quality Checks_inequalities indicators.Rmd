@@ -12,6 +12,9 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r, include=FALSE}
+
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+
 #read in geography code names dictionary
 code_dictionary <-readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
@@ -428,3 +431,9 @@ output$par_trend <- renderPlotly({
 )
 ```
 
+```{r, echo=FALSE}
+# stop running shiny when close QA report
+onStop(function() {
+  stopApp()
+})
+```
