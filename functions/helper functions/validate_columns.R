@@ -1,5 +1,16 @@
 validate_columns <- function(data, measure, geography){
   
+  # ensure data isn't grouped as this will prevent column classes being  successfully changed
+  if(is.grouped_df(data)){
+    cli::cli_abort(
+      c(
+        "x" = "Data is still grouped",
+        "i" = "Did you forget to ungroup() your dataset before saving data to pass to this function?"
+      )
+    )
+  }
+  
+  
   # define expected geography code pattern depending on the geography level
   code_pattern <- switch(geography,
                          "scotland" = "S00",
@@ -131,5 +142,7 @@ validate_columns <- function(data, measure, geography){
   # select all required columns
   data <- data |>
     select(all_of(required_cols))
+
+  
 
 }
