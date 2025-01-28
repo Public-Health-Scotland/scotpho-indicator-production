@@ -47,11 +47,11 @@ calculate_easr <- function(data, epop_total, epop_age = c("normal", "16+", "<16"
            var_dsr = ifelse(is.infinite(var_dsr), NA, var_dsr)) |>
     mutate_at(c("easr_first", "var_dsr"), ~replace(., is.na(.), 0))
 
-
+  
   # aggregating by year, code and time
   data <- data |>
     select(-c(age_grp, sex_grp))|>
-    group_by(across(all_of(c("year", "code", "quintile", "quint_type")))) |>
+    group_by(across(any_of(c("year", "code", "quintile", "quint_type")))) |>
     summarise_all(sum, na.rm =T) |>
     ungroup()
 
