@@ -1,3 +1,22 @@
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# script summary ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 1. load packages 
+# 2. source helper functions
+# 3. define function arguments
+# 4. check validity of function arguments
+# 5. set file paths
+# 6. read and validate data (e.g. checking all relevant cols present)
+# 7. filter by defined time period
+# 8. aggregate by geography level (e.g. building up datazones to larger geographies)
+# 9. add population figures (conditional for crude/standardised rates)
+# 10. aggregate over multiple years (conditional)
+# 11. calculate rates
+# 12. add metadata columns (e.g. indicator id)
+# 13. save final file
+# 14. run QA 
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # load packages ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -35,7 +54,7 @@ source("functions/helper functions/run_main_analysis_QA.R") # for running QA rma
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Understanding this function ----
+# understanding this function ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # To understand how this function works you can run it line by line from this script (don't run the 'check function arguments' section)
@@ -69,7 +88,7 @@ source("functions/helper functions/run_main_analysis_QA.R") # for running QA rma
 #'@param filename name of the rds file to read in. File should end in '_raw.rds' but this shouldn't be added to the argument.
 #'@param measure type of rate to calculate - one of `percent`, `stdrate` or `crude`,
 #'@param geography base geography level of data file. If only one geography level present then should be one of 
-#' `scotland`, `board`, `council`, `intzone`, `datazone`, otherwise set to `multiple` if all required levels already included. 
+#' `scotland`, `board`, `council`, `intzone`, `datazone`, otherwise set to `multiple`. If `multiple` is selected, no additional geography levels will be added. Consider removing Scotland if e.g. CA and Scotland present but HB required
 #'@param time_agg number of years to aggregate the data by. 
 #'@param year_type type of year data refers to, for creating time period columns - one of `financial`, `calendar`, `survey`, `snapshot` or `school`.
 #'@param pop name of population file to read in from population lookups folder
@@ -96,6 +115,7 @@ main_analysis <- function(filename,
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   # ensure arguments with finite choices are valid
+  # this section should only work when calling the entire function, not running individually
   geography <- rlang::arg_match(geography)
   measure <- rlang::arg_match(measure)
   year_type <- rlang::arg_match(year_type)
