@@ -377,7 +377,7 @@ main_analysis <- function(filename,
 
   if(QA){
     cli::cli_alert_info("Running QA")
-    run_main_analysis_qa(filename={{filename}})
+    run_main_analysis_qa(filename={{filename}},test_file={{test_file}})
   }
   
   
