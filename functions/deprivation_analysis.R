@@ -73,7 +73,8 @@ source("functions/helper functions/validate_deprivation_columns.R") # for creati
 #'@param measure type of rate to calculate - one of `percent`, `stdrate` or `crude`,
 #'@param time_agg number of years to aggregate the data by. 
 #'@param year_type type of year data refers to, for creating time period columns - one of `financial`, `calendar`, `survey`, `snapshot` or `school`.
-#'@param pop_age age range of population for denominator. Numeric vector with start and end age i.e. c(0, 15) Arg only required if measure is `stdrate` or `crude`.
+#'@param pop_age age range of population for denominator. Numeric vector with start and end age i.e. c(0, 15) Arg only required if measure is `stdrate` or `crude` and if indicator is not for all ages.
+#'@param pop_sex sex of population for denominator - one of `male`, `female` or `all`. Arg only required if measure is `stdrate` or `crude`.
 #'@param yearstart start year to filter data by - 4-digit number
 #'@param yearend end year to filter data by - 4-digit number
 #'@param ind_id unique numeric id for indicator. Should match that assigned to the indicator in the technical document
@@ -85,11 +86,27 @@ source("functions/helper functions/validate_deprivation_columns.R") # for creati
 
 
 
+# deprivation_analysis(filename = "teen_preg", measure="crude", time_agg = 3, crude_rate = 1000,
+#                      yearstart = 2014, yearend = 2022, year_type = "calendar",
+#                      pop_age=c(15,19), pop_sex = "female", ind_id = 21001)
+# 
+# deprivation_analysis(filename = "hpv_uptake", measure = "percent", time_agg = 3,
+#                      yearstart = 2014, yearend = 2022, year_type = "school",
+#                      ind_id = 13032)
+# 
+# deprivation_analysis(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
+#                     yearstart= 2006, yearend=2022, year_type = "calendar", epop_age="normal",
+#                     epop_total =200000, ind_id = 4121, pop_sex = "all")
+
+
+
 deprivation_analysis <- function(filename, yearstart, yearend, time_agg, 
                                  year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                                  measure = c("percent", "crude", "stdrate"),
-                                 epop_age = NULL, epop_total = NULL, pop_age = NULL, 
-                                 pop_pcf = NULL, crude_rate, ind_id,  QA = TRUE, test_file = FALSE){
+                                 pop_sex = c("male", "female", "all"),
+                                 epop_age = NULL, epop_total = NULL, pop_age = NULL,
+                                 pop_pcf = NULL, crude_rate = NULL, 
+                                 ind_id,  QA = TRUE, test_file = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -98,6 +115,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
   # ensure arguments with finite choices are valid
   measure <- rlang::arg_match(measure)
   year_type <- rlang::arg_match(year_type)
+  pop_sex <- rlang::arg_match(pop_sex)
   
   
   # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -229,38 +247,63 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
    # This step is only applicable if the measure type is a standardised rate or a crude rate
    # where population figures are required to calculate the rate. It reads in the
    # SIMD datazone level population lookup file from scotphos population lookups folder
-   # and filters the age range according to the population of interest
+   # and filters the sex and age range according to the population of interest
 
    if(measure %in% c("stdrate", "crude")){
-     
-     
+
+     if(!is.null(pop_age)){
      lower_age = pop_age[1] # minimum age
      upper_age = pop_age[2] # maximum age
+     }
      
-     
+     #convert specified sex to code for lookup - this is used to filter population lookup
+     if(pop_sex == "male") {
+       pop_sex = 1
+     } else if(pop_sex == "female") {
+       pop_sex = 2
+     } else {
+       pop_sex = NULL  # No filtering on sex if "all"
+     }
+
      # what vars to summarise the population lookup by
-     grouping_vars <- c("year", "code", "quintile", "quint_type", 
+     grouping_vars <- c("year", "code", "quintile", "quint_type",
                         if(measure == "stdrate") c("age_grp", "sex_grp"))
      
-     
-     # read in the simd population lookup, filter by age group and summarise 
-     population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
-       filter(year >= yearstart) |>
-       mutate(age_grp = as.character(age_grp),
-              sex_grp = as.character(sex_grp)) |>
-       filter(age >= lower_age & age <= upper_age) |>
-       select(-age) |>
-       group_by(across(all_of(grouping_vars))) |>
-       summarise_all(sum) |>
-       ungroup()
 
-    # join data with population lookup to add population column to use as denominator 
+     # read in the simd population lookup, filter by age group and summarise
+         population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
+         filter(year >= yearstart) 
+         
+         
+    # if indicator is not for all ages, filter by age range. Otherwise do not filter
+      if (!is.null(pop_age)){
+        population_lookup <- population_lookup |> 
+          filter(age >= lower_age & age <= upper_age)
+      }
+      
+       
+       # if indicator is for a single sex, filter pop lookup by that sex. Otherwise do not filter
+       if (!is.null(pop_sex)) {
+         population_lookup <- population_lookup |>
+           filter(sex_grp == pop_sex)
+       }
+       
+      
+       population_lookup <- population_lookup |>
+         mutate(age_grp = as.character(age_grp),
+                sex_grp = as.character(sex_grp)) |>
+         select(-age) |>
+         group_by(across(all_of(grouping_vars))) |>
+         summarise(denominator = sum(denominator), .groups = "drop")
+    
+         
+    # join data with population lookup to add population column to use as denominator
    simd_data <- right_join(simd_data, population_lookup, by = grouping_vars)
 
-     
+
    cli::cli_alert_success("'Add population figures' step complete")
-   
-   }
+
+    }
    
    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    # Aggregate by time period  ----
@@ -426,4 +469,4 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
    
 
   
-  
+ 
