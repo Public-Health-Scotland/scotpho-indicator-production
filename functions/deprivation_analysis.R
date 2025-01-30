@@ -461,7 +461,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
    
    if(QA){
      cli::cli_alert_info("Running QA")
-     run_qa(type = "deprivation", filename={{filename}})
+     run_qa(type = "deprivation", filename={{filename}},test_file={{test_file}})
    }
    
    

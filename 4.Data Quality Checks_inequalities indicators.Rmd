@@ -18,8 +18,16 @@ data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 #read in geography code names dictionary
 code_dictionary <-readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
+#Read in indicator file being checked (switch file path if working on test in
+scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+output_folder <- if(test_file){
+    file.path(scotpho_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
+    } else {
+      file.path(scotpho_folder, "Data to be checked") # for established indicators already in the profiles tool 
+    }
+  
 #Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_ineq.rds")) %>%
+data_indicator <- readRDS(paste0(output_folder,"/", filename, "_ineq.rds")) %>%
   mutate(geo_type=substr(code,1,3)) #add field identifying geography type
 
 #Add geography code names
@@ -52,7 +60,7 @@ if(file.exists(old_indicator_filepath)) {
 Indicator:  **`r filename`** <br>
 Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
-**New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, ".rds"))`<br>
+**New** indicator file:  /`r (paste0(output_folder,"/", filename, ".rds"))`<br>
 **Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath))` <br>
 
 ------------------------------------------------------------------------------------
