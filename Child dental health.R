@@ -83,11 +83,12 @@ clean_data <- function(data, starting_school_year){
 }
 
 # apply function to both datasets
+# change year to match starting school year of latest data
 p1_new <- clean_data(data = p1, starting_school_year = 2023)
 p7_new <- clean_data(data = p7, starting_school_year = 2023)
 
 
-# save temp files to use in analysis functions 
+# save clean formatted files
 # change filename to match school year of latest data
 saveRDS(p1_new, file.path(data_path, "formatted", "P1_data_formatted_2023-24.rds"))
 saveRDS(p7_new, file.path(data_path, "formatted", "P7_data_formatted_2023-24.rds"))
@@ -110,7 +111,7 @@ p1_trend <- combine_files(files = list.files(path = file.path(data_path, "format
 p7_trend <- combine_files(files = list.files(path = file.path(data_path, "formatted"), pattern = "P7", full.names = TRUE))
 
 
-## step 4 - save temp files for use in analysis functions 
+## save temp files for use in analysis functions 
 saveRDS(p1_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p1_raw.rds"))
 saveRDS(p7_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p7_raw.rds"))
 
