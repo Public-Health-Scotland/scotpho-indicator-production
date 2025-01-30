@@ -1,4 +1,23 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# script summary ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 1. load packages 
+# 2. source helper functions
+# 3. define function arguments
+# 4. check validity of function arguments
+# 5. set file paths
+# 6. read and validate data (e.g. checking all relevant cols present)
+# 7. assign each geography an SIMD decile/quintile
+# 8. aggregate by geography and simd quantile (e.g. building up datazones to larger geographies)
+# 9. add population figures (conditional for crude/standardised rates)
+# 10. aggregate over multiple years (conditional)
+# 11. calculate rates
+# 12. add metadata columns (e.g. indicator id)
+# 13. save final file
+# 14. run QA 
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # load packages ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(dplyr) # data wrangling
@@ -83,20 +102,6 @@ source("functions/helper functions/validate_deprivation_columns.R") # for creati
 #'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25`
 #'@param epop_total only applicable if measure is `stdrate`
 #'@param crude_rate only applicable if measure is`crude rate`. Size of the population to use.
-
-
-
-# deprivation_analysis(filename = "teen_preg", measure="crude", time_agg = 3, crude_rate = 1000,
-#                      yearstart = 2014, yearend = 2022, year_type = "calendar",
-#                      pop_age=c(15,19), pop_sex = "female", ind_id = 21001)
-# 
-# deprivation_analysis(filename = "hpv_uptake", measure = "percent", time_agg = 3,
-#                      yearstart = 2014, yearend = 2022, year_type = "school",
-#                      ind_id = 13032)
-# 
-# deprivation_analysis(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
-#                     yearstart= 2006, yearend=2022, year_type = "calendar", epop_age="normal",
-#                     epop_total =200000, ind_id = 4121, pop_sex = "all")
 
 
 
