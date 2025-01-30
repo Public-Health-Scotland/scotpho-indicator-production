@@ -1,6 +1,8 @@
-# Analyst notes ----------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-# This script updates the following indicators:
+# This script updates the following 2 indicators:
 # 21005 - Child dental health P1
 # 21006 - Child dental health P7
 
@@ -11,142 +13,139 @@
 
 
 # The team usually sent on 1 year worth of data each year
-# file should then saved in the 'Child dental health' folder
-# This script will then combine the latest years data with the historic data and save a new historic data file, ready to be used the following year
-# Once you have finished step 3 (saving the new data files) move the latest years data into the 'Archive' sub-folder.
-
+# files should then saved in the 'Child dental health' folder
 
 # Missing data:
 # no 2020/21 data for Child Dental health P1, due to the pandemic
 # no 2020/21 and 2021/22 data for Child Dental health P7, due to the pandemic
-# no 2021/22 P1 data for NHS Western Isles and partial data for NHS Highland, 
-# which has been excluded here.
+# no 2021/22 P1 data for NHS Western Isles and NHS Highland
 
 
-# script changes:
-# need to change the year being populated when creating the 'year' column in p1_new and p7_new
-# i.e. if the latest data is for school year 2022/23, the year should be 2022.
-
+# script changes required each year:
+# change file path to read in latest data extracts
+# update year in clean_data() function
+# update school year when saving temporry RDS files for analysis functions
+# update end_year parameter in analysis functions
 
 # script outline:
-# 1 - Prepare data
-# 2 - Run analysis functions 
-# 3 - Save new historic data files
+# Step 1 - Prepare latest data
+# Step 2 - create trend data
+# Step 3 - Run analysis functions 
 
 
-
-# dependencies -----------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# functions ----
+# ~~~~~~~~~~~~~~~~~~~~~~~
 source("1.indicator_analysis.R") # Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
-dental_health_subfolder <- "Received Data/Child dental health/" # dental health folder
+
+# ~~~~~~~~~~~~~~~~~~~~~~
+# filepaths ----
+# ~~~~~~~~~~~~~~~~~~~~~~
+scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # scotpho folder 
+dental_health_subfolder <- "Received Data/Child dental health" # child dental health sub-folder
+data_path <- file.path(scotpho_folder, dental_health_subfolder) # full path to folder 
 
 
-# 1 - Prepare data  ------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Step 1 - Prepare latest data ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# read in historic data 
-p1_historic <- readRDS(paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
-p7_historic <- readRDS(paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
-
-# read in new data
-p1_new <- read.csv(paste0(data_folder, dental_health_subfolder, "Final P1 Letter IIa.csv")) 
-p7_new <- read.csv(paste0(data_folder, dental_health_subfolder, "Final P7 Letter IIa.csv")) 
-
-
-#tidy up p1
-p1_new <- p1_new |> 
-  select(c(1:4)) |> #keeps only first 4 cols w/ data and drops others
-  tail(-7) |>  #drops first 7 rows of metadata
-  row_to_names(row_number = 1) |>  #from janitor package, sets row as header by index
-  clean_names() |> 
-  mutate(year = 2022) |> #converting school year to single year 
-  rename('datazone' = datazone_2011, #standardising headings to be read into profiles tool
-         'denominator' = total_inspected,
-         'numerator' = number_of_c_letters_issued) |> 
-  mutate(numerator = as.numeric(numerator), #converting numerator and denominator to numeric from character
-         denominator = as.numeric(denominator)) |> 
-  select(1, 3, 4, 5)
-
-#tidy up p7
-p7_new <- p7_new |> 
-  select(c(1:4)) |> 
-  tail(-7) |> 
-  row_to_names(row_number = 1) |> 
-  clean_names() |> 
-  mutate(year = 2022) |> 
-  rename('datazone' = datazone_2011,
-         'denominator' = total_inspected,
-         'numerator' = number_of_c_letters_issued) |> 
-  mutate(numerator = as.numeric(numerator), 
-         denominator = as.numeric(denominator)) |> 
-  select(1, 3, 4, 5)
+### read in latest recieved data ----
+# tweak filename to name of latest extract
+# note: the number of rows to skip may need tweaked each year - these are rows containing info about the IR
+p1_new <- read_excel(file.path(data_path, "NDIP_P1_2023-24.xlsx"), skip = 4)
+p7_new <- read_excel(file.path(data_path, "NDIP_P7_2023-24.xlsx"), skip = 4)
 
 
-#tidy up p1 historic data to remove NHS Highland's data
-#remove this section after 
-# 
-# #read in lookup with all geography levels
-# lookup_all <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
-# 
-# #join lookup to historic p1 data
-# p1_historic_noH <- p1_historic |> 
-#   left_join(lookup_all, by = c("datazone" = "datazone2011"))
-# 
-# p1_historic_noH_2<-p1_historic_noH |> 
-#   filter(!(hb2019 == c("S08000022") & year == c("2021"))) |> #excluding datazones with Highland HB code from 21/22
-#   select(c(1:4)) #Removing the additional lookup columns 
-# 
-# write.csv(p1_historic_noH_2, paste0(data_folder, "Data to be checked/p1-historic-fix.csv"))
-# write.csv(p1_historic, paste0(data_folder, "Data to be checked/p1_historic_original.csv"))
-# 
-# p1_historic <- p1_historic_noH_2
+### clean data ----
+
+# data cleaning function
+clean_data <- function(data, starting_school_year){
+  data <- data |>
+    # clean colum names 
+    janitor::clean_names() |>
+    # select and rename required columns 
+    select(
+      datazone = datazone_2011,
+      numerator = number_of_c_letters_issued,
+      denominator = total_inspected
+    ) |>
+    # add year column 
+    mutate(year = starting_school_year) |>
+    # summarise data
+    group_by(year, datazone) |>
+    summarise_all(sum, na.rm = T) |>
+    ungroup()
+  
+  return(data)
+}
+
+# apply function to both datasets
+p1_new <- clean_data(data = p1, starting_school_year = 2023)
+p7_new <- clean_data(data = p7, starting_school_year = 2023)
 
 
-# combine data
-p1_combined <- rbind(p1_historic, p1_new)
-p7_combined <- rbind(p7_historic, p7_new)
+# save temp files to use in analysis functions 
+# change filename to match school year of latest data
+saveRDS(p1_new, file.path(data_path, "formatted", "P1_data_formatted_2023-24.rds"))
+saveRDS(p7_new, file.path(data_path, "formatted", "P7_data_formatted_2023-24.rds"))
 
-# save files to be used in analysis and deprivation functions
-saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_raw.rds'))
-saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_raw.rds'))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Create trend data ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-saveRDS(p1_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p1_depr_raw.rds'))
-saveRDS(p7_combined, file=paste0(data_folder, 'Prepared Data/child_dental_p7_depr_raw.rds'))
+# function to read in and combine single years data to create trend data
+combine_files <- function(files) {
+  combined <- data.table::rbindlist(lapply(files, function(x) {
+    data <- readRDS(x) |>
+      mutate(across(c("numerator", "denominator", "year"), as.numeric))
+  }), use.names = TRUE)
+  return(combined)
+}
 
 
-# Part 2: Run analysis functions  ----------------------------------------------
+p1_trend <- combine_files(files = list.files(path = file.path(data_path, "formatted"), pattern = "P1", full.names = TRUE))
+p7_trend <- combine_files(files = list.files(path = file.path(data_path, "formatted"), pattern = "P7", full.names = TRUE))
+
+
+## step 4 - save temp files for use in analysis functions 
+saveRDS(p1_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p1_raw.rds"))
+saveRDS(p7_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p7_raw.rds"))
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Run analysis functions  ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Child dental health P1
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2022, time_agg = 1) 
+              yearstart = 2012, yearend = 2023, time_agg = 1) 
 
 
 analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1, 
                ind_id = 21005, year_type = "school", pop="DZ11_pop_5")
 
 
-analyze_deprivation(filename="child_dental_p1_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend = 2022, time_agg=1,
+analyze_deprivation(filename="child_dental_p1", measure="perc_pcf",  
+                    yearstart= 2014, yearend = 2023, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 
 
 # Child dental health P7
 analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2022, time_agg = 1)
+              yearstart = 2012, yearend = 2023, time_agg = 1)
 
 
 analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
                ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
 
-analyze_deprivation(filename="child_dental_p7_depr", measure="perc_pcf",  
-                    yearstart= 2014, yearend = 2022, time_agg=1,
+analyze_deprivation(filename="child_dental_p7", measure="perc_pcf",  
+                    yearstart= 2014, yearend = 2023, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
 
 
-# 3. Save new historic data files ----------------------------------------------
 
-# if everything looks fine fro DQ checks - overwrite the old historic data files
-saveRDS(p1_combined, paste0(data_folder, dental_health_subfolder, "P1_data_historic_DO_NOT_DELETE.rds"))
-saveRDS(p7_combined, paste0(data_folder, dental_health_subfolder, "P7_data_historic_DO_NOT_DELETE.rds"))
-
+## END  
