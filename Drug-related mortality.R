@@ -43,7 +43,7 @@ drug_deaths_smr <- as_tibble(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, age, SEX sex_grp, UNDERLYING_CAUSE_OF_DEATH cod1, POSTCODE pc7, 
         REGISTRATION_DISTRICT rdno, ENTRY_NUMBER entry_no, PLACE_OF_DEATH_POSTCODE pc_death
         FROM ANALYSIS.GRO_DEATHS_C 
-          WHERE date_of_registration between '1 January 2006' and '31 December 2022'
+          WHERE date_of_registration between '1 January 2006' and '31 December 2023'
           AND age is not NULL
           AND sex <> 9")) %>%
   setNames(tolower(names(.)))  #variables to lower case
@@ -110,7 +110,7 @@ saveRDS(drug_deaths_ca %>% subset(sex_grp==1),
 
 # Analysis by CA
 analyze_first(filename = "drug_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2022,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2023,
               time_agg = 1, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 analyze_second(filename = "drug_deaths", measure = "stdrate", time_agg = 1, 
@@ -127,7 +127,7 @@ write_csv(all_drug_deaths, file = paste0(data_folder, "Data to be checked/all_dr
 
 #Deprivation analysis function 
 analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5, 
-                    yearstart= 2006, yearend=2022,   year_type = "calendar", 
+                    yearstart= 2006, yearend=2023,   year_type = "calendar", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 4121)
 
@@ -135,7 +135,7 @@ analyze_deprivation(filename="drug_deaths_depr", measure="stdrate", time_agg=5,
 ## Part 4 - Female drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_female", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2022,
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2023,
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only female half population
@@ -155,7 +155,7 @@ write_csv(all_female_drug_deaths, file = paste0(data_folder, "Data to be checked
 ## Part 5 - Male drug related mortality analysis functions ----
 ###############################################.
 analyze_first(filename = "drug_deaths_male", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_allages", yearstart = 2006, yearend = 2022, 
+              pop = "CA_pop_allages", yearstart = 2006, yearend = 2023, 
               time_agg = 5, epop_age = "normal", adp = TRUE, hscp = TRUE)
 
 #epop is only 100000 as only male half population
