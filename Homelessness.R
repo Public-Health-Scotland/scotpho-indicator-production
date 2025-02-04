@@ -6,7 +6,7 @@
 
 # 2 indicators: 
 # 30034 = "Rate of homelessness applications assessed as homeless or potentially homeless in the past year, per 1000 population."
-# 30161 = "Number of children per 1,000 in temporary accommodation" (denom assumed to be 0-16 year olds, but I'm confirming this with SG)
+# 30161 = "Number of children per 1,000 in temporary accommodation" (children = 0-15 year olds)
 
 # xlsx received from Kelechi.Agwu@gov.scot on behalf of homelessness_statistics_inbox@gov.scot, Nov 2024
 # Data also available online (main tables at https://www.gov.scot/publications/homelessness-in-scotland-2023-24/documents/), but not by gender (these have to be requested)
@@ -89,7 +89,7 @@ pops19plus <- rbind(la_pops, scot_pops) %>%
 
 
 # Get child populations: (use file already produced for ScotPHO use)
-child_pops <- readRDS(paste0(lookups, "Population/CA_pop_16+.rds"))
+child_pops <- readRDS(paste0(lookups, "Population/CA_pop_under16.rds"))
 
 
 #########################################
@@ -187,25 +187,23 @@ prepare_final_files <- function(input_file, ind){
     unique() 
   
   # Save
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  
+  # Including both rds and csv file for now
+  write_rds(main_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write_csv(main_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"))
+
   # 2 - population groups data (ie data behind population groups tab)
   
-  if("Male" %in% unique(input_file$split_value)) {
+  if("Male" %in% unique(input_file$split_value)) { # adult data, not CYP data
     
   pop_grp_data <- input_file %>% 
     select(code, ind_id, year, numerator, rate, upci, 
            lowci, def_period, trend_axis, split_name, split_value,) 
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
-  
+  # Including both rds and csv file for now
+  write_rds(pop_grp_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_csv(pop_grp_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"))
+
   }
   
 }
