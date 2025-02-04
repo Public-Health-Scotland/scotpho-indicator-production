@@ -92,6 +92,7 @@ Answer: `r sex_column` <br>
 # Within LA Quintiles (quint_type = "ca_quin") - expect 32 la only, all quintiles should be available
 # df counts how many distinct quintiles for each geography by quint type, areaname and year - used in checks on quintiles present
 
+if (sex_column) { # group_by should include sex if present
   quintile_checks <- data_indicator %>%
     group_by(quint_type, trend_axis, code, areaname, geo_type, year, sex) %>%
     summarise(count_q=n()) %>%
@@ -101,9 +102,23 @@ Answer: `r sex_column` <br>
   geo_checks <- quintile_checks %>%
     group_by(quint_type, geo_type, trend_axis, sex) %>%
     summarise(count=n()) %>%
+#    pivot_wider(names_from = c(geo_type, sex), values_from = count) %>%
     pivot_wider(names_from = geo_type, values_from = count) %>%
     ungroup()
   
+} else { # sex not present
+  quintile_checks <- data_indicator %>%
+    group_by(quint_type, trend_axis, code, areaname, geo_type, year) %>%
+    summarise(count_q=n()) %>%
+    ungroup()
+  #df counts how many distinct geographies by quint type and year - used to check which geographies are present
+  
+  geo_checks <- quintile_checks %>%
+    group_by(quint_type, geo_type, trend_axis) %>%
+    summarise(count=n()) %>%
+    pivot_wider(names_from = geo_type, values_from = count) %>%
+    ungroup()
+}
 
 # Scotland-wide quintiles
 # flextable to check how many geography types are present each year for Scotland-wide quintiles
@@ -137,7 +152,6 @@ if(ca_quintiles == TRUE) {ft_ca_quin_check <- geo_checks %>%
   color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for HBs
   autofit()
 }
-
 ```
 
 ### Scotland-wide deprivation quintiles
@@ -190,14 +204,14 @@ prep_areatype_quintile_check <- function (areatype) {
     warning <- ca_quintile_warning
   }
   
-  if (warning$quint_error_total != 0) { # group_by should include sex if present
+  if (sex_column & warning$quint_error_total != 0) { # group_by should include sex if present
     areatype_quintile_check <- data_indicator %>%
       subset(quint_type==qtype) %>%
       mutate(q=paste0("Q",as.character(quintile))) %>%
       group_by(trend_axis, areaname, code, geo_type, q, sex) %>%
       summarise(count=n())%>%
       spread(q, count) %>%
-      mutate(qsum=sum(Q1,Q2,Q3,Q4,Q5,QTotal, na.rm=TRUE)) %>%
+      mutate(qsum=sum(any_of(Q1,Q2,Q3,Q4,Q5,QTotal), na.rm=TRUE)) %>%
       ungroup() %>%
       subset(qsum<6) %>%
       arrange(geo_type,code, trend_axis) %>%
@@ -208,11 +222,27 @@ prep_areatype_quintile_check <- function (areatype) {
       autofit() %>%
       theme_vanilla()
 
-    } else {
-        areatype_quintile_check <-  "No table needed: no gaps to show."
-    }
-  
-  areatype_quintile_check
+    } else if (warning$quint_error_total != 0) {
+      areatype_quintile_check <- data_indicator %>%
+        subset(quint_type==qtype) %>%
+        mutate(q=paste0("Q",as.character(quintile))) %>%
+        group_by(trend_axis, areaname, code, geo_type, q) %>%
+        summarise(count=n())%>%
+        spread(q, count) %>%
+        mutate(qsum=sum(any_of(Q1,Q2,Q3,Q4,Q5,QTotal), na.rm=TRUE)) %>%
+        ungroup() %>%
+        subset(qsum<6) %>%
+        arrange(geo_type,code, trend_axis) %>%
+        select(geo_type, areaname, code, trend_axis, everything()) %>%
+        flextable() %>%
+        bg(i= ~Q5==1, j= ~Q5, bg="red") %>%
+        merge_v(j=c("areaname","code","geo_type")) %>%
+        autofit() %>%
+        theme_vanilla()  
+
+      } else {
+        "No table needed: no gaps to show."
+      }
 }
 
 prep_areatype_quintile_check("Scotland") 
@@ -226,7 +256,7 @@ if (hb_quintiles) {
   # if hb quintile sum not equal to 6 theres an issue (since within geography deprivation should always have 5 quintiles plus a total)
   hb_quintile_warning <- quintile_checks %>%
     mutate(q_count = ifelse(quint_type=="hb_quin" && count_q!=6, TRUE, FALSE)) %>%
-    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+    summarise(hb_quint_error_total=sum(q_count,na.rm=TRUE))
   #Text output when hb quintiles not correct
   ifelse(hb_quintile_warning$quint_error_total == 0, "There are no gaps in the HB-level quintile data. :-)",
   "STOP AND CHECK....looks like not all geographies have correct number of HB-level quintiles.")
@@ -239,7 +269,7 @@ if (ca_quintiles) {
   # if ca quintile sum not equal to 6 theres an issue (since within geography deprivation should always have 5 quintiles plus a total)
   ca_quintile_warning <- quintile_checks %>%
     mutate(q_count = ifelse(quint_type=="ca_quin" && count_q!=6, TRUE, FALSE)) %>%
-    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+    summarise(ca_quint_error_total=sum(q_count,na.rm=TRUE))
   #Text output when ca quintiles not correct
   ifelse(ca_quintile_warning$quint_error_total == 0, "There are no gaps in the CA-level quintile data. :-)",
   "STOP AND CHECK....looks like not all geographies have correct number of CA-level quintiles.")
