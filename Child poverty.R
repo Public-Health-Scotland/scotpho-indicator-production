@@ -4,7 +4,6 @@
 
 # TO DO: 
 # WORK OUT HOW TO USE SIMD DECILE DATA (WHEN MORE THAN ONE DATA POINT, AS NOW)
-# Use the child material deprivation data processed here for the CWB indicator (see note below): check this is ok to do.
 
 
 ### Update ScotPHO indicators on child poverty
@@ -182,26 +181,28 @@ prepare_final_files <- function(ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(year) # for plotting
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  # Save
+  # Including both rds and csv file for now
+  write_rds(main_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write_csv(main_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"))
+  
   
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland data by sex (including total)
   pop_grp_data <- childpov %>% 
     filter(indicator == gsub("cyp-","",ind) & !(split_name %in% c("Total"))) %>% 
     select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value,) 
+           lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(year, split_name, split_value)  #for plotting
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
-  
+  # Including both rds and csv file for now
+  write_rds(pop_grp_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_csv(pop_grp_data, file = paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"))
+
   
   # # 3 - SIMD data (ie data behind deprivation tab) # RUN THIS WHEN DEP CALCS CAN HANDLE DECILES (OR WE APPROXIMATE QUINTILES FROM DECILES)
   # # Contains Scotland data by SIMD quintile (single year or 2y aggregate)
