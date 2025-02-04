@@ -45,6 +45,7 @@ source("functions/helper functions/check_file_exists.R") # to check file exists 
 source("functions/helper functions/validate_columns.R") # for checking all required columns are present, named correctly and of correct class
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
+source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
 source("functions/helper functions/calculate_easr.R") # for european age-sex standarised rates and confidence intervals
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
@@ -86,7 +87,7 @@ source("functions/helper functions/run_main_analysis_QA.R") # for running QA rma
 #' The file created in this function is used in the 'Summary', 'Trends' and 'Rank' tabs of the ScotPHO profiles tool dashboard.
 #'
 #'@param filename name of the rds file to read in. File should end in '_raw.rds' but this shouldn't be added to the argument.
-#'@param measure type of rate to calculate - one of `percent`, `stdrate` or `crude`,
+#'@param measure type of rate to calculate - one of `percent`, `stdrate`, `crude` or `perc_pcf`
 #'@param geography base geography level of data file. If only one geography level present then should be one of 
 #' `scotland`, `board`, `council`, `intzone`, `datazone`, otherwise set to `multiple`. If `multiple` is selected, no additional geography levels will be added. Consider removing Scotland if e.g. CA and Scotland present but HB required
 #'@param time_agg number of years to aggregate the data by. 
@@ -104,7 +105,7 @@ source("functions/helper functions/run_main_analysis_QA.R") # for running QA rma
 
 
 main_analysis <- function(filename,
-                          measure = c("percent", "stdrate", "crude"),
+                          measure = c("percent", "stdrate", "crude", "perc_pcf"),
                           geography = c("scotland", "board", "council", "intzone11", "datazone11", "multiple"),
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
@@ -177,7 +178,6 @@ main_analysis <- function(filename,
   # step complete
   cli::cli_alert_success("'Filter by time period' step complete - filtered between {yearstart} and {yearend}.")
 
-
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate by geography level ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -210,18 +210,37 @@ main_analysis <- function(filename,
     geography_lookup <- geography_lookup |>
       select(all_of(area_types)) |>
       unique()
+    
+    
+    # check if there any NAs in the geography code column - even though these cannot
+    # be mapped to any local areas, they are used within the Scotland totals
+    na_vals <- data |>
+      filter(is.na(!!sym(area_types[1]))) |>
+      rename("code" = !!sym(area_types[1])) |>
+      mutate(code = "S00000001")
+    
+    # remove them from the dataset temporarily
+    data <- data |>
+      filter(!is.na(!!sym(area_types[1])))
 
 
     # join the geography lookup to the data so there is a column for each geography level
     data <- left_join(x = data, y = geography_lookup, by = area_types[1])
-
-
+    
+    
     # pivot the data into a 'longer' format so there is just one geography column called 'code'
     data <- data |>
       select(-contains("datazone")) |> # remove datazone column if this was the base geography - we don't publish at this level
       tidyr::pivot_longer(cols = any_of(area_types), values_to = "code", names_to = NULL)
-
-  }
+    
+    
+     # add NA values back into the dataset and assign them the scotland geography code
+     # to ensure they're included when data is summarised by geography in next step
+    if(nrow(na_vals > 0)){
+     data <- rbind(data, na_vals)
+    }
+    
+   }
 
   # and finally, aggregate the data by each geography code
   data <- data |>
@@ -272,7 +291,7 @@ main_analysis <- function(filename,
 
     # identify which variables to join data by - the population lookups used for
     # standardised rates also include age and sex splits
-    joining_vars <- c("code", "year", if(measure == "stdrate") "age_grp", "sex_grp")
+    joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
 
     data <- full_join(x = data, y = pop_lookup, by = joining_vars)
 
@@ -308,9 +327,7 @@ main_analysis <- function(filename,
     arrange(across(all_of(var_order))) |> # arrange data by var order
     group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
     # calculating rolling averages
-    mutate(numerator = RcppRoll::roll_meanr(numerator, time_agg),
-           denominator = RcppRoll::roll_meanr(denominator, time_agg)
-           ) |>
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
     filter(!is.na(denominator)) |>
     ungroup()
 
@@ -335,6 +352,8 @@ main_analysis <- function(filename,
     data <- calculate_crude_rate(data, crude_rate) # calculate crude rate
   } else if(measure == "stdrate"){
     data <- calculate_easr(data, epop_total, epop_age) # calculate standarised rate
+  } else if(measure == "perc_pcf"){
+    data <- calculate_perc_pcf(data)
   }
 
 
