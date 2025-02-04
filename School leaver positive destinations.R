@@ -1,4 +1,4 @@
-### notes ----
+## notes ----
 
 # this script produces data for indicator 13030 - school leavers from publicly funded secondary schools in positive destinations, 9 months after leaving school
 # Summary Statistics for Attainment and Initial Leaver Destinations, No. 6: 2024 Edition, released on 27th February 2024
@@ -42,6 +42,7 @@ geo_lookup %<>% distinct %>% rename(ca = ca2019, hb = hb2019)
 ###############################################.
 ## Part 2 - Import data ----
 ###############################################.
+
 
 
 # National:
@@ -252,4 +253,19 @@ run_ineq_qa(filename = "school_leaver_destinations")
 #run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
 
 #END
+
+#lines below can be deleted now?
+
+#analyze_first(filename = "school_leaver_destinations", measure = "percent", 
+#              time_agg = 1, source_suppressed = TRUE, yearstart = 2009, yearend = 2022, geography = "council")
+
+#analyze_second(filename = "school_leaver_destinations", measure = "percent", 
+ #              time_agg = 1, ind_id = "13010",year_type = "school")
+
+
+
+
+
+
+
 
