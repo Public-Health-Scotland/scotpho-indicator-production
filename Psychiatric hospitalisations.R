@@ -18,7 +18,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
-#Extracting one record per patient with a pshychiatric admission per financial year
+#Extracting one record per patient with a psychiatric admission per financial year
 #Only cases with a valid sex, excluding learning disabilities and those with no datazone. 
 #Selects last value as its mh team methodology and potentially more accurate.
 #Also using smra geo variables as mh team approach
@@ -31,7 +31,7 @@ data_psychiatric <- as_tibble(dbGetQuery(channel, statement=
         MAX( datazone_2011 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2011, 
         MAX( datazone_2001 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2001 
    FROM ANALYSIS.SMR04_PI z
-   WHERE discharge_date between '1 April 2002' and '31 March 2023'
+   WHERE discharge_date between '1 April 2002' and '31 March 2024'
          AND specialty <> 'G5' 
          AND sex in ('1', '2')
          AND datazone_2011 is not null 
@@ -66,7 +66,7 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges
 ###############################################.
 # All patients psychiatric discharge
 analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2022,
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
               time_agg = 3, epop_age = "normal")
 
 analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
@@ -74,7 +74,7 @@ analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", ti
 
 # Deprivation analysis function
 analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2020,   year_type = "financial", 
+                    yearstart= 2002, yearend=2023,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20402)
 

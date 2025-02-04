@@ -18,7 +18,7 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
 
 source("1.indicator_analysis.R") #Normal indicator functions
 
-#Small function to standarize each years info. Function parameters:
+#Small function to standardize each years info. Function parameters:
 #Data is for what basefile to use, list_pos is for the position of the data frame
 #simd for which simd variables-year to look at, year for what year is the data created.
 prepare_file <- function(dz_list14, dz_list17) {
@@ -121,7 +121,7 @@ saveRDS(prepare_file(access_dz14, access_dz17),
 filenames <- c("young_people_crime", "young_people_access", "young_people_income")
 # Running functions for the three indicators
 mapply(analyze_first, filename = filenames, geography = "datazone11", measure = "percent", 
-              yearstart = 2011, yearend = 2021, time_agg = 1, pop = "DZ11_pop_under26")
+              yearstart = 2011, yearend = 2023, time_agg = 1, pop = "DZ11_pop_under26")
 
 mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, 
                ind_id = c(13005, 13003, 13004), year_type = "calendar", qa = F)

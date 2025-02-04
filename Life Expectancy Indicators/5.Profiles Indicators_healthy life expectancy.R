@@ -12,11 +12,15 @@
 # https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/life-expectancy/healthy-life-expectancy-in-scotland
 # it may take some time before this data is then available in statistics.gov 
 
+# stats.gov data also seems to have missing years for some of the population groups e.g. rural/urban split missing for 2017-2019
+# rural urban splits also only available at Scotland level not for NHS board or council area.
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
 
 source("1.indicator_analysis.R") #Normal indicator functions
+source("2.deprivation_analysis.R") #Normal indicator functions
 
 # Data queried directly from statistics.gov 
 # install the dev tools/opendata scotland r package which communicates with the statistics.gov website api - if you don't already have them.
@@ -106,52 +110,148 @@ hle <- hle_data_raw %>%
   arrange(ind_id, code, year, split_name, split_value)
 
 
-###############################################.
-## Generate Male healthy life expectancy shiny files ----
-###############################################.
+##########################################################################.
+##1. Generate Main Data files for healthy life expectancy shiny files ----
+##########################################################################.
 
-# 1. main data (ie data behind summary/trend/rank tab)
-hle_male_main <- hle %>% 
-  filter(sex == "male",
-         split_name == "Total") %>%
-  select(-c(sex, split_name, split_value))
+hle_main_file <- function(indicator, sex_filter){
   
-
-write_csv(hle_male_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_male_shiny.csv"))
-write_rds(hle_male_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_male_shiny.rds"))
-
-# 2. population groups data (ie data behind population groups tab)
-hle_male_popgrp <- hle %>% 
-  filter(sex == "male",
-         split_name != "Total") %>%
-  select(-sex)
-
-write_csv(hle_male_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_male_shiny_popgrp.csv"))
-write_rds(hle_male_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_male_shiny_popgrp.rds"))
-
-
-###############################################.
-## Generate Female healthy life expectancy files ----
-###############################################.
-
-# 1. main data (ie data behind summary/trend/rank tab)
-hle_female_main <- hle %>% 
-  filter(sex == "female",
-         split_name == "Total") %>%
+maindata_df <- hle %>%
+  filter(split_name == "Total",
+         sex==sex_filter) %>%
   select(-c(sex, split_name, split_value))
 
-write_csv(hle_female_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_female_shiny.csv"))
-write_rds(hle_female_main, file = paste0(data_folder, "Data to be checked/healthy_life_expectancy_female_shiny.rds"))
+if (sex_filter=="female"){
+  hle_main_file_female <<- maindata_df #save sex specific dataframe as this will be overwritten by next function call
+} else if (sex_filter=="male") {
+  hle_main_file_male <<- maindata_df #save sex specific dataframe as this will be overwritten by next function call
+}
 
-# 2. population groups data (ie data behind population groups tab)
-hle_female_popgrp <- hle %>% 
-  filter(sex == "female",
-         split_name != "Total") %>%
-  select(-sex)
+write_csv(maindata_df, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny.csv"))
+write_rds(maindata_df, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny.rds"))
 
-write_csv(hle_female_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_female_shiny_popgrp.csv"))
-write_rds(hle_female_popgrp, file = paste0(data_folder, "Test Shiny Data/healthy_life_expectancy_female_shiny_popgrp.rds"))
+}
+
+# run the function for each of the sexes:
+hle_main_file(indicator="healthy_life_expectancy_female", sex_filter ="female")
+hle_main_file(indicator="healthy_life_expectancy_male", sex_filter="male")
+
+#run QA reports for main data
+run_qa("healthy_life_expectancy_female")
+run_qa("healthy_life_expectancy_male")
 
 
 
-# END
+###################################################################################.
+##2. Generate Deprivation Data files for healthy life expectancy shiny files ----
+###################################################################################.
+
+hle_depr_file <- function(indicator, sex_filter ){
+
+  # filter data to include simd and total split
+  depr_df <- hle %>%
+    filter(split_name %in% c("Scottish Index of Multiple Deprivation","Total")) |>
+    filter(code=="S00000001") |> # deprivation split for HLE only available at scotland level so filter for this geo
+    rename(quintile = split_value) %>%
+    mutate(quint_type="sc_quin",
+           quintile = case_when(quintile=="Total" ~ "Total", TRUE ~ substr(quintile, 1, 1)))|>
+    select(-split_name)
+  
+    # apply sex filtering
+    depr_df <- depr_df |>
+      filter(year !="2018")|> #exclude period 2017-2019 since there is only scotland data but no deprivation split
+      filter(sex== sex_filter) |>
+      select(-sex)
+  
+    # Get ind_id argument for the analysis function 
+    ind_id <- unique(depr_df$ind_id)
+    
+  # Save intermediate SIMD file so that files can be run through deprivation function to calculate SII/RII/PAF
+  write_rds(depr_df, file = paste0(data_folder, "Prepared Data/", indicator, "_shiny_depr_raw.rds"))
+  write.csv(depr_df, file = paste0(data_folder, "Prepared Data/", indicator, "_shiny_depr_raw.csv"), row.names = FALSE)
+
+  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
+  analyze_deprivation_aggregated(filename = paste0(indicator, "_shiny_depr"), 
+                                 pop = "depr_pop_allages", # these are all-age indicators, with no sex split for SIMD
+                                 ind_id,
+                                 indicator)
+  
+  # allow visual inspection of sex specific final results
+  if (sex_filter=="female"){
+    hle_dep_final_female <<- final_result #save sex specific dataframe as this will be overwritten by next function call
+  } else if (sex_filter=="male") {
+    hle_dep_final_male <<- final_result #save sex specific dataframe as this will be overwritten by next function call
+  }
+  
+}
+
+# run the function for each of the sexes:
+hle_depr_file(indicator="healthy_life_expectancy_female", sex_filter ="female")
+hle_depr_file(indicator="healthy_life_expectancy_male", sex_filter ="male")
+
+  
+###################################################################################.
+##3. Generate Population Group files for healthy life expectancy shiny files ----
+###################################################################################.
+
+# filter data to include simd and total split
+pop_df <- hle %>%
+    filter(split_name!="Scottish Index of Multiple Deprivation") |>
+    filter(code=="S00000001") # deprivation split for HLE only available at scotland level so filter for this geo
+
+  #create a female population group (so we can display a sex comparison for both male and female indicators)
+ female_pop_df <-pop_df |>
+ filter(sex=="female",
+        split_name=="Total") |>
+   mutate(split_name=(case_when(split_name=="Total" ~ "Sex", TRUE~"Other")),
+          split_value=(case_when(split_value=="Total" ~ "Female", TRUE~"Other")))
+
+ #create a male population group (so we can display a sex comparison for both male and female indicators)
+ male_pop_df <-pop_df |>
+   filter(sex=="male",
+          split_name=="Total") |>
+   mutate(split_name=(case_when(split_name=="Total" ~ "Sex", TRUE~"Other")),
+          split_value=(case_when(split_value=="Total" ~ "Male", TRUE~"Other")))
+
+ pop_df <-pop_df |>
+   filter(year !="2018")|> #exclude period 2017-2019 since there is only scotland data but no rural/urban deprivation split
+   mutate(split_name=(case_when(split_name=="Total" ~ "Urban/Rural", TRUE~split_name))) # keep a total column in urban rural split
+  
+ pop_final <-bind_rows(pop_df,female_pop_df,male_pop_df)
+
+ # function to prepare male and female file files  
+  
+ hle_pop_file <- function(indicator, sex_filter, ind_id ){
+
+
+  if (sex_filter=="female"){
+    
+    pop_final <-  pop_final|>
+      mutate(ind_id=case_when(split_value=="Male" ~ 99101, TRUE ~ind_id)) |>
+      filter(ind_id==99101) |>
+      select(-sex)
+    
+    hle_pop_final_female <<- pop_final #save sex specific dataframe as this will be overwritten by next function call
+  
+    } else if (sex_filter=="male") {
+      
+    pop_final <-  pop_final|>
+      mutate(ind_id=case_when(split_value=="Female" ~ 99102, TRUE ~ind_id)) |>
+      filter(ind_id==99102)|>
+      select(-sex)
+    
+    hle_pop_final_male <<- pop_final #save sex specific dataframe as this will be overwritten by next function call
+  }
+ 
+  write_csv(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny_popgrp.csv"))
+  write_rds(pop_final, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny_popgrp.rds"))
+   
+}
+
+# run the function for each of the sexes:
+hle_pop_file(indicator="healthy_life_expectancy_female", sex_filter ="female", ind_id=99101)
+hle_pop_file(indicator="healthy_life_expectancy_male", sex_filter ="male", ind_id=99102)
+
+
+
+#END

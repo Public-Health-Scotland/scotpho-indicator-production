@@ -55,10 +55,15 @@ old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.r
 
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
 if(file.exists(old_indicator_filepath)) {
+ 
+   if(filename=="life_expectancy_male" |filename=="life_expectancy_female" ){
+  skip_historic_file_checks <-"y" #
+  old_indicator_filepath <-"life expectancy indicators hard to check against historic files" #if no historic file exists
+  } else {
   skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
   old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
   old_data_indicator$year <- as.numeric(old_data_indicator$year)#read in file if one exists
-} else {
+}} else {
   skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
   old_indicator_filepath <-"No historic file available for comparison. Check filename spelling or 'shiny data' network folder if you were expecting a comparison" #if no historic file exists set value to no file available
 }
@@ -121,9 +126,10 @@ geo_checks <- data_indicator %>%
 # Not sure how many localities there are supposed to be?
 # Not sure how to handle indicators with ADP or only Council area - need to think about this...
 
-ft_geo_check <- flextable(geo_checks) %>%
-  color(~ S08!=14, ~S08, color = "red") # Applies conditional formatting - should be 14 NHS board
+ft_geo_check <- flextable(geo_checks)
+  #color(~ S08!=14, ~S08, color = "red") # Applies conditional formatting - should be 14 NHS board
 
+if(board == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S08!=14, ~S08, color = "red")}    #should be 32 councils
 if(ca == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S12!=32, ~S12, color = "red")}    #should be 32 councils
 if(adp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S11!=30, ~S11, color = "red")}   #should be 30 ADP
 if(hscp == TRUE) {ft_geo_check <- ft_geo_check %>%  color(~ S37!=31, ~S37, color = "red")}  #should be 31 hscp
