@@ -15,8 +15,8 @@
 
 source("1.indicator_analysis.R") # for paths
 source("2.deprivation_analysis.R") # needed for the aggregated deprivation analysis
-source("functions/main_analysis.R") # for the QA function 
-source("functions/deprivation_analysis.R") # for the QA function
+#source("functions/main_analysis.R") # for the QA function 
+#source("functions/deprivation_analysis.R") # for the QA function
 
 library(openxlsx) 
 
@@ -241,13 +241,15 @@ prepare_final_files(ind = "school_leaver_destinations")
 ####################
 
 # main data:
-#run_qa(filename = "pos_school_leaver_destinations")
-run_main_analysis_qa(filename="school_leaver_destinations", test_file=FALSE)
+run_qa(filename = "school_leaver_destinations")
+# new QA:
+#run_main_analysis_qa(filename="school_leaver_destinations", test_file=FALSE)
 # Orkney has no data for latest year: plots as zero in QA file, but won't plot in the app I think
 
 # ineq data: # NOT RUNNING DUE TO MISSING HBS???
-#run_ineq_qa(filename = "pos_school_leaver_destinations")
-run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
+run_ineq_qa(filename = "school_leaver_destinations")
+# new QA:
+#run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
 
 #END
 
