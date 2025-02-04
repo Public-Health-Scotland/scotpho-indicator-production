@@ -62,8 +62,9 @@ validate_columns <- function(data, measure, geography){
   # check what geography levels are in the dataset and return an error
   # if multiple levels were found but user has not set geography argument to 'multiple'
   geo_codes <- paste0(unique(stringr::str_sub(data[[required_geo_colname]], 1, 3)))
+  geo_codes <- setdiff(geo_codes, c("NA", NA, NULL, "", "Unknown"))
 
-  if(length(geo_codes) > 1 & geography != "multiple" & (!"NA" %in% geo_codes)){
+  if(length(geo_codes) > 1 & geography != "multiple"){
     cli::cli_abort(
       c(
         "x" = "{required_geo_colname} column contains more than 1 geography level",
@@ -77,7 +78,8 @@ validate_columns <- function(data, measure, geography){
   required_cols <- switch(measure,
                           "percent" = c(required_geo_colname, "year", "numerator", "denominator"),
                           "stdrate" = c(required_geo_colname, "year", "numerator", "sex_grp", "age_grp"),
-                          "crude" = c(required_geo_colname, "year", "numerator")
+                          "crude" = c(required_geo_colname, "year", "numerator"),
+                          "perc_pcf" = c(required_geo_colname, "year", "numerator","denominator")
   )
   
   
@@ -137,6 +139,12 @@ validate_columns <- function(data, measure, geography){
       across(any_of(c({{required_geo_colname}}, "sex_grp", "age_grp")), as.character),
       across(any_of(c("numerator", "denominator", "year")), as.numeric)
     )
+  
+  
+  # Replace any values in the geography code column that represent an unknown geography with NA - these
+  # will still be required for calculating Scotland totals
+  data <- data |>
+    mutate(!!sym(required_geo_colname) := if_else(!!sym(required_geo_colname) %in% c(NA, "NA", "Unknown", ""), NA_character_, !!sym(required_geo_colname)))
   
   
   # select all required columns
