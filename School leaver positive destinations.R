@@ -254,17 +254,6 @@ run_ineq_qa(filename = "school_leaver_destinations")
 
 #END
 
-#lines below can be deleted now?
-
-#analyze_first(filename = "school_leaver_destinations", measure = "percent", 
-#              time_agg = 1, source_suppressed = TRUE, yearstart = 2009, yearend = 2022, geography = "council")
-
-#analyze_second(filename = "school_leaver_destinations", measure = "percent", 
- #              time_agg = 1, ind_id = "13010",year_type = "school")
-
-
-
-
 
 
 
