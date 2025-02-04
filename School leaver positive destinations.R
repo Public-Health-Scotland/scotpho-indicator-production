@@ -1,73 +1,5 @@
 ### notes ----
 
-# this script produces data for indicator 13030 - school leavers in positive destinations
-# source of data: https://www.gov.scot/publications/summary-statistics-attainment-initial-leaver-destinations-no-5-2023-edition/documents/
-
-
-###############################################.
-## Part 1 - Prepare data ----
-###############################################.
-
-
-###1.a load functions/dependencies ----
-
-source("1.indicator_analysis.R") 
-
-library("janitor") #for row_to_names() function 
-library("stringr")#for string_replace() function
-
-
-###1.b read in data ----
-
-positive_dest <- read_xlsx(paste0(data_folder, "Received Data/School leaver positive destinations/summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"), sheet = "L2.1a") #positive destinations data
-
-ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) #council area lookup
-
-###1.c clean data ----
-
-positive_dest <- tail(positive_dest, -4) %>% # remove metadata from top of speadsheet
-  row_to_names(row_number = 1) %>% #convert first row to headers
-  setNames(tolower(names(.))) %>%
-  mutate(`year` = str_sub(year,1,nchar(year)-3),#convert from FY YY/YY to YYYY
-         `la name` = str_replace(`la name`, "Edinburgh, City of","City of Edinburgh"),
-         `la name` = str_replace(`la name`, "&","and"),
-         across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
-         across(contains(c("positive", "leaver", "year")), as.numeric)) %>%
-  left_join(ca, by = c("la name" = "areaname")) %>% # join with council area lookup
-  mutate(ca = ifelse(`la name` == "Scotland", "S00000001", code)) %>% 
-  select("year", "ca", "positive destination", "number of leavers") %>%
-  rename("numerator" = "positive destination",
-         "denominator" = "number of leavers")
-
-
-#1.d. Save file - do some QA checks at this point ----
-saveRDS(positive_dest, file=paste0(data_folder, 'Prepared Data/school_leaver_destinations_raw.rds'))
-
-
-
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
-
-analyze_first(filename = "school_leaver_destinations", measure = "percent", 
-              time_agg = 1, source_suppressed = TRUE, yearstart = 2009, yearend = 2022, geography = "council")
-
-analyze_second(filename = "school_leaver_destinations", measure = "percent", 
-               time_agg = 1, ind_id = "13010",year_type = "school")
-
-
-########
-
-
-#end of original 
-
-##altertnative script by liz richardson but this doesn't import numerator and denominator which would enable NHS board level data calculation
-##revisit this script and find combination of both options
-##could test monicas revamp of analysis functions
-
-
-### notes ----
-
 # this script produces data for indicator 13030 - school leavers from publicly funded secondary schools in positive destinations, 9 months after leaving school
 # Summary Statistics for Attainment and Initial Leaver Destinations, No. 6: 2024 Edition, released on 27th February 2024
 # https://www.gov.scot/publications/summary-statistics-follow-up-leaver-destinations-no-6-2024-edition/
@@ -81,8 +13,10 @@ analyze_second(filename = "school_leaver_destinations", measure = "percent",
 
 ### Load functions/dependencies ----
 
-source("1.indicator_analysis.R") 
-source("2.deprivation_analysis.R")
+source("1.indicator_analysis.R") # for paths
+source("2.deprivation_analysis.R") # needed for the aggregated deprivation analysis
+source("functions/main_analysis.R") # for the QA function 
+source("functions/deprivation_analysis.R") # for the QA function
 
 library(openxlsx) 
 
@@ -99,9 +33,11 @@ file <- "summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xls
 # council area lookup
 ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) 
 
-# geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) |>
-#   select(ca2019, hb2019) 
-# geo_lookup %<>% distinct %>% rename(ca = ca2019, hb = hb2019)
+# ca to hb lookup
+geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) |>
+  select(ca2019, hb2019)
+geo_lookup %<>% distinct %>% rename(ca = ca2019, hb = hb2019)
+
 
 ###############################################.
 ## Part 2 - Import data ----
@@ -121,9 +57,8 @@ scot_series <- read.xlsx(paste0(schdest_data_folder, file),
          across(contains(c("Voluntary", "Activity", "Personal")), as.numeric),
          rate = rowSums(pick("Higher.Education":"Personal.Skills.Development.[note.13]"), na.rm = T),
          denominator = `Number.of.Leavers`,
-         numerator = (rate * `Number.of.Leavers`)/100) 
-%>%
-  select(trend_axis, numerator, rate) %>%
+         numerator = round((rate * `Number.of.Leavers`)/100)) %>%
+  select(trend_axis, numerator, denominator, rate) %>%
   mutate(split_name = "None",
          split_value = "None")
 
@@ -147,8 +82,8 @@ import_schdest_split_data <- function(sheet, rows, split_name) {
     mutate(numerator = round(`Number of Leavers` * `All Positive Destinations`/100),
            split_name = split_name) %>%
     rename(rate = `All Positive Destinations`,
-           trend_axis = Year) %>%
-    select(-`Number of Leavers`)
+           trend_axis = Year,
+           denominator = `Number of Leavers`)
   
 }
 
@@ -180,30 +115,12 @@ scot_all <- rbind(scot_series,
                   schdest_simd) %>%
   mutate(code = "S00000001") # add code for Scotland
 
-
 # make population file for school leavers by year and SIMD quintile, for inequalities metrics:
-depr_pop_schoolleavers <- read.xlsx(paste0(schdest_data_folder, file),
-                                    sheet = "Table_2", 
-                                    rows = c(6:188),
-                                    colNames = TRUE) %>%
-  mutate(Initial.Destination = str_trim(Initial.Destination),
-         year = as.numeric(substr(Year, 1, 4))) %>%
-  filter(Initial.Destination == "Number of Leavers") %>%
-  select(-Year, -Initial.Destination) %>%
-  pivot_longer(-year, names_to = "quintile", values_to = "denominator") %>%
-  select(year, quintile, denominator) %>%
-  mutate(quintile = str_replace_all(quintile, "\\.", " "),
-         quintile = str_to_sentence(quintile)) %>%
-  mutate(quintile = case_when(quintile=="Quintile 0-20% (most deprived)"  ~ "1", # recode the splits
-                              quintile=="Quintile 20-40%" ~ "2",
-                              quintile=="Quintile 40-60%" ~ "3",
-                              quintile=="Quintile 60-80%" ~ "4",
-                              quintile=="Quintile 80-100% (least deprived)" ~ "5",
-                              quintile=="Total" ~ "Total")) %>%
-  filter(!is.na(quintile)) %>%
+depr_pop_schoolleavers <- schdest_simd %>%
+  mutate(year = as.numeric(substr(trend_axis, 1, 4))) %>%
+  select(year, quintile=split_value, denominator) %>%
   mutate(code = "S00000001",
-         quint_type = "sc_quin") %>%
-  mutate(denominator = as.numeric(denominator))
+         quint_type = "sc_quin") 
 
 saveRDS(depr_pop_schoolleavers, paste0(lookups, "Population/depr_pop_schoolleavers.rds"))
 
@@ -219,24 +136,40 @@ ca_series <- read.xlsx(paste0(schdest_data_folder, file),
   filter(LA.Name!="Scotland") %>% # longer time series in the scot_series data
   mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
          rate = as.numeric(`Positive.Destination`),
-         numerator = (rate * `Number.of.leavers`)/100,
+         numerator = round((rate * `Number.of.leavers`)/100),
          areaname = str_replace(LA.Name, "Edinburgh, City of","City of Edinburgh"),
          areaname = str_replace(areaname, "&","and")) %>%
   merge(ca, by = "areaname") %>% # join with council area lookup
-  select(trend_axis, code, numerator, rate) %>%
+  select(trend_axis, code, numerator, denominator = `Number.of.leavers`, rate) %>%
   mutate(split_name = "None",
          split_value = "None")
+
+# aggregate to HB level
+hb_series <- ca_series %>%
+  merge(y=geo_lookup, by.x="code", by.y="ca") %>%
+  group_by(hb, trend_axis) %>%
+  summarise(numerator = sum(numerator, na.rm=TRUE),
+            denominator = sum(denominator, na.rm=TRUE)) %>%
+  ungroup() %>%
+  mutate(rate = 100 * numerator/denominator,
+         split_name = "None",
+         split_value = "None") %>%
+  rename(code = hb)
 
 
 # Combine all:
 ###################
 
-all_data <- rbind(scot_all, ca_series) %>%
+all_data <- rbind(scot_all, ca_series, hb_series) %>%
   mutate(ind_id = 13010,
          year = substr(trend_axis, 1, 4),
-         def_period = paste0("School year (", trend_axis, ")"),
-         upci = NA,
-         lowci = NA)
+         def_period = paste0("School year (", trend_axis, ")")) %>%
+  # confidence intervals
+  mutate(ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method. 
+         lowci = rate - ci_wald,
+         upci = rate + ci_wald) %>%
+  select(-ci_wald, -denominator)
+
 
 
 ##########################################################
@@ -248,36 +181,33 @@ all_data <- rbind(scot_all, ca_series) %>%
 prepare_final_files <- function(ind){
   
   # 1 - main data (ie data behind summary/trend/rank tab)
-  main_data <- all_data %>% 
-    filter(split_name == "None") %>% 
-    select(code, ind_id, year, 
-           numerator, rate, upci, lowci, 
+  main_data <- all_data %>%
+    filter(split_name == "None") %>%
+    select(code, ind_id, year,
+           numerator, rate, upci, lowci,
            def_period, trend_axis) %>%
     unique() %>%
     arrange(code,year)
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE) #remove when data live and scripts not being developed
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds")) #remove when data live and scripts not being developed
   # save to folder that QA script accesses:
   write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE) 
   
   # 2 - population groups data (ie data behind population groups tab)
-  pop_grp_data <- all_data %>% 
-    filter(!(split_name %in% c("None", "Deprivation (SIMD)"))) %>% 
-    select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value,) 
+  pop_grp_data <- all_data %>%
+    filter(!(split_name %in% c("None", "Deprivation (SIMD)"))) %>%
+    select(code, ind_id, year, numerator, rate, upci,
+           lowci, def_period, trend_axis, split_name, split_value,)
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE) #remove when data live and scripts not being developed
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds")) #remove when data live and scripts not being developed
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
   write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE) 
   
   # 3 - SIMD data (ie data behind deprivation tab)
   
   # Process SIMD data
-  simd_data <- all_data %>% 
-    filter(split_name == "Deprivation (SIMD)") %>% 
+  simd_data <- all_data %>%
+    filter(split_name == "Deprivation (SIMD)") %>%
     unique() %>%
     select(-split_name) %>%
     rename(quintile = split_value) %>%
@@ -288,9 +218,9 @@ prepare_final_files <- function(ind){
   write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
   
   # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
+  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"),
                                  pop = "depr_pop_schoolleavers", # the population file created above
-                                 ind_id = 13010, 
+                                 ind_id = 13010,
                                  ind_name = ind
   )
   
@@ -304,35 +234,20 @@ prepare_final_files <- function(ind){
 
 
 # Run function to create final files
-prepare_final_files(ind = "pos_school_leaver_destinations")
+prepare_final_files(ind = "school_leaver_destinations")
 
 
 # Run QA reports
 ####################
 
-# main data: 
-run_qa(filename = "pos_school_leaver_destinations")
+# main data:
+#run_qa(filename = "pos_school_leaver_destinations")
+run_main_analysis_qa(filename="school_leaver_destinations", test_file=FALSE)
+# Orkney has no data for latest year: plots as zero in QA file, but won't plot in the app I think
 
 # ineq data: # NOT RUNNING DUE TO MISSING HBS???
-run_ineq_qa(filename = "pos_school_leaver_destinations")
-
+#run_ineq_qa(filename = "pos_school_leaver_destinations")
+run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
 
 #END
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
