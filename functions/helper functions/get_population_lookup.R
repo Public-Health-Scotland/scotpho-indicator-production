@@ -20,4 +20,11 @@ get_population_lookup <- function(folder, pop, measure){
     
   }
   
+  # rename the column holding population estimates
+  # if measureis perc_pcf since this measure type alreaedy contains a column called denominator
+  if(measure == "perc_pcf"){
+    pop_lookup <- pop_lookup |>
+      rename(est_pop = denominator)
+  }
+  
 }
