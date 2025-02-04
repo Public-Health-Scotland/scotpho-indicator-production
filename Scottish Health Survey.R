@@ -164,7 +164,7 @@ data <- all_data %>%
          trend_axis = year,
          year = if_else(str_detect(trend_axis, "-"), as.numeric(str_sub(year, start = 1, end = 4))+2, as.numeric(year)),
          def_period = if_else(str_detect(trend_axis, "-"), paste0("4-year aggregate"," (", trend_axis, ")"), paste0(year, " survey year")),
-         numerator = NA) %>% 
+         numerator = as.character(NA)) %>% 
   
   # Join geography codes
   left_join(dictionary, by = c("areatype", "areaname")) %>%
@@ -219,13 +219,14 @@ prepare_final_files <- function(ind){
   pop_grp_data <- data %>% 
     filter(indicator == ind) %>% 
     filter(split_value != "All") %>% # remove for those splits that already had "All"
+    filter(!str_detect(def_period, "aggregate")) %>% # keep only annual data, not aggregated (only applies to data by sex, as other splits are only annual, and Scotland-wide only)
     rbind(split_totals) %>%
     mutate(split_value = ifelse(split_value=="All", "Total", split_value)) %>%
     select(!indicator)
   
   # remove SIMD data for further analysis
   pop_grp_data_final <- pop_grp_data %>%
-    filter(split_name!="Deprivation (SIMD")
+    filter(split_name!="Deprivation (SIMD)")
 
   # Save
   write.csv(pop_grp_data_final, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
@@ -234,6 +235,7 @@ prepare_final_files <- function(ind){
   # Process SIMD data
   simd_data <- pop_grp_data %>%
     filter(split_name=="Deprivation (SIMD)") %>%
+    filter(!str_detect(def_period, "aggregate")) %>% # keep only annual data, not aggregated (SIMD for aggregated years doesn't exist in the data anyway)
     mutate(quintile = case_when(split_value=="1st-Most deprived" ~ "1",
                                 split_value=="2nd" ~ "2",
                                 split_value=="3rd" ~ "3",
