@@ -27,4 +27,6 @@ get_population_lookup <- function(folder, pop, measure){
       rename(est_pop = denominator)
   }
   
+  return(pop_lookup)
+  
 }
