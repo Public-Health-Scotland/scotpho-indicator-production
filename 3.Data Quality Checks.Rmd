@@ -12,13 +12,24 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE}
-library (reactable)
+library(reactable)
+
+
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
-#Read in indicator file being checked
-data_indicator <- readRDS(paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))
+#Read in indicator file being checked (switch file path if working on test in
+scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+output_folder <- if(test_file){
+    file.path(scotpho_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
+    } else {
+      file.path(scotpho_folder, "Data to be checked") # for established indicators already in the profiles tool 
+    }
+  
+data_indicator <- readRDS(paste0(output_folder,"/", filename, "_shiny.rds"))
+
 data_indicator$year <- as.numeric(data_indicator$year)
 
 #check if all expected columns for shiny tool are present & count number of columns present
@@ -75,7 +86,7 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
 ------------------------------------------------------------------------------------
 
-**New** indicator file:  /`r (paste0(data_folder, "Data to be checked/", filename, "_shiny.rds"))`<br>
+**New** indicator file:  /`r (paste0(output_folder,"/", filename, "_shiny.rds"))`<br>
 **Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath)) `<br>
 
 **Geographies present in indicator output file** <br>
@@ -503,6 +514,7 @@ Shiny app looking at differences between historic and latest indicator data outp
 
 ```{r, echo=FALSE}
 
+
 # shinyApp(
 # 
 #   ui = fluidPage(
@@ -569,3 +581,10 @@ Shiny app looking at differences between historic and latest indicator data outp
 <br>
 <br>
 
+
+```{r, echo=FALSE}
+# stop running shiny when close QA report
+onStop(function() {
+  stopApp()
+})
+```
