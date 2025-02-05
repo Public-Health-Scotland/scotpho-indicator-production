@@ -197,7 +197,7 @@ prep_areatype_quintile_check <- function (areatype) {
       group_by(trend_axis, areaname, code, geo_type, q, sex) %>%
       summarise(count=n())%>%
       spread(q, count) %>%
-      mutate(qsum=sum(any_of(Q1,Q2,Q3,Q4,Q5,QTotal), na.rm=TRUE)) %>%
+      mutate(qsum=sum(Q1,Q2,Q3,Q4,Q5,QTotal, na.rm=TRUE)) %>%
       ungroup() %>%
       subset(qsum<6) %>%
       arrange(geo_type,code, trend_axis) %>%
@@ -207,6 +207,8 @@ prep_areatype_quintile_check <- function (areatype) {
       merge_v(j=c("areaname","code","geo_type")) %>%
       autofit() %>%
       theme_vanilla()
+    
+    areatype_quintile_check
     } else {
         "No table needed: no gaps to show."
       }
@@ -217,7 +219,7 @@ if (hb_quintiles) {
   # if hb quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
   hb_quintile_warning <- quintile_checks %>%
     mutate(q_count = ifelse(quint_type=="hb_quin" && count_q!=6, TRUE, FALSE)) %>%
-    summarise(hb_quint_error_total=sum(q_count,na.rm=TRUE))
+    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
   #Text output when hb quintiles not correct
   ifelse(hb_quintile_warning$quint_error_total == 0, "There are no gaps in the HB-level quintile data. :-)",
   "STOP AND CHECK....looks like not all geographies have correct number of HB-level quintiles.")
@@ -229,7 +231,7 @@ if (ca_quintiles) {
   # if ca quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
   ca_quintile_warning <- quintile_checks %>%
     mutate(q_count = ifelse(quint_type=="ca_quin" && count_q!=6, TRUE, FALSE)) %>%
-    summarise(ca_quint_error_total=sum(q_count,na.rm=TRUE))
+    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
   #Text output when ca quintiles not correct
   ifelse(ca_quintile_warning$quint_error_total == 0, "There are no gaps in the CA-level quintile data. :-)",
   "STOP AND CHECK....looks like not all geographies have correct number of CA-level quintiles.")
