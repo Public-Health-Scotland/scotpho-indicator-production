@@ -57,6 +57,9 @@ validate_columns <- function(data, measure, geography){
   }
   
   
+  # remove any whitespace from columns 
+  data <- data |>
+    mutate(across(everything(), ~ trimws(.)))
   
   
   # check what geography levels are in the dataset and return an error
