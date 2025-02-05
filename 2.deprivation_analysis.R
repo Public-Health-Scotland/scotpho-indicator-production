@@ -443,7 +443,7 @@ data_depr_totals <- data_depr_totals %>% summarise_all(sum, na.rm = T) %>%
 # filename - required - determines which indicator_data file is used for checking
 
 run_ineq_qa <- function(filename){
-  run("4.Data Quality Checks_inequalities indicators.Rmd")
+  run("../scotpho-indicator-production/4.Data Quality Checks_inequalities indicators.Rmd")
 }  
 
 
