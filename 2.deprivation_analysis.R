@@ -457,12 +457,24 @@ run_ineq_qa <- function(filename){
 
 inequality_measures <- function(dataset){
 
+  # Are the deprivation data grouped by sex? If so this needs to be accounted for in these calculations.
+  
+  if ("sex" %in% names(dataset)) {
+    
+    group_args <- c("code", "year", "quint_type", "sex")
+    
+  } else {
+    
+    group_args <- c("code", "year", "quint_type")
+    
+  }
+  
 #################################################.
 ##  SII/RII  ----
 ##################################################.
   
   #Splitting into two files: one with quintiles for SII and one without to keep the total values
-  data_depr_sii <- dataset %>% group_by(code, year, quint_type) %>% 
+  data_depr_sii <- dataset %>% group_by(pick(all_of(group_args))) %>% 
     mutate(overall_rate = rate[quintile == "Total"]) %>% 
     filter(quintile != "Total") %>% 
     #This variables are used for SII, RII and PAR calculation
@@ -478,7 +490,7 @@ inequality_measures <- function(dataset){
   #https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   #The dataframe sii_model will have a column for sii, lower ci and upper ci for each
   # geography, year and quintile type
-  sii_model <- data_depr_sii %>% group_by(code, year, quint_type) %>% 
+  sii_model <- data_depr_sii %>% group_by(pick(all_of(group_args))) %>% 
     #Checking that all quintiles are present, if not excluding as we are not showing
     #RII and SII for those. Calculations would need to be adjusted and thought well if we wanted to include them
     mutate(count= n()) %>% filter(count == 5) %>% 
@@ -507,7 +519,7 @@ inequality_measures <- function(dataset){
 
  
   #Merging sii with main data set
-  data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
+  data_depr <- left_join(data_depr_sii, sii_model, by = group_args)
   
   #Calculating RII
   data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
@@ -529,15 +541,15 @@ inequality_measures <- function(dataset){
 # https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
 #Adding columns for Most and least deprived rates
 most_depr <- data_depr %>% filter(quintile == "1") %>% 
-  select(code, year, quint_type, rate) %>% rename(most_rate = rate)
+  select(group_args, rate) %>% rename(most_rate = rate)
 
 least_depr <- data_depr %>% filter(quintile == "5") %>% 
-  select(code, year, quint_type, rate) %>% rename(least_rate = rate)
+  select(group_args, rate) %>% rename(least_rate = rate)
 
-data_depr <- left_join(data_depr, most_depr, by = c("code", "year", "quint_type"))
-data_depr <- left_join(data_depr, least_depr, by = c("code", "year", "quint_type"))
+data_depr <- left_join(data_depr, most_depr, by = group_args)
+data_depr <- left_join(data_depr, least_depr, by = group_args)
 
-data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
+data_depr <- data_depr %>%  group_by(pick(all_of(group_args))) %>%
   mutate(#calculating PAR. PAR of incomplete groups to NA
     #CI calculation missing, this can help https://onlinelibrary.wiley.com/doi/pdf/10.1002/sim.2779
     #https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
@@ -552,12 +564,12 @@ data_depr <- data_depr %>%  group_by(code, year, quint_type) %>%
 #Joining with totals.
 #dataframe with the unique values for the different inequality measures
 data_depr_match <- data_depr %>% 
-  select(code, year, quint_type, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
+  select(group_args, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
          rii_int, lowci_rii_int, upci_rii_int, par, abs_range, rel_range) %>% 
   unique()
 
 data_depr_totals <- left_join(data_depr_totals, data_depr_match, 
-                              by = c("code", "year", "quint_type"))
+                              by = group_args)
 
 data_depr <- bind_rows(data_depr, data_depr_totals) 
 data_depr <<- data_depr
@@ -578,6 +590,7 @@ data_depr <<- data_depr
 #'  required fields: "year"       "rate"       "lowci"      "upci"       "numerator"  "def_period"
 #'                  "trend_axis" "ind_id"     "code"       "quintile"   "quint_type"
 #'  quintile is in format "1" to "5" and "Total" (total must be provided).
+#'  sex is an optional column.
 #' @param pop Name of the population file.
 #' @param ind_id indicator code/number
 #' @param ind_name indicator name for the final files
@@ -603,18 +616,52 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
   yearstart = min(data_depr$year)
   yearend = max(data_depr$year)
   
+  # Are the deprivation data grouped by sex? If so this needs to be accounted for in these calculations.
+  sex_column <- "sex" %in% names(data_depr) # gives TRUE or FALSE
+  
+  # What geogs are in the data?
+  codes <- unique(data_depr$code)
+  
   ###############################################.
   ## Matching with population lookup----
   ###############################################.
   
-  # Matching with population lookup (denominator required for SIMD analysis)
-  pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
-    subset(year >= yearstart & year <= yearend) #Reading population file and selecting the right year range
+  if (sex_column == FALSE) {
   
-  # Matching population with data
-  data_depr <- right_join(x=data_depr, y=pop_depr_lookup, 
-                          by = c("year", "code", "quintile", "quint_type")) %>%
-    filter(code=="S00000001") # these data are just Scotland level. Change this if HB/CA data included.
+    # Matching with population lookup (denominator required for SIMD analysis)
+    pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'.rds')) %>% 
+      subset(year >= yearstart & year <= yearend) #Reading population file and selecting the right year range
+    
+    # Matching population with data
+    data_depr <- right_join(x=data_depr, y=pop_depr_lookup, 
+                            by = c("year", "code", "quintile", "quint_type")) %>%
+      filter(code %in% codes) 
+  
+  } else if (sex_column == TRUE) {
+    
+    # Matching with population lookup (denominator required for SIMD analysis)
+    pop_depr_lookup <- readRDS(paste0(lookups, "Population/", pop,'_SR.rds')) %>% 
+      subset(year >= yearstart & year <= yearend) %>% #Reading population file and selecting the right year range
+      group_by(year, code, sex_grp, quintile, quint_type) %>%
+      summarise(denominator = sum(denominator)) %>%
+      ungroup() %>%
+      rename(sex = sex_grp) %>%
+      mutate(sex = case_when(sex==1 ~ "Male",
+                             sex==2 ~ "Female"))
+    pop_depr_lookup_totals <- pop_depr_lookup %>%
+      group_by(year, code, quintile, quint_type) %>%
+      summarise(denominator = sum(denominator)) %>%
+      ungroup() %>%
+      mutate(sex = "Total")
+    pop_depr_lookup <- rbind(pop_depr_lookup,
+                             pop_depr_lookup_totals)  
+    
+    # Matching population with data
+    data_depr <- right_join(x=data_depr, y=pop_depr_lookup, 
+                            by = c("year", "code", "quintile", "quint_type", "sex")) %>%
+      filter(code %in% codes) 
+
+  }
   
   #selecting only years of interest
   data_depr <- data_depr %>% subset(year >= yearstart & year <= yearend) %>%
@@ -648,16 +695,30 @@ analyze_deprivation_aggregated <- function(filename, # the prepared data, withou
   
   if (qa == FALSE) { #if you don't want to run full data quality checks set qa=false then only scotland chart will be produced
     #Selecting Health boards and Scotland for latest year in dataset
-    qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
-                                       & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
-                      aes(code, rate) ) +
-      geom_point(stat = "identity") 
+
+    if (sex_column==TRUE) {
+      
+      qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                         & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
+             aes(code, rate) ) +
+        geom_point(stat = "identity") +
+        facet_wrap(~sex)
+      
+    } else {
+      
+      qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
+                                         & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
+             aes(code, rate) ) +
+        geom_point(stat = "identity") 
+      
+    }
     
     if (is.numeric(data_shiny$lowci)) {
       qa_plot <- qa_plot +
         geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
     }
     qa_plot
+
     
   } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
     
