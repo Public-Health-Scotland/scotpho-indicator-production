@@ -19,11 +19,11 @@ data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 code_dictionary <-readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
 #Read in indicator file being checked (switch file path if working on test in
-scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 output_folder <- if(test_file){
-    file.path(scotpho_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
+    file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
     } else {
-      file.path(scotpho_folder, "Data to be checked") # for established indicators already in the profiles tool 
+      file.path(profiles_data_folder, "Data to be checked") # for established indicators already in the profiles tool 
     }
   
 #Read in indicator file being checked
