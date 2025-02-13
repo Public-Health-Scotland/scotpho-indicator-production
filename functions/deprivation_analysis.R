@@ -53,6 +53,16 @@ source("functions/helper functions/create_trend_axis_column.R") # for creating t
 source("functions/helper functions/run_rmarkdown_QA.R") # for creating trend axis column 
 source("functions/helper functions/validate_deprivation_columns.R") # for creating trend axis column 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# file paths (derived when script sourced)----
+# this filepath object will be created if the deprivation analysis script is sourced (before and functions are called)
+# it will mean file path declarations sourcing indicator data can be shortened
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+# path to ScotPHO data folder - within this folder there are different sub-folders
+# for sourcing/saving data at different stages of indicator production process
+#scotpho_folder renamed
+profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -127,24 +137,24 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
   # File paths ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~
   
-  # path to ScotPHO folder - within here there are different sub-folders
-  # for saving data at different stages of indicator production process
-  scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+  # # path to ScotPHO folder - within here there are different sub-folders
+  # # for saving data at different stages of indicator production process
+  # profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
   
   # paths to ScotPHOs lookup folders - we create these lookups ourselves
   # repo: https://github.com/Public-Health-Scotland/scotpho-lookups 
-  geography_lookups <- file.path(scotpho_folder, "Lookups", "Geography")
-  population_lookups <- file.path(scotpho_folder, "Lookups", "Population")
+  geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
+  population_lookups <- file.path(profiles_data_folder, "Lookups", "Population")
   
   # folder where 'prepared data' should be saved, to be passed through this function.
   # (as data has to be in a particular format before it can be analysed)
-  input_folder <- file.path(scotpho_folder, "Prepared Data")
+  input_folder <- file.path(profiles_data_folder, "Prepared Data")
   
   # folder where final indicator file is saved at the end of this function 
   output_folder <- if(test_file){
-    file.path(scotpho_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
+    file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
   } else {
-    file.path(scotpho_folder, "Data to be checked") # for established indicators already in the profiles tool 
+    file.path(profiles_data_folder, "Data to be checked") # for established indicators already in the profiles tool 
   }
   
   
