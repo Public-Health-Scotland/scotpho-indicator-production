@@ -18,8 +18,13 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+
+source("functions/main_analysis.R") # source functions & libraries to run script
+source("functions/deprivation_analysis.R") # source functions & libraries to run script
+
+# calls to old function scripts which can be removed once satisfied new function scripts are working
+#source("1.indicator_analysis.R") #Normal indicator functions
+#source("2.deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -58,7 +63,7 @@ data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>%
 deaths_all_dz11 <- data_deaths %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(deaths_all_dz11, file=paste0(data_folder, 'Prepared Data/deaths_allages_dz11_raw.rds'))
+saveRDS(deaths_all_dz11, file=paste0(profiles_data_folder, '/Prepared Data/deaths_allages_dz11_raw.rds'))
 
 # Deprivation basefile
 # Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -67,7 +72,7 @@ deaths_all_dz01 <- data_deaths %>% group_by(year, datazone2001, sex_grp, age_grp
 
 dep_all_file <- rbind(deaths_all_dz01, deaths_all_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_all_file, file=paste0(data_folder, 'Prepared Data/deaths_allages_depr_raw.rds'))
+saveRDS(dep_all_file, file=paste0(profiles_data_folder, '/Prepared Data/deaths_allages_depr_raw.rds'))
 
 
 ###############################################.
@@ -77,7 +82,7 @@ deaths_under1 <- data_deaths %>%
   group_by(year, ca) %>%
   summarize(numerator = n()) %>% ungroup()
 
-saveRDS(deaths_under1, file=paste0(data_folder, 'Prepared Data/deaths_under1_raw.rds'))
+saveRDS(deaths_under1, file=paste0(profiles_data_folder, '/Prepared Data/deaths_under1_raw.rds'))
 
 
 ###############################################.
@@ -87,7 +92,7 @@ deaths_1to15 <- data_deaths %>%
   group_by(year, ca) %>%
   summarize(numerator = n()) %>% ungroup()
 
-saveRDS(deaths_1to15, file=paste0(data_folder, 'Prepared Data/deaths_1to15_raw.rds'))
+saveRDS(deaths_1to15, file=paste0(profiles_data_folder, '/Prepared Data/deaths_1to15_raw.rds'))
 
 
 ###############################################.
@@ -98,7 +103,7 @@ deaths_1544_dz11 <- data_deaths %>%
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(deaths_1544_dz11, file=paste0(data_folder, 'Prepared Data/deaths_15to44_dz11_raw.rds'))
+saveRDS(deaths_1544_dz11, file=paste0(profiles_data_folder, '/Prepared Data/deaths_15to44_dz11_raw.rds'))
 
 # Deprivation basefile (15-44 years)
 # Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -109,7 +114,7 @@ deaths_1544_dz01 <- data_deaths %>%
 
 dep_1544_file <- rbind(deaths_1544_dz01, deaths_1544_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_1544_file, file=paste0(data_folder, 'Prepared Data/deaths_15to44_depr_raw.rds'))
+saveRDS(dep_1544_file, file=paste0(profiles_data_folder, 'Prepared Data/deaths_15to44_depr_raw.rds'))
 
 
 ###############################################.
@@ -119,7 +124,7 @@ deaths_under75_dz11 <- data_deaths %>%
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(deaths_under75_dz11, file=paste0(data_folder, 'Prepared Data/deaths_under75_dz11_raw.rds'))
+saveRDS(deaths_under75_dz11, file=paste0(profiles_data_folder, '/Prepared Data/deaths_under75_dz11_raw.rds'))
 
 # Deprivation basefile (under 75 years)
 # Datazone2001. DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -130,7 +135,7 @@ deaths_under75_dz01 <- data_deaths %>%
 
 dep_under75_file <- rbind(deaths_under75_dz01, deaths_under75_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_under75_file, file=paste0(data_folder, 'Prepared Data/deaths_under75_depr_raw.rds'))
+saveRDS(dep_under75_file, file=paste0(profiles_data_folder, '/Prepared Data/deaths_under75_depr_raw.rds'))
 
 
 ###############################################.
@@ -166,14 +171,23 @@ analyze_second(filename = "deaths_1to15", measure = "crude", time_agg = 5,
 
 
 ###############################################.
-# Deaths under 1
-analyze_first(filename = "deaths_under1", geography = "council", measure = "crude", 
-              pop = "live_births", yearstart = 2002, yearend = 2022, 
-              time_agg = 5, hscp = T)
+# Deaths under 1 (indicator name : Infant deaths, aged 0-1 years)
+# no deprivation split for this indicator as figures too small
 
-analyze_second(filename = "deaths_under1", measure = "crude", time_agg = 5, 
-               crude_rate = 1000, ind_id = 13026, year_type = "calendar")
+#call main analysis function 
+main_analysis(filename = "deaths_under1",  measure = "crude",
+              geography = "council",  year_type = "calendar",  ind_id = 13026, 
+              time_agg = 5,  yearstart = 2002,   yearend = 2023, pop = "live_births", 
+              crude_rate = 1000, # rate is crude rate per 1000
+              test_file = FALSE, QA = TRUE)
 
+# old analysis function scripts can be deleted once new functions are working
+# analyze_first(filename = "deaths_under1", geography = "council", measure = "crude", 
+#               pop = "live_births", yearstart = 2002, yearend = 2022, 
+#               time_agg = 5, hscp = T)
+# 
+# analyze_second(filename = "deaths_under1", measure = "crude", time_agg = 5, 
+#                crude_rate = 1000, ind_id = 13026, year_type = "calendar")
 
 
 ###############################################.

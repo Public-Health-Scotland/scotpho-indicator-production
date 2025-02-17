@@ -610,7 +610,7 @@ analyze_second <- function(filename, measure = c("percent", "crude", "perc_pcf",
 # check_extras - (default empty) parameter can be used to add bespoke geographies 
 #       of any geo type to Data Check 3 (comparing old and new figures)
 
-run_qa <- function(filename, old_file="default", check_extras=c()){
+run_qa <- function(filename, old_file="default", check_extras=c(), test_file=FALSE){
    run("3.Data Quality Checks.Rmd")
 }  
 
