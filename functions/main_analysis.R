@@ -23,6 +23,8 @@
 
 # packages specifically for indicators
 library(odbc) # for reading oracle databases (needed for many indicator data extractions)
+library(stringr) #used for string manipulation/searching
+library(readr) #used to write out rds files
 
 #packages required for function
 library(dplyr) # data wrangling
@@ -39,6 +41,7 @@ library(htmltools) # used in rmarkdown
 library(shiny) # used in rmarkdown
 library(flextable) # used in rmarkdown
 library(ggplot2) # used in rmarkdown
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
