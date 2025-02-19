@@ -16,9 +16,9 @@
 #   30003: General health questionnaire (GHQ-12) *
 #   30001: Mental wellbeing (WEMWBS)*
 ### Alcohol profile indicators:
-#   4166/4167/4168: Bringe Drinking/"Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
-#   4171: "Alcohol consumption: Hazardous/Harmful drinker" (derived from AUDIT, score 8+) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
-#   4172: "Alcohol consumption (mean weekly units)" (not an indicator previously, but % exceeding guidelines not available from this extract)
+#   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
+#   4171: Alcohol consumption: Hazardous/Harmful drinker" (derived from AUDIT, score 8+) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
+#   4172: Alcohol consumption (mean weekly units)" (not an indicator previously, but % exceeding guidelines not available from this extract)
 ### Physical activity profile:
 #   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations"
 
