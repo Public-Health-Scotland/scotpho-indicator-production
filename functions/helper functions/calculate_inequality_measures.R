@@ -1,8 +1,21 @@
 calculate_inequality_measures <- function(dataset){
 
+  # Are the deprivation data grouped by sex? If so this needs to be accounted for in these calculations.
+  
+  if ("sex" %in% names(dataset)) {
+    
+    group_args <- c("code", "year", "quint_type", "sex")
+    
+  } else {
+    
+    group_args <- c("code", "year", "quint_type")
+    
+  }
+  
+  
   # Splitting data into two: one with SIMD quintiles/deciles and one without to keep the total values
   data_depr_sii <- dataset |>
-    group_by(code, year, quint_type) |>
+    group_by(pick(all_of(group_args))) |>
     mutate(overall_rate = rate[quintile == "Total"]) |>
     filter(quintile != "Total") |>
     #This variables are used for SII, RII and PAR calculation
@@ -13,7 +26,7 @@ calculate_inequality_measures <- function(dataset){
   data_depr_totals <- dataset |>
     filter(quintile == "Total")
   
-  
+
 
   ###############################################.
   # Calculate the regression coefficient
@@ -21,7 +34,7 @@ calculate_inequality_measures <- function(dataset){
   #https://pdfs.semanticscholar.org/14e0/c5ba25a4fdc87953771a91ec2f7214b2f00d.pdf
   #The dataframe sii_model will have a column for sii, lower ci and upper ci for each geography, year and quintile type
   sii_model <- data_depr_sii %>% 
-    group_by(across(any_of(c("code", "year", "sex", "quint_type")))) %>%
+    group_by(pick(all_of(group_args))) %>%
     #Checking that all quintiles are present, if not excluding as we are not showing
     #RII and SII for those. Calculations would need to be adjusted and thought well if we wanted to include them
     mutate(count= n()) %>% 
@@ -51,8 +64,8 @@ calculate_inequality_measures <- function(dataset){
 
 
   #Merging sii with main data set
-  data_depr <- left_join(data_depr_sii, sii_model, by = c("code", "year", "quint_type"))
-
+  data_depr <- left_join(data_depr_sii, sii_model, by = group_args)
+  
   #Calculating RII
   data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
                                     lowci_rii = lowci_sii / overall_rate,
@@ -74,19 +87,19 @@ calculate_inequality_measures <- function(dataset){
 #Adding columns for Most and least deprived rates
 most_depr <- data_depr %>% 
     filter(quintile == "1") %>%
-  select(code, year, quint_type, rate) %>% 
+    select(group_args, rate) %>%
     rename(most_rate = rate)
 
 least_depr <- data_depr %>% 
   filter((quintile == "5" & quint_type != "sc_decile") | (quintile == "10" & quint_type == "sc_decile")) %>%
-  select(code, year, quint_type, rate) %>% 
+  select(group_args, rate) %>%
   rename(least_rate = rate)
 
-data_depr <- left_join(data_depr, most_depr, by = c("code", "year", "quint_type"))
-data_depr <- left_join(data_depr, least_depr, by = c("code", "year", "quint_type"))
+data_depr <- left_join(data_depr, most_depr,by = group_args)
+data_depr <- left_join(data_depr, least_depr, by = group_args)
 
 data_depr <- data_depr %>%
-  group_by(code, year, quint_type) %>%
+  group_by(pick(all_of(group_args))) %>%
   mutate(#calculating PAR. PAR of incomplete groups to NA
     #CI calculation missing, this can help https://onlinelibrary.wiley.com/doi/pdf/10.1002/sim.2779
     #https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
@@ -102,12 +115,12 @@ data_depr <- data_depr %>%
 #Joining with totals.
 #dataframe with the unique values for the different inequality measures
 data_depr_match <- data_depr %>%
-  select(code, year, quint_type, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
+  select(group_args, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
          rii_int, lowci_rii_int, upci_rii_int, par, abs_range, rel_range) %>%
   unique()
 
 data_depr_totals <- left_join(data_depr_totals, data_depr_match,
-                              by = c("code", "year", "quint_type"))
+                              by=group_args)
 
 data_depr <- bind_rows(data_depr, data_depr_totals)
 
