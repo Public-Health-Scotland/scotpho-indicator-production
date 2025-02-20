@@ -87,69 +87,9 @@ add_population_to_quintile_level_data <- function(data, # data file to run
     # Matching population with data
     data <- right_join(x=data, y=pop_depr_lookup, 
                             by = c("year", "code", "quintile", "quint_type", "sex")) %>%
-      filter(code %in% codes) 
+      filter(code %in% codes) |> #remove any geographies not required
+      subset(year >= yearstart & year <= yearend) #remove any years where no data
     
   }}
-#   
-#   #selecting only years of interest
-#   data_depr <- data_depr %>% subset(year >= yearstart & year <= yearend) %>%
-#     filter(!is.na(rate)) # some data biennial, so need this fix
-#   
-#   data_depr$numerator[is.na(data_depr$numerator)] <- 0 # Converting NAs to 0s
-#   
-#   ##################################################.
-#   ##  Create SII and RII ----
-#   ##################################################.
-#   
-#   #call function to generate measures of inequality 
-#   data_depr <- data_depr %>% inequality_measures()
-#   
-#   saveRDS(data_depr, paste0(data_folder, "Temporary/", ind_name, "_final.rds"))
-#   
-#   #Preparing data for Shiny tool
-#   data_shiny <- data_depr %>% 
-#     select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
-#               least_rate, par_rr, count))
-#   
-#   #Saving file
-#   saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/", ind_name, "_ineq.rds"))
-#   
-#   #Making final dataset available outside the function
-#   final_result <<- data_shiny
-#   
-#   ##################################################.
-#   ##  Checking results ----
-#   ##################################################.
-#   if (qa == FALSE) { #if you don't want to run full data quality checks set qa=false then only scotland chart will be produced
-#     #Selecting Health boards and Scotland for latest year in dataset
-#     
-#     if (sex_column==TRUE) {
-#       
-#       qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
-#                                                     & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
-#                         aes(code, rate) ) +
-#         geom_point(stat = "identity") +
-#         facet_wrap(~sex)
-#       
-#     } else {
-#       
-#       qa_plot <- ggplot(data=(data_shiny %>% subset((substr(code, 1, 3)=="S08" | code=="S00000001") 
-#                                                     & year==max(year) & quintile == "Total" & quint_type == "sc_quin")), 
-#                         aes(code, rate) ) +
-#         geom_point(stat = "identity") 
-#       
-#     }
-#     
-#     if (is.numeric(data_shiny$lowci)) {
-#       qa_plot <- qa_plot +
-#         geom_errorbar(aes(ymax=upci, ymin=lowci), width=0.5)
-#     }
-#     qa_plot
-#     
-#     
-#   } else  { # if qa set to true (default behaviour) then inequalities rmd report will run
-#     
-#     run_ineq_qa(filename={{filename}}
-#     )} 
-#   
-# }
+
+#END
