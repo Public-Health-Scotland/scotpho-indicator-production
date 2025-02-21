@@ -35,10 +35,19 @@ data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>%
 mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geography code & name
   
 #Test which optional geographies are present in dataset 
-scot <-  any(substr(data_indicator$code,1,3) =="S00")
-board <- any(substr(data_indicator$code,1,3) == "S08")
-ca <- any(substr(data_indicator$code,1,3) == "S12")
- 
+scot_quintiles <-  any(substr(data_indicator$code,1,3) =="S00")
+hb_quintiles  <- any(substr(data_indicator$code,1,3) == "S08")
+ca_quintiles <- any(substr(data_indicator$code,1,3) == "S12")
+
+
+## Are the deprivation data grouped by sex? If so this needs to be accounted for in the QA
+sex_column <- "sex" %in% names(data_indicator) # gives TRUE or FALSE
+# defining a new column (sex) to be added if it's not present in the data already:
+library(tibble) # for adding a column here
+cols <- c(sex = "Total")
+data_indicator <- data_indicator  %>%
+  add_column(!!!cols[!names(cols) %in% names(.)]) # adds a sex column, and fills it with "Total" if it doesn't exist in the data
+
 #Read in old indicator data file from network /Shiny data folder - if one exists (new indicators won't have a historic file)
 old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_ineq.rds") #create value which is file path to old file
 
@@ -66,9 +75,9 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 ------------------------------------------------------------------------------------
 
 **Geographies present in indicator output file** <br>
-NHS board: `r board` <br>
-Council area: `r ca` <br>
-Scotland: `r scot` <br>
+NHS board: `r hb_quintiles` <br>
+Council area: `r ca_quintiles` <br>
+Scotland: `r scot_quintiles` <br>
 
 ------------------------------------------------------------------------------------
 
@@ -77,28 +86,34 @@ Scotland: `r scot` <br>
 
 ```{r include=FALSE}
 #Code chunk for counting unique geographies & quintiles appear for each of the quintile types
-#Within Scotland Quintiles - all geo types (Scotland, NHS Board and local authority) should be present but not necessarily all quintiles
+#Within Scotland Quintiles - all geo types (Scotland, NHS Board and local authority) could be present but not necessarily all quintiles (e.g., Shetland, Orkney)
 # Within HB Quintiles - expect 14 nhs boards only, all quintiles (5 quintils + total=6) should be available
 # Within LA Quintiles - expect 32 la only, all quintiles should be available
 #df counts how many distinct quintiles for each geography by quint type, areaname and year - used in checks on quintiles present
 quintile_checks <- data_indicator %>%
-  group_by(quint_type, trend_axis, code, areaname, geo_type, year) %>%
+  group_by(quint_type, trend_axis, code, areaname, geo_type, year, sex) %>%
   summarise(count_q=n()) %>%
   ungroup()
 #df counts how many distinct geographies by quint type and year - used to check which geographies are present
 geo_checks <- quintile_checks %>%
-  group_by(quint_type, geo_type, trend_axis) %>%
+  group_by(quint_type, geo_type, trend_axis,sex) %>%
   summarise(count=n()) %>%
   spread(geo_type, count) %>%
   ungroup()
+
 #flextable to check how many geogrpahy types are present each year for within scotland quintiles
 ft_sc_quin_check <- geo_checks %>%
   subset(quint_type=="sc_quin") %>%
   flextable() %>%
-  color(~ S00!=1, ~S00, color = "red") %>% # Should be 14 NHS boards
-  color(~ S08!=14, ~S08, color = "red") %>% # Should be 14 NHS boards
-  color(~ S12!=32, ~S08, color = "red") %>%# Should be 14 NHS boards
+  color(~ S00!=1, ~S00, color = "red") 
+
+if(hb_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S08!=14, ~S08, color = "red")} # Should be 14 NHS boards
+if(ca_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S12!=32, ~S08, color = "red")} # Should be 32 council areas
+
+ft_sc_quin_check<- ft_sc_quin_check %>%
   autofit()
+
+if(hb_quintiles == TRUE){
 # flextable on hb quintiles - summary table of years and geogrpahy types present
 ft_hb_quin_check <- geo_checks %>%
   subset(quint_type=="hb_quin") %>%
@@ -106,19 +121,23 @@ ft_hb_quin_check <- geo_checks %>%
   color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
   color(~ S08!=14, ~S08, color = "red") %>% # Expect 14 NHS boards for board quintiles
   color(~ !is.na(S12), ~S12, color = "red") %>% # Should be no records for council codes
-  autofit()
+  autofit()}
+
+if(ca_quintiles == TRUE){
 # flextable on hb quintiles - summary table of years and geogrpahy types present
 ft_ca_quin_check <- geo_checks %>%
   subset(quint_type=="ca_quin") %>%
   flextable() %>%
   color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
-  color(~ S12!=32, ~S12, color = "red") %>% # Expect 14 NHS boards for board quintiles
-  color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for council codes
+  color(~ S12!=32, ~S12, color = "red") %>% # Expect 32 council areas for CA quintiles
+  color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for HB codes
   autofit()
+}
+
 ```
 
 ### Within Scotland deprivation quintiles
-Within Scotland quintiles should return data for Scotland, nhs board and councils.<br>
+Within Scotland quintiles should return data for Scotland, and may also be available for HBs and CAs.<br>
 Table below indicates which type & how many geography codes are present & highlights if this is unexpected count
 
 ```{r}
@@ -127,26 +146,106 @@ ft_sc_quin_check
 ```
 
 ### Within health board or council deprivation quintiles
-Within hb/ca quintiles should only return data for either nhs board or councils.<br>
+If present, within hb/ca quintiles should only return data for either nhs board or councils.<br>
 Conditional formatting will show up if distinct geography counts are not as expected 
 ```{r}
-#print flextable
-ft_hb_quin_check 
-ft_ca_quin_check
+
+if(hb_quintiles==TRUE){
+ft_hb_quin_check #print flextable
+} else {
+paste0("No health board quintile present")
+}   
+
+if(ca_quintiles==TRUE){
+ft_ca_quin_check #print flextable
+} else {
+paste0("No within council quintile present")
+}   
+
+
 ```
 
 ------------------------------------------------------------------------------------  
 
 ##Data check 2: Expected deprivation quintiles 
+#This section checks that all geographies that have deprivation data have the full complement of quintiles (i.e., data for 5 quintiles + a total = 6 rows). If there are any gaps these will be #highlighted in the table.
 ###Within Health Board/Council Quintiles
 ```{r}
-# if ca or hb quintile sum not equal to 6 theres an issue (since within geography deprivation shold always have 5 quintiles plus a total)
-hbca_quintile_warning <- quintile_checks %>%
-  mutate(q_count= ifelse(quint_type!="sc_quin" && count_q!=6, TRUE, FALSE)) %>%
-  summarise(quint_error_total=sum(q_count,na.rm=TRUE))
-#Text output when ca or hb quintiles not correct
-ifelse(hbca_quintile_warning $quint_error_total == 0, "Within CA and HB quintiles all appear present :-)",
-"STOP AND CHECK....looks like not all geographies have correct number of quintiles for within CA or HB quintiles")
+
+# # if ca or hb quintile sum not equal to 6 theres an issue (since within geography deprivation should always have 5 quintiles plus a total)
+# hbca_quintile_warning <- quintile_checks %>%
+#   mutate(q_count= ifelse(quint_type!="sc_quin" && count_q!=6, TRUE, FALSE)) %>%
+#   summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+# #Text output when ca or hb quintiles not correct
+# ifelse(hbca_quintile_warning $quint_error_total == 0, "Within CA and HB quintiles all appear present",
+# "STOP AND CHECK....looks like not all geographies have correct number of quintiles for within CA or HB quintiles")
+
+# function to check which areas are missing one or more of the specified quintile types, by areatype
+prep_areatype_quintile_check <- function (areatype) {
+  
+  if (areatype=="Scotland") {
+    qtype <- "sc_quin"
+    warning <- sc_quintile_warning
+  } else if (areatype=="HB") {
+    qtype <- "hb_quin"
+    warning <- hb_quintile_warning
+  } else if (areatype=="CA") {
+    qtype <- "ca_quin"
+    warning <- ca_quintile_warning
+  }
+  
+  if (warning$quint_error_total != 0) { # if gaps found
+    areatype_quintile_check <- data_indicator %>%
+      subset(quint_type==qtype) %>%
+      mutate(q=paste0("Q",as.character(quintile))) %>%
+      group_by(trend_axis, areaname, code, geo_type, q, sex) %>%
+      summarise(count=n())%>%
+      spread(q, count) %>%
+      mutate(qsum=sum(Q1,Q2,Q3,Q4,Q5,QTotal, na.rm=TRUE)) %>%
+      ungroup() %>%
+      subset(qsum<6) %>%
+      arrange(geo_type,code, trend_axis) %>%
+      select(geo_type, areaname, code, trend_axis, everything()) %>%
+      flextable() %>%
+      bg(i= ~Q5==1, j= ~Q5, bg="red") %>%
+      merge_v(j=c("areaname","code","geo_type")) %>%
+      autofit() %>%
+      theme_vanilla()
+    
+    areatype_quintile_check
+    } else {
+        "No table needed: no gaps to show."
+      }
+}
+# Quintile checks if hb_quin quintiles are in the data:
+if (hb_quintiles) {
+  # if hb quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
+  hb_quintile_warning <- quintile_checks %>%
+    mutate(q_count = ifelse(quint_type=="hb_quin" && count_q!=6, TRUE, FALSE)) %>%
+    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+  #Text output when hb quintiles not correct
+  ifelse(hb_quintile_warning$quint_error_total == 0, "There are no gaps in the HB-level quintile data. :-)",
+  "STOP AND CHECK....looks like not all geographies have correct number of HB-level quintiles.")
+prep_areatype_quintile_check("HB")
+}
+# Quintile checks if ca_quin quintiles are in the data:
+if (ca_quintiles) {
+  # if ca quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
+  ca_quintile_warning <- quintile_checks %>%
+    mutate(q_count = ifelse(quint_type=="ca_quin" && count_q!=6, TRUE, FALSE)) %>%
+    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+  #Text output when ca quintiles not correct
+  ifelse(ca_quintile_warning$quint_error_total == 0, "There are no gaps in the CA-level quintile data. :-)",
+  "STOP AND CHECK....looks like not all geographies have correct number of CA-level quintiles.")
+prep_areatype_quintile_check("CA")
+}
+# Message if no ca/hb quintiles are in the data:
+if(hb_quintiles==FALSE & ca_quintiles==FALSE) {
+  "There are no HB- or CA-level quintiles in the data."
+}
+
+
+
 ```
 
 ###Within Scotland quintiles"
@@ -155,29 +254,34 @@ sc_quintile_warning <- quintile_checks %>%
   subset(quint_type=="sc_quin") %>%
   mutate(q_count= ifelse(count_q!=6, TRUE, FALSE)) %>%
   summarise(quint_error_total=sum(q_count,na.rm=TRUE))
-#Text output when one or more sc quintile is missing from an NHS Board of Council Area
- ifelse(sc_quintile_warning $quint_error_total == 0, "No geogrpahies are missing a Scotland quintile",
- paste0("STOP and check table below!...There are ", sc_quintile_warning$quint_error_total[1]," geography/time periods where not all Scotland quintiles are present.  This is most likely in small areas eg Island regions.  If many regions are affected then indicator may not be suitable for publication."))       
-# df to checkk how many areas are missing one or more scottish quintiles
-sc_quintile_check <- data_indicator %>%
-  subset(quint_type=="sc_quin") %>%
-  mutate(q=paste0("Q",as.character(quintile))) %>%
-  group_by(trend_axis, areaname, code,geo_type, q) %>%
-  summarise(count=n())%>%
-  spread(q, count) %>%
-  mutate(qsum=sum(Q1,Q2,Q3,Q4,Q5,QTotal, na.rm=TRUE)) %>%
-  ungroup() %>%
-  subset(qsum<6) %>%
-  arrange(geo_type,code, trend_axis)
-# Flextable displying which geographies and years do not ahave all scotland quintiles represented
-ft_sc_quintile_check <- sc_quintile_check %>%
-  select(geo_type, areaname, code,trend_axis, Q1:qsum) %>%
-  flextable() %>%
-  bg(i= ~Q5==1, j= ~Q5, bg="red") %>%
-  merge_v(j=c("areaname","code","geo_type")) %>%
-  autofit() %>%
-  theme_vanilla()
-ft_sc_quintile_check
+
+#Text output when one or more Scotland-wide quintile is missing from a geography represented in these data:
+prep_areatype_quintile_check("Scotland")
+
+
+# #Text output when one or more sc quintile is missing from an NHS Board of Council Area
+#  ifelse(sc_quintile_warning $quint_error_total == 0, "No geographies are missing a Scotland quintile",
+#  paste0("STOP and check table below!...There are ", sc_quintile_warning$quint_error_total[1]," geography/time periods where not all Scotland quintiles are present.  This is most likely in small areas eg Island regions.  If many regions are affected then indicator may not be suitable for publication."))       
+# # df to checkk how many areas are missing one or more scottish quintiles
+# sc_quintile_check <- data_indicator %>%
+#   subset(quint_type=="sc_quin") %>%
+#   mutate(q=paste0("Q",as.character(quintile))) %>%
+#   group_by(trend_axis, areaname, code,geo_type, q) %>%
+#   summarise(count=n())%>%
+#   spread(q, count) %>%
+#   mutate(qsum=sum(Q1,Q2,Q3,Q4,Q5,QTotal, na.rm=TRUE)) %>%
+#   ungroup() %>%
+#   subset(qsum<6) %>%
+#   arrange(geo_type,code, trend_axis)
+# # Flextable displying which geographies and years do not ahave all scotland quintiles represented
+# ft_sc_quintile_check <- sc_quintile_check %>%
+#   select(geo_type, areaname, code,trend_axis, Q1:qsum) %>%
+#   flextable() %>%
+#   bg(i= ~Q5==1, j= ~Q5, bg="red") %>%
+#   merge_v(j=c("areaname","code","geo_type")) %>%
+#   autofit() %>%
+#   theme_vanilla()
+# ft_sc_quintile_check
 ```
 
 ------------------------------------------------------------------------------------  
@@ -231,6 +335,7 @@ ft_sc_quintile_check
 ##Data check 4:
 ####Rates within Confidence intervals
 Do any rates fall outwith the confidence limits - they shouldn't!?
+This stage checks the CIs for the rate, the SII and the RII.
 
 ```{r, echo=FALSE}
 # Check no rates/percentages sit outside of CI range  
@@ -251,13 +356,16 @@ Look at proportion of areas and quintiles where more than 10% of row include cou
 
 ```{r}
 small_count_data <- data_indicator  %>% 
-  group_by(geo_type, quint_type, quintile, year) %>%
+  group_by(geo_type, quint_type, quintile, year,sex) %>%
   summarise(count=n(),u5=sum(numerator<5)) %>%
   mutate(percent_U5=u5/count*100,
          year =as.factor(year)) %>%
   ungroup() %>%
   subset(percent_U5>10)
-flextable(small_count_data)
+
+if(nrow(small_count_data)>0) {flextable(small_count_data)} else {"No counts less than 5."}
+
+
 ```
 
 -------------------------------------------------------------------------------
@@ -301,7 +409,8 @@ shinyApp(
       fluidRow(column(12,(p("Use dropdowns to adjust charts - remember geography code selected needs to match the quintile type")))),
       column(5,selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = FALSE, selected="S00000001: Scotland")),
      column(3,selectInput("quint_selected", "Quintile:", choices = unique(data_indicator$quint_type),multiple = FALSE, selected="sc_quin")),
-     column(3,selectInput("year_selected", "Year:", choices = unique(data_indicator$year),multiple = FALSE,selected=max(data_indicator$year)))),
+     column(3,selectInput("year_selected", "Year:", choices = unique(data_indicator$year),multiple = FALSE,selected=max(data_indicator$year))),
+     column(3,selectInput("sex_selected", "Sex:", choices = unique(data_indicator$sex),multiple = FALSE,selected="Total"))),
      fluidRow(column(8,(h3("Check annual rates by quintile and rate trends")))),
      fluidRow(
        column(6,plotlyOutput("rate_bar")),
@@ -322,8 +431,8 @@ shinyApp(
     #reactive simd trend data
     simd_trend_data<- reactive({
     rate_data <- data_indicator %>% # reactive dataset for trend chart
-    select(code,code_name, year, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
-    subset(quint_type==input$quint_selected & code_name==input$code_selected) %>%
+    select(code,code_name, year, sex, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
+    subset(quint_type==input$quint_selected & code_name==input$code_selected & sex == input$sex_selected) %>%
     arrange(quintile) %>% #this is needed to make palette assignments work well
     droplevels()
     })
@@ -331,7 +440,7 @@ shinyApp(
     #reactive simd data single year
     simd_singleyr_data<- reactive({
     bar_rate_data <- simd_trend_data() %>% # reactive dataset for bar chart
-     subset(year==input$year_selected) %>%
+    subset(year==input$year_selected & sex == input$sex_selected) %>%
     mutate(average=rate[quintile=="Total"]) %>%
     filter(quintile !="Total") %>%
     droplevels()

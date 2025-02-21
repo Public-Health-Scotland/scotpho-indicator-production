@@ -343,19 +343,25 @@ prepare_final_files <- function(ind){
     select(-split_name) %>%
     arrange(code, year, quintile)
   
+  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
+
+  # add population data (quintile level) so that inequalities can be calculated
+  simd_data <-  simd_data|>
+    add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
+    filter(!is.na(rate)) # some data biennial so not all years have data
+    
+  # simd_data$numerator[is.na(simd_data$numerator)] <- 0 # Converting any NAs to 0s # Not necessary for the analysis, and important that NA remain as NA, not 0. 0s get flagged in the QA.
   
-  # Save intermediate SIMD file
-  write_rds(simd_data, file = paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_depr_raw.rds"))
-  write.csv(simd_data, file = paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
+  # calculate the inequality measures
+  simd_data <- simd_data |>
+    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
   
-  ind_id <- unique(simd_data$ind_id)
-  ind_name <- ind
-  
-  # Run the deprivation analysis 
-  #analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
-   #                              pop = "depr_pop_16+", # these are adult (16+) indicators, with a sex split for SIMD (the function will recognise this and import the right pop file)
-    #                             ind = ind_id, ind_name = ind_name)
-  
+  # save the data as RDS file
+  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
+    
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data_final
   pop_grp_data_result <<- pop_grp_data
