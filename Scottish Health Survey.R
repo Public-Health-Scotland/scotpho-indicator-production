@@ -352,7 +352,7 @@ prepare_final_files <- function(ind){
     add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
     filter(!is.na(rate)) # some data biennial so not all years have data
     
-  simd_data$numerator[is.na(simd_data$numerator)] <- 0 # Converting any NAs to 0s
+  # simd_data$numerator[is.na(simd_data$numerator)] <- 0 # Converting any NAs to 0s # Not necessary for the analysis, and important that NA remain as NA, not 0. 0s get flagged in the QA.
   
   # calculate the inequality measures
   simd_data <- simd_data |>
