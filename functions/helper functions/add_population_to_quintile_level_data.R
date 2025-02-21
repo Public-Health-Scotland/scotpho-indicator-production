@@ -6,7 +6,6 @@
 #' 
 #' Takes a file with indicator data already aggregated to SIMD level.
 #' N.B. Currently only takes Scotland-level data: amend if to be used for HB/CA level.
-#' N.B. Currently only takes total population data: needs amending for male/female splits
 #' N.B. Currently only handles quintile level data not deciles
 #'
 #' @param filename 
@@ -31,8 +30,7 @@ add_population_to_quintile_level_data <- function(data, # data file to run
   ## Read in data----
   ###############################################.
   
-  # read in raw data. 
-#data_depr <- readRDS(paste0(profiles_data_folder, "/Prepared Data/" ,filename, ".rds")) %>% 
+  # process the input data. 
   data <- data |>
   mutate(year = as.numeric(year)) |> 
   filter(ind_id == ind_id) 
