@@ -108,7 +108,7 @@ ft_sc_quin_check <- geo_checks %>%
   color(~ S00!=1, ~S00, color = "red") 
 
 if(hb_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S08!=14, ~S08, color = "red")} # Should be 14 NHS boards
-if(ca_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S12!=32, ~S08, color = "red")} # Should be 14 NHS boards
+if(ca_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S12!=32, ~S08, color = "red")} # Should be 32 council areas
 
 ft_sc_quin_check<- ft_sc_quin_check %>%
   autofit()
@@ -129,8 +129,8 @@ ft_ca_quin_check <- geo_checks %>%
   subset(quint_type=="ca_quin") %>%
   flextable() %>%
   color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
-  color(~ S12!=32, ~S12, color = "red") %>% # Expect 14 NHS boards for board quintiles
-  color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for council codes
+  color(~ S12!=32, ~S12, color = "red") %>% # Expect 32 council areas for CA quintiles
+  color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for HB codes
   autofit()
 }
 
@@ -260,7 +260,7 @@ prep_areatype_quintile_check("Scotland")
 
 
 # #Text output when one or more sc quintile is missing from an NHS Board of Council Area
-#  ifelse(sc_quintile_warning $quint_error_total == 0, "No geogrpahies are missing a Scotland quintile",
+#  ifelse(sc_quintile_warning $quint_error_total == 0, "No geographies are missing a Scotland quintile",
 #  paste0("STOP and check table below!...There are ", sc_quintile_warning$quint_error_total[1]," geography/time periods where not all Scotland quintiles are present.  This is most likely in small areas eg Island regions.  If many regions are affected then indicator may not be suitable for publication."))       
 # # df to checkk how many areas are missing one or more scottish quintiles
 # sc_quintile_check <- data_indicator %>%
