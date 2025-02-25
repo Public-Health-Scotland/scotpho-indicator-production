@@ -222,7 +222,7 @@ main_analysis <- function(filename,
                          "scotland" =  c("scotland"),
                          "board" = c("hb2019", "scotland"),
                          "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland", "hscp2019"),
-                         "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality"),
+                         "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019"),
                          "datazone11" = c("datazone2011", "intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality")
                          )
 
