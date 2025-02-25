@@ -1,3 +1,13 @@
+# ~~~~~~~~~~~~~~~~~
+# Analyst notes
+# ~~~~~~~~~~~~~~~~~
+
+# This script used to update 7 smoking prevalence indicators (sourced from the Scottish Household Survey)
+# As of February 2025, our smoking prevalence indicators are now created using Scottish Health Survey Data 
+# under the advice of the SG. These original indicators have therefore been made 'inactive' and have been replaced
+# with new indicators with new indicator ids - see 'Smoking prevalence.R' script
+
+
 ################################################################################
 ################################################################################
 #########                                                              #########
