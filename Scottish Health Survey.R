@@ -357,7 +357,7 @@ prepare_final_files <- function(ind){
   # calculate the inequality measures
   simd_data <- simd_data |>
     calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
-    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+    select(-c(indicator,overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
   
   # save the data as RDS file
   saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
