@@ -1,9 +1,27 @@
-#ScotPHO Indicators: Recorded Crime rate
+###############################################.
+## Analyst notes ----
+###############################################. 
+
+# ScotPHO Indicators: Recorded Crime rate
+
+# Each year Improvement Service (IS) request recorded crime data via an FOI, who then send us a link to the data.
+# The IS CPOP tool has a recorded crime indicator and we follow their methodology in terms of definition etc.
+# Note - add link to FOI page on Police Scotland website if the indicator continues to be updated this way.
+
+
+# The data provided so far has only included datazone names, rather than codes
+# There are some datazones that share the same name but are different e.g. different DZ code and map to different parent geographies
+# In some cases, we can work out the correct DZ code using the Police Division name (provided in extract).
+# However, there are a small number of datazones that share the same name and belong to the same Police Division but different councils.
+# These datazones have been included in the Scotland total but the Intermediate zones that they may belong to
+# have been excluded since we cannot identify where exactly they should sit. Note this only affects a small number
+# of crimes and there's only 4 IZs being excluded in total.
+
+
 
 #   Part 1 - Prepare basefile
 #   Part 3 - Run analysis functions
 
-#Note - add link to FOI page on Police Scotland website if the indicator continues to be updated this way.
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
