@@ -1,7 +1,7 @@
-# to do - change final output file location away from test once new tool ready to deploy
-
 ###   Update ScotPHO Care and Wellbeing indicator: 
 #   99133: Employment rate for 16-64 year olds
+
+# 
 
 # Geographies available: Scotland & local authority only 
 # No SIMD deprivation split available. 
@@ -11,13 +11,19 @@
 # https://www.nomisweb.co.uk/datasets/apsnew
 
 
-### functions/packages -----
+###############################################.
+## Packages/Filepaths/Functions ----
+###############################################.
 
 #source("1.indicator_analysis.R") 
 source("functions/main_analysis.R")
 
 
-### 1. Read in data ----
+
+
+###############################################.
+## Read in data  ----
+###############################################.
 
 ## Create a new Nomis query ##
 # Data source: annual population survey
@@ -28,9 +34,6 @@ source("functions/main_analysis.R")
         # Total: 16-64, 16-19, 20-24, 25-34, 35-49, 50-64
         # Males: 16-64
         # Females: 16-64
-
-#note ethnicity data is available however I don't think it can added to one extraction and will need a separate API link (Something to look in to next update) 
-
 
 # Link to download the Nomis data using an API
 #note this API link seems to download 12 months of data but supplies 12 month ending with latest period available - meaning if you rerun the script at different times of the year you may get different results 
