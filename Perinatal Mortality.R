@@ -21,10 +21,6 @@ library(readxl)
 source("functions/main_analysis.R")
 
 
-#Placeholder for real indicator ID
-indicator_id <- "99139"
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Read in and clean data  ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,7 +40,7 @@ perinatal_data <- read_xlsx(file.path(profiles_data_folder,"Received Data", "Per
 
 # add required columns 
 perinatal_data <- perinatal_data %>%
-  mutate(ind_id = indicator_id,
+  mutate(ind_id = "99139",
          trend_axis = year, 
          def_period = paste0(year, " calendar year"),
          lowci = NA, 
