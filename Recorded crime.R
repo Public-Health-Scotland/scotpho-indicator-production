@@ -115,22 +115,22 @@ saveRDS(crime_dz_code, file=paste0(profiles_data_folder, '/Prepared Data/recorde
 ###############################################.
 main_analysis(filename = "recorded_crime", geography = "datazone11", measure = "crude",
               year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_16to64", test_file = T, crude_rate = 10000)
+              yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000)
 
 deprivation_analysis(filename = "recorded_crime", yearstart = 2007, yearend = 2022,
                      time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108, test_file = T)
+                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
 
 ###############################################.
 ## Part 3 - Remove affected intermediate zones ----
 ###############################################.
-crime_dz_code <- readRDS(paste0 (profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.rds"))
+crime_dz_code <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
 
 crime_dz_code<- crime_dz_code |> 
   filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
   
 #Save final file
-saveRDS(crime_dz_code, file=paste0(profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.rds"))
-write.csv(crime_dz_code, file=paste0(profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.csv"), row.names = FALSE)
+saveRDS(crime_dz_code, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
+write.csv(crime_dz_code, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.csv"), row.names = FALSE)
 
 ##End.
