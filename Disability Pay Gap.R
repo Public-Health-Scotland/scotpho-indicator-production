@@ -41,13 +41,13 @@ disability_data <- disability_data %>%
   
   #remove [r] from year names
   mutate(year = gsub("\\[r\\]", "", year)) %>%
-  
+
   mutate(ind_id = "99138",
          rate = rate*100,
          #trend axis is field which populates the year axis in charts (needs to be short simple description of the time period that will display nicely in a chart)
          trend_axis = year, 
          #def_period is field that appears in indicator meta data which can be a more expansive description of the type of year (calendar/financial) and, if applicable, details about rolling averages    
-         def_period = paste0(year, " calendar year"),
+         def_period = paste0(year, " survey year"),
          lowci = NA, 
          upci = NA,
          numerator = NA,
@@ -55,14 +55,14 @@ disability_data <- disability_data %>%
   
   # Select relevant columns
   select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci) 
-
+  
 
 
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
-write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_paygap_shiny.csv"), row.names = FALSE)
-write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_paygap_shiny.rds"))
+write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.csv"), row.names = FALSE)
+write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.rds"))
 
 
 
