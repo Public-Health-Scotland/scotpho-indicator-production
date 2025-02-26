@@ -8,7 +8,7 @@
 
 # Data source is Section 4: Stillbirths and infant deaths from NRS:
 # Section 4: Stillbirths and infant deaths (specifically Table 4.02) 
-# https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/vital-events-reference-tables/2023/list-of-data-tables#section4
+# https://www.nrscotland.gov.uk/publications/vital-events-reference-tables-2023/
 
 # Note that data only available at Scotland level (and there is no confidence intervals) and goes back as far as 1971
 # Would be better to source Board level data from 2002 onwards instead however PHS SBAND dashboard
