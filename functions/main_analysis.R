@@ -59,8 +59,9 @@ source("functions/helper functions/calculate_easr.R") # for european age-sex sta
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
 source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
-source("functions/helper functions/run_main_analysis_QA.R") # for running QA rmarkdown doc
+source("functions/helper functions/run_main_analysis_QA.R") # for running QA rmarkdown doc (possibly redundant as new helper function contains parameter for report type)
 source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
+source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown reoprt for either deprivation or main data 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
