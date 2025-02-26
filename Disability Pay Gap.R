@@ -1,9 +1,9 @@
-##  ScotPHO Profiles Tool: Indicator update script.
-##  Indicator: Disability Pay Gap (Indicator ID 99138) ---- 
+# ~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~
 
+#Indicator: Disability Pay Gap (Indicator ID 99138)
 # Description: Percentage point gap in median hourly pay between disabled and non-disabled employees
-
-# New indicator initially created for the Care and wellbeing Portfolio profile Nov 2024
 
 # Data source is Labour Market Statistics for Scotland by Disability: January to December 2022 supporting tables:
 #(specifically Table_15) 
@@ -14,23 +14,24 @@
 # later years therefore SG publication excludes more recent years data until the issue is resolved.
 
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Packages/Filepaths/Functions ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 source("functions/main_analysis.R")
 library(readxl)
 
 
-###############################################.
-## Read in data  ----
-###############################################.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Read and clean data ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+# read in downloaded data
 disability_data <- read_xlsx(file.path(profiles_data_folder, "Received Data", "Disability pay gap/Labour+Market+Statistics+for+Scotland+by+Disability+Tables=.xlsx"), sheet = "Table_15", skip = 6) %>%
   setNames(tolower(names(.))) %>% #variables to lower case
   rename(rate = "disability pay gap [note 25]")
 
-# CHECK ALL GEOGRAPHIES HAVE FOUND A MATCH
+
+# clean data 
 disability_data <- disability_data %>%
   
   # select relevant columns
@@ -57,8 +58,9 @@ disability_data <- disability_data %>%
   select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci) 
   
 
-
-### 3. Prepare final files -----
+# ~~~~~~~~~~~~~~~~~~~~~~
+# save final files ----
+# ~~~~~~~~~~~~~~~~~~~~~~~
 
 # Save files in folder to be checked
 write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.csv"), row.names = FALSE)
