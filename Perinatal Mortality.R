@@ -64,6 +64,7 @@ perinatal_data <- perinatal_data %>%
 write.csv(perinatal_data, file.path(profiles_data_folder, "Data to be checked/perinatal_mortality_shiny.csv"), row.names = FALSE)
 write_rds(perinatal_data, file.path(profiles_data_folder, "Data to be checked/perinatal_mortality_shiny.rds"))
 
-
+# QA the data (note there are no CIs so it will flag an error about them)
+run_main_analysis_qa("perinatal_mortality", test_file = FALSE)
 
 #END
