@@ -23,7 +23,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 cancer_deaths <- as_tibble(dbGetQuery(channel, statement=
     "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
      FROM ANALYSIS.GRO_DEATHS_C 
-     WHERE date_of_registration between '1 January 2002' AND '31 December 2022'
+     WHERE date_of_registration between '1 January 2002' AND '31 December 2023'
            AND country_of_residence ='XS'
            AND age < 75
            AND regexp_like(underlying_cause_of_death, 'C') 
@@ -66,15 +66,15 @@ saveRDS(candeath_depr, file=paste0(data_folder, 'Prepared Data/early_cancer_deat
 ## Part 3 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "early_cancer_deaths_dz11", geography = "datazone11", 
-              measure = "stdrate", yearstart = 2002, yearend = 2022, time_agg = 3,
+              measure = "stdrate", yearstart = 2002, yearend = 2023, time_agg = 3,
               epop_age = "normal", pop = "DZ11_pop_under75")
 
 analyze_second(filename = "early_cancer_deaths_dz11", measure = "stdrate", time_agg = 3, 
                epop_total = 182000, ind_id = 20106, year_type = "calendar")
 
 #Deprivation analysis function
-analyze_deprivation(filename="early_cancer_deaths_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2022, year_type = "calendar", 
+analyze_deprivation(filename="early_cancer_deaths_depr", measure="stdrate", time_agg= 3, 
+                    yearstart= 2002, yearend=2023, year_type = "calendar", 
                     pop = "depr_pop_under75", epop_age="normal",
                     epop_total =182000, ind_id = 20106)
 

@@ -1,4 +1,4 @@
-# ScotPHO indicator: Post-partum smoking rate
+# ScotPHO indicator: Post-partum smoking rate 1552
 
 #   Part 1 - Prepare basefile
 #   Part 2 - Run analysis functions
@@ -13,7 +13,7 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 
 #Data comes from child health team
-postpartum <- readRDS(file=paste0(data_folder, 'Received Data/Post-partum Smoking/IR2024-00307.rds')) %>% 
+postpartum <- read_csv(file=paste0(data_folder, 'Received Data/Post-partum Smoking/IR2025-00008.csv')) %>% 
   setNames(tolower(names(.))) %>% #set variables to lower case
   mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
                    TRUE ~ paste0("20",substr(fin_year,1,2)))) #format year to display financial year
@@ -36,7 +36,7 @@ saveRDS(postpartum, file=paste0(data_folder, 'Prepared Data/postpartum_smoking_r
 ## Part 2 - Run analysis functions ----
 ###############################################.
 analyze_first(filename = "postpartum_smoking", geography = "council", hscp = T,
-              measure = "percent", yearstart = 2002, yearend = 2022, time_agg = 3)
+              measure = "percent", yearstart = 2002, yearend = 2023, time_agg = 3)
 
 analyze_second(filename = "postpartum_smoking", measure = "percent", time_agg = 3, 
                ind_id = 1552, year_type = "financial")

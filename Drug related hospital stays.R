@@ -69,7 +69,7 @@ drug_hosp  %<>%
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing CA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>%
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_2.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -124,7 +124,7 @@ apply_stats_disc("drug_stays_dz11_shiny") # statistical disclosure applied to fi
 
 #Deprivation analysis function 
 analyze_deprivation(filename="drug_stays_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2020,   year_type = "financial", 
+                    yearstart= 2002, yearend=2022,   year_type = "financial", 
                     pop = "depr_pop_allages", epop_age="normal",
                     epop_total =200000, ind_id = 20205)
 apply_stats_disc("drug_stays_depr_ineq")  # statistical disclosure applied to final values
