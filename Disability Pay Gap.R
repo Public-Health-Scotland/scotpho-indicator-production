@@ -66,6 +66,8 @@ disability_data <- disability_data %>%
 write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.csv"), row.names = FALSE)
 write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.rds"))
 
+# insert call to QA report
+run_qa(filename ="disability")
 
 
 #END
