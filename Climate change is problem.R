@@ -66,7 +66,7 @@ output_processing <- function(data){
            numerator = NA) %>%
     
     # Select relevant columns
-    select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci, answer) 
+    select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci) 
 }
 
 
