@@ -1,3 +1,13 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes -----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# This indicator has been made inactive as of Feb 2025.
+# It has been replaced with a new 'recorded crime' indicator using Police Scotland data
+# See 'Recorded Crime.R script for details on new indicator
+
+
+
 # ScotPHO indicators: crime rate, including deprivation.
 
 ## Part 1 - Format raw data ready for analysis functions 
