@@ -19,6 +19,8 @@
 source("1.indicator_analysis.R") 
 source("2.deprivation_analysis.R") 
 
+##TO DO - adapt scripts to run using new functions
+
 ### Lookups
 
 # bring in LA dictionary and include LA codes
@@ -58,9 +60,9 @@ data <- dat %>%
   # Select relevant indicators 
   filter(indicator %in% c("Persistent poverty", 
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
-                          #"Child material deprivation", # now source direct from stats.gov
+                          #"Child material deprivation", # now source direct from stats.gov (see Chil(see Child Poverty.R script)d Poverty.R script)
                           #"Children's material deprivation", #now sourced direct from stats.gov
-                          #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future
+                          #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future (see Child Poverty.R script)
                           "Contractually secure work",
                           "Health risk behaviours",
                           "Gender balance in organisations",
@@ -124,7 +126,7 @@ data <- dat %>%
   # Standardise/simplify breakdown names
 
         # Convert indicator names to lower case and hyphenate 
-  mutate(indicator = str_replace_all(tolower(indicator), " ", "_"),
+  mutate(indicator = str_replace_all(tolower(indicator), " ", "_")) %>%
          
         
          # Ensure age breakdowns are named consistently
@@ -235,7 +237,7 @@ totals <- data %>%
   filter(split_value == "Total") %>% 
   filter(!(indicator %in% c("persistent_poverty", "contractually_secure_work") & split_name!="Age")) %>% # keep only Age split for these two, as some of their other 'Total' data differs, bizarrely
   select(c(ind_id, indicator, code, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
-  distinct() # n=168
+  distinct() # n=158
 
 # which rows require totals to be added in?
 data_totals <- data %>%
@@ -243,14 +245,14 @@ data_totals <- data %>%
   filter(split_value!="Total") %>%
   filter(code=="S00000001") %>% # exclude CA and HB data (to be separated out into main data, with no splits available. Their 'total' is the Scotland-level data)
   select(ind_id, indicator, code, split_name, year, trend_axis, def_period) %>%
-  distinct()  %>%
-  merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")) # still n=629
+  distinct() %>%
+  merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")) # still n=629 #609
 
 # get original rows for splits without totals
 data_no_totals <- data %>% 
   filter(split_name!="Total") %>%
   filter(split_value!="Total") %>% 
-  distinct() #2559 obs
+  distinct() #2559 obs #2509
 
 # get original rows for Scotland
 scot_data <- data %>% 
@@ -258,8 +260,8 @@ scot_data <- data %>%
   distinct() #162
 
 # combine these:
-data_with_totals <- rbind(scot_data, data_no_totals, data_totals) %>% # 3350
-  arrange(readr::parse_number(split_value)) # sorts the age groups into the right order
+data_with_totals <- rbind(scot_data, data_no_totals, data_totals) %>% # 3270
+  arrange(readr::parse_number(split_value)) # sorts the age groups into the right order (throws up warning about parsing failiure)
 
   
 
@@ -342,7 +344,7 @@ prepare_final_files <- function(ind){
 
 # Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 
-# Indicator 99116: Persistent poverty ----
+# Indicator 99116: Persistent poverty ---- #latest data 2012-2016 (no update available until)
 prepare_final_files(ind = "persistent_poverty")
 
 
@@ -352,6 +354,7 @@ prepare_final_files(ind = "young_peoples_mental_wellbeing")
   
 # Indicator 99118: Child material deprivation ----
 # will switch to sourcing data from stas.gov ind_id 30154 - slight name change but this is actually a better description
+# see child poverty.R
 #prepare_final_files(ind = "child_material_deprivation")
 
 
@@ -363,12 +366,16 @@ prepare_final_files(ind = "health_risk_behaviours")
 prepare_final_files(ind = "gender_balance_in_organisations")
 
 
-# # Run QA reports (these don't run because no HB data)
-# run_qa(filename = "persistent_poverty")
-# run_qa(filename = "young_peoples_mental_wellbeing")
-# run_qa(filename = "health_risk_behaviours")
-# run_qa(filename = "gender_balance_in_organisations")
+# # Run QA reports 
+ run_qa(filename = "persistent_poverty")
+ run_qa(filename = "young_peoples_mental_wellbeing")
+ run_qa(filename = "health_risk_behaviours")
+ run_qa(filename = "gender_balance_in_organisations")
 
+ #wont work until swtich to new functions
+ run_qa(filename = "health_risk_behaviours", type="Deprivation", test_file=FALSE)
+ 
+ 
 
 #END
 

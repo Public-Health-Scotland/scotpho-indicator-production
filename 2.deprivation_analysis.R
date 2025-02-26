@@ -541,10 +541,10 @@ inequality_measures <- function(dataset){
 # https://fhop.ucsf.edu/sites/fhop.ucsf.edu/files/wysiwyg/pg_apxIIIB.pdf
 #Adding columns for Most and least deprived rates
 most_depr <- data_depr %>% filter(quintile == "1") %>% 
-  select(group_args, rate) %>% rename(most_rate = rate)
+  select(all_of(group_args), rate) %>% rename(most_rate = rate)
 
 least_depr <- data_depr %>% filter(quintile == "5") %>% 
-  select(group_args, rate) %>% rename(least_rate = rate)
+  select(all_of(group_args), rate) %>% rename(least_rate = rate)
 
 data_depr <- left_join(data_depr, most_depr, by = group_args)
 data_depr <- left_join(data_depr, least_depr, by = group_args)
@@ -564,7 +564,7 @@ data_depr <- data_depr %>%  group_by(pick(all_of(group_args))) %>%
 #Joining with totals.
 #dataframe with the unique values for the different inequality measures
 data_depr_match <- data_depr %>% 
-  select(group_args, sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
+  select(all_of(group_args), sii, upci_sii, lowci_sii, rii, lowci_rii, upci_rii,
          rii_int, lowci_rii_int, upci_rii_int, par, abs_range, rel_range) %>% 
   unique()
 
