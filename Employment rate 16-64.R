@@ -17,7 +17,6 @@
 source("functions/main_analysis.R")
 
 
-
 ### 1. Read in data ----
 
 ## Create a new Nomis query ##
@@ -30,14 +29,20 @@ source("functions/main_analysis.R")
         # Males: 16-64
         # Females: 16-64
 
-# Link to download the Nomis data using an API
-#note this API link seems to download 12 months of data but supplies 12 month ending with latest period available - meaning if you rerun the scriptat different times of the year you may get different results 
+#note ethnicity data is available however I don't think it can added to one extraction and will need a separate API link (Something to look in to next update) 
 
-API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1807745207...1807745210,1807745218,1807745211...1807745217,1807745222,1807745224,1807745226...1807745230,1807745221,1807745231,1807745233,1807745234,1807745236...1807745244,2092957701&date=latestMINUS77,latestMINUS73,latestMINUS69,latestMINUS65,latestMINUS61,latestMINUS57,latestMINUS53,latestMINUS49,latestMINUS45,latestMINUS41,latestMINUS37,latestMINUS33,latestMINUS29,latestMINUS25,latestMINUS21,latestMINUS17,latestMINUS13,latestMINUS9,latestMINUS5,latestMINUS1&variable=45...49,51,54,63&measures=20599,21001,21002,21003")
+
+# Link to download the Nomis data using an API
+#note this API link seems to download 12 months of data but supplies 12 month ending with latest period available - meaning if you rerun the script at different times of the year you may get different results 
+#API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1807745207...1807745210,1807745218,1807745211...1807745217,1807745222,1807745224,1807745226...1807745230,1807745221,1807745231,1807745233,1807745234,1807745236...1807745244,2092957701&date=latestMINUS77,latestMINUS73,latestMINUS69,latestMINUS65,latestMINUS61,latestMINUS57,latestMINUS53,latestMINUS49,latestMINUS45,latestMINUS41,latestMINUS37,latestMINUS33,latestMINUS29,latestMINUS25,latestMINUS21,latestMINUS17,latestMINUS13,latestMINUS9,latestMINUS5,latestMINUS1&variable=45...49,51,54,63&measures=20599,21001,21002,21003")
+
+# created a new link with different date parameters 
+# if rerunning check that in data returned  the 'date_name' column specifies Jan-Dec year ending figures
+API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=594,45...49,51,54,63&measures=20599,21001,21002,21003")
+
 
 # Reads the API as a csv using readr and assigns it the name raw_data
 raw_data <- read_csv(API_link)
-
 
 
 ### 2. Prepare data  -----
@@ -47,6 +52,7 @@ data <- raw_data %>%
   # Clean column data
   clean_names() %>%
   
+
   # Renames the column "variable_name" to "split_value"
   rename(split_value = variable_name) %>%
   
@@ -56,7 +62,8 @@ data <- raw_data %>%
          # Create a new column 'split_name' based on conditions applied to 'split_value'. 
          # If 'split_value' contains either "males" or "females", categorize as "Sex" within split_name
          split_name = case_when(str_detect(split_value,"males|females") ~ "Sex",
-                                
+                                str_detect(split_value,"aged 16-64 employment rate - ethnic minority") ~ "Ethnic minority",
+
                                 # If split value exactly equals "Employment rate - aged 16-64" categorise as "Total" within split_name
                                 split_value == "Employment rate - aged 16-64" ~ "Total",
                                 
@@ -68,9 +75,10 @@ data <- raw_data %>%
                                                       "aged" = "Aged")),
          
          # Further categorise and clean 'split_value' based on conditions
-         split_value = case_when(split_name == "Total" ~ "All", 
-                                 split_value == "Employment rate males - Aged 16-64" ~ "Males",
-                                 split_value == "Employment rate females - Aged 16-64" ~ "Females",
+         split_value = case_when(split_name == "Total" ~ "All (16-64 years)", 
+                                 split_name == "Ethnic minority" ~ "Ethnic minority (16-64 years)", 
+                                 split_value == "Employment rate males - Aged 16-64" ~ "Males (16-64 years)",
+                                 split_value == "Employment rate females - Aged 16-64" ~ "Females (16-64 years",
                                  str_detect(split_value, "Aged") ~ split_value)) %>%
   
   
@@ -136,12 +144,17 @@ pop_grp_data <- data %>%
   # Add in total rows again and rename for sex
   bind_rows(pop_grp_all_data) %>% 
   mutate(split_name = str_replace_all(split_name, "Total", "Sex")) %>% 
+  
+  # Add in total rows again and rename for ethnic minority
+  bind_rows(pop_grp_all_data) %>% 
+  mutate(split_name = str_replace_all(split_name, "Total", "Ethnic minority")) %>% 
+  
   arrange(code, year)
 
 # Save files in folder for checking
 write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/employment_rate_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/employment_rate_shiny_popgrp.rds"))
 
-#no QA report yet - just eyeball fil
+#no QA report yet - just eyeball figures
 
 #END
