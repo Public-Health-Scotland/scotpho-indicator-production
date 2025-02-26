@@ -1,3 +1,15 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+# As of Feb 2025 this script is no longer in use. The below indicators
+# have been archived as we now receive recorded crimes data from Police Scotland 
+# split by crime (via a joint-FOI request with IS). 
+# Therefore intend to re-visit our crime-specific indicators
+# and decide what indicators we should present split by crime grouping.
+
+
+
 ################################################################################
 ################################################################################
 #########                                                              #########
