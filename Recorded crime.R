@@ -113,6 +113,6 @@ crime_dz_code<- crime_dz_code |>
   
 #Save final file
 saveRDS(crime_dz_code, file=paste0(profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.rds"))
-write.csv(crime_dz_code, file=paste0(profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.csv"))
+write.csv(crime_dz_code, file=paste0(profiles_data_folder, "/Test Shiny Data/recorded_crime_shiny.csv"), row.names = FALSE)
 
 ##End.
