@@ -30,8 +30,9 @@ source("functions/main_analysis.R")
         # Males: 16-64
         # Females: 16-64
 
-
 # Link to download the Nomis data using an API
+#note this API link seems to download 12 months of data but supplies 12 month ending with latest period available - meaning if you rerun the scriptat different times of the year you may get different results 
+
 API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1807745207...1807745210,1807745218,1807745211...1807745217,1807745222,1807745224,1807745226...1807745230,1807745221,1807745231,1807745233,1807745234,1807745236...1807745244,2092957701&date=latestMINUS77,latestMINUS73,latestMINUS69,latestMINUS65,latestMINUS61,latestMINUS57,latestMINUS53,latestMINUS49,latestMINUS45,latestMINUS41,latestMINUS37,latestMINUS33,latestMINUS29,latestMINUS25,latestMINUS21,latestMINUS17,latestMINUS13,latestMINUS9,latestMINUS5,latestMINUS1&variable=45...49,51,54,63&measures=20599,21001,21002,21003")
 
 # Reads the API as a csv using readr and assigns it the name raw_data
