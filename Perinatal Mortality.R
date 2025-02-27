@@ -61,6 +61,6 @@ write.csv(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99
 write_rds(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.rds"))
 
 # QA the data (note there are no CIs so it will flag an error about them)
-run_qa("perinatal_mortality", type = "main", test_file = FALSE)
+run_qa("99139_perinatal_mortality", type = "main", test_file = FALSE)
 
 #END
