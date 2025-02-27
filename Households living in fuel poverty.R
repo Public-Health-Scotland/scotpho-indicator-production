@@ -23,7 +23,6 @@
 # Packages/Filepaths/Functions ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 source("functions/main_analysis.R")
-source("functions/helper functions/run_rmarkdown_QA.R")
 library(opendatascot)
 
 # uncomment below and run if need to install the opendatascot package
@@ -96,6 +95,6 @@ write.csv(data_clean, file.path(profiles_data_folder, "Data to be checked/99140_
 write_rds(data_clean, file.path(profiles_data_folder, "Data to be checked/99140_fuel_poverty_shiny.rds"))
 
 # QA data
-run_qa("fuel_poverty", type = "main", test_file = FALSE)
+run_qa("99140_fuel_poverty", type = "main", test_file = FALSE)
 
 #END
