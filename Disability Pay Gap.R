@@ -63,8 +63,8 @@ disability_data <- disability_data %>%
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
 # Save files in folder to be checked
-write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.csv"), row.names = FALSE)
-write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/disability_shiny.rds"))
+write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/99138_disability_paygap_shiny.csv"), row.names = FALSE)
+write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/99138_disability_paygap_shiny.rds"))
 
 
 
