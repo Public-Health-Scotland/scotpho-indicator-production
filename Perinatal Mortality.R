@@ -57,10 +57,10 @@ perinatal_data <- perinatal_data %>%
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Save files in folder to be checked
-write.csv(perinatal_data, file.path(profiles_data_folder, "Data to be checked/perinatal_mortality_shiny.csv"), row.names = FALSE)
-write_rds(perinatal_data, file.path(profiles_data_folder, "Data to be checked/perinatal_mortality_shiny.rds"))
+write.csv(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.csv"), row.names = FALSE)
+write_rds(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.rds"))
 
 # QA the data (note there are no CIs so it will flag an error about them)
-run_main_analysis_qa("perinatal_mortality", test_file = FALSE)
+run_qa("perinatal_mortality", type = "main", test_file = FALSE)
 
 #END
