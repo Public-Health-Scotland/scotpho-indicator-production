@@ -67,7 +67,7 @@ write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/9
 write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/99138_disability_paygap_shiny.rds"))
 
 # insert call to QA report
-run_qa(filename ="disability")
+run_qa(filename ="99138_disability_paygap")
 
 
 #END
