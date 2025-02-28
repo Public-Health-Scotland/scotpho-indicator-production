@@ -46,10 +46,10 @@ library(readr) # for writing/reading rds files
 ### filepaths ----
 
 #scotpho_folder renamed
-profiles_profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 
 # paths to ScotPHOs lookup folders - can be used to shorten files paths indicator generation scripts
-profiles_lookups <- file.path(profiles_profiles_data_folder, "Lookups")
+profiles_lookups <- file.path(profiles_data_folder, "Lookups")
 
 
 
