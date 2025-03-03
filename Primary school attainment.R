@@ -27,8 +27,8 @@
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
-source("2.deprivation_analysis.R")
+source("functions/main_analysis.R") # for packages and QA
+source("functions/deprivation_analysis.R") # for packages and QA
 
 # Load additional packages
 library(openxlsx)
@@ -38,20 +38,20 @@ library(openxlsx)
 ##########################################################
 
 # Identify data folder
-cfe_data_folder <- paste0(data_folder, "Received Data/Curriculum for Excellence/")
+cfe_profiles_data_folder <- paste0(profiles_data_folder, "/Received Data/Curriculum for Excellence/")
 file <- "ACEL+2324+-+Publication+-+Supplementary+tables+-+final.xlsx"
 cohort <- "ACEL 23-24 Table 11 with cohort for Elizabeth Richardson.xlsx"
 
 ## Geography lookup -----
 
-# Read in geography lookup
-geo_lookup <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>% 
+# Read in geography profiles_lookups
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 ## Population lookup -----
 
 # Process the cohort data (requested from SG) and save in LUT folder
-cohort_simd_LA <- read.xlsx(paste0(cfe_data_folder, cohort),
+cohort_simd_LA <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
                      sheet = "ACEL Table_11",
                      startRow = 5,
                      colNames = TRUE) %>%
@@ -97,7 +97,7 @@ cohort_simd_scotland <- cohort_simd_LA %>%
 cohort_P1_P4_P7 <- rbind(cohort_simd_LA, cohort_simd_scotland)
   
 # Save file to lookups folder (for use in later calcs of inequalities metrics)
-saveRDS(cohort_P1_P4_P7, paste0(lookups, "Population/depr_pop_CYP_P1_P4_P7.rds"))
+saveRDS(cohort_P1_P4_P7, paste0(profiles_lookups, "Population/depr_pop_CYP_P1_P4_P7.rds"))
 
 
 
@@ -107,7 +107,7 @@ saveRDS(cohort_P1_P4_P7, paste0(lookups, "Population/depr_pop_CYP_P1_P4_P7.rds")
 
 # Scotland, overall (Table 1)
 
-scotland <- read.xlsx(paste0(cfe_data_folder, file),
+scotland <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                 sheet = "Table_1",
                 startRow = 5,
                 colNames = TRUE) %>%
@@ -142,7 +142,7 @@ scotland <- read.xlsx(paste0(cfe_data_folder, file),
   
 # Local Authorities (Table 10):
 
-councils <- read.xlsx(paste0(cfe_data_folder, file),
+councils <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                       sheet = "Tables_10.4a_b_c_d_e",
                       startRow = 7,
                       colNames = TRUE) %>%
@@ -179,7 +179,7 @@ councils <- read.xlsx(paste0(cfe_data_folder, file),
 
 
 # Scotland, by deprivation (Table 2.4)
-simd <- read.xlsx(paste0(cfe_data_folder, file),
+simd <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                     sheet = "Table_2_4",
                     startRow = 5,
                     colNames = TRUE) %>%
@@ -224,7 +224,7 @@ simd <- read.xlsx(paste0(cfe_data_folder, file),
   select(-stage)
 
 # LAs, by deprivation (Table 11)
-simd_LA <- read.xlsx(paste0(cfe_data_folder, file),
+simd_LA <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                   sheet = "Table_11",
                   startRow = 5,
                   colNames = TRUE) %>%
@@ -273,19 +273,19 @@ simd_LA <- read.xlsx(paste0(cfe_data_folder, file),
 # Table 4: Scot by ethnicity
 # Table 5: Scot by urban-rural status
 
-table3 <- read.xlsx(paste0(cfe_data_folder, file),
+table3 <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                     sheet = "Table_3",
                     startRow = 5,
                     colNames = TRUE) %>%
   rename(split_value = Sex) %>%
   mutate(split_name = "Sex")
-table4 <- read.xlsx(paste0(cfe_data_folder, file),
+table4 <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                     sheet = "Table_4",
                     startRow = 5,
                     colNames = TRUE) %>%
   rename(split_value = Ethnicity) %>%
   mutate(split_name = "Ethnicity")
-table5 <- read.xlsx(paste0(cfe_data_folder, file),
+table5 <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                     sheet = "Table_5",
                     startRow = 5,
                     colNames = TRUE) %>%
@@ -374,10 +374,9 @@ prepare_final_files <- function(ind){
            def_period, trend_axis) %>%
     unique() 
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  # save 
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   
   # 2 - population groups data (ie data behind population groups tab)
 
@@ -387,10 +386,8 @@ prepare_final_files <- function(ind){
          lowci, def_period, trend_axis, split_name, split_value,) 
 
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
 
   
   # 3 - SIMD data (ie data behind deprivation tab)
@@ -401,21 +398,27 @@ prepare_final_files <- function(ind){
     unique() %>%
     select(-indicator, -split_name) %>%
     rename(quintile = split_value) %>%
-    mutate(quint_type = "sc_quin")
+    mutate(quint_type = "sc_quin") %>%
+    arrange(code, year, quintile)
   
-  # Save intermediate SIMD file
-  write_rds(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.rds"))
-  write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
+  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
   
-  #get ind_id argument for the analysis function 
-  ind_id <- unique(simd_data$ind_id)
+  # add population data (quintile level) so that inequalities can be calculated
+  simd_data <-  simd_data|>
+    add_population_to_quintile_level_data(pop="depr_pop_CYP_P1_P4_P7", # the lookup we processed above
+                                          ind = ind_id,
+                                          ind_name = ind_name) |>
+    filter(!is.na(rate)) # not all years have data
   
-  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
-                                 pop = "depr_pop_CYP_P1_P4_P7", # the lookup we processed above
-                                 ind_id, 
-                                 ind
-  )
+  # calculate the inequality measures
+  simd_data <- simd_data |>
+    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+  
+  # save the data as RDS file
+  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
   
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
@@ -432,33 +435,13 @@ prepare_final_files(ind = "Numeracy")
 
 # # Run QA reports 
 # # main data: 
-run_qa(filename = "Literacy")
-run_qa(filename = "Numeracy")
+run_main_analysis_qa(filename = "Literacy", test_file=TRUE)
+run_main_analysis_qa(filename = "Numeracy", test_file=TRUE)
 
-# ineq data: # NOT RUNNING BECAUSE DOESN'T HAVE HBS???
-run_ineq_qa(filename = "Literacy")
-run_ineq_qa(filename = "Numeracy")
+# ineq data: 
+run_qa(type = "deprivation", filename = "Literacy", test_file=TRUE)
+run_qa(type = "deprivation", filename = "Numeracy", test_file=TRUE)
 
-
-
-# Manually check the SIMD data instead:
-
-# Plot the indicator(s)
-# =================================================================================================================
-# Let's now see what the series look like:
-# (uses the last indicator processed)
-
-# by pop group split 
-pop_grp_data_result %>%
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~split_name, scales = "free_y") 
-
-# by SIMD 
-simd_data_result %>%
-  ggplot(aes(year, rate, group = quintile, colour = quintile, shape = quintile)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~code, scales = "free_y") 
 
 
 
