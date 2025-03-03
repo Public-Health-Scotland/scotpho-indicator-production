@@ -51,6 +51,9 @@ perinatal_data <- perinatal_data %>%
   select(ind_id, code, year, trend_axis, def_period, numerator, rate, lowci, upci) 
 
 
+# restrict data to year 2002 onwards - to be consistent with rest of ScotPHO tool - not sure if earlier data is required.
+perinatal_data <- perinatal_data %>%
+  filter(year>=2002)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Save final files -----
