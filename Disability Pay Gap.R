@@ -41,17 +41,17 @@ disability_data <- disability_data %>%
   filter(!grepl("Change", year)) %>%
   
   #remove [r] from year names
-  mutate(year = gsub("\\[r\\]", "", year)) %>%
+  mutate(year = as.numeric(gsub("\\[r\\]", "", year))) %>%
 
-  mutate(ind_id = "99138",
+  mutate(ind_id = 99138,
          rate = rate*100,
          #trend axis is field which populates the year axis in charts (needs to be short simple description of the time period that will display nicely in a chart)
-         trend_axis = year, 
+         trend_axis = as.character(year), 
          #def_period is field that appears in indicator meta data which can be a more expansive description of the type of year (calendar/financial) and, if applicable, details about rolling averages    
          def_period = paste0(year, " survey year"),
-         lowci = NA, 
-         upci = NA,
-         numerator = NA,
+         lowci = as.numeric(NA), 
+         upci = as.numeric(NA),
+         numerator = as.numeric(NA),
          code = "S00000001" ) %>% #assign the scotland code as theres no LA breakdown
   
   # Select relevant columns
@@ -67,7 +67,7 @@ write.csv(disability_data, file.path(profiles_data_folder, "Data to be checked/9
 write_rds(disability_data, file.path(profiles_data_folder, "Data to be checked/99138_disability_paygap_shiny.rds"))
 
 # insert call to QA report
-run_qa(filename ="99138_disability_paygap")
+run_main_analysis_qa(filename = "99138_disability_paygap", test_file = FALSE) 
 
 
 #END
