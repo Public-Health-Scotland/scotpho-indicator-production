@@ -50,7 +50,7 @@ source("functions/helper functions/calculate_crude_rate.R") # for calculating cr
 source("functions/helper functions/calculate_easr.R") # for european age-sex standarised rates and confidence intervals
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
-source("functions/helper functions/run_rmarkdown_QA.R") # for creating trend axis column 
+source("functions/helper functions/run_rmarkdown_QA.R") # running markdown qa report (requires file type parameter)
 source("functions/helper functions/validate_deprivation_columns.R") # for creating trend axis column 
 
 source("functions/helper functions/add_population_to_quintile_level_data.R") # for adding SIMD quintile populations to precalculated data (eg source from SHoS/SHeS) where rates already present 
