@@ -54,8 +54,7 @@
 
 
 ### functions/packages -----
-#source("1.indicator_analysis.R") # for packages and QA
-#source("2.deprivation_analysis.R") # for packages and QA
+
 source("functions/main_analysis.R") # for packages and QA
 source("functions/deprivation_analysis.R") # for packages and QA
 
@@ -250,7 +249,6 @@ shes_df <- shes_df %>%
 ###------------------------------------------------------------------------------------------------
 ### Now add the UKDS data:
 shes_df <- shes_from_ukds %>%
-  select(-denominator) %>%
   rbind(shes_df)
 
 table(shes_df$ind_id, useNA="always") # 26 in total, no NA
@@ -352,8 +350,6 @@ prepare_final_files <- function(ind){
     add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
     filter(!is.na(rate)) # some data biennial so not all years have data
     
-  # simd_data$numerator[is.na(simd_data$numerator)] <- 0 # Converting any NAs to 0s # Not necessary for the analysis, and important that NA remain as NA, not 0. 0s get flagged in the QA.
-  
   # calculate the inequality measures
   simd_data <- simd_data |>
     calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
@@ -401,37 +397,34 @@ prepare_final_files(ind = "work-life_balance")
 
 # Run QA reports 
 # main data
-run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-run_qa(type = "main", filename = "common_mh_probs", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-run_qa(type = "main", filename = "physical_activity", test_file = FALSE) # diffs flagged for year==2020 (trend_axis == 2018-2022)
-# Differences for 2018-2022 data: have compared the raw data read in (previous data = SPSS sav files that Calli got from SHeS team) and the differences exist there. 
-# Opt to trust the later data? I'm checking this with SHeS team.
-# SHeS team confirmed the error in the data they sent. Replace with these as soon as poss.
-run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) # no diffs flagged
-run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) # no diffs flagged 
-run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "binge_drinking", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "problem_drinker", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)  # no historic file
-run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)    # no historic file
-run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)# no historic file
-run_qa(type = "main", filename = "involved_locally", test_file = FALSE)  # no historic file
-run_qa(type = "main", filename = "support_network", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "stress_at_work", test_file = FALSE)# no historic file
-run_qa(type = "main", filename = "choice_at_work", test_file = FALSE)   # no historic file
-run_qa(type = "main", filename = "line_manager", test_file = FALSE) # no historic file
-run_qa(type = "main", filename = "depression_symptoms", test_file = FALSE)  # no historic file
-run_qa(type = "main", filename = "anxiety_symptoms", test_file = FALSE)  # no historic file
-run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)   # no historic file
-run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE)# no historic file
-run_qa(type = "main", filename = "work-life_balance", test_file = FALSE)# no historic file
+run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) 
+run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) 
+run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
+run_qa(type = "main", filename = "common_mh_probs", test_file = FALSE) 
+run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
+run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
+run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
+run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
+run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
+run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
+run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
+run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
+run_qa(type = "main", filename = "support_network", test_file = FALSE)  
+run_qa(type = "main", filename = "stress_at_work", test_file = FALSE) 
+run_qa(type = "main", filename = "choice_at_work", test_file = FALSE)    
+run_qa(type = "main", filename = "line_manager", test_file = FALSE)  
+run_qa(type = "main", filename = "depression_symptoms", test_file = FALSE)   
+run_qa(type = "main", filename = "anxiety_symptoms", test_file = FALSE)   
+run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)    
+run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE) 
+run_qa(type = "main", filename = "work-life_balance", test_file = FALSE) 
 
-# ineq data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
+# ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file=FALSE)
 run_qa(type = "deprivation", filename = "healthy_weight", test_file=FALSE)
