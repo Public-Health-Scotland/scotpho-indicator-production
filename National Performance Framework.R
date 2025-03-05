@@ -6,32 +6,45 @@
 #   99116: Persistent poverty (includes both adults and children)
 #   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
 #   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
-#   99118: Child material deprivation
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
 
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
-# 2024 update: https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
+# 2024 update (August 2024): https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
 # (N.B. THERE ARE OTHER SCOTPHO INDICATORS IN THIS FILE THAT COULD BE USED TO DE-DUPLICATE OTHER SCRIPTS. NOT READ IN CURRENTLY.)
+# (N.B.2 THE DATA AREN'T CONSISTENTLY PRESENTED IN THIS FILE, SO ADD NEW INDICATORS WITH CARE)
 
-### functions/packages ----
-source("1.indicator_analysis.R") 
-source("2.deprivation_analysis.R") 
 
-##TO DO - adapt scripts to run using new functions
 
-### Lookups
+### Functions/packages ----
+source("functions/main_analysis.R") # for packages and QA
+source("functions/deprivation_analysis.R") # for packages and QA
+library(readxl) # to read in excel spreadsheets
+
+
+### Lookups ----
 
 # bring in LA dictionary and include LA codes
-la_lookup <- readRDS(paste0(lookups, "Geography/CAdictionary.rds"))%>%
+la_lookup <- readRDS(paste0(profiles_lookups, "/Geography/CAdictionary.rds"))%>%
   mutate(geographylevel="Local Authority")
-hb_lookup <- readRDS(paste0(lookups, "Geography/HBdictionary.rds"))%>%
+hb_lookup <- readRDS(paste0(profiles_lookups, "/Geography/HBdictionary.rds"))%>%
   mutate(geographylevel="Health Board")
 
-area_lookup <-rbind(la_lookup,hb_lookup)
+area_lookup <-rbind(la_lookup, hb_lookup)
 
-rm(hb_lookup,la_lookup)
+
+# make a SIMD x population file for 4-12 year olds (young people's wellbeing age range)
+depr_pop_4to12y <- readRDS(paste0(profiles_lookups, "/Population/simd_population_lookup.rds")) %>%
+  filter(age %in% c(4:12)) %>%
+  filter(quint_type == "sc_quin") %>%
+  group_by(year, code, quintile, quint_type) %>%
+  summarise(denominator = sum(denominator)) %>%
+  ungroup()
+saveRDS(depr_pop_4to12y, paste0(profiles_lookups, "/Population/depr_pop_4to12y.rds"))
+
+
+rm(hb_lookup, la_lookup, depr_pop_4to12y)
 
 
 ### 1 - Read in data -----
@@ -41,7 +54,7 @@ url <- "https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38
 
 # Specify file name and where to save file to
 file_name <- "NPF_database_2024.xlsx"
-file_path <- paste0(data_folder, "Received Data/")
+file_path <- paste0(profiles_data_folder, "/Received Data/")
 
 # Download file
 download.file(url = url, destfile = paste(file_path, file_name, sep = ""))
@@ -50,7 +63,8 @@ download.file(url = url, destfile = paste(file_path, file_name, sep = ""))
 dat <- read_xlsx(paste0(file_path, file_name))
 
 
-### 2. Prepare data  -----
+### 2 - Prepare data  -----
+# N.B. If additional indicators are read in from this file make sure that this processing captures all the possible permutations... 
 
 data <- dat %>%
   
@@ -60,12 +74,11 @@ data <- dat %>%
   # Select relevant indicators 
   filter(indicator %in% c("Persistent poverty", 
                           "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
-                          #"Child material deprivation", # now source direct from stats.gov (see Chil(see Child Poverty.R script)d Poverty.R script)
-                          #"Children's material deprivation", #now sourced direct from stats.gov
-                          #"Child material deprivation", "Children's material deprivation", #indicators will come from stats.gov in future (see Child Poverty.R script)
-                          "Contractually secure work",
                           "Health risk behaviours",
                           "Gender balance in organisations",
+                        # Sourced from elsewhere now:  
+                          # "Child material deprivation", "Children's material deprivation", # now source direct from stats.gov (see Child Poverty.R script) as more disaggregated there
+                        # Additional CWB indicators available:
                           "Access to green and blue space",
                           "Healthy Start", #perinatal mort
                           "Employees on the Living wage", "Employees on the living wage",
@@ -73,7 +86,8 @@ data <- dat %>%
                           "Satisfaction with housing", "Satisfaction with Housing",
                           "Quality of public services",
                           "Visits to the outdoors", "Visits to the Outdoors",
-                          "Work place learning"
+                          "Work place learning",
+                          "Contractually secure work"
                         # Other ScotPHO/CWB indicators that could be read in from this file:
                           # "Educational attainment 7", # school leaver attainment (other educ attainment vars too)
                           # "Child social and physical development",
@@ -90,7 +104,6 @@ data <- dat %>%
   
   # Convert indicator names to lower case and add underscore 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_")) %>%
-         #indicator = str_replace_all(indicator, "children's", "child")) %>% #standardise these two indicators - not needed relates to child material deprivation which has moved
 
   # Standardise/simplify disaggregation names
   
@@ -110,7 +123,7 @@ data <- dat %>%
   # Sort for satisfaction with housing (add note in tech doc that the splits refer to the highest income householder)
   mutate(split_name = gsub(" of the highest income householder", "", split_name)) %>%
   
-  # standardise other splits:
+  # Standardise other splits:
   mutate(split_name = case_when(split_name %in% c("Six fold urban-rural 2020 classification", "Two fold urban-rural 2020 classification",
                                                           "Urban Rural  Classification 6-fold", "Urban Rural classification") ~ "Urban/Rural", TRUE ~ split_name)) %>%
   mutate(split_name = case_when(split_name %in% c("Scottish Index of Multiple Deprivation", "SIMD") ~ "Deprivation (SIMD)", TRUE ~ split_name)) %>%
@@ -118,26 +131,21 @@ data <- dat %>%
   mutate(split_name = ifelse(split_name == "Household tenure", "Tenure", split_name)) %>%
   mutate(split_name = ifelse(split_name == "Self-perception of health", "Self-assessed health", split_name)) %>%
   mutate(split_name = ifelse(split_name == "Declared limiting long term physical or mental health condition", "Limiting long term physical or mental health condition", split_name)) %>%
-  mutate(split_name = ifelse(split_name == "Local authority", "Local Authority", split_name)) %>%
   mutate(split_name = ifelse(split_name == "Employees on less than the Living wage", "Total", split_name)) %>%
-  mutate(split_name = ifelse(split_name == "NHS Board", "Health Board", split_name)) %>%
-  
+  mutate(split_name = ifelse(split_name == "Local authority", "Local Authority", split_name)) %>% # to be extracted into area column later
+  mutate(split_name = ifelse(split_name == "NHS Board", "Health Board", split_name)) %>% # to be extracted into area column later
   
   # Standardise/simplify breakdown names
 
-        # Convert indicator names to lower case and hyphenate 
+  # Convert indicator names to lower case and hyphenate 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_")) %>%
          
-        
-         # Ensure age breakdowns are named consistently
-        # breakdown = str_replace_all(breakdown, "Age ", ""),
-        # breakdown = str_replace_all(breakdown, "-", " to "),
 
-      # Age breakdowns 
+  # Age breakdowns 
   mutate(split_value = str_replace_all(split_value, "Age ", ""),
          split_value = str_replace_all(split_value, "-", " to "),
 
-         # Add hyphen back in where needed:
+  # Add hyphen back in where needed:
          split_value = if_else(split_value == "Non to Limiting Longstanding Illness", "Non-Limiting Longstanding Illness", split_value),
          split_value = if_else(split_value == "Working to age adults", "Working-age adults", split_value)) %>% 
   
@@ -160,6 +168,10 @@ data <- dat %>%
                                  split_value %in% c("Females", "Female") ~ "Female",
                                  TRUE ~ split_value)) %>%
   
+  # Disability
+  mutate(split_value = case_when(split_value %in% c("Not disabled", "Not Disabled") ~ "Not disabled",
+                                 TRUE ~ split_value)) %>%
+  
   # Formats
   mutate(split_value = gsub("  ", " ", split_value)) %>% # remove double spaces
   
@@ -168,12 +180,11 @@ data <- dat %>%
  
   
   # Add indicator ids
-  mutate(ind_id = case_when(indicator == "persistent_poverty" ~ 99116,
+  mutate(ind_id = case_when(indicator == "persistent_poverty" ~ 99116, # subsequently split out child poverty into ind_id 30155
                             indicator == "child_wellbeing_and_happiness" ~ 99117,
-                            #indicator == "child_material_deprivation" ~ 99118,
                             indicator == "health_risk_behaviours" ~ 99121,
-                            indicator == "gender_balance_in_organisations" ~ 99123,
-                            # These indicators need IDs, and adding to techdoc:
+                            indicator == "gender_balance_in_organisations" ~ 99123
+                            # Uncomment once these CWB indicators have IDs and are added to techdoc (will be NA currently):
                             # indicator == "contractually_secure_work" ~ xxxxx,
                             # indicator == "access_to_green_and_blue_space" ~ xxxxx,
                             # indicator == "healthy_start" ~ xxxxx,
@@ -187,7 +198,7 @@ data <- dat %>%
          
   # Create date variables (N.B. revisit the logic if more indicators added: available periods may change)
   mutate(trend_axis = case_when(nchar(year)==4 ~ year, # keep as is if single years
-                                # expand the ranges to show full years (some do but some don't)       
+                                # expand the ranges to show full years (some currently do but some don't)       
                                 nchar(year)>4 ~ paste0(substr(year, 1, 4), "-", as.character(2000+as.numeric(substr(year, nchar(year)-1, nchar(year))))), 
                                 TRUE ~ NA)) %>%
   mutate(year = case_when(nchar(year)==4 ~ as.numeric(year),
@@ -197,7 +208,7 @@ data <- dat %>%
                                 as.numeric(substr(trend_axis, 8, 9)) - as.numeric(substr(trend_axis, 3, 4)) == 3 ~ paste0("4-year aggregate (",trend_axis,")"),
                                 as.numeric(substr(trend_axis, 8, 9)) - as.numeric(substr(trend_axis, 3, 4)) == 4 ~ paste0("5-year aggregate (",trend_axis,")"))) %>%
 
-  # Add geography codes
+  # Add geography codes (N.B. current 5 indicators are Scotland-only)
   mutate(geographylevel = case_when(split_name %in% c("Local Authority", "Health Board") ~ split_name,
                                     TRUE ~ "Scotland")) %>%
   mutate(areaname = case_when(split_name %in% c("Local Authority", "Health Board") ~ split_value,
@@ -223,56 +234,75 @@ data <- dat %>%
   # Select relevant variables
   select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
   
-  #rename indicator to fit new name that NPF will adopt
+  # Rename indicator to fit new name that NPF will adopt
   mutate(indicator = case_when (indicator=="child_wellbeing_and_happiness" ~ "young_peoples_mental_wellbeing", TRUE ~indicator)) %>%
   
   # Reorder data frame
   arrange(indicator, code, year) %>%
-  distinct() # get rid of duplicates n=2979 now
-  
-# Make sure each non-geographic split-name has a Total split_value rate:
+  distinct() # get rid of duplicates, n=2919 now (still includes those with no ind_id)
 
-# get the totals 
+
+  
+# Now get the totals:
+# Make sure each split has a Total split_value rate:
+# This gets more complicated than it should, because of differences in the groupings available for each indicator.
+# N.B. If additional indicators are read in from this file make sure that this processing captures all the possible permutations... 
+
+# Get the totals: select a single total for each indicator-trendaxis-code grouping
 totals <- data %>% 
-  filter(split_value == "Total") %>% 
-  filter(!(indicator %in% c("persistent_poverty", "contractually_secure_work") & split_name!="Age")) %>% # keep only Age split for these two, as some of their other 'Total' data differs, bizarrely
+  filter((ind_id != 99116 & split_value == "Total" & split_name == "Total") | 
+           (ind_id == 99116 & split_value == "Total" & split_name == "Age") ) %>% # persistent poverty is the odd one out: there are only 3 values for split_name=="Total", but more for split_name=="Age"
   select(c(ind_id, indicator, code, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
-  distinct() # n=158
+  distinct() # n=40
 
-# which rows require totals to be added in?
-data_totals <- data %>%
-  filter(split_name!="Total") %>% # drop all the totals
-  filter(split_value!="Total") %>%
-  filter(code=="S00000001") %>% # exclude CA and HB data (to be separated out into main data, with no splits available. Their 'total' is the Scotland-level data)
-  select(ind_id, indicator, code, split_name, year, trend_axis, def_period) %>%
-  distinct() %>%
-  merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")) # still n=629 #609
+# Get the unique splits (by indicator-trendaxis-code) and drop their indicator data
+splits_needing_totals <- data %>%
+  filter(split_value != "Total") %>%
+  select(c(ind_id, indicator, code, split_name, year, trend_axis, def_period)) %>%
+  distinct() # n=1018 (includes all indicators, with/without ind_id)
 
-# get original rows for splits without totals
-data_no_totals <- data %>% 
-  filter(split_name!="Total") %>%
-  filter(split_value!="Total") %>% 
-  distinct() #2559 obs #2509
+# Get the total indicator data for each of those unique splits (the same total from the totals df is added to each unique split, by indicator-trendaxis-code)
+splits_with_totals <- splits_needing_totals %>%
+  merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")) # n=122; just restricted to the 4 indicators with non-NA ind_id
 
-# get original rows for Scotland
-scot_data <- data %>% 
-  filter(split_name=="Total") %>% 
-  distinct() #162
-
-# combine these:
-data_with_totals <- rbind(scot_data, data_no_totals, data_totals) %>% # 3270
-  arrange(readr::parse_number(split_value)) # sorts the age groups into the right order (throws up warning about parsing failiure)
-
+# Get the original split data, and drop their total rows, if present
+splits_without_totals <- data %>%
+  filter(split_value != "Total") %>%
+  filter(split_name != "Total")
   
+# Add geography totals (can't even rely on these to be present in the original data, e.g., see persistent poverty)
+all_data_with_totals <- totals %>%
+  mutate(split_name="Total") %>% # makes the unsplit data for any geographies in the data (split_name=Total and split_value=Total)
+  rbind(splits_with_totals) %>%
+  rbind(splits_without_totals) %>% # n=2671
+  filter(!is.na(ind_id)) %>% # n=598
+  arrange(readr::parse_number(split_value)) # sorts the age groups into the right order (throws up warning about parsing failure, because most split_values don't have numbers in them. This is OK)
 
-### 3. Prepare final files -----
+### Check availability: ----
+# (and whether the convoluted processing above has worked)
+availability <- all_data_with_totals %>%
+  mutate(geog = substr(code, 1, 3)) %>%
+  select(ind_id, geog, year, split_name, split_value) %>%
+  unique() 
+# cross-tabulate to check:
+ftable(availability, row.vars = c("geog", "ind_id", "split_name"), col.vars = c("year"))
+# shows that each indicator has split_name=total for the relevant years (these are the geography totals, which are only for Scotland currently, as there are no HB/CA data for the current indicators extracted (and kept) here)
+# and that for each split_name there is one more grouping than its individual split_values (e.g., deprivation has 5 split_values + 1 total = 6; sex has 2 split_values + 1 total = 3)
+
+
+
+
+
+
+### 3 - Prepare final files -----
 
 # Function to prepare final files:
 # Creates three data files for each indicator (main, popgroup, and deprivation data)
-prepare_final_files <- function(ind){
+prepare_final_files <- function(ind, agerange=NULL){
   
-  df <- data_with_totals %>%
-    filter(indicator==ind)
+  df <- all_data_with_totals %>%
+    filter(indicator==ind) %>%
+    arrange(code, year) # sort order for plotting purposes
 
   
      
@@ -280,15 +310,12 @@ prepare_final_files <- function(ind){
   # (ie dataset behind scotland and/or sub national summary data that populates summary/trend/rank tab)
   
   maindata <- df %>%
-    filter(split_name %in% c("Total", "Health Board", "Local Authority")) %>%
+    filter(split_name %in% c("Total", "Health Board", "Local Authority")) %>% 
     select(code, ind_id, year, numerator, rate, lowci, upci, def_period, trend_axis)  #select fields required for maindata file (ie summary/trend/rank tab)
 
   # Save files
-  write_rds(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  write.csv(maindata, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
-  
-  write_rds(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  write.csv(maindata, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
+  write_rds(maindata, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(maindata, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   
   # Make data created available outside of function so it can be visually inspected if required
   maindata_result <<- maindata
@@ -303,13 +330,9 @@ prepare_final_files <- function(ind){
     select(code, ind_id, split_name, split_value, year, numerator, rate, lowci, upci, def_period, trend_axis) 
 
   # Save files
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
-  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
 
-  #remove saving to test location once all indicators are approved and live in tool.
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  
   # Make data created available outside of function so it can be visually inspected if required
   pop_grp_data_result <<- pop_grp_data
   
@@ -318,62 +341,80 @@ prepare_final_files <- function(ind){
   # 3 - Deprivation data
   # National level only 
   if("Deprivation (SIMD)" %in% unique(df$split_name)) {
-    simd1 <- df %>%
-      filter(split_name == "Deprivation (SIMD)") %>%
-      rename(quintile = split_value) %>%
-      mutate(quint_type="sc_quin") %>%
-      select(-split_name, -indicator)
+
+  # Process SIMD data
+  simd_data <- df %>% 
+    filter(indicator == ind) %>% 
+    filter(split_name=="Deprivation (SIMD)") %>%
+    rename(quintile = split_value) %>%
+    mutate(quint_type="sc_quin") %>%
+    select(-split_name, -indicator) %>%
+    arrange(code, year, quintile)
   
-  # Save intermediate SIMD file
-  write_rds(simd1, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.rds"))
-  write.csv(simd1, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
+  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
   
-  #get ind_id argument for the analysis function 
-  ind_id <- unique(simd1$ind_id)
+  # add population data (quintile level) so that inequalities can be calculated
+  simd_data <-  simd_data|>
+    add_population_to_quintile_level_data(pop=paste0("depr_pop_", agerange),ind = ind_id,ind_name = ind_name) |>
+    filter(!is.na(rate)) # not all years have data
   
-  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
-                                 pop = "depr_pop_16+", # these are adult (16+) indicators, with no sex split for SIMD
-                                 ind_id, 
-                                 ind)
+  # calculate the inequality measures
+  simd_data <- simd_data |>
+    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+  
+  # save the data as RDS file
+  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
+  
+  # Make data created available outside of function so it can be visually inspected if required
+  simd_data_result <<- simd_data
   
   }
   
 }
 
 
-# Create final files and run QA reports - QA report won't work until changes made to checking reports - come back to this
 
-# Indicator 99116: Persistent poverty ---- #latest data 2012-2016 (no update available until)
+#== Create final files and run QA reports ----
+
+# Indicator 99116: Persistent poverty ---- 
 prepare_final_files(ind = "persistent_poverty")
+
+# Indicator 30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
+cyp_pers_pov <- pop_grp_data_result %>%
+  filter(split_value == "Children") %>% 
+  mutate(ind_id = 30155) %>%
+  select(-starts_with("split"))  
+# Save files
+write_rds(cyp_pers_pov, paste0(profiles_data_folder, "/Data to be checked/cyp_persistent_poverty_shiny.rds"))
+write.csv(cyp_pers_pov, paste0(profiles_data_folder, "/Data to be checked/cyp_persistent_poverty_shiny.csv"), row.names = FALSE)
 
 
 # Indicator 99117: Young peoples mental wellbeing  ----
-prepare_final_files(ind = "young_peoples_mental_wellbeing")
-
-  
-# Indicator 99118: Child material deprivation ----
-# will switch to sourcing data from stas.gov ind_id 30154 - slight name change but this is actually a better description
-# see child poverty.R
-#prepare_final_files(ind = "child_material_deprivation")
-
+prepare_final_files(ind = "young_peoples_mental_wellbeing", agerange="4to12y")
 
 # Indicator  99121: Health risk behaviours ----
-prepare_final_files(ind = "health_risk_behaviours")
-
+prepare_final_files(ind = "health_risk_behaviours", agerange="16+")
 
 # Indicator 99123: Gender balance in organisations (for minority ethnic population)
-prepare_final_files(ind = "gender_balance_in_organisations")
+prepare_final_files(ind = "gender_balance_in_organisations", agerange="16+")
 
 
-# # Run QA reports 
- run_qa(filename = "persistent_poverty")
- run_qa(filename = "young_peoples_mental_wellbeing")
- run_qa(filename = "health_risk_behaviours")
- run_qa(filename = "gender_balance_in_organisations")
 
- #wont work until swtich to new functions
- run_qa(filename = "health_risk_behaviours", type="Deprivation", test_file=FALSE)
+
+
+###  Run QA reports ----
+run_qa(type = "main", filename = "persistent_poverty", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_persistent_poverty", test_file = FALSE) 
+run_qa(type = "main", filename = "young_peoples_mental_wellbeing", test_file = FALSE)
+run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "main", filename = "gender_balance_in_organisations", test_file = FALSE)
+
+run_qa(type = "deprivation", filename = "young_peoples_mental_wellbeing", test_file = FALSE)
+run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "deprivation", filename = "gender_balance_in_organisations", test_file = FALSE)
  
  
 
