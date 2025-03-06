@@ -3,19 +3,18 @@
 #########################################################
 
 # TO DO: 
-# WORK OUT HOW TO USE SIMD DECILE DATA (WHEN MORE THAN ONE DATA POINT, AS NOW)
-# Use the child material deprivation data processed here for the CWB indicator (see note below): check this is ok to do.
-
+# Add in SIMD analysis if future SIMD data become less patchy (too suppressed at present, because sample sizes <100 in many cases), or if the data are obtained by quintile rather than decile.
+# Keep ethnicity and SIMD data in the file if the data become less patchy
 
 ### Update ScotPHO indicators on child poverty
 ### Author: Liz Richardson, 13 Nov 2024
 
-# Child poverty indicators (part of the CYP mental health indicators)
+# Child poverty indicators (part of the CYP mental health profile and CWB profile)
 
 # 30152 = Percentage of 'dependent children' living in relative poverty (before housing costs). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
 # 30153 = Percentage of 'dependent children' living in absolute poverty (before housing costs). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
 # 30154 = Percentage of 'dependent children' in combined material deprivation and low income after housing costs (below 70% of UK median income).
-# N.B. CWB takes data for 30154 (numbered 99118 there) from NPF xlsx, but 4-y aggregations (3y here) and fewer breakdowns. Slightly different figures. Assess which to use.
+# N.B. This data source (child poverty data download from statistics.gov.scot) gives better resolution data than the NPF spreadsheet (also downloaded from statistics.gov.scot).
 
 ### Notes on the data source:
 # statistics.gov.scot 
@@ -46,9 +45,11 @@
 # Note that poverty is measured at a household level. Everyone in the same household is considered either in poverty or not in poverty. 
 # This makes it difficult to measure the poverty rate by age or gender of an individual person if they share the households with others. 
 
-# SIMD data only available for 2019/20 to 2021/22 in this dataset, and only for deciles. 
-# Possible to use count data (grossed up to population) in future to calculate a population-weighted average at quintile level?
 
+
+### functions/packages -----
+source("functions/main_analysis.R") # for packages and QA
+source("functions/deprivation_analysis.R") # for packages and QA
 
 # statistics.gov.scot data were downloaded using opendatascot: 
 # https://scotgovanalysis.github.io/opendatascot/
@@ -61,12 +62,9 @@
 #   upgrade = "never",
 #   build_vignettes = TRUE
 # )
+library(opendatascot) # to read in statistics.gov.scot data
 
 
-### functions/packages -----
-source("1.indicator_analysis.R")
-source("2.deprivation_analysis.R")
-library(opendatascot)
 
 ### 1. Read in data ----
 
@@ -87,6 +85,9 @@ childpov_raw <- opendatascot::ods_dataset("poverty-children",
                           )  %>%
   select(-c(refArea, typeOfTenure, workStatus, numberOfChildrenInHousehold, ageOfYoungestChild, singleParenthood, 
             ageOfMother, familyEmploymentStatus))
+
+# save to Received data
+saveRDS(childpov_raw, paste0(profiles_data_folder, "/Received Data/childpov.rds"))
 
 # prepare data
 childpov <- childpov_raw %>% 
@@ -162,8 +163,56 @@ childpov <- childpov_raw %>%
            (ind_id == 30154 & housing_costs=="after-housing-costs")) %>%
   
   # select right variables
-  select(-c(housing_costs, age, ethnicity, household_disability_status, urban_rural_classification, simd_deciles))
+  select(-c(housing_costs, age, ethnicity, household_disability_status, urban_rural_classification, simd_deciles, ci_wald, samplesize))
   
+
+
+# Get the totals: select a single total for each indicator-trendaxis-code grouping
+totals <- childpov %>% 
+  filter(split_name == "Total" & split_value == "Total") %>% 
+  select(c(ind_id, indicator, code, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
+  distinct() # n=64
+
+# Get the unique splits (by indicator-trendaxis-code) and drop their indicator data
+splits_needing_totals <- childpov %>%
+  filter(split_name != "Total") %>%
+  select(c(ind_id, indicator, code, split_name, year, trend_axis, def_period)) %>%
+  distinct() # n=204
+
+# Add in the total indicator data for each of those unique splits (the same total from the totals df is added to each unique split, by indicator-trendaxis-code)
+splits_with_totals <- splits_needing_totals %>%
+  merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")#, all.x=TRUE
+        ) # n=146 (why fewer? ah: there are no totals for the 5-y aggregations used for the Ethnicity splits, so these get dropped)
+
+# Get the original split data, and drop their total rows, if present
+splits_without_totals <- childpov %>%
+  filter(split_value != "Total") %>%
+  filter(split_name != "Total") #856
+
+# Add geography totals 
+all_data_with_totals <- totals %>%
+  mutate(split_name="Total") %>% # reinstates the unsplit data for any geographies in the data (split_name=Total and split_value=Total)
+  rbind(splits_with_totals) %>%
+  rbind(splits_without_totals) %>% # n=1066
+  arrange(readr::parse_number(split_value)) # sorts the age groups into the right order (throws up warning about parsing failure, because most split_values don't have numbers in them. This is OK)
+
+### Check availability: ----
+# (and whether the convoluted processing above has worked)
+availability <- all_data_with_totals %>%
+  mutate(geog = substr(code, 1, 3)) %>%
+  select(ind_id, geog, year, split_name, split_value) %>%
+  unique() 
+# cross-tabulate to check:
+ftable(availability, row.vars = c("geog", "ind_id", "split_name"), col.vars = c("year"))
+# shows that each indicator has split_name=total for the relevant years (these are the geography totals, which are only for Scotland here)
+# and that for each split_name (apart from ethnicity) there is one more grouping than its individual split_values (e.g., urban/rural has 2 split_values + 1 total = 3; deprivation has 10 split_values (deciles) + 1 total = 11)
+
+# Drop splits with too many suppressed/missing values
+# The preparation of the final files, below, revealed that the SIMD decile and ethnicity splits are too patchy to be useful and/or unproblematic (e.g., in most years the only ethnicity data not suppressed are for White British and White other.)
+# Drop these splits:
+all_data_with_totals <- all_data_with_totals %>%
+  filter(!split_name %in% c("Ethnicity", "Deprivation (SIMD)")) # n=768
+
 
 
 ##########################################################
@@ -175,70 +224,45 @@ childpov <- childpov_raw %>%
 prepare_final_files <- function(ind){
   
   # 1 - main data (ie data behind summary/trend/rank tab)
-  # Contains Scotland data, total pop
-  main_data <- childpov %>% 
+  main_data <- all_data_with_totals %>% 
     filter(indicator == gsub("cyp-","",ind),
            split_name == "Total") %>% 
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
-  
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  
-  # 2 - population groups data (ie data behind population groups tab)
-  # Contains Scotland data by sex (including total)
-  pop_grp_data <- childpov %>% 
-    filter(indicator == gsub("cyp-","",ind) & !(split_name %in% c("Total"))) %>% 
-    select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value,) 
+    unique() %>%
+    arrange(code, year)
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  
+  # 2 - population groups data (ie data behind population groups tab)
+  pop_grp_data <- all_data_with_totals %>% 
+    filter(indicator == gsub("cyp-","",ind) & !(split_name %in% c("Total"))) %>% 
+    select(code, ind_id, year, numerator, rate, upci, 
+           lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(code, year)
+  
+  # Save
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   
   
-  # # 3 - SIMD data (ie data behind deprivation tab) # RUN THIS WHEN DEP CALCS CAN HANDLE DECILES (OR WE APPROXIMATE QUINTILES FROM DECILES)
-  # # Contains Scotland data by SIMD quintile (single year or 2y aggregate)
-  # 
-  # # Process SIMD data
-  # simd_data <- childpov %>% 
-  #   filter(indicator == gsub("cyp-","",ind) & split_name == "Deprivation (SIMD)") %>% 
-  #   unique() %>%
-  #   select(-indicator, -split_name) %>%
-  #   rename(quintile = split_value) %>%
-  #   mutate(quint_type = "sc_quin")
-  # 
-  # # Save intermediate SIMD file
-  # write_rds(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.rds"))
-  # write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
-  # 
-  # #get ind_id argument for the analysis function 
-  # ind_id <- unique(simd_data$ind_id)
-  # 
-  # # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  # analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
-  #                                pop = "xxxxx", # need under 16 pop for the calc
-  #                                ind_id, 
-  #                                ind
-  # )
-  
+  # # 3 - SIMD data (ie data behind deprivation tab) 
+  # The deprivation data are too heavily suppressed at present to make SIMD analysis viable/sensible.
+  # Revisit if the data become available at quintile rather than decile level...
+
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
   pop_grp_data_result <<- pop_grp_data
-#  simd_data_result <<- simd_data
-  
+
   
 }
 
 
 # Run function to create final files
-prepare_final_files(ind = "cyp-absolute-poverty")
+prepare_final_files(ind = "cyp-absolute-poverty") 
 prepare_final_files(ind = "cyp-relative-poverty")
 prepare_final_files(ind = "cyp-combined-low-income-and-material-deprivation")
 
@@ -246,15 +270,11 @@ prepare_final_files(ind = "cyp-combined-low-income-and-material-deprivation")
 # Run QA reports 
 
 # main data:
-run_qa(filename = "cyp-absolute-poverty")
-run_qa(filename = "cyp-relative-poverty")
-run_qa(filename = "cyp-combined-low-income-and-material-deprivation")
+run_qa(type = "main", filename = "cyp-absolute-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp-relative-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp-combined-low-income-and-material-deprivation", test_file = FALSE)
 
 
-# # ineq data: RUN WHEN HAVE SIMD QUINTILE DATA AVAILABLE
-# run_ineq_qa(filename = "cyp-absolute-poverty")
-# run_ineq_qa(filename = "cyp-relative-poverty")
-# run_ineq_qa(filename = "cyp-combined-low-income-and-material-deprivation")
 
 
 #END
