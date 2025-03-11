@@ -106,12 +106,12 @@ saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "second
 
 
 # analyse and prepare final file for primary pupils indicator  
-main_analysis(filename = "primary_pupils", geography = "council", measure = "percent", yearstart = 2005,
+main_analysis(filename = "primary_pupils", geography = "council", measure = "percent", yearstart = 2006,
               yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
 # analyse and prepare final file for secondary pupils indicator 
-main_analysis(filename = "secondary_pupils", geography = "council", measure = "percent", yearstart = 2006,
+main_analysis(filename = "secondary_pupils", geography = "council", measure = "percent", yearstart = 2005,
               yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
