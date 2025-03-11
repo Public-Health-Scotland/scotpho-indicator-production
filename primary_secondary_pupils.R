@@ -96,8 +96,8 @@ data <- split(data, data$cohort)
 
 
 # save temporary data files to be used in analysis functions 
-saveRDS(data$primary, file.path(profiles_data_folder, "Prepared Data", "primary_pupils_raw.rds"))
-saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "secondary_pupils_raw.rds"))  
+saveRDS(data$primary, file.path(profiles_data_folder, "Prepared Data", "13107_primary_pupils_raw.rds"))
+saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "13108_secondary_pupils_raw.rds"))  
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,13 +106,13 @@ saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "second
 
 
 # analyse and prepare final file for primary pupils indicator  
-main_analysis(filename = "primary_pupils", geography = "council", measure = "percent", yearstart = 2006,
+main_analysis(filename = "13107_primary_pupils", geography = "council", measure = "percent", yearstart = 2006,
               yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
 # analyse and prepare final file for secondary pupils indicator 
-main_analysis(filename = "secondary_pupils", geography = "council", measure = "percent", yearstart = 2005,
-              yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
+main_analysis(filename = "13108_secondary_pupils", geography = "council", measure = "percent", yearstart = 2005,
+              yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13108)
 
 
 ## END
