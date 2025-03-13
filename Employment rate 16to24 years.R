@@ -21,13 +21,13 @@ source("functions/main_analysis.R")
 
 # To find data table behind the data update follow these selections in the NOMIS data download tool found at the url above
 
-#  - Data downloads
+#  - Data downloads (from https://www.nomisweb.co.uk/)
 # 	-Query		(https://www.nomisweb.co.uk/query/select/getdatasetbytheme.asp?opt=3&theme=&subgrp=)
-# 	-Annual population service (APS)
+# 	-Annual population survey (APS)
 # 	-STEP 1: Geography  (select countries>some> : Scotland ,  Local authorities - District (within Scotland)>some> then tick all within Scotland)
 #   -STEP 2: Date (12 months to December) – pick time periods required – full series if refreshing all or single year to add one year to existing dataset)
 # 	-STEP 3: 
-#             in category drop down : select 'employment rate by age'
+#             using the category drop down : select 'employment rate by age'
 #                                     tick "Employment rate - aged 16-24" (only select for both sexes we don't report this indicator by population groups)
 #   -STEP 4: choose option for 'Nomis API'
 #   -STEP 5: Copy link to download data as csv into R script below (the link is the reference for API_link object)
