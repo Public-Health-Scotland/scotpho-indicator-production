@@ -197,5 +197,37 @@ prepare_indicator(data, ind_id = 1575, age_group = "16+", sex_group = "Male")
 prepare_indicator(data, ind_id = 1576, age_group = "16+", sex_group = "Female")
 
 
+## Create a population group split file for the smoiking prevalence in 16+ indicator
+## the 16+ indicator features in the care and wellbeing profile and would be helpful to provide age and sex breakdowns
+
+pop_groups_age <- data |>
+  filter(age_grp %in% c("16+","16 to 34","35 to 64","65+"))|>
+  # Create 'split-name' & split_value columns based
+  mutate(split_value= case_when(age_grp=="16+" ~ "All (16+)", TRUE ~age_grp),
+         split_name = "Age") |>
+  # Remove columns no longer needed  
+  select(!c(age_grp, sex))
+
+
+pop_groups_sex <- data |>
+  filter(age_grp %in% c("16+"))|>
+  # Create 'split-name' & split_value columns based
+  mutate(split_value= case_when(sex=="All" ~ "All (16+)", TRUE ~ sex),
+         split_name = "Sex") |>
+  # Remove columns no longer needed  
+  select(!c(age_grp, sex))
+
+                                
+pop_groups_data <- bind_rows(pop_groups_age,pop_groups_sex) |>
+  mutate(ind_id=1570)
+  
+
+# save final files
+saveRDS(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.rds"))
+write.csv(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.csv"), row.names = FALSE)
+
+
+
+
 ## END
 
