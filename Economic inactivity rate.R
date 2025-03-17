@@ -150,10 +150,10 @@ pop_grp_data <- data %>%
   bind_rows(pop_grp_all_data) %>% 
   mutate(split_name = str_replace_all(split_name, "Total", "Sex")) %>% 
   
-  # Add in total rows again and rename for ethnic minority
-  bind_rows(pop_grp_all_data) %>% 
-  mutate(split_name = str_replace_all(split_name, "Total", "Ethnic minority")) %>% 
-  
+  # Do not Add in total rows for ethnic minority since the percentage ethnic minority represents
+  # percentage of economically inactive population that are ethnic minority and not
+  # percentage of the ethnic minor population who are economically inactive.
+
   arrange(code, year)
 
 # Save files in folder for checking
