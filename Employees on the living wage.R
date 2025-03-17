@@ -1,4 +1,6 @@
-# to do:
+#Indicator developed during early stages of Care and Wellbeing portfolio however never published and subsequently suprlass to requirement so script moved to archive folder
+
+
 # update file paths to non-test output locations when profiles tool developments go live
 
 ###   Update ScotPHO Care and Wellbeing indicator: 
