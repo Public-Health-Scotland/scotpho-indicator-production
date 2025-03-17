@@ -1,5 +1,3 @@
-# to -do  : decide if the indicator name could change to 'Employment rate, 16-64 years' 'Employment rate, 16-64 years'
-
 # Indicators:  Employment rate (percentage of population in employment):
 # 99133: Employment rate 16to64 years
 
@@ -86,7 +84,6 @@ data <- raw_data %>%
                                  split_value == "Employment rate males - Aged 16-64" ~ "Males (16-64 years)",
                                  split_value == "Employment rate females - Aged 16-64" ~ "Females (16-64 years)",
                                  str_detect(split_value, "Aged") ~ split_value)) %>%
-
 
   # Pivot the data to a wider format, spreading the 'obs_value' across new columns based on 'measures_name'
   pivot_wider(names_from = measures_name, values_from = obs_value) %>%
