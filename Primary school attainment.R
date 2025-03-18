@@ -20,38 +20,49 @@
 # SIMD 2020 for 2020/21, 2021/22 and 2022/23. 
 # No data collected in 2019/20 (collection and publication was cancelled in 2019-2020 due to the difficulties in collecting data whilst schools were closed due to COVID-19)
 
-# For inequalities calcs: (Scotland and council level)
+# For inequalities calcs: (Scotland, CA and HB level)
 # Published pupil census data don't provide the denominator granularity we need (quintile x stage x council area). 
 # Denominator data obtained directly from Keith Hoy (school.stats@gov.scot). 
 # These data are imported, processed, and saved to the population lookup folder at the start of this script. 
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
-source("2.deprivation_analysis.R")
+source("functions/main_analysis.R") # for packages and QA
+source("functions/deprivation_analysis.R") # for packages and QA
 
 # Load additional packages
 library(openxlsx)
+library(hablar) # sum_ function from hablar keeps NA when there should be NA
 
 ##########################################################
 ### 1. Paths and lookups ----
 ##########################################################
 
 # Identify data folder
-cfe_data_folder <- paste0(data_folder, "Received Data/Curriculum for Excellence/")
+cfe_profiles_data_folder <- paste0(profiles_data_folder, "/Received Data/Curriculum for Excellence/")
 file <- "ACEL+2324+-+Publication+-+Supplementary+tables+-+final.xlsx"
 cohort <- "ACEL 23-24 Table 11 with cohort for Elizabeth Richardson.xlsx"
 
 ## Geography lookup -----
 
-# Read in geography lookup
-geo_lookup <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>% 
+# Read in geography profiles_lookups
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
+
+# LAs to HBs lookup
+hb <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  select(ca2019, hb2019) %>%
+  distinct(.)
 
 ## Population lookup -----
 
+# These pop denominators are used for 
+# (a) back-calculating the numerators so LA data can be aggregated to HB, and 
+# (b) calculating inequalities metrics)
+# The cohort data had to be requested from SG.
+
 # Process the cohort data (requested from SG) and save in LUT folder
-cohort_simd_LA <- read.xlsx(paste0(cfe_data_folder, cohort),
+cohort_simd_LA <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
                      sheet = "ACEL Table_11",
                      startRow = 5,
                      colNames = TRUE) %>%
@@ -71,7 +82,7 @@ cohort_simd_LA <- read.xlsx(paste0(cfe_data_folder, cohort),
                               quintile=="SIMD Quintile 5 - least deprived" ~ "5",
                               quintile=="Local Authority Total" ~ "Total")) %>%
   filter(!is.na(quintile)) %>%
-  mutate(quint_type = "sc_quin") %>%
+ # mutate(quint_type = "sc_quin") %>%
   
   # add spatial.scale column
   mutate(spatial.scale = "Council area") %>%
@@ -85,19 +96,36 @@ cohort_simd_LA <- read.xlsx(paste0(cfe_data_folder, cohort),
   # select required variables
   select(-stage, -starts_with("spatial"))
 
-# Aggregate cohort populations to Scotland
-cohort_simd_scotland <- cohort_simd_LA %>%
-  group_by(year, quintile, quint_type) %>%
+# Aggregate cohort populations to HB level
+cohort_simd_HB <- cohort_simd_LA %>%
+  merge(y=hb, by.x="code", by.y= "ca2019") %>%
+  select(-code) %>%
+  rename(code = hb2019) %>%
+  group_by(code, year, quintile) |>
   summarise(denominator = sum(denominator, na.rm = TRUE)) %>%
   ungroup() %>%
-  mutate(denominator = ifelse(denominator==0, as.numeric(NA), denominator)) %>% # islands that are missing some quintiles
+  mutate(denominator = ifelse(denominator==0, as.numeric(NA), denominator))  # islands that are missing some quintiles
+
+# Aggregate cohort populations to Scotland
+cohort_simd_scotland <- cohort_simd_LA %>%
+  group_by(year, quintile) %>%
+  summarise(denominator = sum(denominator, na.rm = TRUE)) %>%
+  ungroup() %>%
   mutate(code = "S00000001") 
 
 # Combine
-cohort_P1_P4_P7 <- rbind(cohort_simd_LA, cohort_simd_scotland)
+cohort_simd <- rbind(cohort_simd_LA, cohort_simd_HB, cohort_simd_scotland)
+
+# Add in split_value = "None"
+cohort_P1_P4_P7 <- cohort_simd %>%
+  filter(quintile=="Total") %>%
+  mutate(quintile="None") %>%
+  rbind(cohort_simd) %>%
+  mutate(quint_type = "sc_quin")
+
   
 # Save file to lookups folder (for use in later calcs of inequalities metrics)
-saveRDS(cohort_P1_P4_P7, paste0(lookups, "Population/depr_pop_CYP_P1_P4_P7.rds"))
+saveRDS(cohort_P1_P4_P7, paste0(profiles_lookups, "/Population/depr_pop_CYP_P1_P4_P7.rds"))
 
 
 
@@ -105,48 +133,111 @@ saveRDS(cohort_P1_P4_P7, paste0(lookups, "Population/depr_pop_CYP_P1_P4_P7.rds")
 ### 2. Read in data ----
 ##########################################################
 
-# Scotland, overall (Table 1)
+# First read in the national, CA, SIMD and SIMDxCA level data.
+# HB values can be created from the CA data.
+# Then read in the data for other population splits (sex, ethnicity, urban/rural).
+# Finally combine these. 
 
-scotland <- read.xlsx(paste0(cfe_data_folder, file),
-                sheet = "Table_1",
-                startRow = 5,
-                colNames = TRUE) %>%
-  clean_names() %>%
-  rename_with(~ substr(.x, 1, 8)) %>% # lose the reference to notes by shortening all col names
-  filter(stage == "P1, P4 and P7 combined") %>%
-  filter(organise %in% c("Numeracy", "Literacy")) %>%
-  rename(indicator = organise) %>%
-  mutate(x2019_20 = replace(x2019_20, x2019_20=="[w]", NA),
-         x2019_20 = as.numeric(x2019_20),
-         x2020_21 = as.numeric(x2020_21)) %>%
-  # reshape the data 
-  pivot_longer(cols = c(x2016_17 : x2023_24), values_to="rate", names_to = "trend_axis", names_prefix = "x") %>%
-  mutate(trend_axis = gsub("_", "/", trend_axis)) %>%
+# Define some functions ----
 
-  # add spatial.scale column
-  mutate(spatial.scale = "Scotland") %>%
+# Function to read in the data
+
+get_attainment_data <- function (sheetname, startnumber) {
   
-  # add spatial.unit column
-  mutate(spatial.unit = "Scotland") %>%
+  df <- read.xlsx(paste0(cfe_profiles_data_folder, file),
+                  sheet = sheetname,
+                  startRow = startnumber,
+                  colNames = TRUE) %>%
+    clean_names() %>%
+    # filter if 'stage' is a column
+    filter(if_any(matches("stage"), ~ . == "P1, P4 and P7 combined")) %>%
+    # then drop 'stage' if it exists
+    select(-any_of("stage")) %>%
+    # convert missing/suppressed values to NA
+    mutate(across(.cols = -c(starts_with(c("organiser", "local", "simd", "year"))), # works even if these cols don't exist... result!
+                  .fns = ~ case_when(. %in% c("[w]", "[c]", "[x]", "c") ~ NA, # replace the missing codes with NA
+                                     TRUE ~ .))) %>%
+    # convert indicator data columns to numeric
+    mutate(across(.cols = -c(starts_with(c("organiser", "local", "simd", "year", "sex", "ethnicity", "urban"))), 
+                  .fns = ~ as.numeric(.)))
+}
+
+# Function to perform the repeated processing steps on the national data
+
+process_national_data <- function(data) {
   
-  # add split columns
-  mutate(split_name = "None",
-         split_value = "None") %>%
+  new_df <- data %>%
+    
+    # rename cols
+    rename_with(~ substr(.x, 1, 8)) %>% # lose the reference to notes by shortening all col names
+    
+    # keep required rows
+    filter(organise %in% c("Numeracy", "Literacy")) %>%
+    rename(indicator = organise) %>%
+    
+    # reshape the data 
+    pivot_longer(cols = c(x2016_17 : x2023_24), values_to="rate", names_to = "trend_axis", names_prefix = "x") %>%
+    mutate(trend_axis = gsub("_", "/", trend_axis)) %>%
+    
+    # add spatial.scale column
+    mutate(spatial.scale = "Scotland") %>%
+    
+    # add spatial.unit column
+    mutate(spatial.unit = "Scotland")
   
-  # add ind_id column
-  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
-                            indicator == "Literacy" ~ 30157)) %>%
+}
+
+# Function to perform the repeated processing steps on the SIMD data
+
+format_simd_data <- function(data) {
   
-  # select required variables
-  select(-stage) 
+  df <- data %>%
+    
+    # standardise split_value column
+    mutate(split_value = case_when(split_value %in% c("SIMD Quintile 1 - most deprived", "SIMD Quintile 1", "SIMD Quintile 1 - Most Deprived") ~ "1",
+                                   split_value=="SIMD Quintile 2" ~ "2",
+                                   split_value=="SIMD Quintile 3" ~ "3",
+                                   split_value=="SIMD Quintile 4" ~ "4",
+                                   split_value %in% c("SIMD Quintile 5 - Least Deprived", "SIMD Quintile 5 - least deprived") ~ "5",
+                                   split_value %in% c("Total", "Local Authority Total") ~ "Total",
+                                   TRUE ~ as.character(NA))) %>%
+    filter(!is.na(split_value)) %>%
+    
+    # add split_name column
+    mutate(split_name = "Deprivation (SIMD)") 
   
+}
+
+
+# Read in the national/CA/SIMD data ----
+
+
+# Scotland data included in the LA data, so skip this step
+# # Scotland, overall (Table 1)
+# 
+# scotland <- get_attainment_data(sheetname="Table_1", startnumber=5) %>%
+#   
+#   process_national_data() %>%
+#   
+#   # add split columns
+#   mutate(split_name = "None",
+#          split_value = "None") 
+
+
+# Scotland, by deprivation (Table 2.4)
+
+simd <- get_attainment_data(sheetname="Table_2_4", startnumber=5) %>%
+  
+  process_national_data() %>%
+  
+  # SIMD column
+  rename(split_value = simd_not) %>%
+  format_simd_data()
+
+
 # Local Authorities (Table 10):
 
-councils <- read.xlsx(paste0(cfe_data_folder, file),
-                      sheet = "Tables_10.4a_b_c_d_e",
-                      startRow = 7,
-                      colNames = TRUE) %>%
-  clean_names() %>%
+councils <- get_attainment_data(sheetname="Tables_10.4a_b_c_d_e", startnumber=7) %>%
   
   # Select relevant columns
   select(ends_with(c("_4", "_5"))) %>% # the numeracy (_5) and literacy (_4) columns
@@ -155,8 +246,6 @@ councils <- read.xlsx(paste0(cfe_data_folder, file),
   rename(spatial.unit = local_authority_note_8_4) %>%
   mutate(spatial.unit = ifelse(spatial.unit=="Edinburgh City", "City of Edinburgh", spatial.unit)) %>% # to ensure matches OK
   select(-starts_with("local")) %>%
-  replace(.=="[w]", NA) %>% #turn all others numeric (after replacing the missing codes used in 2019/20)
-  mutate(across(-spatial.unit, ~ as.numeric(.x))) %>%
   
   # reshape the data 
   pivot_longer(-spatial.unit, values_to="rate", names_to = c("trend_axis"), names_prefix = "x") %>%
@@ -167,193 +256,137 @@ councils <- read.xlsx(paste0(cfe_data_folder, file),
   mutate(trend_axis = gsub("_", "/", trend_axis)) %>%
   
   # add spatial.scale column
-  mutate(spatial.scale = "Council area") %>%
+  mutate(spatial.scale = ifelse(spatial.unit=="Scotland", "Scotland", "Council area")) %>%
   
   # add split columns
   mutate(split_name = "None",
-         split_value = "None") %>%
-  
-  # add ind_id column
-  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
-                            indicator == "Literacy" ~ 30157)) 
+         split_value = "None") 
 
-
-# Scotland, by deprivation (Table 2.4)
-simd <- read.xlsx(paste0(cfe_data_folder, file),
-                    sheet = "Table_2_4",
-                    startRow = 5,
-                    colNames = TRUE) %>%
-  clean_names() %>%
-  rename_with(~ substr(.x, 1, 8)) %>% # lose the reference to notes by shortening all col names
-  filter(stage == "P1, P4 and P7 combined") %>%
-  filter(organise %in% c("Numeracy", "Literacy")) %>%
-  rename(indicator = organise) %>%
-  mutate(x2019_20 = replace(x2019_20, x2019_20=="[x]", NA),
-         x2019_20 = as.numeric(x2019_20)#,
-         #x2020_21 = as.numeric(x2020_21)
-         ) %>%
-  
-  # reshape the data 
-  pivot_longer(cols = c(x2016_17 : x2023_24), values_to="rate", names_to = "trend_axis", names_prefix = "x") %>%
-  mutate(trend_axis = gsub("_", "/", trend_axis)) %>%
-  
-  # SIMD column
-  rename(split_value = simd_not) %>%
-  mutate(split_value = case_when(split_value=="SIMD Quintile 1 - Most Deprived" ~ "1",
-                                 split_value=="SIMD Quintile 2" ~ "2",
-                                 split_value=="SIMD Quintile 3" ~ "3",
-                                 split_value=="SIMD Quintile 4" ~ "4",
-                                 split_value=="SIMD Quintile 5 - Least Deprived" ~ "5",
-                                 split_value=="Total" ~ "Total")) %>%
-  filter(!is.na(split_value)) %>%
-  
-  # add split columns
-  mutate(split_name = "Deprivation (SIMD)") %>%
-  
-  # add spatial.scale column
-  mutate(spatial.scale = "Scotland") %>%
-  
-  # add spatial.unit column
-  mutate(spatial.unit = "Scotland") %>%
-  
-  # add ind_id column
-  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
-                            indicator == "Literacy" ~ 30157)) %>%
-  
-  # select required variables
-  select(-stage)
 
 # LAs, by deprivation (Table 11)
-simd_LA <- read.xlsx(paste0(cfe_data_folder, file),
-                  sheet = "Table_11",
-                  startRow = 5,
-                  colNames = TRUE) %>%
-  clean_names() %>%
-  select(trend_axis = year_note_9, stage, spatial.unit=local_authority_note_7, split_value = simd_note_3, 
-         Literacy = english_literacy_note_1_note_2_note_8, Numeracy = numeracy_note_1_note_2_note_8) %>%
-  filter(stage == "P1, P4 and P7 combined") %>%
 
+simd_LA <- get_attainment_data(sheetname="Table_11", startnumber=5) %>%
+  
+  select(trend_axis = year_note_9, spatial.unit=local_authority_note_7, split_value = simd_note_3, 
+         Literacy = english_literacy_note_1_note_2_note_8, Numeracy = numeracy_note_1_note_2_note_8) %>%
+  mutate(spatial.unit = ifelse(spatial.unit=="Edinburgh City", "City of Edinburgh", spatial.unit)) %>% # to ensure matches OK
+  
   # reshape the data 
   pivot_longer(cols = c("Literacy", "Numeracy"), values_to="rate", names_to = "indicator") %>%
   
   # trend_axis column
   mutate(trend_axis = gsub("-", "/", trend_axis)) %>%
   
-  # convert missing/suppressed values to NA
-  mutate(rate = ifelse(rate %in% c("[w]", "[c]", "[x]", "c"), NA, rate), # replace the missing codes 
-         rate = as.numeric(rate)) %>% # convert to numeric
-  
-  
   # SIMD column
-  mutate(split_value = case_when(split_value %in% c("SIMD Quintile 1 - most deprived", "SIMD Quintile 1") ~ "1",
-                                 split_value=="SIMD Quintile 2" ~ "2",
-                                 split_value=="SIMD Quintile 3" ~ "3",
-                                 split_value=="SIMD Quintile 4" ~ "4",
-                                 split_value=="SIMD Quintile 5 - least deprived" ~ "5",
-                                 split_value=="Local Authority Total" ~ "Total")) %>%
-  filter(!is.na(split_value)) %>%
-  
-  # add split columns
-  mutate(split_name = "Deprivation (SIMD)") %>%
+  format_simd_data() %>%
   
   # add spatial.scale column
-  mutate(spatial.scale = "Council area") %>%
-  
-  # add ind_id column
-  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
-                            indicator == "Literacy" ~ 30157)) %>%
-  
-  # select required variables
-  select(-stage)
+  mutate(spatial.scale = "Council area")
+# some 'NAs introduced by coercion' warnings: this is OK. 
+# It's due to as.numeric() on cols that had suppression codes in them (here replaced with NA).
 
 
-## Population splits -----
+
+### Combine the data files
+data_scot_la_simd <- rbind(#scotland, 
+                            councils, # includes Scotland data
+                            simd,
+                            simd_LA) %>%
+  
+  # format year
+  mutate(year = as.numeric(substr(trend_axis, 1, 4))) %>%
+  
+  # add the geog codes, 
+  merge(y=geo_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype")) %>% 
+  select(-starts_with("spatial")) %>%
+  
+  # add in denominators for the cohort: so HB data can be calculated
+  merge(y=cohort_P1_P4_P7, by.x=c("year", "split_value", "code"), by.y=c("year", "quintile", "code")) %>% # merges to rows with SIMD data and with split_value=="None"
+  mutate(numerator = round(denominator * rate/100)) # back calculate the numerators
+
+# Aggregate the CA data up to HB
+data_hb <- data_scot_la_simd %>%
+  filter(substr(code, 1, 3) == "S12") %>% # just the council areas
+  merge(y=hb, by.x="code", by.y= "ca2019") %>%
+  select(-code, -rate) %>%
+  rename(code = hb2019) %>%
+  group_by(indicator, code, split_name, split_value, year, trend_axis) |>
+  summarise(numerator = sum_(numerator), # sum_ function from hablar keeps NA when there should be NA, and doesn't replace with 0 (if summed with na.rm=T). This helps to avoid Inf and NaN values from incomplete rate calcs. 
+            denominator = sum_(denominator)) %>%
+  ungroup() %>%
+  mutate(rate = 100 * numerator/denominator) %>%
+  select(-denominator)
+
+# Add in HB data
+data_scot_la_simd_hb <- data_scot_la_simd %>%
+  select(-denominator) %>%
+  rbind(data_hb)
+  
+
+  
+  
+## Now read in the other population splits data -----
 
 # Table 3: Scot by sex
 # Table 4: Scot by ethnicity
 # Table 5: Scot by urban-rural status
 
-table3 <- read.xlsx(paste0(cfe_data_folder, file),
-                    sheet = "Table_3",
-                    startRow = 5,
-                    colNames = TRUE) %>%
-  rename(split_value = Sex) %>%
+split_sex <- get_attainment_data(sheetname = "Table_3", startnumber = 5) %>%
+  rename(split_value = sex) %>%
   mutate(split_name = "Sex")
-table4 <- read.xlsx(paste0(cfe_data_folder, file),
-                    sheet = "Table_4",
-                    startRow = 5,
-                    colNames = TRUE) %>%
-  rename(split_value = Ethnicity) %>%
+
+split_ethnicity <- get_attainment_data(sheetname = "Table_4", startnumber = 5) %>%
+  rename(split_value = ethnicity) %>%
   mutate(split_name = "Ethnicity")
-table5 <- read.xlsx(paste0(cfe_data_folder, file),
-                    sheet = "Table_5",
-                    startRow = 5,
-                    colNames = TRUE) %>%
-  rename(split_value = "Urban.Rural.Classification.[note.5]") %>%
+
+split_urbanrural <- get_attainment_data(sheetname = "Table_5", startnumber = 5) %>%
+  rename(split_value = "urban_rural_classification_note_5") %>%
   mutate(split_name = "Urban-Rural status")
 
-popgroups <- rbind(table3, table4, table5) %>%
-  clean_names() %>%
-  rename_with(~ substr(.x, 1, 8)) %>% # lose the reference to notes by shortening all col names
-  filter(stage == "P1, P4 and P7 combined") %>%
-  rename(trend_axis = year_not,
-         Literacy = literacy,
-         Numeracy = numeracy,
-         split_value = split_va,
-         split_name = split_na) %>%
+
+data_popgroups <- rbind(split_sex, split_ethnicity, split_urbanrural) %>%
+  select(trend_axis = year_note_9,
+         split_value,
+         split_name,
+         Literacy = "literacy_note_1_note_2",
+         Numeracy = "numeracy_note_1_note_2") %>%
+  
+  # trend_axis and year
   mutate(trend_axis = gsub("-", "/", trend_axis)) %>%
+  mutate(year = as.numeric(substr(trend_axis, 1, 4))) %>%
   
   # reshape the data 
-  pivot_longer(cols = c(reading_ : Numeracy), values_to="rate", names_to = "indicator") %>%
-  filter(indicator %in% c("Numeracy", "Literacy")) %>%
+  pivot_longer(cols = c(Literacy, Numeracy), values_to="rate", names_to = "indicator") %>%
   filter(!(split_value %in% c("Not Disclosed / Unknown", "Unknown"))) %>%
-  mutate(rate = replace(rate, rate %in% c("[x]", "[w]"), NA),
-         rate = as.numeric(rate),
-         split_value = case_when(split_value=="All pupils" ~ "Total", 
+  mutate(split_value = case_when(split_value=="All pupils" ~ "Total", 
                                  TRUE ~ split_value)) %>%
   
-  # add spatial.scale column
-  mutate(spatial.scale = "Scotland") %>%
+  # add geog code
+  mutate(code = "S0000000") %>%
   
-  # add spatial.unit column
-  mutate(spatial.unit = "Scotland") %>%
+  # add numerator
+  mutate(numerator = as.numeric(NA))
   
-  # add ind_id column
-  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
-                            indicator == "Literacy" ~ 30157)) %>%
-  
-  # select required variables
-  select(-stage) 
 
 
 
-### Combine the data files
-all_data <- rbind(scotland, 
-                  councils,
-                  popgroups, 
-                  simd,
-                  simd_LA) %>%
-  
-  # add the geog codes, 
-  merge(y=geo_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype")) %>% 
+### Combine all the data and finish processing
+all_data <- rbind(data_scot_la_simd_hb,
+                  data_popgroups) %>%
   
   # add def_period
   mutate(def_period = paste0("School year (", trend_axis, ")")) %>%
   
-  # format year
-  mutate(year = as.numeric(substr(trend_axis, 1, 4))) %>%
-  
-  # add numerator and CI columns
-  mutate(numerator = as.numeric(NA),
-         lowci = as.numeric(NA),
+  # add ind_id column
+  mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
+                            indicator == "Literacy" ~ 30157)) %>%
+
+  # add CI columns
+  mutate(lowci = as.numeric(NA),
          upci = as.numeric(NA)) %>% 
-  
-  # required columns
-  select(-starts_with("spatial")) %>%
   
   # arrange so the points plot in right order in QA stage
   arrange(ind_id, code, split_name, split_value, year)
-
 
 
 ##########################################################
@@ -372,25 +405,24 @@ prepare_final_files <- function(ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(code, year)
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  # save 
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   
   # 2 - population groups data (ie data behind population groups tab)
 
   pop_grp_data <- all_data %>% 
   filter(indicator == ind & !(split_name %in% c("None", "Deprivation (SIMD)"))) %>% 
   select(code, ind_id, year, numerator, rate, upci, 
-         lowci, def_period, trend_axis, split_name, split_value,) 
+         lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(code, year)
 
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
 
   
   # 3 - SIMD data (ie data behind deprivation tab)
@@ -401,21 +433,27 @@ prepare_final_files <- function(ind){
     unique() %>%
     select(-indicator, -split_name) %>%
     rename(quintile = split_value) %>%
-    mutate(quint_type = "sc_quin")
+    mutate(quint_type = "sc_quin") %>%
+    arrange(code, year, quintile)
   
-  # Save intermediate SIMD file
-  write_rds(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.rds"))
-  write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
+  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
   
-  #get ind_id argument for the analysis function 
-  ind_id <- unique(simd_data$ind_id)
+  # add population data (quintile level) so that inequalities can be calculated
+  simd_data <-  simd_data|>
+    add_population_to_quintile_level_data(pop="depr_pop_CYP_P1_P4_P7", # the lookup we processed above
+                                          ind = ind_id,
+                                          ind_name = ind_name) |>
+    filter(!is.na(rate)) # not all years have data
   
-  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"), 
-                                 pop = "depr_pop_CYP_P1_P4_P7", # the lookup we processed above
-                                 ind_id, 
-                                 ind
-  )
+  # calculate the inequality measures
+  simd_data <- simd_data |>
+    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+  
+  # save the data as RDS file
+  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
   
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
@@ -430,35 +468,15 @@ prepare_final_files <- function(ind){
 prepare_final_files(ind = "Literacy")
 prepare_final_files(ind = "Numeracy")
 
-# # Run QA reports 
-# # main data: 
-run_qa(filename = "Literacy")
-run_qa(filename = "Numeracy")
+# Run QA reports 
+# main data: 
+run_qa(type = "main", filename = "Literacy", test_file = FALSE)
+run_qa(type = "main", filename = "Numeracy", test_file = FALSE)
 
-# ineq data: # NOT RUNNING BECAUSE DOESN'T HAVE HBS???
-run_ineq_qa(filename = "Literacy")
-run_ineq_qa(filename = "Numeracy")
+# ineq data: 
+run_qa(type = "deprivation", filename = "Literacy", test_file=FALSE)
+run_qa(type = "deprivation", filename = "Numeracy", test_file=FALSE)
 
-
-
-# Manually check the SIMD data instead:
-
-# Plot the indicator(s)
-# =================================================================================================================
-# Let's now see what the series look like:
-# (uses the last indicator processed)
-
-# by pop group split 
-pop_grp_data_result %>%
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~split_name, scales = "free_y") 
-
-# by SIMD 
-simd_data_result %>%
-  ggplot(aes(year, rate, group = quintile, colour = quintile, shape = quintile)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~code, scales = "free_y") 
 
 
 
