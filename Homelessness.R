@@ -1,4 +1,3 @@
-# to-do: consider if NHS board data can be constructed from Council level data
 
 # ============================================================================
 # ===== Processing SG HOMELESSNESS STATS =====
@@ -8,7 +7,7 @@
 
 # 2 indicators: 
 # 30034 = "Rate of homelessness applications assessed as homeless or potentially homeless in the past year, per 1000 population."
-# 30161 = "Number of children per 1,000 in temporary accommodation" (denom assumed to be 0-16 year olds, but I'm confirming this with SG)
+# 30161 = "Number of children per 1,000 in temporary accommodation" 
 
 # xlsx received from Kelechi.Agwu@gov.scot on behalf of homelessness_statistics_inbox@gov.scot, Nov 2024
 # Data also available online (main tables at https://www.gov.scot/publications/homelessness-in-scotland-2023-24/documents/), but not by gender (these have to be requested)
@@ -24,9 +23,9 @@
 # A household is homeless if they have no accommodation in the UK or elsewhere, or have accommodation but cannot reasonably occupy it. 
 # A household is threatened with homelessness if it is likely they will become homeless within two months. 
 # An adult is defined as being over 18 years old
-# BUT: There must always be at least one adult in the applicant household - therefore, where a person aged 16, 17 or 18 is the only household member they would always be considered an adult. 
-# We will use the 19+ population as the denominator for the MHI rates 
-# Latest available pop data as of Sept 2023 are for 2021. 2022 due in winter 22/23.
+# BUT: There must always be at least one adult in the applicant household - therefore, where a person aged 16, 17 or 18 is the only household member they would always be considered an adult.
+# We will use the 19+ population as the denominator for the adult MHI rates 
+# A child is defined as 0-15y: use under 16 population as denominator for CYP indicator. 
 #
 # There are three stages involved in a homeless application in Scotland:
 # 1) The Application stage where the household first presents to the local authority.
@@ -50,7 +49,8 @@
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
+source("functions/main_analysis.R") # for packages and QA function 
+source("functions/deprivation_analysis.R") # for packages and QA function (and path to lookups)
 
 # Load additional packages
 library(openxlsx)
@@ -58,12 +58,21 @@ library(openxlsx)
 ### 1. Read in data ----
 
 # Identify data folder
-homeless_data_folder <- paste0(data_folder, "Received Data/Homelessness/")
+homeless_data_folder <- paste0(profiles_data_folder, "/Received Data/Homelessness/")
 file <- "Adhoc - 2024.11.13 - Homeless Adults gender breakdown & children in TA - PHS.xlsx"
 
-# Read in geography lookup
-geo_lookup <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>% 
+# Read in geography lookups:
+
+# names to codes
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
+
+# LAs to HBs lookup
+hb <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  select(ca2019, hb2019) %>%
+  distinct(.)
+
+# Read in population lookups:
 
 # Get adult populations 
 la_pops <- read_rds("/conf/linkage/output/lookups/Unicode/Populations/Estimates/CA2019_pop_est_1981_2023.rds") %>%
@@ -73,15 +82,23 @@ la_pops <- read_rds("/conf/linkage/output/lookups/Unicode/Populations/Estimates/
   ungroup() %>%
   rename(code = ca2019) 
 
+hb_pops <- la_pops %>%
+  merge(y=hb, by.x="code", by.y= "ca2019") %>%
+  select(-code) %>%
+  rename(code = hb2019) %>%
+  group_by(code, year, sex) |>
+  summarise(pop = sum(pop, na.rm=T)) %>%
+  ungroup()
+
 scot_pops <- la_pops %>%
   group_by(year, sex) %>%
   summarise(pop = sum(pop, na.rm=T)) %>%
   ungroup() %>%
   mutate(code = "S00000001")
 
-pops19plus <- rbind(la_pops, scot_pops) %>%
+pops19plus <- rbind(la_pops, hb_pops, scot_pops) %>%
   mutate(sex=3) %>% #repeats all the rows to give for total pop
-  rbind(la_pops, scot_pops) %>% # add M and F rows back in 
+  rbind(la_pops, hb_pops, scot_pops) %>% # add M and F rows back in 
   group_by(year, sex, code) %>%
   summarise(pop = sum(pop, na.rm=T)) %>%
   ungroup() %>%
@@ -89,9 +106,8 @@ pops19plus <- rbind(la_pops, scot_pops) %>%
                          sex==2 ~ "Female",
                          sex==3 ~ "Total"))
 
-
 # Get child populations: (use file already produced for ScotPHO use)
-child_pops <- readRDS(paste0(lookups, "Population/CA_pop_16+.rds"))
+child_pops <- readRDS(paste0(profiles_lookups, "/Population/CA_pop_under16.rds"))
 
 
 #########################################
@@ -127,49 +143,85 @@ df <- read.xlsx(paste0(homeless_data_folder, file),
   
 }
 
+
+# Run the function to extract the data:
+
+# Adult homelessness indicator:
 homeless_male <- get_data("T1", "Male", 30034)
 homeless_female <- get_data("T2", "Female", 30034)
 homeless_total <- get_data("T3", "Total", 30034)
+
+# CYP temporary accom indicator:
 tempaccom_total <- get_data("T4", "Total", 30161)
 
 
+# Create data for HBs by aggregating LAs:
+
+# Adult homelessness indicator:
+
+# Append extracted data and add geog codes
+homeless_la_scot <- rbind(homeless_male,
+                     homeless_female,
+                     homeless_total) %>%
+  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
+  select(-areatype, -areaname)
+
+# Add HB codes and aggregate
+homeless_hb <- homeless_la_scot %>%
+  merge(y=hb, by.x="code", by.y= "ca2019") %>%
+  select(-code) %>%
+  rename(code = hb2019) %>%
+  group_by(code, trend_axis, year, split_name, split_value, ind_id) |>
+  summarise_all(sum) %>% 
+  ungroup()
+
+# Combine
+homeless <- rbind(homeless_la_scot, homeless_hb)
+
+
+# CYP temporary accom indicator:
+
+# Append extracted data and add geog codes
+tempaccom_la_scot <- tempaccom_total %>%
+  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
+  select(-areatype, -areaname)
+
+# Add HB codes and aggregate
+tempaccom_hb <- tempaccom_la_scot %>%
+  merge(y=hb, by.x="code", by.y= "ca2019") %>%
+  select(-code) %>%
+  rename(code = hb2019) %>%
+  group_by(code, trend_axis, year, split_name, split_value, ind_id) |>
+  summarise_all(sum) %>% 
+  ungroup()
+
+# Combine
+tempaccom <- rbind(tempaccom_la_scot, tempaccom_hb)
 
 ###############################################.
 ## 3 - Computing rates and adding labels ----
 ###############################################.
 
 # adult homelessness
-homeless <- rbind(homeless_male,
-                  homeless_female,
-                  homeless_total) %>%
-  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
+homeless <- homeless %>%
   merge(y=pops19plus, by.x = c("code", "year", "split_value"), by.y = c("code", "year", "sex")) %>% 
   rename(denominator = pop) %>%
-  # calculate the rate and the confidence intervals (Byars method)
-  mutate(rate = numerator/denominator*1000,
-         o_lower = numerator *(1-1/9/numerator-1.96/3/sqrt(numerator))^3,
-         o_upper = (numerator+1) *(1-1/9/(numerator+1)+1.96/3/sqrt(numerator+1))^3,
-         lowci = o_lower/(denominator)*1000,
-         upci = o_upper/(denominator)*1000) %>% 
-  select(-o_upper,- o_lower, -denominator) %>% 
   # add in the definition period label.
-  mutate(def_period = paste0(trend_axis, " financial year"))
+  mutate(def_period = paste0(trend_axis, " financial year")) %>%
+  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
+  calculate_crude_rate (crude_rate=1000) %>%
+  select(-denominator) 
 
 
 # children in temporary accommodation
-tempaccom <- tempaccom_total %>%
-  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
+tempaccom <- tempaccom %>%
   merge(y=child_pops, by.x = c("code", "year"), by.y = c("code", "year")) %>% 
-  # calculate the rate and the confidence intervals (Byars method)
-  mutate(rate = numerator/denominator*1000,
-         o_lower = numerator *(1-1/9/numerator-1.96/3/sqrt(numerator))^3,
-         o_upper = (numerator+1) *(1-1/9/(numerator+1)+1.96/3/sqrt(numerator+1))^3,
-         lowci = o_lower/(denominator)*1000,
-         upci = o_upper/(denominator)*1000) %>% 
-  select(-o_upper,- o_lower, -denominator) %>% 
   # add in the definition period label.
-  mutate(def_period = paste0("Yearly snapshot (", trend_axis, ")"))
-
+  mutate(def_period = paste0("Yearly snapshot (", trend_axis, ")")) %>%
+  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
+  calculate_crude_rate (crude_rate=1000) %>%
+  mutate(lowci = ifelse(is.nan(lowci), 0, lowci)) %>% # replaces NaN with 0 for the lowcis when rate==0
+  select(-denominator) 
 
 
 ##########################################################
@@ -186,13 +238,12 @@ prepare_final_files <- function(input_file, ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(code, year)
   
   # Save
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE) #delete when live
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds")) #delete when live
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE) 
   
   # 2 - population groups data (ie data behind population groups tab)
   
@@ -200,13 +251,12 @@ prepare_final_files <- function(input_file, ind){
     
   pop_grp_data <- input_file %>% 
     select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value,) 
+           lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(code, year)
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)#delete when live
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))#delete when live
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   
   }
   
@@ -217,9 +267,9 @@ prepare_final_files <- function(input_file, ind){
 prepare_final_files(ind = "adults_homeless", input_file = homeless)
 prepare_final_files(ind = "cyp_temporary_accommodation", input_file = tempaccom)
 
-# # Run QA reports 
-run_qa(filename = "adults_homeless")
-run_qa(filename = "cyp_temporary_accommodation")
+# Run QA reports 
+run_qa(type = "main", filename = "adults_homeless", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_temporary_accommodation", test_file = FALSE) 
 
 
 ##END

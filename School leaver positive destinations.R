@@ -4,6 +4,7 @@
 # Summary Statistics for Attainment and Initial Leaver Destinations, No. 6: 2024 Edition, released on 27th February 2024
 # https://www.gov.scot/publications/summary-statistics-follow-up-leaver-destinations-no-6-2024-edition/
 # Script updated in Nov 2024 (by ER) to import more population group splits from the data file (previously only Scotland and CA data were imported)
+# Script updated in March 2025 (by ER) to use the new indicator production paths and functions.
 
 
 ###############################################.
@@ -13,28 +14,25 @@
 
 ### Load functions/dependencies ----
 
-source("1.indicator_analysis.R") # for paths
-source("2.deprivation_analysis.R") # needed for the aggregated deprivation analysis
-#source("functions/main_analysis.R") # for the QA function 
-#source("functions/deprivation_analysis.R") # for the QA function
-
+source("functions/main_analysis.R") # for packages and QA function 
+source("functions/deprivation_analysis.R") # for packages and QA function
 library(openxlsx) 
 
 
 ### Paths ----
 
 # Identify data folder
-schdest_data_folder <- paste0(data_folder, "Received Data/School leaver positive destinations/")
+schdest_data_folder <- paste0(profiles_data_folder, "/Received Data/School leaver positive destinations/")
 file <- "summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"
 
 
 ### Lookups ----
 
 # council area lookup
-ca <- readRDS(paste0(lookups,"Geography/CAdictionary.rds")) 
+ca <- readRDS(paste0(profiles_lookups,"/Geography/CAdictionary.rds")) 
 
 # ca to hb lookup
-geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds")) |>
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) |>
   select(ca2019, hb2019)
 geo_lookup %<>% distinct %>% rename(ca = ca2019, hb = hb2019)
 
@@ -123,7 +121,7 @@ depr_pop_schoolleavers <- schdest_simd %>%
   mutate(code = "S00000001",
          quint_type = "sc_quin") 
 
-saveRDS(depr_pop_schoolleavers, paste0(lookups, "Population/depr_pop_schoolleavers.rds"))
+saveRDS(depr_pop_schoolleavers, paste0(profiles_lookups, "/Population/depr_pop_schoolleavers.rds"))
 
 # Council area:
 ##################
@@ -188,21 +186,22 @@ prepare_final_files <- function(ind){
            numerator, rate, upci, lowci,
            def_period, trend_axis) %>%
     unique() %>%
-    arrange(code,year)
+    arrange(code, year)
   
   # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
-  write.csv(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE) 
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE) 
   
   # 2 - population groups data (ie data behind population groups tab)
   pop_grp_data <- all_data %>%
     filter(!(split_name %in% c("None", "Deprivation (SIMD)"))) %>%
     select(code, ind_id, year, numerator, rate, upci,
-           lowci, def_period, trend_axis, split_name, split_value,)
+           lowci, def_period, trend_axis, split_name, split_value) %>%
+    arrange(code, year)
   
   # Save
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
-  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE) 
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE) 
   
   # 3 - SIMD data (ie data behind deprivation tab)
   
@@ -212,18 +211,26 @@ prepare_final_files <- function(ind){
     unique() %>%
     select(-split_name) %>%
     rename(quintile = split_value) %>%
-    mutate(quint_type = "sc_quin")
+    mutate(quint_type = "sc_quin") %>%
+    arrange(code, year, quintile)
   
-  # Save intermediate SIMD file
-  write_rds(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.rds"))
-  write.csv(simd_data, file = paste0(data_folder, "Prepared Data/", ind, "_shiny_depr_raw.csv"), row.names = FALSE)
+  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
   
-  # Run the deprivation analysis (saves the processed file to 'Data to be checked')
-  analyze_deprivation_aggregated(filename = paste0(ind, "_shiny_depr"),
-                                 pop = "depr_pop_schoolleavers", # the population file created above
-                                 ind_id = 13010,
-                                 ind_name = ind
-  )
+  # add population data (quintile level) so that inequalities can be calculated
+  simd_data <-  simd_data|>
+    add_population_to_quintile_level_data(pop="depr_pop_schoolleavers", # the population file created above
+                                          ind = ind_id, ind_name = ind_name) |>
+    filter(!is.na(rate)) # not all years have data
+  
+  # calculate the inequality measures
+  simd_data <- simd_data |>
+    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+  
+  # save the data as RDS file
+  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
   
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
@@ -242,15 +249,12 @@ prepare_final_files(ind = "school_leaver_destinations")
 ####################
 
 # main data:
-run_qa(filename = "school_leaver_destinations")
-# new QA:
-#run_main_analysis_qa(filename="school_leaver_destinations", test_file=FALSE)
+run_qa(type = "main", filename = "school_leaver_destinations", test_file = FALSE) # no historic file
 # Orkney has no data for latest year: plots as zero in QA file, but won't plot in the app I think
 
-# ineq data: # NOT RUNNING DUE TO MISSING HBS???
-run_ineq_qa(filename = "school_leaver_destinations")
-# new QA:
-#run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
+# ineq data:
+run_qa(type = "deprivation", filename = "school_leaver_destinations", test_file=FALSE)
+
 
 #END
 
