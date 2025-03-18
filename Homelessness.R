@@ -23,7 +23,7 @@
 # A household is homeless if they have no accommodation in the UK or elsewhere, or have accommodation but cannot reasonably occupy it. 
 # A household is threatened with homelessness if it is likely they will become homeless within two months. 
 # An adult is defined as being over 18 years old
-# BUT: There must always be at least one adult in the applicant household - therefore, where a person aged 16, 17 or 18 is the only household member they would always be considered an adult. 
+# BUT: There must always be at least one adult in the applicant household - therefore, where a person aged 16, 17 or 18 is the only household member they would always be considered an adult.
 # We will use the 19+ population as the denominator for the adult MHI rates 
 # A child is defined as 0-15y: use under 16 population as denominator for CYP indicator. 
 #
@@ -206,31 +206,22 @@ tempaccom <- rbind(tempaccom_la_scot, tempaccom_hb)
 homeless <- homeless %>%
   merge(y=pops19plus, by.x = c("code", "year", "split_value"), by.y = c("code", "year", "sex")) %>% 
   rename(denominator = pop) %>%
-  # calculate the rate and the confidence intervals (Byars method)
-  mutate(rate = numerator/denominator*1000,
-         o_lower = numerator *(1-1/9/numerator-1.96/3/sqrt(numerator))^3,
-         o_upper = (numerator+1) *(1-1/9/(numerator+1)+1.96/3/sqrt(numerator+1))^3,
-         lowci = o_lower/(denominator)*1000,
-         upci = o_upper/(denominator)*1000) %>% 
-  select(-o_upper,- o_lower, -denominator) %>% 
   # add in the definition period label.
-  mutate(def_period = paste0(trend_axis, " financial year"))
+  mutate(def_period = paste0(trend_axis, " financial year")) %>%
+  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
+  calculate_crude_rate (crude_rate=1000) %>%
+  select(-denominator) 
 
 
 # children in temporary accommodation
 tempaccom <- tempaccom %>%
   merge(y=child_pops, by.x = c("code", "year"), by.y = c("code", "year")) %>% 
-  # calculate the rate and the confidence intervals (Byars method)
-  mutate(rate = numerator/denominator*1000,
-         o_lower = numerator *(1-1/9/numerator-1.96/3/sqrt(numerator))^3,
-         o_upper = (numerator+1) *(1-1/9/(numerator+1)+1.96/3/sqrt(numerator+1))^3,
-         lowci = o_lower/(denominator)*1000,
-         upci = o_upper/(denominator)*1000) %>% 
-  mutate(lowci = ifelse(is.nan(lowci), 0, lowci)) %>% # replaces NaN with 0 for the lowcis when rate==0
-  select(-o_upper,- o_lower, -denominator) %>% 
   # add in the definition period label.
-  mutate(def_period = paste0("Yearly snapshot (", trend_axis, ")"))
-
+  mutate(def_period = paste0("Yearly snapshot (", trend_axis, ")")) %>%
+  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
+  calculate_crude_rate (crude_rate=1000) %>%
+  mutate(lowci = ifelse(is.nan(lowci), 0, lowci)) %>% # replaces NaN with 0 for the lowcis when rate==0
+  select(-denominator) 
 
 
 ##########################################################
