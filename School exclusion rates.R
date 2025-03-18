@@ -320,13 +320,16 @@ saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/school_excl
 ##########################################################
 
 # # Run QA reports 
-run_main_analysis_qa(filename="school_exclusions", test_file=FALSE)
+
+run_qa(type ="main",filename="school_exclusions", test_file=FALSE)
+
 # Flagged big differences between this and the last version of the indicator.
 # These occurred for Clackmannanshire and Orkney in 2020. 
 # The values were suppressed in the original dataset, but were coded erroneously as 0 in the last version of the indicator. 
 # In the current version suppressed data are presented as NA, hence the differences observed.
 
 run_qa(type = "deprivation", filename="school_exclusions", test_file=FALSE)
+
 # Shows lots of missings (due to suppression) at LA level. Much less of a problem at HB level.
 # Restrict deprivation analysis to HBs and Scotland:
 simd_data <- simd_data %>%
