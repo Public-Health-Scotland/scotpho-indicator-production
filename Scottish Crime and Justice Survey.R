@@ -18,8 +18,8 @@
 #          during the most recent incident)
 
 ### Notes on the data source:
-# Spreadsheets containing the data 2008 to 2021 provided in March and Sept 2024 by Stuart Napier (Stuart.Napier@gov.scot).
-# PHS - data request - march 2024 - mental health indicators.xlsx
+# Spreadsheets containing the data 2008 to 2021 provided in 2024 (and one revised in 2025) by Stuart Napier (Stuart.Napier@gov.scot).
+# PHS - data request - march 2024 - mental health indicators - updated March 2025.xlsx
 # PHS - data request - march 2024 - mental health indicators - only partner abuse tables.xlsx
 # PHS - data request - September 2024 - mental health indicators - partner abuse with children present.xlsx
 
@@ -46,7 +46,8 @@
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
+source("functions/main_analysis.R") # for packages and QA
+source("functions/deprivation_analysis.R") # for packages and QA
 
 # Load additional packages
 library(openxlsx)
@@ -54,13 +55,13 @@ library(openxlsx)
 ### 1. Read in data ----
 
 # Identify data folder
-scjs_data_folder <- paste0(data_folder, "Received Data/Scottish Crime and Justice Survey/")
+scjs_data_folder <- paste0(profiles_data_folder, "/Received Data/Scottish Crime and Justice Survey/")
 
 
 ## Geography lookup -----
 
 # Read in geography lookup
-geo_lookup <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>% 
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 
@@ -134,7 +135,7 @@ get_crime_data <- function(tab, file) {
 
 
 # get the tab names
-file1 <- "PHS - data request - march 2024 - mental health indicators.xlsx"
+file1 <- "PHS - data request - march 2024 - mental health indicators - updated March 2025.xlsx"
 sheets1 <- readxl::excel_sheets(paste0(scjs_data_folder, file1))[2:13] # drop the cover sheet, keep remaining tabs
 
 # run the function
@@ -142,6 +143,7 @@ for (tabname in sheets1) {
  get_crime_data(tabname, file1)
  
 }
+# Some 'NAs introduced by coercion' warnings: this is OK
 
 file2 <- "PHS - data request - march 2024 - mental health indicators - only partner abuse tables.xlsx"
 sheets2 <- readxl::excel_sheets(paste0(scjs_data_folder, file2))[2:5] # drop the cover sheet, keep remaining tabs
@@ -243,12 +245,12 @@ prepare_final_files <- function(ind){
     select(code, ind_id, year, 
            numerator, rate, upci, lowci, 
            def_period, trend_axis) %>%
-    unique() 
+    unique() %>%
+    arrange(code, year)
   
-  write.csv(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny.rds"))
-  # save to folder that QA script accesses:
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  # Save 
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland and Police Division data by sex (including total)
@@ -256,13 +258,12 @@ prepare_final_files <- function(ind){
     filter(indicator == ind) %>% 
     mutate(split_name = "Sex") %>% 
     select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value = sex) 
+           lowci, def_period, trend_axis, split_name, split_value = sex) %>%
+    arrange(code, year)
 
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Test Shiny Data/", ind, "_shiny_popgrp.rds"))
-  # save to folder that QA script accesses: (though no QA for popgroups files?)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
 
   # 3 - Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
@@ -278,51 +279,12 @@ prepare_final_files(ind = "adult_crime_perception")
 prepare_final_files(ind = "svy_dom_abuse")
 prepare_final_files(ind = "svy_dom_abuse_cyp_present") 
 
-# # Run QA reports 
-# # main data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
-# run_qa(filename = "adult_non_violent_crime")
-# run_qa(filename = "adult_violent_crime")
-# run_qa(filename = "adult_crime_perception")
-# run_qa(filename = "svy_dom_abuse")
-# run_qa(filename = "svy_dom_abuse_cyp_present") 
-
-
-# Manually check the data instead:
-
-# Data availability
-# =================================================================================================================
-ftable(crime_data2$spatial.scale, crime_data2$sex , crime_data2$trend_axis, crime_data2$ind)
-# Adult: Scot/PD, M/F/Total, 2008/09 to 2021/22
-# Some data presented for 2 years combined (2016/18 and 2018/20) = all domabuse data, and data at police division level.
-# CYP: Scotland, Total only, 2008/09 to 2018/19
-
-
-# Plot the indicator(s)
-# =================================================================================================================
-# Let's now see what the series and CIs look like:
-
-# total
-crime_data2 %>%
-  filter(sex == "Total", spatial.scale == "Scotland") %>% 
-  ggplot(aes(year, rate, group = sex, colour = sex, shape = sex)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~ind, scales = "free_y") +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# sex 
-crime_data2 %>%
-  filter(sex != "Total", spatial.scale == "Scotland") %>% 
-  ggplot(aes(year, rate, group = sex, colour = sex, shape = sex)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~ind, scales = "free_y") +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# police division
-crime_data2 %>%
-  filter(sex == "Total", spatial.scale == "Police division") %>% 
-  ggplot(aes(year, rate, group = spatial.unit, colour = spatial.unit, shape = spatial.unit)) + 
-  geom_point() + geom_line() +
-  facet_wrap(~ind, scales = "free_y") 
+# Run QA reports 
+run_qa(type = "main", filename = "adult_non_violent_crime", test_file = FALSE)
+run_qa(type = "main", filename = "adult_violent_crime", test_file = FALSE)
+run_qa(type = "main", filename = "adult_crime_perception", test_file = FALSE)
+run_qa(type = "main", filename = "svy_dom_abuse", test_file = FALSE)
+run_qa(type = "main", filename = "svy_dom_abuse_cyp_present", test_file = FALSE) 
 
 
 #END
