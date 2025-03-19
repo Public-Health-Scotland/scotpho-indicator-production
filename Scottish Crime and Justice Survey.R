@@ -1,8 +1,6 @@
 #########################################################
 # Scottish Crime and Justice Survey data import
 #########################################################
-## CHECK OUT THE AGGREGATED YEARS IN FILE 1: POLDIV SHOULD BE MISSING 2017 AND 2019, BUT AREN'T FOR VOILENT CRIME 
-
 
 ### Update ScotPHO indicators sourced from Scottish Crime and Justice Survey: 
 ### Author: Liz Richardson, 6 Nov 2024
@@ -20,8 +18,8 @@
 #          during the most recent incident)
 
 ### Notes on the data source:
-# Spreadsheets containing the data 2008 to 2021 provided in March and Sept 2024 by Stuart Napier (Stuart.Napier@gov.scot).
-# PHS - data request - march 2024 - mental health indicators.xlsx
+# Spreadsheets containing the data 2008 to 2021 provided in 2024 (and one revised in 2025) by Stuart Napier (Stuart.Napier@gov.scot).
+# PHS - data request - march 2024 - mental health indicators - updated March 2025.xlsx
 # PHS - data request - march 2024 - mental health indicators - only partner abuse tables.xlsx
 # PHS - data request - September 2024 - mental health indicators - partner abuse with children present.xlsx
 
@@ -49,6 +47,7 @@
 
 ### functions/packages -----
 source("functions/main_analysis.R") # for packages and QA function 
+source("functions/deprivation_analysis.R") # for packages and QA
 
 # Load additional packages
 library(openxlsx)
@@ -136,7 +135,7 @@ get_crime_data <- function(tab, file) {
 
 
 # get the tab names
-file1 <- "PHS - data request - march 2024 - mental health indicators.xlsx"
+file1 <- "PHS - data request - march 2024 - mental health indicators - updated March 2025.xlsx"
 sheets1 <- readxl::excel_sheets(paste0(scjs_data_folder, file1))[2:13] # drop the cover sheet, keep remaining tabs
 
 # run the function
@@ -144,6 +143,7 @@ for (tabname in sheets1) {
  get_crime_data(tabname, file1)
  
 }
+# Some 'NAs introduced by coercion' warnings: this is OK
 
 file2 <- "PHS - data request - march 2024 - mental health indicators - only partner abuse tables.xlsx"
 sheets2 <- readxl::excel_sheets(paste0(scjs_data_folder, file2))[2:5] # drop the cover sheet, keep remaining tabs
@@ -286,13 +286,13 @@ prepare_final_files(ind = "svy_dom_abuse_cyp_present")
 # main data:
 
 # include data for 13 police divisions (code prefix S32):
-run_qa(type = "main", filename = "adult_non_violent_crime", test_file = FALSE) # some inconsistent aggregations in the data
-run_qa(type = "main", filename = "adult_crime_perception", test_file = FALSE) # some inconsistent aggregations in the data
-run_qa(type = "main", filename = "adult_violent_crime", test_file = FALSE)
+run_qa(type = "main", filename = "adult_non_violent_crime", test_file = FALSE) 
+run_qa(type = "main", filename = "adult_crime_perception", test_file = FALSE) 
+run_qa(type = "main", filename = "adult_violent_crime", test_file = FALSE) # fewer records than in previous file because this is the corrected data
 run_qa(type = "main", filename = "svy_dom_abuse", test_file = FALSE)
 
 # no police divisions data, only Scotland:
-run_qa(type = "main", filename = "svy_dom_abuse_cyp_present", test_file = FALSE) # some inconsistent aggregations in the data
+run_qa(type = "main", filename = "svy_dom_abuse_cyp_present", test_file = FALSE) 
 
 
 #END
