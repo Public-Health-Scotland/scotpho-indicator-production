@@ -5,7 +5,7 @@
 
 # Geographies available: Scotland & local authority only - although we could feed through functions to generate NHS board HSCP figures
 # No SIMD deprivation split available. 
-# Population group splits: Scotland (age & sex), Local Authority (age & sex)
+# Population group splits: Scotland (age & sex), Local Authority (age & sex). Also includes rates for ethnic minorities aged 16-64 to compare against total aged 16-64.
 
 
 ###############################################.
