@@ -6,7 +6,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+source("./functions/main_analysis.R") #Normal indicator functions
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -26,7 +26,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2023' 
+  WHERE admission_date between '1 April 2005' and '31 March 2024' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -35,34 +35,31 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
       or other_condition_4 between 'X850' and 'Y099'  
       or other_condition_5 between 'X850' and 'Y099')
    AND AGE_IN_YEARS between 15 and 25
-   GROUP BY link_no, cis_marker" )) %>% 
-  setNames(tolower(names(.))) %>%  #variables to lower case
+   GROUP BY link_no, cis_marker" )) |> 
+  janitor::clean_names() |>   #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') |>  
+  clean_names() |>    #variables to lower case
   select(pc7, ca2019)
 
 # aggregate the data with council area info
-young_assault <- left_join(young_assault, postcode_lookup, "pc7") %>% 
-  subset(!(is.na(ca2019))) %>%  # exclude records with no ca2011 
-  mutate_if(is.character, factor) %>%  # converting variables into factors
+young_assault <- left_join(young_assault, postcode_lookup, "pc7") |>  
+  subset(!(is.na(ca2019))) |>   # exclude records with no ca2011 
+  mutate_if(is.character, factor) |>   # converting variables into factors
 # group and aggregate by year, ca2011, sex, age
-  group_by(year, ca2019, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% ungroup() %>% rename(ca = ca2019)
+  group_by(year, ca2019, sex_grp, age_grp) |>  
+  summarize(numerator = n()) |> ungroup() |>  rename(ca = ca2019)
 
-saveRDS(young_assault, file=paste0(data_folder, 'Prepared Data/youngassault_ca2019_raw.rds'))
+saveRDS(young_assault, file=paste0(profiles_data_folder, '/Prepared Data/youngassault_ca2019_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
+main_analysis(filename = "youngassault_ca2019", geography = "council", measure = "stdrate",
+              year_type = "financial", ind_id = 13049, time_agg = 3, yearstart = 2005,
+              yearend = 2023, pop = "CA_pop_15to25", epop_total = 25400, epop_age = "15to25")
 
-analyze_first(filename = "youngassault_ca2019", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_15to25", yearstart = 2005, yearend = 2022, hscp = T,
-              time_agg = 3, epop_age = '15to25')
-
-analyze_second(filename = "youngassault_ca2019", measure = "stdrate", time_agg = 3, 
-               epop_total = 25400, ind_id = 13049, year_type = "financial")
 
 ##END
