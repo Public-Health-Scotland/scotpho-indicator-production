@@ -60,7 +60,7 @@ data <- pivot_longer(data,
                      names_to = "year", 
                      values_to = "numerator",
                      names_transform = list(year = ~ as.numeric(substr(., 1, 4)))
-)
+                     )
 
 
 
@@ -82,6 +82,9 @@ data <- data |>
 
 
 # read in council area population estimates - these are required to use as denominator 
+# note the analysis function expects denominator column to already be included in basefile
+# as all of our percentage measures typically don't use populations as the denominator
+# hence why this step is being done here
 pop_lookup <- get_population_lookup(folder = file.path(profiles_data_folder, "Lookups", "Population"), 
                                     pop = "CA_pop_allages", 
                                     measure = "percent")
