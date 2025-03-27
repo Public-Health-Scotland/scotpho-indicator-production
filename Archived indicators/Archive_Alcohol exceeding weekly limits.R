@@ -1,3 +1,9 @@
+## Indicator script archived March 2025
+## The 3 indicators that this script updates are now replaced by 1 indicator called "Alcohol consumption:Hazardous/Harmful drinking (over 14 units per week)
+## The new indicator is based on the same information derived from SHeS but there is now deprivation and population group breakdowns available.
+## Sex split would be found in populations group dataset so in theory one indicator to keep updated but all the information is still available.
+
+
 ### notes --------------------------------------------------------------
 
 # 4165: Alcohol consumption exceeding weekly limits, females
