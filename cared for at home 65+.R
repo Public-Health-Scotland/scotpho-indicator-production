@@ -67,15 +67,3 @@ main_analysis(filename = "high_care_needs", geography = "council", measure = "pe
               year_type = "financial", ind_id = 20502, time_agg = 1, yearstart = 2008, 
               yearend = 2023)
 
-# ### add in 2006/7 - 2008/9 data currently in tool (not published)
-# old_update <- read.csv(paste0(data_folder, "Shiny Data/high_care_needs_shiny.csv")) %>%
-#   filter(year >= 2006 & year <= 2008)
-# 
-# final_result <- final_result %>%
-#   select(-denominator) %>%
-#   rbind(old_update)
-# 
-# # save files again    
-# saveRDS(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.rds"))  
-# write_csv(final_result, paste0(data_folder, "Data to be checked/high_care_needs_shiny.csv"))   
-
