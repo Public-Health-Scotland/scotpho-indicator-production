@@ -17,8 +17,8 @@
 #   30001: Mental wellbeing (WEMWBS)*
 ### Alcohol profile indicators:
 #   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
-#   4171: Alcohol consumption: Hazardous/Harmful drinker" (derived from AUDIT, score 8+) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
-#   4172: Alcohol consumption (mean weekly units)" (not an indicator previously, but % exceeding guidelines not available from this extract)
+#   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
+#   4172: Alcohol consumption (mean weekly units)"
 ### Physical activity profile:
 #   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations"
 
@@ -184,6 +184,16 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           #   "How stressful you find your job: Extremely stressful", # 30051 (check: probably not possible to combine into 'very/extremely stressful')
           #   "How stressful you find your job: Very stressful" # 30051 (check: probably not possible to combine into 'very/extremely stressful')         
 )                                                                    
+
+
+
+
+#[152] "Alcohol Use Disorders Identification Test (AUDIT): Harmful drinking (score 16-19)"                                            
+#[153] "Alcohol Use Disorders Identification Test (AUDIT): Hazardous drinking (score 8-15)"                                           
+#[154] "Alcohol Use Disorders Identification Test (AUDIT): Low risk drinking/abstinence (score 0-7)"                                  
+#[155] "Alcohol Use Disorders Identification Test (AUDIT): Possible alcohol dependence (score 20+)"   
+
+
 
 # keep the required indicators
 shes_df <- shes_df %>%
@@ -435,7 +445,7 @@ run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE)
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
 run_qa(type = "deprivation", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "binge_drinking", test_file=FALSE)
-run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE)
+run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
