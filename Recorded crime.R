@@ -17,11 +17,8 @@
 # have been excluded since we cannot identify where exactly they should sit. Note this only affects a small number
 # of crimes and there's only 4 IZs being excluded in total.
 
-
-
 #   Part 1 - Prepare basefile
-#   Part 3 - Run analysis functions
-
+#   Part 2 - 
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -50,22 +47,21 @@ combine_files <- function(files) {
   return(combined)
 }
 
-#Running the function - may take a few minutes. 
+#Running the function - may take a few minutes. All files must be closed or it won't work. 
 recorded_crime <- combine_files(file = list.files(path = filepath, pattern = ".xlsx", full.names = T))
 
 rec_crime <- recorded_crime |> 
   janitor::clean_names() |> #simplify col names
-  select(c(1:3, 5:6)) |> #keeping only number of crimes, year, month number, datazone name, division name
+  select(c(1:3, 5:7)) |> #keeping only number of crimes, year, month number, datazone name, division name, crime bulletin category
   mutate(rec_date = lubridate::my(paste(month_number, year_2)), #convert month and year columns to date format
          fin_year = phsmethods::extract_fin_year(rec_date)) #extract financial year from date
 
 #2. Aggregate files by datazone name, financial year and division name
 rec_crime_agg <- rec_crime |> 
-  group_by(datazone, fin_year, division_name) |>  #aggregate the months to get whole year totals by dz. Inc. division name as some duplicate dz names e.g. City Centre 01
+  group_by(datazone, fin_year, division_name, crime_bulletin_category) |>  #aggregate the months to get whole year totals by dz. Inc. division name as some duplicate dz names e.g. City Centre 01
   summarise(numerator = sum(number_of_crimes)) |> 
   rename(year = fin_year) |>  #rename columns for analysis functions
   mutate(year = substr(year, 1, 4)) |> #abbreviate financial year to first calendar year
-
   mutate(year = as.numeric(year),
          datazone = na_if(datazone, "NULL")) |> #Converts "NULL" datazones to actual NAs
   ungroup()
@@ -101,18 +97,25 @@ lookup <- left_join(la_div_lookup, dz_lookup) |>
 
 #Join crime data to lookup
 crime_dz_code <- left_join(rec_crime_filtered, lookup, by = c("datazone", "division_name")) |>
-  select(c(2,4,6)) |>  #select only year, numerator and dz code
+  select(c(2,4:5, 7)) |>  #select only year, numerator, dz code and crime cat
   rename(datazone = DZ2011_Code) |> #change name for analysis function
   select(datazone, everything()) #move DZ to first col
 
+###############################################.
+## Part 2 - Recorded Crime  ----
+###############################################.
+
+#Aggregate across all crime categories to get total crime rate for each DZ
+rec_crime_final <- crime_dz_code |> 
+  group_by(datazone, year) |> 
+  summarise(numerator = sum(numerator)) |> 
+  ungroup()
+
 #Save prepared data for analysis functions
-saveRDS(crime_dz_code, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_raw.rds'))
-saveRDS(crime_dz_code, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_depr_raw.rds'))
+saveRDS(rec_crime_final, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_raw.rds'))
+saveRDS(rec_crime_final, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_depr_raw.rds'))
 
-
-###############################################.
-## Part 2 - Run analysis functions ----
-###############################################.
+#Run analysis functions
 main_analysis(filename = "recorded_crime", geography = "datazone11", measure = "crude",
               year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
               yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000)
@@ -121,16 +124,62 @@ deprivation_analysis(filename = "recorded_crime", yearstart = 2007, yearend = 20
                      time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
                      pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
 
-###############################################.
-## Part 3 - Remove affected intermediate zones ----
-###############################################.
-crime_dz_code <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
 
-crime_dz_code<- crime_dz_code |> 
+#Finally remove 4 datazones that couldn't be matched to codes
+rec_crime_final <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
+
+rec_crime_final <- rec_crime_final |> 
   filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
   
 #Save final file
-saveRDS(crime_dz_code, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
-write.csv(crime_dz_code, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.csv"), row.names = FALSE)
+saveRDS(rec_crime_final, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.rds"))
+write.csv(rec_crime_final, file=paste0(profiles_data_folder, "/Data to be checked/recorded_crime_shiny.csv"), row.names = FALSE)
+
+###############################################.
+## Part 3 - Create Automated Crime Breakdown Function  ----
+###############################################.
+#data -this should just be crime_dz_code 
+#crime_categories - a vectorised list of crimes to be filtered on. If more than one category is listed, these
+#are aggregated. E.g. domestic abuse of male and female are aggregated into one domestic abuse indicator
+
+crime_breakdown <- function(data, crime_categories){ 
+  data <- data |> 
+    filter(crime_bulletin_category %in% crime_categories) #filter df to only include specified cats
+  
+  if(length(crime_categories)>1){ #if more than one category specified, aggregate these
+    data <- data |> 
+    group_by(datazone, year) |> 
+      summarise(numerator = sum(numerator)) |> 
+      ungroup() #|> 
+      #select(-crime_bulletin_category) #then drop crime bulletin leaving only dz, year, numerator
+  }else{
+    data <- data |> 
+      select(-crime_bulletin_category) #drop crime bulletin
+  } #close else statement
+  
+  return(data) #produces the data as an output after the ifelse operation
+  
+} #close function
+
+
+###############################################.
+## Part 3 - Domestic Abuse (20804)  ----
+###############################################.
+#Filter data
+domestic_abuse <- crime_breakdown(crime_dz_code, c("Domestic Abuse (of female)", "Domestic Abuse (of male)"))
+
+#Save prepared data for analysis functions
+saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_raw.rds'))
+saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_depr_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "domestic_abuse", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000)
+
+deprivation_analysis(filename = "domestic_abuse", yearstart = 2007, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
 
 ##End.
+
