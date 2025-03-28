@@ -25,9 +25,7 @@ source("functions/main_analysis.R") # source main analysis function
 library(rio) # for import_list() function to reading and combine multiple excel sheets from same file 
 
 # full path to raw pupil census data 
-pupil_census_data <- file.path(profiles_data_folder, "Received Data", "School pupil census data", 
-                               "Pupil+Census+Supplementary+Statistics+2024+-+December+v2.xlsx") 
-
+pupil_census_folder <- file.path(profiles_data_folder, "Received Data", "School pupil census data")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Read and prepare raw data ----
@@ -35,7 +33,7 @@ pupil_census_data <- file.path(profiles_data_folder, "Received Data", "School pu
 
 # read in data from the 2 sheets containing 
 # data on number of primary and secondary pupils 
-data <- rio::import_list(file = pupil_census_data, 
+data <- rio::import_list(file = file.path(pupil_census_folder, "Pupil+Census+Supplementary+Statistics+2024+-+December+v2.xlsx"), 
                          which = c("Table 6.2", "Table 7.2"), 
                          rbind = TRUE, 
                          rbind_label = "sheet", 
@@ -45,7 +43,8 @@ data <- rio::import_list(file = pupil_census_data,
 # create column to identify if data relates to primary or secondary pupils
 # Data from Table 6.2 is primary pupils and 7.2 is secondary pupils
 data <- data |>
-  mutate(cohort = if_else(sheet == "Table 6.2", "primary", "secondary"))
+  mutate(cohort = if_else(sheet == "Table 6.2", "primary", "secondary")) |>
+  select(-sheet)
 
 
 # remove columns containing male and female splits
@@ -56,20 +55,31 @@ data <- data |>
 # pivot data data longer so there's just 1 year column 
 # as the raw data is in wide format with 1 column for each year 
 data <- pivot_longer(data, 
-                     cols = -c(`Local Authority`, sheet, cohort), 
+                     cols = -c(`Local Authority`, cohort), 
                      names_to = "year", 
                      values_to = "numerator",
                      names_transform = list(year = ~ as.numeric(substr(., 1, 4)))
                      )
 
 
+# read in historic pupil census data from 2007 publication to get:
+# 2002-2005 for primary 1 pupils (latest publication data starts from 2006 onwards)
+# 2002-2004 for primary 7 pupils (latest publication data starts from 2005 onwards)
+data_historic <- readRDS(file.path(pupil_census_folder, "pupil_census_2002_to_2005.rds"))
 
-# replace '&' with 'and ' in council names
-# this is required to successfully join data with council area lookup in next step
+
+# combine historic data with latest publication data to start time trend from 2002
 data <- data |>
-  mutate(`Local Authority` = str_replace(`Local Authority`, "&", "and")) |>
-  filter(!`Local Authority` %in% c("All local authorities", "Grant aided", "Scotland"))
+  bind_rows(data_historic) |>
+  arrange(year)
 
+# replace some council names in order to successfully join data with council area lookup in next step
+data <- data |>
+  mutate(`Local Authority` = str_replace(`Local Authority`, "&", "and"),
+         `Local Authority` = str_replace(`Local Authority`, "Edinburgh City", "City of Edinburgh"),
+         `Local Authority` = str_replace(`Local Authority`, "Eilean Siar", "Na h-Eileanan Siar")
+         ) |>
+  filter(!`Local Authority` %in% c("All local authorities", "Grant aided", "Scotland"))
 
 # get council area lookup containing geography codes 
 lookup <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "CAdictionary.rds"))
@@ -109,12 +119,12 @@ saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "13108_
 
 
 # analyse and prepare final file for primary pupils indicator  
-main_analysis(filename = "13107_primary_pupils", geography = "council", measure = "percent", yearstart = 2006,
+main_analysis(filename = "13107_primary_pupils", geography = "council", measure = "percent", yearstart = 2002,
               yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
 # analyse and prepare final file for secondary pupils indicator 
-main_analysis(filename = "13108_secondary_pupils", geography = "council", measure = "percent", yearstart = 2005,
+main_analysis(filename = "13108_secondary_pupils", geography = "council", measure = "percent", yearstart = 2002,
               yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13108)
 
 
