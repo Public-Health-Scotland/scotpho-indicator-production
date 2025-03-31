@@ -597,6 +597,7 @@ splits_with_totals <- splits_needing_totals %>%
 all_attendance3 <- all_attendance2 %>%
   rbind(splits_with_totals) %>%
   mutate(ind_id = 30140,
+         trend_axis = gsub("-", "/", trend_axis), # standardise trend_axis labels
          def_period = paste0("School year (", trend_axis, ")"),
          year = as.numeric(substr(trend_axis, 1, 4)),
          upci = as.numeric(NA),
@@ -646,6 +647,7 @@ write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/school_at
 # Inequalities metrics can be calculated for 3 years, and these will be presented on the deprivation tab
 
 pop_grp_data <- all_attendance3 %>% 
+  filter(!split_name == "Total") %>%
   select(code, ind_id, year, numerator, rate, upci, 
          lowci, def_period, trend_axis, split_name, split_value) %>%
   mutate(split_value = case_when(split_name == "Deprivation (SIMD)" & split_value == 1 ~ "1 - most deprived",
