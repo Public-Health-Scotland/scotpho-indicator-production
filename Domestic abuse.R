@@ -1,8 +1,8 @@
 ## ScotPHO Profiles Tool - Domestic Abuse (20804)
 
 # Description: Rate of incidents of domestic abuse recorded by the police per 10,000 population
-# Data is downloaded from SG website in Table 5:
-#https://www.gov.scot/publications/domestic-abuse-statistics-recorded-police-scotland-2022-23/documents/
+# Data is downloaded from SG website
+#https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fdomestic-abuse-recorded-by-the-police-number-of-incidents-and-rates
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -18,56 +18,37 @@ ca_lookup <- readRDS(paste0(profiles_data_folder, "/Lookups/Geography/CAdictiona
 ## Read in data  ----
 ###############################################.
 
-data <- readxl::read_excel(path = paste0(profiles_data_folder, "/Received Data/Domestic Abuse/domestic_abuse.xlsx"),
-                         sheet = "Table 5") |> 
+data <- readr::read_csv(paste0(profiles_data_folder, "/Received Data/Domestic Abuse/domestic_abuse.csv"),
+                        skip = 6, col_select = -1) |> #skipping first rows of metadata and first column of s-codes formatting incorrectly
 
 ###############################################.
 ## Tidy up data  ----
 ###############################################.
 
-  janitor::clean_names() |> #variables to lower case
-  janitor::row_to_names(row_number = 2) |> #cut off metadata at the top and set top remaining row to col headings
-  slice(1:(n() - 2)) |>  #cut off last two empty rows
-  
-  #pivot longer
-  tidyr::pivot_longer(cols = c(2:11), names_to = "year", values_to = "rate") |> #create 1 year column instead of 1 per year
-  mutate(rate = as.numeric(rate), #convert rate from character to numeric
-         rate = round(rate, digits = 1)) |> #round to 1dp
+  #removing unneeded rows/cols
+  select(-c(2:5)) |>  #dropping early years of data to align with existing output
+  slice(-c(1)) |>  #dropping Scotland figs - to be re-added in function
 
-  #amend council names to match lookup
-  rename(areaname = `Local authority`) |> #rename LA to areaname
-  mutate(areaname = stringr::str_replace(areaname,"Edinburgh City", "City of Edinburgh"), #replace Edi City w/ City of E
-         areaname = stringr::str_replace(areaname, "&", "and"))  #replace & with and
-  
+  #pivot longer
+  tidyr::pivot_longer(cols = c(2:22), names_to = "year", values_to = "numerator") |> #create 1 year column instead of 1 per year
+  mutate(numerator = as.numeric(numerator)) |>  #convert numerator from character to numeric
+  rename(areaname = `Reference Area`) #|> #rename to areaname to match lookup
+    
 #join data to lookup 
 data_cleaned <-  left_join(data, ca_lookup, by = "areaname") |> 
-  mutate(code = case_when(areaname == "Scotland" ~ "S00000001", #add in Scotland code
-                          TRUE ~ code)) |> 
-  mutate(year = substr(year, 1, 4), #truncate fin year to first calendar year
+  mutate(year = substr(year, 1, 4), #abbreviate fin year to first calendar year
          year = as.numeric(year)) |> #convert year to numeric
   select(4, 2:3) #select final columns
+
+#save prepared data
+saveRDS(data_cleaned, file = paste0(profiles_data_folder, "/Prepared Data/domestic_abuse_raw.rds"))
   
 ###############################################.
-## Add metadata ----
+## Run analysis function
 ###############################################.
 
-data_cleaned <- create_def_period_column(data = data_cleaned, year_type = "financial", agg = 1)  #helper functions in main_analysis.R
-data_cleaned <- create_trend_axis_column(data_cleaned, year_type = "financial", agg = 1) #helper functions in main_analysis.R
-data_final <- data_cleaned |> 
-  mutate(ind_id = "20804",
-         numerator = NA,
-         upci = NA, 
-         lowci = NA)
+main_analysis(filename = "domestic_abuse", measure = "crude", geography = "council", 
+              year_type = "financial", ind_id = 20804, time_agg = 1, yearstart = 2003,
+              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
 
-###############################################.
-## Save final files ----
-###############################################.
-write.csv(data_final, file = paste0(profiles_data_folder, "/Data to be checked/domestic_abuse_shiny.csv"))
-saveRDS(data_final, file = paste0(profiles_data_folder, "/Data to be checked/domestic_abuse_shiny.rds"))
-
-###############################################.
-## Run QA ----
-###############################################.
-run_qa(filename = "domestic_abuse", type = "main", test_file = FALSE)
-
-
+##End.
