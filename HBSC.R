@@ -1,3 +1,14 @@
+# To do:
+
+# Get HBSC to provide more guidance on WHO5 mental wellbeing score, 2018 and 2022:
+# score given in 2022, but only positive/low/depression risk in 2018 (and who_3cat and who_low in 2018 seem counter-intuitively coded: pos mood =risk or dep and vice versa...) How to use these comparably?
+
+# Look into the Family Affluence Scale as possible split: not easily comparable across years as yet.
+
+
+
+
+
 ######################################################################
 # Health Behaviour in School-aged Children (HBSC) survey data import
 ######################################################################
@@ -15,6 +26,13 @@
 # Latest data (to 2022) transferred in Feb 2025.
 # Next survey = 2026
 
+# HBSC team advise:
+# start at 1998 as prior to that were not full national samples
+# no suppression needed
+# weights started to be used from 2010 (or 2014 for weights that equated the contribution of the 3 grades, so that the CIs for whole sample estimates could reflect this)
+# HBSC still present weighted and unweighted estimates together. I will check to see if this looks OK. Preliminary checks suggest it is OK. 
+# adjust for clustered survey design: pupils within schools within strata. The team advised which variables to use in each year. 
+
 
 ### CYP mental health indicators: 
 
@@ -26,13 +44,13 @@
 # 30114	Children assessing their general health as good or excellent =	% of pupils who perceive their health in general to be good or excellent (as opposed to fair or poor).
 # 30115	Children with limiting long-term conditions =	% of pupils reporting an illness, disability or medical condition that affects their attendance or participation in school.
 # 30116	Children with problematic social media usage = % of pupils with problematic social media use, based on responses to 9 items. Problematic usage defined as scoring 6+ out of 9.
-        # During the past year, have you… regularly found that you can’t think
-        # of anything else but the moment that you will be able to use social media again? / ...regularly felt dissatisfied because you wanted to
-        # spend more time on social media? / ..often felt bad when you could not use social media? / ..tried to spend less time on social media
-        # but failed?/..regularly neglected other activities (e.g hobbies, sport) because you wanted to use social media? / ..regularly had arguments
-        # with others because of your social media use? / ..regularly lied to your parents or friends about the amount of time you spend on social
-        # media?/..often used social media to escape from negative feelings? /  ...had serious conflict with your parents, brother(s) or sister (s)
-        # because of your social media use?
+# During the past year, have you… regularly found that you can’t think
+# of anything else but the moment that you will be able to use social media again? / ...regularly felt dissatisfied because you wanted to
+# spend more time on social media? / ..often felt bad when you could not use social media? / ..tried to spend less time on social media
+# but failed?/..regularly neglected other activities (e.g hobbies, sport) because you wanted to use social media? / ..regularly had arguments
+# with others because of your social media use? / ..regularly lied to your parents or friends about the amount of time you spend on social
+# media?/..often used social media to escape from negative feelings? /  ...had serious conflict with your parents, brother(s) or sister (s)
+# because of your social media use?
 # 30117	Children thinking they are overweight =	% of pupils that think their body is a bit overweight or very overweight. (NB. Pre-2022 the wording included 'fat' rather than 'overweight' so is not comparable.)
 # 30124	Children finding it easy to talk to parents =	% of pupils reporting it is easy/very easy to at least one of their parents about things that really bother them. (combination of variables including step parents)
 # 30126	Children reporting high level of family support =	% of pupils reporting having high level of family support. Based on the family subscale of the Multidimensional Scale of Perceived Social Support (MSPSS), and derived from 4 items (My family really tries to help me / I get the emotional help and support I need from my family / I can talk about my problems with my family / My family is willing to help me make decisions). A score of 5.5+ classified as high family support. (original MHI was 'enjoy living with family')
@@ -41,7 +59,7 @@
 # 30137	Children feeling accepted by classmates =	% of pupils who strongly agree or agree that other pupils accept them as they are.
 # 30138	Children being bullied at school =	% of pupils reporting having been bullied at school at least 2-3 times a month in the past couple of months.
 # 30139	Children being cyberbullied =	% of pupils reporting having been cyberbullied at least 2-3 times a month in the past couple of months. Examples given: someone sent mean instant messages, email or text messages
-        # about you; wall postings; created a website making fun of you; posted unflattering or inappropriate pictures of you online without permission or shared them with others)
+# about you; wall postings; created a website making fun of you; posted unflattering or inappropriate pictures of you online without permission or shared them with others)
 # 30141	Children liking school =	% of pupils who like school a lot or a bit at present 
 # 30142	Children reporting high level of teacher support =	% of pupils reporting they receive a high level of teacher support. Based on 3 items (I feel that my teachers accept me as I am / I feel that my teachers care about me as a person / I feel a lot of trust in my teachers.). Score of 10+ out of 12 classified as high teacher support. 
 # 30144	Children feeling pressure of school work =	% of pupils reporting feeling a lot of schoolwork pressure.
@@ -50,23 +68,6 @@
 # 30150	Children feeling safe in their neighbourhood =	% of pupils who report always feeling safe in the area they live in. 
 # 30163	Children experiencing discrimination from adults =	% of pupils who report often or very often being treated unfairly by adults because of their sex, ethnicity, or socioeconomic status. 
 # 30164	Children thinking their neighbourhood is a good place to live =	% of pupils who think that the area in which they live is a good place to live
-
-# Other possibilities:
-# Children reporting high level of classmate support = % of pupils reporting high levels of support from their classmates. Derived from 3 items (The pupils in my class(es) enjoy being together/ Most of the pupils in my class(es) are kind and helpful/ Other pupils accept me as I am.). Score of 10+ out of 12 classified as high classmate support. 
-
-
-# Questions:
-# which weights to use? 2014-2022 dataset_weight, 2010 weighting, 2002 and 2006 w_age, 1990-1998 w_agetyp??
-# more info about FAS: is it usable over time?
-# for comparability over time: use gender, sex, and gender_binary_s in 2022 (boy/girl): check this with HBSC team
-# rather than continuous age, grade is better to use perhaps, tho missing in 2002. what is used in 2002?
-# llti: 
-# ccsqlong = yes/no/NA (2014, 2018, 2022)
-# ccsqschool = Yes/No/Do not have (LT illness/disab/med cond) (2014 and 2018). 2022 just yes and no.
-# What do they mean? How to use to extract 'limiting long-standing phys condition' or 'illness/disab/medical cond that affects their school attendance/pptn'?
-# WHO5 mental wellbeing score, 2018 and 2022
-# score given in 2022, but only positive/low/depression risk in 2018 (and who_3cat and who_low in 2018 seem counter-intuitively coded: pos mood =risk or dep and vice versa...) How to use these comparably?
-
 
 
 
@@ -94,41 +95,25 @@ hbsc_data_list <- lapply(hbsc_data_files, # read in each file in turn
                          function(x) read_sav(x, # read in the .sav file (function from haven package)
                                               encoding = "latin1") %>% # encoding needs setting or the import throws an error
                            mutate(across(where(is.havenlab), haven::as_factor)) %>% # if the var has labels convert it to a factor (using the labels) 
-                           mutate(year = str_extract(x, "([0-9]+)_phs_mh\\.sav$", group=1)) %>% # extracts the digits (the year) preceding the "_phs_mh.sav" suffix in the filename
+                           mutate(trend_axis = str_extract(x, "([0-9]+)_phs_mh\\.sav$", group=1)) %>% # extracts the digits (the year) preceding the "_phs_mh.sav" suffix in the filename
                            setNames(tolower(names(.))) %>% # make all var names lower case
                            mutate(across(everything(), ~tolower(.)))) %>% # make all data lower case
-    plyr::rbind.fill()   # bind all the files together: copes with different columns (adds NA if that col not present): we can coalesce any cols that have same definition
+  plyr::rbind.fill() %>%   # bind all the files together: copes with different columns (adds NA if that col not present): we can coalesce any cols that have same definition
+  filter(!trend_axis %in% c("1990", "1994")) # not using before 1998
 
 
 # cross tabulate years and variables, to see what's available when  
 hbsc_vars_by_year <- hbsc_data_list %>%
-  mutate(across(-year,  ~ !is.na(.x))) %>%
+  mutate(across(-trend_axis,  ~ !is.na(.x))) %>%
   unique() %>%
-  pivot_longer(-year, names_to="var") %>%
+  pivot_longer(-trend_axis, names_to="var") %>%
   filter(value==TRUE) %>%
   unique() %>%
-  pivot_wider(names_from = year, values_from = value) %>%
+  pivot_wider(names_from = trend_axis, values_from = value) %>%
   arrange(var)
 # save and open in excel to match with the indicator requirements, and work out which vars we need to keep
 write.csv(hbsc_vars_by_year, paste0(hbsc_data_folder, "hbsc_vars_by_year.csv"))
 
-
-# variable checks:
-
-check_llti <- hbsc_data_list %>% select(year, starts_with("ccsq")) %>% unique()
-# ccsqlong = yes/no/NA (2014, 2018, 2022)
-# ccsqschool = Yes/No/Do not have (LT illness/disab/med cond) (2014 and 2018). 2022 just yes and no.
-# What do they mean? How to use to extract 'limiting long-standing phys condition' or 'illness/disab/medical cond that affects their school attendance/pptn'?
-
-check_lonely <- hbsc_data_list %>% select(year, starts_with("lonel")) %>% unique()
-# lonely (1990 and 2022) can be coerced to never/sometimes/often
-# loneliness (1994, 1998) also: never/sometimes/often
-# but v big gap, 1998 to 2022. Maybe don't use? (until an additional data point: 2026)
-
-check_who <- hbsc_data_list %>% select(year, who_3cat, who_low, d_who5) %>% unique()
-# WHO5 mental wellbeing score, 2018 and 2022
-# score given in 2022, but only positive/low/depression risk in 2018 (and who_3cat and who_low in 2018 seem counter-intuitively coded: pos mood =risk or dep and vice versa...)
-# how to use these comparably?
 
 
 
@@ -140,7 +125,7 @@ check_who <- hbsc_data_list %>% select(year, who_3cat, who_low, d_who5) %>% uniq
 # Function for extracting responses to a single column data frame
 get_responses <- function(var) {
   hbsc_data_list %>% select(all_of(var)) %>% arrange(var) %>% unique() %>% rename(responses = var)
-  }
+}
 
 
 # Sex
@@ -264,7 +249,7 @@ lookup_health <- list(
   "fair"="no",      
   "poor"="no"     
 )
-  
+
 
 # Problematic social media usage:
 ###################################
@@ -469,7 +454,7 @@ lookup_area_sat <- list(
   "not very good"="no",            
   "no, it's not good at all"="no",
   "not good at all"="no" 
-  )
+)
 
 
 # Limiting long-term conditions:
@@ -561,28 +546,28 @@ hbsc_data <- hbsc_data_list %>%
   # student and teacher support scales need some adjustment as these are sums:
   mutate(student_support = (d_student_support + 3 / 3)) %>% # the var in the data is a sum of responses to 3 items that have been recoded from 0 to 4. We want a mean score on the original scale (1 to 5), hence we add 1 for each item, and divide by the number of items.
   mutate(teacher_support = (d_teacher_support + 3 / 3)) %>% # as above
-
+  
   # create indicators based on multiple vars:
   
   ## gender/sex:
   ## sex_all takes the binary sex if reported, and fills in any missing with the non-binary response given.
   ## done because non-binary only became an option in 2022 data, and sometimes binary sex/gender is missing as a result. 
   mutate(sex_all = case_when(!is.na(sex) ~ sex, # most frequently provided, binary (asked since 1990, missing in 2010, 2014, 2022; Q = are you a girl or a boy?)
-                           !is.na(gender) ~ gender, # next most frequently provided, binary (var name used in 2010 and 2014, despite question being same as the sex question: are you a girl or a boy?)
-                           !is.na(sexbirth_s) ~ sexbirth_s, # next most frequently provided, binary (were you registered girl/boy at birth?)
-                           !is.na(gender_binary_s) ~ gender_binary_s, # next most frequently provided, binary (2022: boy/girl?)
-                           !is.na(genderid_s) ~ genderid_s, # non-binary, 2022
-                           !is.na(gender_p) ~ gender_p, # non-binary, 2022
-                           TRUE ~ as.character(NA))) %>% # leaves ~100 with NA, 
+                             !is.na(gender) ~ gender, # next most frequently provided, binary (var name used in 2010 and 2014, despite question being same as the sex question: are you a girl or a boy?)
+                             !is.na(sexbirth_s) ~ sexbirth_s, # next most frequently provided, binary (were you registered girl/boy at birth?)
+                             !is.na(gender_binary_s) ~ gender_binary_s, # next most frequently provided, binary (2022: boy/girl?)
+                             !is.na(genderid_s) ~ genderid_s, # non-binary, 2022
+                             !is.na(gender_p) ~ gender_p, # non-binary, 2022
+                             TRUE ~ as.character(NA))) %>% # leaves ~100 with NA, 
   # issue with sex_all = will have classed a small number of individuals as boys who were born girls, and vice versa, 
   # because this is how they identify (and were only given the chance to give this response in 2022)
   
   ## derive sex from only the binary questions: 
   mutate(sex_binary = case_when(!is.na(sex) ~ sex, # most frequently provided, binary (asked since 1990, missing in 2010, 2014, 2022; Q = are you a girl or a boy?)
-                             !is.na(gender) ~ gender, # next most frequently provided, binary (var name used in 2010 and 2014, despite question being same as the sex question: are you a girl or a boy?)
-                             !is.na(sexbirth_s) ~ sexbirth_s, # next most frequently provided, binary (were you registered girl/boy at birth?)
-                             !is.na(gender_binary_s) ~ gender_binary_s, # next most frequently provided, binary (2022: boy/girl?)
-                             TRUE ~ as.character(NA))) %>% # leaves ~1500 with NA, all from 2022 (over a third of responses that year).
+                                !is.na(gender) ~ gender, # next most frequently provided, binary (var name used in 2010 and 2014, despite question being same as the sex question: are you a girl or a boy?)
+                                !is.na(sexbirth_s) ~ sexbirth_s, # next most frequently provided, binary (were you registered girl/boy at birth?)
+                                !is.na(gender_binary_s) ~ gender_binary_s, # next most frequently provided, binary (2022: boy/girl?)
+                                TRUE ~ as.character(NA))) %>% # leaves ~1500 with NA, all from 2022 (over a third of responses that year).
   # ER: My preference would be using the binary variable while there's only one year of non-binary data. 
   # Values not split by sex can use all the data. Revisit after the next data update (2026).  
   
@@ -615,36 +600,60 @@ hbsc_data <- hbsc_data_list %>%
                           TRUE ~ as.character(NA))) %>%
   
   ## get dataset_weights all called the same 
-  mutate(dataset_weight = coalesce(dataset_weight, weighting)) %>% # weighting was used in 2010, HBSC team confirm this is same as dataset_weight
-         
+  mutate(dataset_weight = as.numeric(coalesce(dataset_weight, weighting)), # 'weighting' was used in 2010, HBSC team confirm this is same as 'dataset_weight'
+         dataset_weight = ifelse(is.na(dataset_weight), 1, dataset_weight)) %>% # prior to 2010: no weights, so replace missings with 1 (equal weighting)
+  # 1998, 2002 and 2006 won't have weights.
+  
+  ## whole sample weights (equal weights to the grades)
+  mutate(dataset_weight_equating_grade = as.numeric(coalesce(dataset_weight_equating_grade, dataset_weight_equigrade)),
+         dataset_weight_equating_grade = ifelse(is.na(dataset_weight_equating_grade), 1, dataset_weight_equating_grade)) %>% # prior to 2014: no weights, so replace missings with 1 (equal weighting)
+  # available 2014, 2018 and 2022
+  
+  ## Survey design vars: pupils nested within schools nested with strata
+  # HBSC team advised on which vars to use in each year
+  mutate(id_pupil = as.numeric(coalesce(id, serial, id_pupil))) %>% 
+  mutate(id_school = as.numeric(coalesce(school, id2, id_school))) %>% 
+  mutate(id_strata = case_when(schooltype %in% c("state", "1") & trend_axis == "1998" ~ as.numeric(as.factor(id1)),
+                               schooltype %in% c("state", "1") & trend_axis == "2002" ~ as.numeric(as.factor(region)),
+                               schooltype %in% c("independent", "2") & trend_axis %in% c("2002", "1998") ~ 33,
+                               TRUE ~ as.numeric(id_strata))) %>% 
+  mutate(id_strata = ifelse(is.na(id_strata), 1, id_strata)) %>% # prior to 2014: no weights, so replace missings with 1 (equal weighting)
+  
   ## keep the vars we need
-  select(year, sex_all, sex_binary, grade,
+  select(trend_axis, sex_all, sex = sex_binary, grade,
          area_safe, area_sat, d_emc_problem,
          health, lifesat, likeschool, lonely, schoolpressure, 
          studaccept, thinkbody_1, trusted_adult, beenbullied, cbeenbullied,
          physact60, schooldays_sleep_hrs, parent_comms, discrim, leisure, llti,
          sleepqual_tot, d_family_support, d_peer_support, student_support, teacher_support,
-         dataset_weight, dataset_weight_equating_grade)
+         dataset_weight, dataset_weight_equating_grade,
+         id_pupil, psu=id_school, strata=id_strata)
 
 
-
-# summarise data by year, sex and grade
-
-# Calculate the indicator
-
-
-# The survey calculation functions are in the functions.R script
-
-jobsec <- calc_indicator_data(unsoc_sex, "job_insecurity", "indinwt", ind_id=30055, type= "percent") %>% # ok
-  mutate(code = as.character(code))
 
 ##########################################################################################
+# Calculate the indicators
+##########################################################################################
+
 # Functions to run the survey calcs (survey package) on the survey data, by various groupings
-##########################################################################################
+
 # These functions prep the data and perform calculations for percentage and score indicators from a microdata file from a survey with a complex survey design.
 # Adapted from the functions used for the SHeS and Understanding Society data in the ScotPHO_survey_data repo
 
-# identify the correct PSU and strata to be used for each calc.
+# Survey design vars: pupils (id_pupil) nested within schools (id_school) nested with strata (id_strata)
+
+
+
+
+# Function to run the three shared functions for a single indicator
+
+calc_single_breakdown <- function (df, var, wt, variables, type) {
+  
+  df1 <- prep_df_for_svy_calc(df, var, wt, variables, type)
+  df2 <- run_svy_calc(df1, variables, var, type)
+  df3 <- add_more_required_cols(df, var, df2, variables, type)
+  
+}
 
 # Function to get the data ready for the survey calculation.
 # The groupings required are passed as a vector to 'variables' 
@@ -728,16 +737,15 @@ run_svy_calc <- function(df, variables, var, type) {
   
 }
 
-
 # Function to add numerators and denominators into the dataset
 # Also adds spatial.unit, spatial.scale and quintile columns
 
 add_more_required_cols <- function(df, var, svy_result, variables, type) {
   
   # Options:
-  # variables <- c("trend_axis", "sex")
-  # variables <- c("trend_axis", "sex", "quintile")
-  # variables <- c("trend_axis", "sex", "spatial.unit")
+  # variables <- c("trend_axis")
+  # variables <- c("trend_axis", "sex)
+  # variables <- c("trend_axis", "grade")
   
   # add numerators and denominators (including zeroes if present)
   
@@ -767,76 +775,222 @@ add_more_required_cols <- function(df, var, svy_result, variables, type) {
     
   }
   
-  }  
+}  
 
+# Function for calling the required functions:
 
-# Function to run the three shared functions for a single indicator
-
-calc_single_breakdown <- function (df, var, wt, variables, type) {
+calc_indicator_data <- function (df, var, ind_id, type) {
   
-  df1 <- prep_df_for_svy_calc(df, var, wt, variables, type)
-  df2 <- run_svy_calc(df1, variables, var, type)
-  df3 <- add_more_required_cols(df, var, df2, variables, type)
-  
-}
-
-
-# Function for calling the required functions to produce Scotland, HB and SIMD data:
-
-calc_indicator_data <- function (df, var, wt, ind_id, type) {
-  
+  # Scotland 
+  results1 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis"), type) %>%
+    mutate(split_value = "Total",
+           split_name = "Total")
   # Scotland by sex
-  results <- calc_single_breakdown(df, var, wt, variables = c("trend_axis", "sex"), type)
-
-  results <- results %>%
+  results2 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "sex"), type) %>%
+    rename(split_value = sex) %>%
+    mutate(split_name = "Sex")
+  # Scotland by grade
+  results3 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "grade"), type) %>%
+    rename(split_value = grade) %>%
+    mutate(split_name = "School stage")
+  
+  
+  results <- rbind(results1, results2, results3) %>%
     mutate(ind_id = ind_id) %>%
-    # add year back in
-    # Replicating the standard used elsewhere in ScotPHO: year = the midpoint of the year range, rounded up if decimal
-    mutate(year = case_when(nchar(trend_axis)==4 ~ as.numeric(trend_axis), # single years
-                            substr(trend_axis, 5, 5)=="/" ~ as.numeric(substr(trend_axis, 1, 4)), # single financial/school years (e.g., "2015/16" -> 2015)
-                            nchar(trend_axis)>7 ~ rnd(0.5*(as.numeric(substr(trend_axis, 6, 9)) + as.numeric(substr(trend_axis, 1, 4)))), # e.g., "2015-2018" -> "2017" or "2015-2016" to "2016"
-                            TRUE ~ as.numeric(NA))) %>% # shouldn't be any...
+    # add year in
+    mutate(year = as.numeric(trend_axis)) %>% 
     # add def_period
-    mutate(def_period = case_when(nchar(trend_axis) == 4 ~ paste0("Survey year (", trend_axis, ")"),
-                                  substr(trend_axis, 5, 5)=="/" ~ paste0("Survey year (", trend_axis, ")"),
-                                  nchar(trend_axis) > 7 ~ paste0("Aggregated survey years (", trend_axis, ")"))) %>%
-    # add split info
- #   mutate(split_name = case_when(#is.na(quintile) ~ "Sex", # not used, as there's always an entry in quintile (number or 'Total')
-
-    # required columns
-    select(-starts_with("spatial")) %>%
+    mutate(def_period = paste0("Survey year (", trend_axis, ")")) %>%
+    # add code for Scotland
+    mutate(code = "S00000001") %>%
     # arrange so the points plot in right order in QA stage
     arrange(ind_id, code, split_name, split_value, year, trend_axis)
   
 }
 
+## Run the functions:
+
+# Derive percentages:
+cyp_lifesat <- calc_indicator_data(df = hbsc_data, var = "lifesat", ind_id = 30104, type = "percent")
+cyp_pa_guidelines <- calc_indicator_data(df = hbsc_data, var = "physact60", ind_id = 30111, type = "percent")
+cyp_sufficient_sleep <- calc_indicator_data(df = hbsc_data, var = "schooldays_sleep_hrs", ind_id = 30112, type = "percent")
+cyp_gen_health <- calc_indicator_data(df = hbsc_data, var = "health", ind_id = 30114, type = "percent")
+cyp_llti <- calc_indicator_data(df = hbsc_data, var = "llti", ind_id = 30115, type = "percent")
+cyp_socmedproblem <- calc_indicator_data(df = hbsc_data, var = "d_emc_problem", ind_id = 30116, type = "percent")
+cyp_think_ovwt <- calc_indicator_data(df = hbsc_data, var = "thinkbody_1", ind_id = 30117, type = "percent")
+cyp_talk_parents <- calc_indicator_data(df = hbsc_data, var = "parent_comms", ind_id = 30124, type = "percent")
+cyp_lonely <- calc_indicator_data(df = hbsc_data, var = "lonely", ind_id = 30134, type = "percent")
+cyp_classmate_acceptance <- calc_indicator_data(df = hbsc_data, var = "studaccept", ind_id = 30137, type = "percent")
+cyp_bullied <- calc_indicator_data(df = hbsc_data, var = "beenbullied", ind_id = 30138, type = "percent")
+cyp_cyberbullied <- calc_indicator_data(df = hbsc_data, var = "cbeenbullied", ind_id = 30139, type = "percent")
+cyp_like_school <- calc_indicator_data(df = hbsc_data, var = "likeschool", ind_id = 30141, type = "percent")
+cyp_school_pressure <- calc_indicator_data(df = hbsc_data, var = "schoolpressure", ind_id = 30144, type = "percent")
+cyp_leisure_participation <- calc_indicator_data(df = hbsc_data, var = "leisure", ind_id = 30148, type = "percent")
+cyp_trusted_adult <- calc_indicator_data(df = hbsc_data, var = "trusted_adult", ind_id = 30149, type = "percent")
+cyp_nhood_safe <- calc_indicator_data(df = hbsc_data, var = "area_safe", ind_id = 30150, type = "percent")
+cyp_discrimination <- calc_indicator_data(df = hbsc_data, var = "discrim", ind_id = 30163, type = "percent")
+cyp_nhood_good <- calc_indicator_data(df = hbsc_data, var = "area_sat", ind_id = 30164, type = "percent")
+
+# Derive mean scores:
+cyp_sleep_qual <- calc_indicator_data(df = hbsc_data, var = "sleepqual_tot", ind_id = 30113, type = "score")
+cyp_fam_support <- calc_indicator_data(df = hbsc_data, var = "d_family_support", ind_id = 30126, type = "score")
+cyp_peer_support <- calc_indicator_data(df = hbsc_data, var = "d_peer_support", ind_id = 30133, type = "score")
+cyp_teacher_support <- calc_indicator_data(df = hbsc_data, var = "teacher_support", ind_id = 30142, type = "score")
 
 
 
-workless <- aps_data %>%
-  mutate(sex="Total") %>% # recode all individuals to sex==total
-  rbind(aps_data) %>% # add male and female data back in, so grouping produces values for m, f, and total.
-  group_by(year, sex) %>%
-  summarise(yes_grossed = sum(weight * inecac05 %in% yes_responses, na.rm = TRUE), #grossed up to population
-            no_grossed = sum(weight * inecac05 %in% no_responses, na.rm = TRUE), #grossed up to population
-            yes_unwted = sum(1 * inecac05 %in% yes_responses, na.rm = TRUE),
-            no_unwted = sum(1 * inecac05 %in% no_responses, na.rm = TRUE)) %>%
-  ungroup() %>%
-  mutate(denominator = yes_unwted + no_unwted,
-         proportion = yes_grossed / (yes_grossed + no_grossed),
-         numerator = rnd(denominator * proportion), # calculate RESPONSE-weighted number of cases based on share of the unweighted base
-         rate = 100 * proportion,
-         lowci = 100 * (((2*numerator) + (1.96*1.96) - 1.96*sqrt((1.96*1.96) + (4*numerator*(1-proportion)))) / (2 * (denominator + (1.96*1.96)))), # Wilson's score method.
-         upci = 100 * (((2*numerator) + (1.96*1.96) + 1.96*sqrt((1.96*1.96) + (4*numerator*(1-proportion)))) / (2 * (denominator + (1.96*1.96)))),
-         year = 2000 + as.numeric(year),
-         trend_axis = as.character(year),
-         def_period = paste0(year, "survey year"),
-         code = "S00000001",
-         ind_id = 30032,
-         split_name = "Sex") %>%
-  rename(split_value = sex) %>%
-  select(-c(proportion, no_unwted, yes_unwted, yes_grossed, no_grossed)) %>%
-  arrange(ind_id, split_name, split_value, code, year)
+# 9. Combine all the resulting indicator data into a single file
+###############################################################################
 
-# check on suppression requirements
+hbsc_results <- mget(ls(pattern = "^cyp_"), .GlobalEnv) %>% # finds all the dataframes produced by the functions above
+  do.call(rbind.data.frame, .)  #rbinds them all together (appending the rows)
+rownames(hbsc_results) <- NULL # drop the row names
 
+
+# data checks:
+table(hbsc_results$trend_axis, useNA = "always") # 1998 to 2022, na NA
+table(hbsc_results$indicator, useNA = "always") # 23 vars , no NA
+table(hbsc_results$year, useNA = "always") # 1998 to 2022, na NA
+table(hbsc_results$def_period, useNA = "always") # Survey year (), no NA
+table(hbsc_results$split_name, useNA = "always") # School stage, Sex, Total no NA
+table(hbsc_results$split_value, useNA = "always") # M/F/Total, P7, S2, S4, no NA
+# all good
+
+
+# get indicator names into more informative names for using as filenames
+hbsc_results <- hbsc_results %>%
+  mutate(indicator = case_when( indicator == "lifesat"             ~ "cyp_lifesat",                          
+                                indicator == "physact60"           ~ "cyp_pa_guidelines",                    
+                                indicator == "schooldays_sleep_hrs"~ "cyp_sufficient_sleep",                 
+                                indicator == "health"              ~ "cyp_gen_health",                       
+                                indicator == "llti"                ~ "cyp_llti",                             
+                                indicator == "d_emc_problem"       ~ "cyp_socmedproblem",                    
+                                indicator == "thinkbody_1"         ~ "cyp_think_ovwt",                       
+                                indicator == "parent_comms"        ~ "cyp_talk_parents",                     
+                                indicator == "lonely"              ~ "cyp_lonely",                           
+                                indicator == "studaccept"          ~ "cyp_classmate_acceptance",             
+                                indicator == "beenbullied"         ~ "cyp_bullied",                          
+                                indicator == "cbeenbullied"        ~ "cyp_cyberbullied",                     
+                                indicator == "likeschool"          ~ "cyp_like_school",                      
+                                indicator == "schoolpressure"      ~ "cyp_school_pressure",                  
+                                indicator == "leisure"             ~ "cyp_leisure_participation",            
+                                indicator == "trusted_adult"       ~ "cyp_trusted_adult",                    
+                                indicator == "area_safe"           ~ "cyp_nhood_safe",                       
+                                indicator == "discrim"             ~ "cyp_discrimination",                   
+                                indicator == "area_sat"            ~ "cyp_nhood_good",  
+                                indicator == "sleepqual_tot"       ~ "cyp_sleep_qual",                    
+                                indicator == "d_family_support"    ~ "cyp_fam_support",                       
+                                indicator == "d_peer_support"      ~ "cyp_peer_support",                   
+                                indicator == "teacher_support"     ~ "cyp_teacher_support",  
+                                TRUE ~ as.character(NA) )) %>%
+  select(-denominator) 
+
+# Add sex == Total 
+sex_total <- hbsc_results %>%
+  filter(split_name=="Total") %>%
+  mutate(split_name="Sex")
+
+# Add stage == Total 
+stage_total <- hbsc_results %>%
+  filter(split_name=="Total") %>%
+  mutate(split_name="School stage")
+
+all_data <- rbind(hbsc_results,
+                  sex_total,
+                  stage_total)
+
+##########################################################
+### 3. Prepare final files -----
+##########################################################
+
+
+# Function to prepare final files: main_data and popgroup
+prepare_final_files <- function(ind){
+  
+  # 1 - main data (ie data behind summary/trend/rank tab)
+  
+  main_data <- all_data %>% 
+    filter(indicator == ind,
+           split_name == "Total") %>% 
+    select(code, ind_id, year, 
+           numerator, rate, upci, lowci, 
+           def_period, trend_axis) %>%
+    unique() 
+  
+  # Save:
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  
+  # 2 - population groups data (ie data behind population groups tab)
+  
+  pop_grp_data <- all_data %>% 
+    filter(indicator == ind & !(split_name == "Total")) %>% 
+    select(code, ind_id, year, numerator, rate, upci, 
+           lowci, def_period, trend_axis, split_name, split_value) 
+  
+  # Save
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+  
+  
+  # Make data created available outside of function so it can be visually inspected if required
+  main_data_result <<- main_data
+  pop_grp_data_result <<- pop_grp_data
+
+  
+}
+
+
+# Run function to create final files
+prepare_final_files(ind = "cyp_lifesat")                          
+prepare_final_files(ind = "cyp_pa_guidelines")                    
+prepare_final_files(ind = "cyp_sufficient_sleep")                 
+prepare_final_files(ind = "cyp_gen_health")                       
+prepare_final_files(ind = "cyp_llti")                             
+prepare_final_files(ind = "cyp_socmedproblem")                    
+prepare_final_files(ind = "cyp_think_ovwt")                       
+prepare_final_files(ind = "cyp_talk_parents")                     
+prepare_final_files(ind = "cyp_lonely")                           
+prepare_final_files(ind = "cyp_classmate_acceptance")             
+prepare_final_files(ind = "cyp_bullied")                          
+prepare_final_files(ind = "cyp_cyberbullied")                     
+prepare_final_files(ind = "cyp_like_school")                      
+prepare_final_files(ind = "cyp_school_pressure")                  
+prepare_final_files(ind = "cyp_leisure_participation")            
+prepare_final_files(ind = "cyp_trusted_adult")                    
+prepare_final_files(ind = "cyp_nhood_safe")                       
+prepare_final_files(ind = "cyp_discrimination")                   
+prepare_final_files(ind = "cyp_nhood_good")  
+prepare_final_files(ind = "cyp_sleep_qual")                    
+prepare_final_files(ind = "cyp_fam_support")                       
+prepare_final_files(ind = "cyp_peer_support")                   
+prepare_final_files(ind = "cyp_teacher_support")  
+
+# # Run QA reports 
+
+# # main data: 
+run_qa(type ="main",filename="cyp_lifesat", test_file=FALSE)                          
+run_qa(type ="main",filename="cyp_pa_guidelines", test_file=FALSE)                    
+run_qa(type ="main",filename="cyp_sufficient_sleep", test_file=FALSE)                 
+run_qa(type ="main",filename="cyp_gen_health", test_file=FALSE)                       
+run_qa(type ="main",filename="cyp_llti", test_file=FALSE)                             
+run_qa(type ="main",filename="cyp_socmedproblem", test_file=FALSE)                    
+run_qa(type ="main",filename="cyp_think_ovwt", test_file=FALSE)                       
+run_qa(type ="main",filename="cyp_talk_parents", test_file=FALSE)                     
+run_qa(type ="main",filename="cyp_lonely", test_file=FALSE)                           
+run_qa(type ="main",filename="cyp_classmate_acceptance", test_file=FALSE)             
+run_qa(type ="main",filename="cyp_bullied", test_file=FALSE)                          
+run_qa(type ="main",filename="cyp_cyberbullied", test_file=FALSE)                     
+run_qa(type ="main",filename="cyp_like_school", test_file=FALSE)                      
+run_qa(type ="main",filename="cyp_school_pressure", test_file=FALSE)                  
+run_qa(type ="main",filename="cyp_leisure_participation", test_file=FALSE)            
+run_qa(type ="main",filename="cyp_trusted_adult", test_file=FALSE)                    
+run_qa(type ="main",filename="cyp_nhood_safe", test_file=FALSE)                       
+run_qa(type ="main",filename="cyp_discrimination", test_file=FALSE)                   
+run_qa(type ="main",filename="cyp_nhood_good", test_file=FALSE)  
+run_qa(type ="main",filename="cyp_sleep_qual", test_file=FALSE)                    
+run_qa(type ="main",filename="cyp_fam_support", test_file=FALSE)                       
+run_qa(type ="main",filename="cyp_peer_support", test_file=FALSE)                   
+run_qa(type ="main",filename="cyp_teacher_support", test_file=FALSE)  
+
+## END
