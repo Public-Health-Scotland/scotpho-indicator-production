@@ -1,6 +1,12 @@
-## ScotPHO Profiles Tool - Domestic Abuse (20804)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Description: Rate of incidents of domestic abuse recorded by the police per 10,000 population
+# This script updates the following indicator:
+# 20804: Domestic Abuse
+
+# Definition: Rate of incidents of domestic abuse recorded by the police per 10,000 population
+
 # Data is downloaded from SG website
 #https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fdomestic-abuse-recorded-by-the-police-number-of-incidents-and-rates
 
