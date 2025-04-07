@@ -20,14 +20,13 @@
 #   Part 1 - Prepare basefile
 #   Part 2 - Recorded crime (21108)
 #   Part 3 - Create crime breakdown function
-#   Part 4 - Domestic abuse (20804)
-#   Part 5 - Attempted murder and serious assault (4111)
-#   Part 6 - Breach of the Peace (4156)
-#   Part 7 - Common Assault (4154)
-#   Part 8 - Drug Crimes (20806)
-#   Part 9 - Vandalism (4155)
-#   Part 10 - Violent Crime (20805)
-#   Part 11 - Driving under the Influence
+#   Part 4 - Attempted murder and serious assault (4111)
+#   Part 5 - Common Assault (4154)
+#   Part 6 - Vandalism (4155)
+#   Part 7 - Breach of the Peace (4156)
+#   Part 8 - Driving under the Influence (4158)
+#   Part 9 - Violent Crime (20805)
+#   Part 10 - Drug Crimes (20806)
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -127,11 +126,11 @@ saveRDS(rec_crime_final, file=paste0(profiles_data_folder, '/Prepared Data/recor
 #Run analysis functions
 main_analysis(filename = "recorded_crime", geography = "datazone11", measure = "crude",
               year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000, QA = F)
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000, QA = FALSE)
 
-deprivation_analysis(filename = "recorded_crime", yearstart = 2007, yearend = 2022,
-                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
+# deprivation_analysis(filename = "recorded_crime", yearstart = 2007, yearend = 2022,
+#                      time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+#                      pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
 
 
 #Create function to read in final file produced by analysis function, remove datazones that couldn't be matched
@@ -144,8 +143,8 @@ remove_dz <- function(filename){
   final_data <- function_data |> 
     filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
   
-  saveRDS(rec_crime_final, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
-  write.csv(rec_crime_final, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
+  saveRDS(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+  write.csv(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
   
 }
 
@@ -155,7 +154,8 @@ remove_dz(recorded_crime)
 ## Part 3 - Create Automated Crime Breakdown Function  ----
 ###############################################.
 
-#data -this should just be crime_dz_code 
+#Arguments required:
+#data -this should just be "crime_dz_code"
 #crime_categories - a vectorised list of crimes to be filtered on. If more than one category is listed, these
 #are aggregated. E.g. domestic abuse of male and female are aggregated into one domestic abuse indicator
 
@@ -180,55 +180,55 @@ crime_breakdown <- function(data, crime_categories){
 
 
 ###############################################.
-## Part 4 - Domestic Abuse (20804)  ----
+## Part 4 - Attempted murder and serious assault (4111)  ----
 ###############################################.
 
-#Filter data
-domestic_abuse <- crime_breakdown(crime_dz_code, c("Domestic Abuse (of female)", "Domestic Abuse (of male)"))
-
-#Save prepared data for analysis functions
-saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_raw.rds'))
-saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_depr_raw.rds'))
-
-#Run analysis functions
-main_analysis(filename = "domestic_abuse", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000)
-
-deprivation_analysis(filename = "domestic_abuse", yearstart = 2007, yearend = 2022,
-                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
-
-###############################################.
-## Part 5 - Attempted murder and serious assault (4111)  ----
-###############################################.
-
-#Attempted Murder
-#Serious Assault (incl. culpable & reckless conduct – causing injury)
-
-#Filter data
+#Filter data on relevant crime bulletin categories
 am_sa <- crime_breakdown(crime_dz_code, c("Attempted Murder", "Serious Assault (incl. culpable & reckless conduct – causing injury)"))
 
 #Save prepared data for analysis functions
-saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_raw.rds'))
-saveRDS(domestic_abuse, file=paste0(profiles_data_folder, '/Prepared Data/domestic_abuse_depr_raw.rds'))
+saveRDS(am_sa, file=paste0(profiles_data_folder, '/Prepared Data/attempted_murder_raw.rds'))
 
 #Run analysis functions
-main_analysis(filename = "domestic_abuse", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_16to64", crude_rate = 10000)
+main_analysis(filename = "attempted_murder", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4111, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
 
-deprivation_analysis(filename = "domestic_abuse", yearstart = 2007, yearend = 2022,
-                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-                     pop_age = c(16, 64), crude_rate = 10000, ind_id = 21108)
+#Exclude unmatchable intermediate zones
+final_data <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"))
 
+final_data <- final_data |> 
+  filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
 
+saveRDS(final_data, file=paste0(profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"))
+write.csv(final_data, file=paste0(profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"), row.names = FALSE)
 
 ###############################################.
 ## Part 6 - Breach of the Peace (4156)  ----
 ###############################################.
 
-#"Breach of the Peace"
+#Note - Threatening and abusive behaviour & Stalking were included within Breach of the peace until 2010/11
+
+#Filter data on relevant crime bulletin categories
+botp <- crime_breakdown(crime_dz_code, c("Breach of the Peace", "Threatening and abusive behaviour", "Stalking")) 
+
+#Save prepared data for analysis functions
+saveRDS(botp, file=paste0(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
+saveRDS(botp, file=paste0(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "breach_of_the_peace", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4111, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+#Exclude unmatchable intermediate zones
+final_data <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"))
+
+final_data <- final_data |> 
+  filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
+
+saveRDS(final_data, file=paste0(profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"))
+write.csv(final_data, file=paste0(profiles_data_folder, "/Data to be checked/attempted_murder_shiny.rds"), row.names = FALSE)
 
 ###############################################.
 ## Part 7 - Common Assault (4154)  ----
