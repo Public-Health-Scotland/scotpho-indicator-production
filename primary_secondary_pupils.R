@@ -59,7 +59,8 @@ data <- pivot_longer(data,
                      names_to = "year", 
                      values_to = "numerator",
                      names_transform = list(year = ~ as.numeric(substr(., 1, 4)))
-                     )
+                     ) |>
+  filter(!is.na(numerator))
 
 
 # read in historic pupil census data from 2007 publication to get:
@@ -102,6 +103,9 @@ pop_lookup <- get_population_lookup(folder = file.path(profiles_data_folder, "Lo
 
 # join data with population estimates to create denominator column 
 data <- left_join(data, pop_lookup, by = c("year", "code"))
+
+x <- data |>
+  filter(year == 2005 & cohort == "primary")
 
 
 # split the data by primary and secondary pupils 
