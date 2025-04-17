@@ -104,9 +104,6 @@ pop_lookup <- get_population_lookup(folder = file.path(profiles_data_folder, "Lo
 # join data with population estimates to create denominator column 
 data <- left_join(data, pop_lookup, by = c("year", "code"))
 
-x <- data |>
-  filter(year == 2005 & cohort == "primary")
-
 
 # split the data by primary and secondary pupils 
 data <- split(data, data$cohort)
