@@ -191,17 +191,11 @@ am_sa <- crime_breakdown(crime_dz_code, c("Attempted Murder", "Serious Assault (
 
 #Save prepared data for analysis functions
 saveRDS(am_sa, file=paste0(profiles_data_folder, '/Prepared Data/attempted_murder_raw.rds'))
-saveRDS(am_sa, file=paste0(profiles_data_folder, '/Prepared Data/attempted_murder_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "attempted_murder", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 4111, time_agg = 1, yearstart = 2007, 
+              year_type = "financial", ind_id = 4111, time_agg = 2, yearstart = 2007, 
               yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
-
-# deprivation_analysis(filename = "attempted_murder", yearstart = 2014, yearend = 2022,
-#                      time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-#                     crude_rate = 10000, ind_id = 4111)
-
 
 #Exclude unmatchable intermediate zones
 remove_dz("attempted_murder")
@@ -234,8 +228,30 @@ remove_dz("breach_of_the_peace")
 ## Part 7 - Common Assault (4154)  ----
 ###############################################.
 
-#Common Assault
-#Common Assault (of an emergency worker)
+#Note: crime categories selected will need revisiting for 2024/25 data
+#as common assault is being broken down to include with/without injury
+#and include more info about victim e.g. retail staff
+
+#Filter data on relevant crime bulletin categories
+#Note - minor assault and common assault seem to be used interchangeably in Scotland
+ca <- crime_breakdown(crime_dz_code, c("Minor Assault", "Minor Assault (of an emergency worker")) 
+
+#Save prepared data for analysis functions
+saveRDS(ca, file=paste0(profiles_data_folder, '/Prepared Data/common_assault_raw.rds'))
+saveRDS(ca, file=paste0(profiles_data_folder, '/Prepared Data/common_assault_depr_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "common_assault", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4154, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "common_assault", yearstart = 2014, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     crude_rate = 10000, ind_id = 4154)
+
+
+#Exclude unmatchable intermediate zones
+remove_dz("common_assault")
 
 ###############################################.
 ## Part 8 - Drug Crimes (20806) ----
@@ -247,11 +263,51 @@ remove_dz("breach_of_the_peace")
 #Production, manufacture or cultivation of drugs
 #Supply of drugs (incl. possession with intent)
 
+#Filter data on relevant crime bulletin categories
+drugs <- crime_breakdown(crime_dz_code, c("Bringing drugs into prison", "Other drugs offences (incl. importation)",
+                                          "Possession of drugs", "Production, manufacture or cultivation of drugs", 
+                                          "Supply of drugs (incl. possession with intent)"))
+
+#Save prepared data for analysis functions
+saveRDS(drugs, file=paste0(profiles_data_folder, '/Prepared Data/drug_crimes_raw.rds'))
+saveRDS(drugs, file=paste0(profiles_data_folder, '/Prepared Data/drug_crimes_depr_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "drug_crimes", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 20806, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "drug_crimes", yearstart = 2014, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     crude_rate = 10000, ind_id = 20806)
+
+
+#Exclude unmatchable intermediate zones
+remove_dz("drug_crimes")
+
 ###############################################.
 ## Part 9 - Vandalism (4155) ----
 ###############################################.
 
-#Vandalism (incl. reckless damage, etc.)
+#Filter data on relevant crime bulletin categories
+vandalism <- crime_breakdown(crime_dz_code, c("Vandalism (incl. reckless damage, etc.)")) 
+
+#Save prepared data for analysis functions
+saveRDS(vandalism, file=paste0(profiles_data_folder, '/Prepared Data/vandalism_raw.rds'))
+saveRDS(vandalism, file=paste0(profiles_data_folder, '/Prepared Data/vandalism_depr_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "vandalism", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4155, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "vandalism", yearstart = 2014, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     crude_rate = 10000, ind_id = 4155)
+
+
+#Exclude unmatchable intermediate zones
+remove_dz("vandalism")
 
 ###############################################.
 ## Part 10 - Violent Crime (20805) ----
@@ -265,5 +321,43 @@ remove_dz("breach_of_the_peace")
 
 #No direct replacement - would need to use "Drink, Drug driving offences incl. Failure to provide a specimen
 #May need renaming as well 
+#Filter data on relevant crime bulletin categories
+ddo <- crime_breakdown(crime_dz_code, c("Drink, Drug driving offences incl. Failure to provide a specimen")) 
 
+#Save prepared data for analysis functions
+saveRDS(ddo, file=paste0(profiles_data_folder, '/Prepared Data/drink_drug_driving_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "drink_drug_driving", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4158, time_agg = 2, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+
+#Exclude unmatchable intermediate zones
+remove_dz("drink_drug_driving")
+
+############################################.
 ##End.
+
+
+
+#Code template
+#Filter data on relevant crime bulletin categories
+xxxx <- crime_breakdown(crime_dz_code, c("Crime 1", "Crime 2")) 
+
+#Save prepared data for analysis functions
+saveRDS(xxxxxx, file=paste0(profiles_data_folder, '/Prepared Data/xxxxxx_raw.rds'))
+saveRDS(xxxxxx, file=paste0(profiles_data_folder, '/Prepared Data/xxxxxx_depr_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "xxxxxxxxx", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 9999, time_agg = 1, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "xxxxxxxxxx", yearstart = 2014, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     crude_rate = 10000, ind_id = 9999)
+
+
+#Exclude unmatchable intermediate zones
+remove_dz("xxxxxxxxxxx")
