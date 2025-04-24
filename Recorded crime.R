@@ -39,7 +39,7 @@ library(phsmethods) #for extracting financial year from calendar year
 library(readxl) #for reading in xlsx filetype
 library(stringr) #for handling strings
 
-filepath <- paste0(profiles_data_folder, "/Received Data/Crime data/data/") #general crime data folder
+filepath <- file.path(profiles_data_folder, "/Received Data/Crime data/") #general crime data folder
 
 #Temporary code - remove after all crime indicators developed
 crime_dz_code <- readRDS(file.path(profiles_data_folder, "/Received Data/Crime data/crime_dz_code.rds"))
@@ -58,7 +58,7 @@ combine_files <- function(files) {
 }
 
 #Running the function - may take a few minutes. All files must be closed or it won't work. 
-recorded_crime <- combine_files(file = list.files(path = filepath, pattern = ".xlsx", full.names = T))
+recorded_crime <- combine_files(file = list.files(path = file.path(filepath, "/data/"), pattern = ".xlsx", full.names = T))
 
 rec_crime <- recorded_crime |> 
   janitor::clean_names() |> #simplify col names
@@ -96,10 +96,10 @@ mutate(datazone = case_when((stringr::str_detect(datazone, pattern = "Hillhead")
 #3. Use lookups to get datazone s-codes codes, then aggregate to intermediate zone level
 
 #Read in datazone lookups, join and tidy
-dz_lookup <- read_excel(paste0(profiles_data_folder, "/Received Data/Crime data/dz_lookup.xlsx")) #rename to join on "datazone
+dz_lookup <- read_excel(file.path(filepath, "dz_lookup.xlsx")) #rename to join on "datazone
 
 #read in second lookup matching division names from FOI to LA names. This is to help deal with duplicate dz names e.g. multiple divisions have dz "City Centre - 01"
-la_div_lookup <- read_excel(paste0(profiles_data_folder, "/Received Data/Crime data/police_division_la_lookup.xlsx"))
+la_div_lookup <- read_excel(file.path(filepath, "police_division_la_lookup.xlsx"))
 
 #Join both lookups
 lookup <- left_join(la_div_lookup, dz_lookup) |> 
@@ -123,8 +123,8 @@ rec_crime_final <- crime_dz_code |>
   ungroup()
 
 #Save prepared data for analysis functions
-saveRDS(rec_crime_final, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_raw.rds'))
-saveRDS(rec_crime_final, file=paste0(profiles_data_folder, '/Prepared Data/recorded_crime_depr_raw.rds'))
+saveRDS(rec_crime_final, file=file.path(profiles_data_folder, '/Prepared Data/recorded_crime_raw.rds'))
+saveRDS(rec_crime_final, file=file.path(profiles_data_folder, '/Prepared Data/recorded_crime_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "recorded_crime", geography = "datazone11", measure = "crude",
@@ -141,13 +141,13 @@ deprivation_analysis(filename = "recorded_crime", yearstart = 2014, yearend = 20
 
 remove_dz <- function(filename){
   
-  function_data <- readRDS(paste0 (profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+  function_data <- readRDS(file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
   
   final_data <- function_data |> 
     filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
   
-  saveRDS(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
-  write.csv(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
+  saveRDS(final_data, file=file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+  write.csv(final_data, file=file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
   
 }
 
@@ -190,7 +190,7 @@ crime_breakdown <- function(data, crime_categories){
 am_sa <- crime_breakdown(crime_dz_code, c("Attempted Murder", "Serious Assault (incl. culpable & reckless conduct - causing injury)"))
 
 #Save prepared data for analysis functions
-saveRDS(am_sa, file=paste0(profiles_data_folder, '/Prepared Data/attempted_murder_raw.rds'))
+saveRDS(am_sa, file=file.path(profiles_data_folder, '/Prepared Data/attempted_murder_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "attempted_murder", geography = "datazone11", measure = "crude",
@@ -208,8 +208,8 @@ remove_dz("attempted_murder")
 botp <- crime_breakdown(crime_dz_code, c("Breach of the Peace", "Threatening and abusive behaviour", "Stalking")) 
 
 #Save prepared data for analysis functions
-saveRDS(botp, file=paste0(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
-saveRDS(botp, file=paste0(profiles_data_folder, '/Prepared Data/breach_of_the_peace_depr_raw.rds'))
+saveRDS(botp, file=file.path(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
+saveRDS(botp, file=file.path(profiles_data_folder, '/Prepared Data/breach_of_the_peace_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "breach_of_the_peace", geography = "datazone11", measure = "crude",
@@ -237,8 +237,8 @@ remove_dz("breach_of_the_peace")
 ca <- crime_breakdown(crime_dz_code, c("Minor Assault", "Minor Assault (of an emergency worker")) 
 
 #Save prepared data for analysis functions
-saveRDS(ca, file=paste0(profiles_data_folder, '/Prepared Data/common_assault_raw.rds'))
-saveRDS(ca, file=paste0(profiles_data_folder, '/Prepared Data/common_assault_depr_raw.rds'))
+saveRDS(ca, file=file.path(profiles_data_folder, '/Prepared Data/common_assault_raw.rds'))
+saveRDS(ca, file=file.path(profiles_data_folder, '/Prepared Data/common_assault_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "common_assault", geography = "datazone11", measure = "crude",
@@ -257,20 +257,14 @@ remove_dz("common_assault")
 ## Part 8 - Drug Crimes (20806) ----
 ###############################################.
 
-#Bringing drugs into prison
-#Other drugs offences (incl. importation)
-#Possession of drugs
-#Production, manufacture or cultivation of drugs
-#Supply of drugs (incl. possession with intent)
-
 #Filter data on relevant crime bulletin categories
 drugs <- crime_breakdown(crime_dz_code, c("Bringing drugs into prison", "Other drugs offences (incl. importation)",
                                           "Possession of drugs", "Production, manufacture or cultivation of drugs", 
                                           "Supply of drugs (incl. possession with intent)"))
 
 #Save prepared data for analysis functions
-saveRDS(drugs, file=paste0(profiles_data_folder, '/Prepared Data/drug_crimes_raw.rds'))
-saveRDS(drugs, file=paste0(profiles_data_folder, '/Prepared Data/drug_crimes_depr_raw.rds'))
+saveRDS(drugs, file=file.path(profiles_data_folder, '/Prepared Data/drug_crimes_raw.rds'))
+saveRDS(drugs, file=file.path(profiles_data_folder, '/Prepared Data/drug_crimes_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "drug_crimes", geography = "datazone11", measure = "crude",
@@ -293,8 +287,8 @@ remove_dz("drug_crimes")
 vandalism <- crime_breakdown(crime_dz_code, c("Vandalism (incl. reckless damage, etc.)")) 
 
 #Save prepared data for analysis functions
-saveRDS(vandalism, file=paste0(profiles_data_folder, '/Prepared Data/vandalism_raw.rds'))
-saveRDS(vandalism, file=paste0(profiles_data_folder, '/Prepared Data/vandalism_depr_raw.rds'))
+saveRDS(vandalism, file=file.path(profiles_data_folder, '/Prepared Data/vandalism_raw.rds'))
+saveRDS(vandalism, file=file.path(profiles_data_folder, '/Prepared Data/vandalism_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "vandalism", geography = "datazone11", measure = "crude",
@@ -313,7 +307,25 @@ remove_dz("vandalism")
 ## Part 10 - Violent Crime (20805) ----
 ###############################################.
 
-#All group 1 crimes - but maybe rename indicator to non-sexual violent crime
+#Read in lookup for crime groupings
+#Data sourced from Police Scotland website
+#Violent crime includes all Group 1 crimes
+crime_groups <- read_excel(file.path(filepath, "crime_group_lookup.xlsx")) |> 
+  filter(group_number == "Group 1")
+
+#Filter data on relevant crime bulletin categories
+vc <- crime_breakdown(crime_dz_code, c(as.vector(crime_groups$crime_name))) 
+
+#Save prepared data for analysis functions
+saveRDS(vc, file=file.path(profiles_data_folder, '/Prepared Data/violent_crime_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "violent_crime", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 20805, time_agg = 2, yearstart = 2007, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+#Exclude unmatchable intermediate zones
+remove_dz("violent_crime")
 
 ###############################################.
 ## Part 11 - Driving under the Influence (4158) ----
@@ -325,7 +337,7 @@ remove_dz("vandalism")
 ddo <- crime_breakdown(crime_dz_code, c("Drink, Drug driving offences incl. Failure to provide a specimen")) 
 
 #Save prepared data for analysis functions
-saveRDS(ddo, file=paste0(profiles_data_folder, '/Prepared Data/drink_drug_driving_raw.rds'))
+saveRDS(ddo, file=file.path(profiles_data_folder, '/Prepared Data/drink_drug_driving_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "drink_drug_driving", geography = "datazone11", measure = "crude",
@@ -338,26 +350,3 @@ remove_dz("drink_drug_driving")
 
 ############################################.
 ##End.
-
-
-
-#Code template
-#Filter data on relevant crime bulletin categories
-xxxx <- crime_breakdown(crime_dz_code, c("Crime 1", "Crime 2")) 
-
-#Save prepared data for analysis functions
-saveRDS(xxxxxx, file=paste0(profiles_data_folder, '/Prepared Data/xxxxxx_raw.rds'))
-saveRDS(xxxxxx, file=paste0(profiles_data_folder, '/Prepared Data/xxxxxx_depr_raw.rds'))
-
-#Run analysis functions
-main_analysis(filename = "xxxxxxxxx", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 9999, time_agg = 1, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
-
-deprivation_analysis(filename = "xxxxxxxxxx", yearstart = 2014, yearend = 2022,
-                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
-                     crude_rate = 10000, ind_id = 9999)
-
-
-#Exclude unmatchable intermediate zones
-remove_dz("xxxxxxxxxxx")
