@@ -141,13 +141,13 @@ deprivation_analysis(filename = "recorded_crime", yearstart = 2014, yearend = 20
 
 remove_dz <- function(filename){
   
-  function_data <- readRDS(file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+  function_data <- readRDS(paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
   
   final_data <- function_data |> 
     filter(!(code %in% c("S02001528","S02001953","S02002233","S02001475")))
   
-  saveRDS(final_data, file=file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
-  write.csv(final_data, file=file.path(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
+  saveRDS(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+  write.csv(final_data, file=paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = FALSE)
   
 }
 
@@ -234,7 +234,7 @@ remove_dz("breach_of_the_peace")
 
 #Filter data on relevant crime bulletin categories
 #Note - minor assault and common assault seem to be used interchangeably in Scotland
-ca <- crime_breakdown(crime_dz_code, c("Minor Assault", "Minor Assault (of an emergency worker")) 
+ca <- crime_breakdown(crime_dz_code, c("Minor Assault", "Minor Assault (of an emergency worker)")) 
 
 #Save prepared data for analysis functions
 saveRDS(ca, file=file.path(profiles_data_folder, '/Prepared Data/common_assault_raw.rds'))
