@@ -1,6 +1,10 @@
 
 # TO DO:
 # # too many different ethnic groupings over time to work out how to standardise right now: do in future
+# Possibility that this data could be sourced from Stephen.Snedker@phs.scot who manages PHAL dashboard, this team exploring
+# obtaining an extract from SG which would be pupil level and could save data manipulation? possibly not worth the effort now the code has been written
+# but worth being aware that another PHS dashboard contains the same indicator but sourced differently and may not match exactly with our methodology
+# PHAL team plan on matching SG attendance data to CHSP data so mismatches/non-matches might result in slightly different figures.
 
 ### 1. notes -----
 
