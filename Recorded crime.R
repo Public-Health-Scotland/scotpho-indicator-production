@@ -41,8 +41,6 @@ library(stringr) #for handling strings
 
 filepath <- file.path(profiles_data_folder, "/Received Data/Crime data/") #general crime data folder
 
-#Temporary code - remove after all crime indicators developed
-crime_dz_code <- readRDS(file.path(profiles_data_folder, "/Received Data/Crime data/crime_dz_code.rds"))
 
 ##############################################.
 ## Part 1 - Prepare Basefile
