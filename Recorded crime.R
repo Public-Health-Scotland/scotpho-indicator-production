@@ -124,7 +124,6 @@ rec_crime_final <- crime_dz_code |>
 
 #Save prepared data for analysis functions
 saveRDS(rec_crime_final, file=file.path(profiles_data_folder, '/Prepared Data/recorded_crime_raw.rds'))
-saveRDS(rec_crime_final, file=file.path(profiles_data_folder, '/Prepared Data/recorded_crime_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "recorded_crime", geography = "datazone11", measure = "crude",
@@ -209,7 +208,6 @@ botp <- crime_breakdown(crime_dz_code, c("Breach of the Peace", "Threatening and
 
 #Save prepared data for analysis functions
 saveRDS(botp, file=file.path(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
-saveRDS(botp, file=file.path(profiles_data_folder, '/Prepared Data/breach_of_the_peace_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "breach_of_the_peace", geography = "datazone11", measure = "crude",
@@ -238,7 +236,6 @@ ca <- crime_breakdown(crime_dz_code, c("Minor Assault", "Minor Assault (of an em
 
 #Save prepared data for analysis functions
 saveRDS(ca, file=file.path(profiles_data_folder, '/Prepared Data/common_assault_raw.rds'))
-saveRDS(ca, file=file.path(profiles_data_folder, '/Prepared Data/common_assault_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "common_assault", geography = "datazone11", measure = "crude",
@@ -264,7 +261,6 @@ drugs <- crime_breakdown(crime_dz_code, c("Bringing drugs into prison", "Other d
 
 #Save prepared data for analysis functions
 saveRDS(drugs, file=file.path(profiles_data_folder, '/Prepared Data/drug_crimes_raw.rds'))
-saveRDS(drugs, file=file.path(profiles_data_folder, '/Prepared Data/drug_crimes_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "drug_crimes", geography = "datazone11", measure = "crude",
@@ -288,7 +284,6 @@ vandalism <- crime_breakdown(crime_dz_code, c("Vandalism (incl. reckless damage,
 
 #Save prepared data for analysis functions
 saveRDS(vandalism, file=file.path(profiles_data_folder, '/Prepared Data/vandalism_raw.rds'))
-saveRDS(vandalism, file=file.path(profiles_data_folder, '/Prepared Data/vandalism_depr_raw.rds'))
 
 #Run analysis functions
 main_analysis(filename = "vandalism", geography = "datazone11", measure = "crude",
