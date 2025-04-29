@@ -95,7 +95,7 @@ saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "208
 # Children referred to the Children's Reporter for care and protection
 main_analysis(filename = "13001_scra_care_protection", measure = "crude", ind_id = 13001,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2023)
+              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2023)
 
 
 # Children referred to the Children's Reporter for offences
