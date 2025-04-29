@@ -84,8 +84,8 @@ indicator <- split(data, data$indicator)
 
 
 # save temp files to be used in analysis function in next step
-saveRDS(indicator$`Non-offence`, file.path(profiles_data_folder, "Prepared Data", "scra_care_protection_raw.rds"))
-saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "scra_offence_raw.rds"))  
+saveRDS(indicator$`Non-offence`, file.path(profiles_data_folder, "Prepared Data", "13001_scra_care_protection_raw.rds"))
+saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "20803_scra_offence_raw.rds"))  
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,14 +93,14 @@ saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "scr
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Children referred to the Children's Reporter for care and protection
-main_analysis(filename = "scra_care_protection", measure = "crude", ind_id = 13001,
+main_analysis(filename = "13001_scra_care_protection", measure = "crude", ind_id = 13001,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2023)
+              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2023)
 
 
 # Children referred to the Children's Reporter for offences
-main_analysis(filename = "scra_offence", measure = "crude", ind_id = 20803,
+main_analysis(filename = "20803_scra_offence", measure = "crude", ind_id = 20803,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2023)
+              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2023)
 
 ## END
