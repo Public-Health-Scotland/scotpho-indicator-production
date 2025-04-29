@@ -99,7 +99,7 @@ main_analysis(filename = "scra_care_protection", measure = "crude", ind_id = 130
 
 
 # Children referred to the Children's Reporter for offences
-main_analysis(filename = "scra_offence", measure = "crude", ind_id = 13001,
+main_analysis(filename = "scra_offence", measure = "crude", ind_id = 20803,
               geography = "council", year_type = "financial", time_agg = 1,
               pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2023)
 
