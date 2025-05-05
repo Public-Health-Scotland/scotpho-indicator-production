@@ -164,6 +164,8 @@ write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/econom
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/economic_inactivity_rate_shiny_popgrp.rds"))
 
 
+# run qa report against pop groups indicator file
+run_qa(filename="economic_inactivity_rate", type="popgrp", test_file=FALSE)
 
 
 
