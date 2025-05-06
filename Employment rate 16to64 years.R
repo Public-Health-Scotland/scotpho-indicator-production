@@ -42,7 +42,8 @@ source("functions/main_analysis.R")
 
 # Link comes from the NOMIS website after completing the query building steps
 # if rerunning check that in data returned specifies Jan-Dec year ending figures
-API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=594,45...49,51,54,63&measures=20599,21001,21002,21003")
+
+API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=46...49,51,45,54,63,594&measures=20599,21001,21002,21003")
 
 
 # Reads the API as a csv using readr and assigns it the name raw_data
@@ -151,5 +152,7 @@ pop_grp_data <- data %>%
 # Save files in folder for checking
 write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/employment_rate_16to64_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/employment_rate_16to64_shiny_popgrp.rds"))
+
+run_qa(filename="employment_rate_16to64", type="popgrp", test=FALSE)
 
 #no QA report yet - just eyeball figures
