@@ -234,8 +234,8 @@ Shiny app to view data trends for one or more geography - some population gruop 
     
     #Create trend plot
     rate_trend <- plot_ly(data= trend_data(), x=~year, hoverinfo="text") %>%
-      add_lines(y = ~rate, name = ~split_value , type = 'scatter',text = tooltiptext_trend,
-                mode = 'lines', color = ~split_value,  colors = trend_palette) %>%
+      add_lines(y = ~get(input$var_plot_trend), name = ~split_value , type = 'scatter',
+                text = tooltiptext_trend,mode = 'lines', color = ~split_value,  colors = trend_palette) %>%
       layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
   
     })
