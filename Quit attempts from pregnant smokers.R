@@ -18,6 +18,12 @@
 # is larger than the number of pregnant smokers (denominator). There's also a lot of >5 numerators
 # Data is still prepared below in format required to to SIMD splits, incase position changes in the future.
 
+# Important to remember that this metric has some potential flaws in data collection
+# the number of pregnant smokers is based on self-reported smoking status at antenatal booking
+# It is possible that not all women who are pregnant report their smoking status or smoking status could changes during pregnancy
+# It is also possible that women may attempt to quit smoking in early stages of pregnancy before completing antenatal booking
+# several factors may explain why numerator may be higher than denominators
+
 # Data splits:
 # Main - Yes
 # Deprivation - No
@@ -48,6 +54,7 @@ library(phsopendata) # for extracting opendata
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # extract data from opendata platform
+# https://www.opendata.nhs.scot/dataset/births-in-scottish-hospitals/resource/e87a7673-0397-43ca-91a5-166184319728%20%20e87a7673-0397-43ca-91a5-166184319728
 preg_smokers <- get_resource(res_id = "e87a7673-0397-43ca-91a5-166184319728", row_filters = list(SmokingAtBooking = "Current smoker")) |>
   clean_names()
 
@@ -160,7 +167,7 @@ saveRDS(main_data, file.path(profiles_data_folder, "Prepared Data", "1526_quit_a
 main_analysis(filename = "1526_quit_attempts_pregnant", ind_id = 1526, geography = "council", 
               measure = "percent", yearstart = 2014, yearend = 2023, time_agg = 3, year_type = "financial")
 
-
+run_qa(filename="1526_quit_attempts_pregnant", type="main", test_file=FALSE)
 
 
 # # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
