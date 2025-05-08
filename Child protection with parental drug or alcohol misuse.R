@@ -61,6 +61,8 @@ adp <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_L
 
 
 # Make a pop lookup (all need 0-17y, with age groups and sex splits for Scotland)
+# in thepry could use scotpho population lookup under18 files as pop source but simpler to code from phs lookups
+# but not worth recoding
 
 popfile <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/CA2019_pop_est_1981_2023.rds") %>%
   filter(age<18) %>%
@@ -113,6 +115,7 @@ pop_lookup <- rbind(pop_la,
   ungroup()
 
 # repeat 2023 data for 2024: (have added this to the caveats column)
+# when indicator is updated in future the correc 2024 population should be applied and historic rates corrected
 pop_lookup_incl_2024 <- pop_lookup %>%
   filter(trend_axis == 2023) %>%
   mutate(trend_axis = 2024) %>%
