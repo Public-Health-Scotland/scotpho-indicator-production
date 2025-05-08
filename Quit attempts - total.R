@@ -91,5 +91,11 @@ saveRDS(main_data, file.path(output_folder, "1505_smoking_quit_attempts_shiny.rd
 write.csv(main_data, file.path(output_folder, "1505_smoking_quit_attempts_shiny.csv"), row.names = FALSE)
 
 
+# run qa report
+run_qa(filename="1505_smoking_quit_attempts", type="main", test_file = FALSE)
+#note that indicator is a count of quit attempts and numerator (ie number of quit attempts is set to be rate and measure).
+
+
+
 ## END
 
