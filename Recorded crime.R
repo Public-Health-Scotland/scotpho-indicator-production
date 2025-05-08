@@ -20,13 +20,14 @@
 #   Part 1 - Prepare basefile
 #   Part 2 - Recorded crime (21108)
 #   Part 3 - Create crime breakdown function
-#   Part 4 - Attempted murder and serious assault (4111)
+#   Part 4 - Attempted Murder and Serious Assault (4111)
+#   Part 5 - Drunk and Incapable (4157)
 #   Part 5 - Common Assault (4154)
 #   Part 6 - Vandalism (4155)
-#   Part 7 - Breach of the Peace (4156)
+#   Part 7 - Threatening and Abusive Behaviour (4156)
 #   Part 8 - Driving under the Influence (4158)
 #   Part 9 - Violent Crime (20805)
-#   Part 10 - Drug Crimes (20806)
+#   Part 10 - Drug Crimes (20806)- 
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -198,27 +199,49 @@ main_analysis(filename = "attempted_murder", geography = "datazone11", measure =
 remove_dz("attempted_murder")
 
 ###############################################.
-## Part 6 - Breach of the Peace (4156)  ----
+## Part 5 - Drunk and Incapable (4157)  ----
 ###############################################.
 
 #Filter data on relevant crime bulletin categories
-botp <- crime_breakdown(crime_dz_code, c("Breach of the Peace", "Threatening and abusive behaviour", "Stalking")) 
+dac <- crime_breakdown(crime_dz_code, "Drunk and incapable")
 
 #Save prepared data for analysis functions
-saveRDS(botp, file=file.path(profiles_data_folder, '/Prepared Data/breach_of_the_peace_raw.rds'))
+saveRDS(dac, file=file.path(profiles_data_folder, '/Prepared Data/drunk_and_incapable_raw.rds'))
 
 #Run analysis functions
-main_analysis(filename = "breach_of_the_peace", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 4156, time_agg = 1, yearstart = 2007, 
+main_analysis(filename = "drunk_and_incapable", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4157, time_agg = 2, yearstart = 2007, 
               yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
 
-deprivation_analysis(filename = "breach_of_the_peace", yearstart = 2014, yearend = 2022,
+#Exclude unmatchable intermediate zones
+remove_dz("drunk_and_incapable")
+
+###############################################.
+## Part 6 - Threatening and Abusive Behaviour (4156)  ----
+###############################################.
+#This indicator is a renamed version of the indicator Breach of the Peace
+#It contains BOTP and Threatening and Abusive Behaviour (TAB)
+#BOTP refers to TAB which takes place in a public setting and therefore 
+#constitutes a minority of offences
+
+#Filter data on relevant crime bulletin categories
+tab <- crime_breakdown(crime_dz_code, c("Breach of the Peace", "Threatening and abusive behaviour"))
+
+#Save prepared data for analysis functions
+saveRDS(tab, file=file.path(profiles_data_folder, '/Prepared Data/threatening_and_abusive_behaviour_raw.rds'))
+
+#Run analysis functions
+main_analysis(filename = "threatening_and_abusive_behaviour", geography = "datazone11", measure = "crude",
+              year_type = "financial", ind_id = 4156, time_agg = 1, yearstart = 2010, 
+              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "threatening_and_abusive_behaviour", yearstart = 2014, yearend = 2022,
                      time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
                      crude_rate = 10000, ind_id = 4156)
 
 
 #Exclude unmatchable intermediate zones
-remove_dz("breach_of_the_peace")
+remove_dz("threatening_and_abusive_behaviour")
 
 ###############################################.
 ## Part 7 - Common Assault (4154)  ----
