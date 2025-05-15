@@ -11,7 +11,7 @@
 #  university if in full time education)?
 #  
 #  Data is sourced from the Scottish Household Survey - contact
-#   keith.hoy@transport.gov.scot>
+#   Karren.Friel@transport.gov.scot
 #   
 #   NOTE: when you request data, ensure you ask for raw data, not rounded. If
 #   multiple sheets are in excel document for different geographies, check that
