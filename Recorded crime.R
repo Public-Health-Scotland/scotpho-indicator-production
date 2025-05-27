@@ -21,13 +21,12 @@
 #   Part 2 - Recorded crime (21108)
 #   Part 3 - Create crime breakdown function
 #   Part 4 - Attempted Murder and Serious Assault (4111)
-#   Part 5 - Drunk and Incapable (4157)
-#   Part 5 - Common Assault (4154)
-#   Part 6 - Vandalism (4155)
-#   Part 7 - Threatening and Abusive Behaviour (4156)
-#   Part 8 - Driving under the Influence (4158)
+#   Part 5 - Threatening and Abusive Behaviour (4156)
+#   Part 6 - Common Assault (4154)
+#   Part 7 - Drug Crimes (20806)
+#   Part 8 - Vandalism (4155)
 #   Part 9 - Violent Crime (20805)
-#   Part 10 - Drug Crimes (20806)- 
+#   Part 10 - Driving under the Influence (4158)
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -199,25 +198,7 @@ main_analysis(filename = "attempted_murder", geography = "datazone11", measure =
 remove_dz("attempted_murder")
 
 ###############################################.
-## Part 5 - Drunk and Incapable (4157)  ----
-###############################################.
-
-#Filter data on relevant crime bulletin categories
-dac <- crime_breakdown(crime_dz_code, "Drunk and incapable")
-
-#Save prepared data for analysis functions
-saveRDS(dac, file=file.path(profiles_data_folder, '/Prepared Data/drunk_and_incapable_raw.rds'))
-
-#Run analysis functions
-main_analysis(filename = "drunk_and_incapable", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 4157, time_agg = 2, yearstart = 2007, 
-              yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
-
-#Exclude unmatchable intermediate zones
-remove_dz("drunk_and_incapable")
-
-###############################################.
-## Part 6 - Threatening and Abusive Behaviour (4156)  ----
+## Part 5 - Threatening and Abusive Behaviour (4156)  ----
 ###############################################.
 #This indicator is a renamed version of the indicator Breach of the Peace
 #It contains BOTP and Threatening and Abusive Behaviour (TAB)
@@ -244,7 +225,7 @@ deprivation_analysis(filename = "threatening_and_abusive_behaviour", yearstart =
 remove_dz("threatening_and_abusive_behaviour")
 
 ###############################################.
-## Part 7 - Common Assault (4154)  ----
+## Part 6 - Common Assault (4154)  ----
 ###############################################.
 
 #Note: crime categories selected will need revisiting for 2024/25 data
@@ -272,7 +253,7 @@ deprivation_analysis(filename = "common_assault", yearstart = 2014, yearend = 20
 remove_dz("common_assault")
 
 ###############################################.
-## Part 8 - Drug Crimes (20806) ----
+## Part 7 - Drug Crimes (20806) ----
 ###############################################.
 
 #Filter data on relevant crime bulletin categories
@@ -297,7 +278,7 @@ deprivation_analysis(filename = "drug_crimes", yearstart = 2014, yearend = 2022,
 remove_dz("drug_crimes")
 
 ###############################################.
-## Part 9 - Vandalism (4155) ----
+## Part 8 - Vandalism (4155) ----
 ###############################################.
 
 #Filter data on relevant crime bulletin categories
@@ -320,17 +301,23 @@ deprivation_analysis(filename = "vandalism", yearstart = 2014, yearend = 2022,
 remove_dz("vandalism")
 
 ###############################################.
-## Part 10 - Violent Crime (20805) ----
+## Part 9 - Non-sexual Crimes of Violence (20805) ----
 ###############################################.
 
 #Read in lookup for crime groupings
-#Data sourced from Police Scotland website
-#Violent crime includes all Group 1 crimes
-crime_groups <- read_excel(file.path(filepath, "crime_group_lookup.xlsx")) |> 
-  filter(group_number == "Group 1")
+#Data sourced from the SG website: https://www.gov.scot/publications/recorded-crime-scotland-classification-crimes-offences/
+#Check for updated file each year
+#Sheet 4 contains all Non-sexual crimes of violence (group 1)
+  crime_groups <- read_excel(file.path(filepath, "crime_groupings_SG_2324.xlsx"), sheet = 4) |>
+    janitor::row_to_names(row_number = 3) #remove metadata and set row 3 as header
 
+#Create vector containing list of all Group 1 crimes. FOI data contains a mixture of Crime Code Descriptions and Top 50 Category Names
+#So we want to filter the main data to include any crimes matching either the name or the descriptio
+vc_list <- c(crime_groups$`Crime Code Description`, crime_groups$`Top 50 Category Name`) |>
+  unique()
+  
 #Filter data on relevant crime bulletin categories
-vc <- crime_breakdown(crime_dz_code, c(as.vector(crime_groups$crime_name))) 
+vc <- crime_breakdown(crime_dz_code, vc_list)
 
 #Save prepared data for analysis functions
 saveRDS(vc, file=file.path(profiles_data_folder, '/Prepared Data/violent_crime_raw.rds'))
@@ -344,7 +331,7 @@ main_analysis(filename = "violent_crime", geography = "datazone11", measure = "c
 remove_dz("violent_crime")
 
 ###############################################.
-## Part 11 - Driving under the Influence (4158) ----
+## Part 10 - Driving under the Influence (4158) ----
 ###############################################.
 
 #No direct replacement - would need to use "Drink, Drug driving offences incl. Failure to provide a specimen
