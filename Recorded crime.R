@@ -163,11 +163,18 @@ crime_breakdown <- function(data, crime_categories){
   data <- data |> 
     filter(crime_bulletin_category %in% crime_categories) #filter df to only include specified cats
   
+  crimes_not_found <- setdiff(crime_categories, unique(data$crime_bulletin_category)) #identify crimes specified in function argument that couldn't be found in data
+  
+  #If crimes could not be found in the data, list which ones. Otherwise do not produce a pop-up
+  if(length(crimes_not_found) > 0){
+    cli_alert_info("The following crimes could not be found in the data:")
+    cli_ul(crimes_not_found)
+  }
+
   if(length(crime_categories)>1){ #if more than one category specified, aggregate these
     data <- data |> 
     group_by(datazone, year) |> 
-      summarise(numerator = sum(numerator)) |> 
-      ungroup() #|> 
+      summarise(numerator = sum(numerator), .groups = "drop") #|> 
       #select(-crime_bulletin_category) #then drop crime bulletin leaving only dz, year, numerator
   }else{
     data <- data |> 
@@ -176,8 +183,8 @@ crime_breakdown <- function(data, crime_categories){
   
   return(data) #produces the data as an output after the ifelse operation
   
+ 
 } #close function
-
 
 ###############################################.
 ## Part 4 - Attempted murder and serious assault (4111)  ----
