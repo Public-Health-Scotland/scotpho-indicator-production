@@ -167,8 +167,8 @@ crime_breakdown <- function(data, crime_categories){
   
   #If crimes could not be found in the data, list which ones. Otherwise do not produce a pop-up
   if(length(crimes_not_found) > 0){
-    cli_alert_info("The following crimes could not be found in the data:")
-    cli_ul(crimes_not_found)
+    cli::cli_alert_info("The following crimes could not be found in the data:")
+    cli::cli_ul(crimes_not_found)
   }
 
   if(length(crime_categories)>1){ #if more than one category specified, aggregate these
@@ -311,18 +311,21 @@ remove_dz("vandalism")
 ## Part 9 - Non-sexual Crimes of Violence (20805) ----
 ###############################################.
 
-#Read in lookup for crime groupings
-#Data sourced from the SG website: https://www.gov.scot/publications/recorded-crime-scotland-classification-crimes-offences/
-#Check for updated file each year
-#Sheet 4 contains all Non-sexual crimes of violence (group 1)
-  crime_groups <- read_excel(file.path(filepath, "crime_groupings_SG_2324.xlsx"), sheet = 4) |>
-    janitor::row_to_names(row_number = 3) #remove metadata and set row 3 as header
+#A list of non-violent crimes published by the SG as part of the Recorded Crime publication was used to manually 
+# match to the FOI data. The list can be found in Sheet 4 of the document below:
+# https://www.gov.scot/publications/recorded-crime-scotland-classification-crimes-offences/
+# Each year the list of crimes included should be compared against the FOI data to ensure crimes are being recorded 
+# under the same names as they have been historically. 
 
-#Create vector containing list of all Group 1 crimes. FOI data contains a mixture of Crime Code Descriptions and Top 50 Category Names
-#So we want to filter the main data to include any crimes matching either the name or the descriptio
-vc_list <- c(crime_groups$`Crime Code Description`, crime_groups$`Top 50 Category Name`) |>
-  unique()
-  
+#If any crimes specified within vc_list cannot be found in the data, they will be listed in the console. 
+#These can then be checked against the FOI data. 
+
+
+vc_list <- c("Attempted Murder", "Minor Assault", "Minor Assault (of an emergency worker)", 
+             "Murder", "Other Group 1 crimes", "Reckless conduct (with firearms)",
+             "Robbery and assault with intent to rob", "Serious Assault (incl. culpable & reckless conduct - causing injury)",
+             "Threats and extortion", "Domestic Abuse (of female)", "Domestic Abuse (of male)")
+
 #Filter data on relevant crime bulletin categories
 vc <- crime_breakdown(crime_dz_code, vc_list)
 
@@ -331,11 +334,16 @@ saveRDS(vc, file=file.path(profiles_data_folder, '/Prepared Data/violent_crime_r
 
 #Run analysis functions
 main_analysis(filename = "violent_crime", geography = "datazone11", measure = "crude",
-              year_type = "financial", ind_id = 20805, time_agg = 2, yearstart = 2007, 
+              year_type = "financial", ind_id = 20805, time_agg = 1, yearstart = 2007, 
               yearend = 2022, pop = "DZ11_pop_allages", crude_rate = 10000)
+
+deprivation_analysis(filename = "violent_crime", yearstart = 2014, yearend = 2022,
+                     time_agg = 1, year_type = "financial", measure = "crude", pop_sex = "all",
+                     crude_rate = 10000, ind_id = 20805)
 
 #Exclude unmatchable intermediate zones
 remove_dz("violent_crime")
+
 
 ###############################################.
 ## Part 10 - Driving under the Influence (4158) ----
