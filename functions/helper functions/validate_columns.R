@@ -65,7 +65,7 @@ validate_columns <- function(data, measure, geography){
   # check what geography levels are in the dataset and return an error
   # if multiple levels were found but user has not set geography argument to 'multiple'
   geo_codes <- paste0(unique(stringr::str_sub(data[[required_geo_colname]], 1, 3)))
-  geo_codes <- setdiff(geo_codes, c("NA", NA, NULL, "", "Unknown"))
+  geo_codes <- setdiff(geo_codes, c("NA", NA, NULL, "", "Unk"))
 
   if(length(geo_codes) > 1 & geography != "multiple"){
     cli::cli_abort(

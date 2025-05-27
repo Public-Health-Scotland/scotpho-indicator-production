@@ -29,7 +29,7 @@ source("functions/main_analysis.R")
 #DATA FILE 1:
 
 ## Create a new Nomis query for Scotland level data ##
-# Economic inactivity due to long term ill health split by age can only be access at a scotland level - this comes from different table 
+# Economic inactivity due to long term ill health split by age can only be access at a Scotland level - this comes from different table 
 # Data source: annual population survey - regional - economic inactivity by reasons
 # (https://www.nomisweb.co.uk/datasets/aps181)
 # Select "query data"
@@ -37,15 +37,17 @@ source("functions/main_analysis.R")
 # Date: 12 months to Dec, 2004 to 2023
 # Age: 16 to 64, 16 to 24, 25 to 49, 50 to 64
 # Percent: count, percent
-# Sex: all persons, males, females
 # Reasons: long-term sick (untick option for total)
-# Wants a job : total
+# Sex: all persons, males, females
+# Wants a job : only select total
 # Step 8 : select NOMIS API
 # Step 9 : copy link to CSV into api link in R script below
 
 
 # Link to download the Nomis data query using an API (provides figures for those economically inactive due to long term ill health by age and sex but at scotland level only)
-api_scotland <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_181_1.data.csv?geography=2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&c_sex=0...2&age=0...3&einact=4&c_wants=0&measure=1,3&measures=20100,20701")
+#api_scotland <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_181_1.data.csv?geography=2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&c_sex=0...2&age=0...3&einact=4&c_wants=0&measure=1,3&measures=20100,20701")
+
+api_scotland<-c("https://www.nomisweb.co.uk/api/v01/dataset/NM_181_1.data.csv?geography=2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&c_sex=0...2&age=0...3&einact=4&c_wants=0&measure=1,3&measures=20100,20701")
 
 # Read in data
 raw_data_scot <- read_csv(api_scotland) |>
@@ -55,9 +57,9 @@ raw_data_scot <- read_csv(api_scotland) |>
 #DATA FILE 2:
 
 ## Create a new Nomis query for local authority level data ##
-# Economic inactivity due to long term ill health with splits by local authoritie and local authroity by sex available
-# Data source: annual population survey (main headline tables)
-# (https://www.nomisweb.co.uk/query/construct/summary.asp?menuopt=200&subcomp=) - (selecting exctract at variables level)
+# Economic inactivity due to long term ill health with splits by local authorities and local authuroity by sex available
+# Data source: "annual population survey" (select from the current tables)
+# (https://www.nomisweb.co.uk/query/construct/summary.asp?menuopt=200&subcomp=) - (selecting extract at variables level)
 # Select "query data"
 # 	-STEP 1: Geography: Select >  Local authorities > Some> then tick all within Scotland
 #   -STEP 2: Date (12 months to December) – pick time periods required – full series if refreshing all or single year to add one year to existing dataset)
@@ -68,7 +70,9 @@ raw_data_scot <- read_csv(api_scotland) |>
 # Step 5 : copy link to CSV into api link in R script below
 
 
-api_la <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=1496,1503,1510&measures=20599,21001,21002,21003")
+#api_la <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=1496,1503,1510&measures=20599,21001,21002,21003")
+
+api_la <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=1496,1503,1510&measures=20599,21001,21002,21003")
 
 # Read in data
 raw_data_la <- read_csv(api_la) |>
@@ -218,5 +222,6 @@ pop_grp_data <- data %>%
 write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/economic_inactivity_illhealth_shiny_popgrp.csv"), row.names = FALSE)
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/economic_inactivity_illhealth_shiny_popgrp.rds"))
 
+run_qa(filename="economic_inactivity_illhealth", type="popgrp", test=FALSE)
 
 #END

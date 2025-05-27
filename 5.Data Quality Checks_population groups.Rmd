@@ -1,0 +1,254 @@
+---
+title: "Data Quality Checks: Population Groups"
+subtitle: "Report looks for errors in files intended for pop group tab of ScotPHO profiles tool"
+output: html_document
+runtime: shiny
+
+---
+
+```{r setup, include=FALSE}
+#global options for markdown report
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, include=FALSE}
+
+rm(data_indicator)
+
+# declare folder file path 
+data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+
+#read in geography code names dictionary
+code_dictionary <-readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
+
+#Read in indicator file being checked (switch file path if working on test in
+profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+output_folder <- if(test_file){
+    file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
+    } else {
+      file.path(profiles_data_folder, "Data to be checked") # for established indicators already in the profiles tool 
+    }
+  
+#Read in indicator file being checked
+data_indicator <- readRDS(paste0(output_folder,"/", filename, "_shiny_popgrp.rds")) %>%
+  mutate(geo_type=substr(code,1,3)) #add field identifying geography type
+
+#check if all expected columns for shiny tool are present & count number of columns present
+columns_expected <-all(c("code","ind_id","year","numerator","rate","lowci","upci","def_period","trend_axis","split_value","split_name") %in% colnames(data_indicator))
+column_count <- ncol(data_indicator)
+
+#Add geography code names - useful when exploring outfiles in shiny
+data_indicator <- left_join(x=data_indicator, y=code_dictionary, by="code") %>% 
+mutate(code_name=paste0(code,": ",as.character(areaname)),#add field with geography code & name to ease identification
+       geo_type=case_when(
+          substr(data_indicator$code,1,3) == "S00" ~ "Scotland (S00)",
+          substr(data_indicator$code,1,3) == "S08" ~ "NHS Board (S08)",
+          substr(data_indicator$code,1,3) == "S12" ~ "Council (S12)",
+          substr(data_indicator$code,1,3) == "S37" ~ "HSCP (S37)",
+          substr(data_indicator$code,1,3) == "S11" ~ "ADP (S11)",
+          substr(data_indicator$code,1,3) == "S99" ~ "HSCP Locality (S99)",
+          substr(data_indicator$code,1,3) == "S32" ~ "Police Division (S32)",
+          substr(data_indicator$code,1,3) == "S02" ~ "IZ (S02)",TRUE ~ "other")) 
+
+#Logical test of which geographies are present in data set
+# values will return TRUE/FALSE according to whether each geography type is present
+board <- any(substr(data_indicator$code,1,3) == "S08") 
+ca <- any(substr(data_indicator$code,1,3) == "S12")
+hscp <- any(substr(data_indicator$code,1,3) == "S37")
+adp <- any(substr(data_indicator$code,1,3) == "S11")
+locality <- any(substr(data_indicator$code,1,3) == "S99")
+iz <- any(substr(data_indicator$code,1,3) == "S02")
+pd <- any(substr(data_indicator$code,1,3) == "S32")
+
+#Read in old indicator data file from network /Shiny data folder - if one exists (new indicators won't have a historic file)
+old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny_popgrp.rds") #create value which is file path to old file
+
+# statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
+if(file.exists(old_indicator_filepath)) {
+  skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
+  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny_popgrp.rds")) #read in file if one exists
+} else {
+  skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
+  old_indicator_filepath <-"No historic file available for comparison. Check filename spelling or 'shiny data' network folder if you were expecting a comparison" #if no historic file exists set value to no file available
+}
+
+```
+
+
+Indicator:  **`r filename`** <br>
+Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
+
+**New** indicator file:  /`r (paste0(output_folder,"/", filename, "_shiny_popgrp.rds"))`<br>
+**Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath)) `<br>
+
+-----------------------------------------------------------------------------------
+
+**Geographies present in indicator output file** <br>
+NHS board: `r board` <br>
+Council area: `r ca` <br>
+Health and Social Care Partnership: `r hscp` <br>
+Alcohol and Drugs Partnership: `r adp`<br>
+HSC locality: `r locality`<br>
+Intermediate zone: `r iz` <br>
+Police division: `r pd` <br>
+
+-----------------------------------------------------------------------------------
+**Are expected columns present output file:**
+
+```{r, out.width = "400px", echo=FALSE}
+
+# paste warning if one or more column is missing from shiny data file
+if (columns_expected == FALSE) {
+    paste0("Shiny input file is missing required colummns")
+} else {
+    paste0("All expected columns present")
+}
+  
+# paste warning if the column count isnt as expected (either too many or too few or missing expected)
+if (column_count != 9 | columns_expected == FALSE) {
+    paste0("Check columns in shiny input file - wrong column count or missing column")
+} else {
+    paste0("No extra columns")
+}
+```  
+
+------------------------------------------------------------------------------------
+
+###**Data check 1:**
+<br>
+####Which geographical levels and years are present & how many unique geographies appear?
+
+```{r include=FALSE}
+#Aggegrate file to detect which pop group splits for which geographies are present.
+splits_present <-data_indicator %>%
+  mutate(geo_type=substr(code,1,3)) %>%
+  group_by(split_name, geo_type) %>%
+  summarise(count=1) %>%
+  spread(geo_type, count)
+
+# ft_geo_check - summary table of years and geogrpahy types
+# Conditional formatting on counts of geography types (except HSCP locality)
+# Not sure how many localities there are supposed to be?
+# Not sure how to handle indicators with ADP or only Council area - need to think about this...
+
+ft_geo_check <- flextable(splits_present)
+
+
+```  
+Which population group splits are present in the data<br>
+Still need to set up checks to specify which years for which geographies but this can be done later
+
+```{r, out.width = "400px", echo=FALSE}
+
+#print flextable
+ft_geo_check %>%
+  autofit()
+
+```
+
+------------------------------------------------------------------------------------  
+###**Data check 2:**
+<br>
+####Rates & Confidence intervals
+Do any rates fall outwith the confidence limits - they shouldn't!?
+
+```{r, echo=FALSE}
+# Check no rates/percentages sit outside of CI range  
+ confidence_check <- data_indicator %>% 
+  mutate(ci_error = ifelse(rate<lowci | rate>upci, TRUE, FALSE)) %>%
+  summarise(ci_error_total = sum(ci_error, na.rm = TRUE))
+
+```
+
+```{r, echo=FALSE}
+ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits :-)",
+"Uh-oh looks like there are some rates outwith confidence limits :(")
+
+```
+
+---------------------------------------------------------------------------------
+###**Data check 3:**
+#### Small numbers
+Look at proportion of areas and quintiles where more than 10% of row include counts of less than 5 and therefore may not be robust. 
+
+```{r}
+small_count_data <- data_indicator  %>% 
+  group_by(geo_type,year,split_name, split_value) %>%
+  summarise(count=n(),u5=sum(numerator<5)) %>%
+  mutate(percent_U5=u5/count*100,
+         year =as.factor(year)) %>%
+  ungroup() %>%
+  subset(percent_U5>10)
+
+if(nrow(small_count_data)>0) {flextable(small_count_data)} else {"No counts less than 5."}
+
+
+```
+
+-------------------------------------------------------------------------------
+
+###**Data check: Shiny app**
+<br>
+Shiny app to view data trends for one or more geography - some population gruop files only available at scotland level
+
+```{r}
+
+  shinyApp(
+
+  ui = fluidPage(
+    (p("Population groups indicator file checks")),
+    selectInput("code_selected", "Area:", choices = unique(data_indicator$code_name),multiple = FALSE, selected="S00000001: Scotland"),
+    selectInput("split_selected", "Split name:", choices = unique(data_indicator$split_name),multiple = FALSE),
+    radioButtons("var_plot_trend", label =NULL, choices = c("Rate/Percentage"="rate", "Numerator"="numerator")),
+    #radioButtons("ci_trend", label = "95% confidence intervals", choices = c("on","off"),selected = "off"), # ignore since not sure it works with multiple data series - conver to highcharter at some point?
+    plotlyOutput("trend_plot")
+    ),
+  
+  
+  server = function(input, output) {
+  
+  # help prevent app crashing posit if the app fails  
+  auto_invalidate <- reactiveTimer(10000) 
+  observe({ auto_invalidate() 
+  cat(".") 
+  })
+
+      #reactive simd trend data
+    trend_data<- reactive({
+    pgdata <- data_indicator %>% # reactive dataset for trend chart
+    subset(split_name==input$split_selected & code_name %in% input$code_selected) %>%
+    droplevels()
+    })
+  
+      
+         # Creating plot for ui side
+  output$trend_plot <- renderPlotly({
+    
+    trend_palette <- c("#000000", "#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99",
+                   "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#b15928")
+    
+    #tool tip text for trend chart on population groups
+    tooltiptext_trend <- c(paste0(trend_data()$year, ": ","<br>",
+                              trend_data()$split_value,"<br>",
+                              ": ",trend_data()$rate))
+    
+    #Create trend plot
+    rate_trend <- plot_ly(data= trend_data(), x=~year, hoverinfo="text") %>%
+      add_lines(y = ~get(input$var_plot_trend), name = ~split_value , type = 'scatter',
+                text = tooltiptext_trend,mode = 'lines', color = ~split_value,  colors = trend_palette) %>%
+      layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
+  
+    })
+    
+      },# server close
+  
+  options = list(height = 2000)
+)
+```
+
+```{r, echo=FALSE}
+# stop running shiny when close QA report
+onStop(function() {
+  stopApp()
+})
+```
