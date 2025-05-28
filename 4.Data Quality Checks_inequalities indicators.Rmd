@@ -233,7 +233,7 @@ prep_areatype_quintile_check("HB")
 if (ca_quintiles) {
   # if ca quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
   ca_quintile_warning <- quintile_checks %>%
-     subset(quint_type == "ca_quin") %>%
+    subset(quint_type == "ca_quin") %>%
     mutate(q_count = ifelse(count_q!=6, TRUE, FALSE)) %>%
     summarise(quint_error_total=sum(q_count,na.rm=TRUE))
   #Text output when ca quintiles not correct

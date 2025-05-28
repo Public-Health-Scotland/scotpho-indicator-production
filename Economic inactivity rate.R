@@ -36,19 +36,20 @@ source("functions/main_analysis.R")
 # Date: 12 months to Dec, 2004 to 2023
 
 # Data sections (its possible to tick multiple boxes) 
-# category = "economically inactive by age" (then pick: all sexes 16-64, plus all the age sub-groups e.g 16-19,20-24,25-29,30-34,35-49,50-64, for males/females only pick 16-64)
-# category = key variables" "% of ethnic minority aged 16-64 who are economically inactive"
+# selection from the 'category' dropdown: "economically inactive by age" (then pick: all sexes 16-64, plus all the age sub-groups e.g 16-19,20-24,25-29,30-34,35-49,50-64, for males/females only pick 16-64)
+# selection from category dropwdown: "Key variables" = "% of ethnic minority aged 16-64 who are economically inactive"
 
 # select option to download as Nomis API
 # right click on option to download as csv and select 'copy link' then paste into API link
 # (if re-running check that in data returned  the 'date_name' column specifies Jan-Dec year ending figures)
+# Note that the API link below extracts latest data available which is dynamic - ie it doesn't automatically know you want Jan to Dec data
+# havent figured out a way to set up the api to fix the time period and just add a new year - not sure if its possible.
 
-API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=112...115,117,111,120,129,841&measures=20599,21001,21002,21003")
+API_link <-c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=841,111...115,117,120,129&measures=20599,21001,21002,21003")
 
 # Reads the API as a csv using readr and assigns it the name raw_data
 raw_data <- read_csv(API_link) %>%
   clean_names()  # Clean column dataase
-
 
 ### 2. Prepare data  -----
 
@@ -129,7 +130,9 @@ write.csv(maindata, paste0(profiles_data_folder, "/Data to be checked/economic_i
 write_rds(maindata, paste0(profiles_data_folder, "/Data to be checked/economic_inactivity_rate_shiny.rds"))
 
 
-run_qa(filename="economic_inactivity_rate", type="main", test=FALSE)
+run_qa(filename="economic_inactivity_rate", type="main", test_file=FALSE)
+#note QA report throws up errors around measure being outwith confidence intervals for some -this occurs for some of the orkney/shetland values which have no
+#confidence intervals generated in later years - NOMIS meta data suggest values are too small to produce reliable estimates.In these cases we can't provide CI.
 
 
 # 2- population group data file (ie data behind population groups tab)
@@ -161,6 +164,8 @@ write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/econom
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/economic_inactivity_rate_shiny_popgrp.rds"))
 
 
+# run qa report against pop groups indicator file
+run_qa(filename="economic_inactivity_rate", type="popgrp", test_file=FALSE)
 
 
 

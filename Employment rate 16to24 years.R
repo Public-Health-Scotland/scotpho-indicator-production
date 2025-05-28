@@ -33,8 +33,10 @@ source("functions/main_analysis.R")
 #   -STEP 5: Copy link to download data as csv into R script below (the link is the reference for API_link object)
 
 
-## api for 16-24 rate - contains numerator, denominator and pre calculated percentage - however if you want to put through functions to generate NHS oard data you don't ned 
-api_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=1207&measures=20599,21001,21002,21003")
+## api for 16-24 rate - contains numerator, denominator and pre calculated percentage - however if you want to put through functions to generate NHS board data you don't need 
+#api_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS79,latestMINUS75,latestMINUS71,latestMINUS67,latestMINUS63,latestMINUS59,latestMINUS55,latestMINUS51,latestMINUS47,latestMINUS43,latestMINUS39,latestMINUS35,latestMINUS31,latestMINUS27,latestMINUS23,latestMINUS19,latestMINUS15,latestMINUS11,latestMINUS7,latestMINUS3&variable=1207&measures=20599,21001,21002,21003")
+
+api_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=1207&measures=20599,21001,21002,21003")
 
 # Reads the API as a csv using readr and assigns it the name raw_data
 data1624_raw <- read_csv(api_link) %>%
@@ -67,7 +69,7 @@ saveRDS(function_data, file=paste0(profiles_data_folder, "/Prepared Data/employm
 
 main_analysis(
   filename = "employment_rate_16to24",  measure = "percent",  geography = "council",
-  year_type = "calendar",  ind_id = "13018",  time_agg = 1,  yearstart = 2004, yearend = 2023)
+  year_type = "calendar",  ind_id = "13018",  time_agg = 1,  yearstart = 2004, yearend = 2024)
 
 
 # note some island area - namely shetland data not available for latest years due to suppression/disclosive numbers

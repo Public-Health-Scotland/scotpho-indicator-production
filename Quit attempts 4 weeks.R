@@ -1,83 +1,147 @@
-# ScotPHO indicators: Quit attempts at 4 weeks (including quintile indicators)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Analyst notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~
 
-#   Part 1 - Create basefile for general indicator
-#   Part 2 - Create basefiles for quintile indicators
-#   Part 3 - Run analysis functions
+# This script updates the following indicator:
+# 1536 - Smoking quit rate at 4 weeks follow-up
 
-###############################################.
-## Packages/Filepaths/Functions ----
-###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+# data provided annually by the PHS smoking team following release of below publication (typically in december):
+# https://publichealthscotland.scot/publications/nhs-stop-smoking-services-scotland/
 
-###############################################.
-## Part 1 - Create basefile for general indicator ----
-###############################################.
+# data provided at council, board and scotland level, split by SIMD quintile. 
+# Council and board data provided for both local and scottish quintiles
+# all data based on patients council of residence
 
-#Reading data extracted from table from Smoking cessation annual publication
-quit_4weeks <- read_csv(paste0(data_folder, "Received Data/quit_attempts_4weeks_2022.csv")) %>% 
-  setNames(tolower(names(.))) %>%    #variables to lower case
-  gather("year", "numerator", -council) %>% #from wide to long format
-  mutate(year = substr(year,1,4))
+# note this indicator can be updated at the same time as the 3 other smoking quits indicators
+# as they all use the same basefile. They are updated from separate R scripts due to 
+# some differences required in indicator production steps
 
-#the total number of quit attempts is the denominator 
-quit_total <- read_csv(paste0(data_folder, "Received Data/quit_attempts_total_2022.csv")) %>% 
-  setNames(tolower(names(.))) %>%    #variables to lower case
-  gather("year", "denominator", -council) %>% #from wide to long format
-  mutate(year = substr(year,1,4))
+# note we used to publish data from 2009/10 onwards, however 
+# data now only available from 2014/15 due to data quality issues in Glasgow prior to this
 
-# merging numerator and denominator
-quit_4weeks <- left_join(quit_4weeks, quit_total, by = c("year", "council"))
-
-# converting council names into codes. First bring lookup.
-ca_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds") %>% 
-  setNames(tolower(names(.))) %>% rename(ca=code)
-
-quit_4weeks <- left_join(quit_4weeks, ca_lookup, by = c("council" = "areaname")) %>% 
-  select(-council)
-
-saveRDS(quit_4weeks, file=paste0(data_folder, 'Prepared Data/quitattempts_4weeks_raw.rds'))
-
-###############################################.
-## Part 2 - Create basefiles for quintile indicators ----
-###############################################.
-
-# Reading council quintile data requested to smoking cessation team
-quit4w_quint <- read.spss(paste0(data_folder, "Received Data/Smoking_Cessation_Council_SIMD_FY2009-10 to FY2019-20.sav"),
-                          to.data.frame=TRUE, use.value.labels=FALSE) %>% 
-  setNames(tolower(names(.))) %>%    #variables to lower case
-  filter(scsimdquintile != 99) %>% #excluding unknown values
-  rename(ca = ca2011, numerator = four_week_quit, denominator = quit_attempt, year = finyear) %>% 
-  mutate(year = substr(year,1,4))
-
-for (quint in 1:5) { #creating files for each one of the quintiles
-  quit4w_quint_raw <- quit4w_quint %>% filter(scsimdquintile == quint) %>% 
-    select(-scsimdquintile) 
-  
-  saveRDS(quit4w_quint_raw, 
-          paste0(data_folder, "Prepared Data/quitattempts_4weeks_quint", quint, "_raw.rds"))
-  
-}
-
-###############################################.
-## Part 3 - Run analysis functions ----
-###############################################.
-analyze_first(filename = "quitattempts_4weeks", geography = "council", hscp = T,
-              measure = "percent", yearstart = 2009, yearend = 2021, time_agg = 1)
-
-analyze_second(filename = "quitattempts_4weeks", measure = "percent", time_agg = 1, 
-               ind_id = 1536, year_type = "financial")
-
-# For quintile indicators 
-# Names of the files used in the next two functions
-filenames <- c("quitattempts_4weeks_quint1", "quitattempts_4weeks_quint2",
-               "quitattempts_4weeks_quint3","quitattempts_4weeks_quint4",
-               "quitattempts_4weeks_quint5") 
-
-mapply(analyze_first, filename = filenames, geography = "council", 
-       measure = "percent", yearstart = 2009, yearend = 2021, time_agg = 1)
-
-mapply(analyze_second, filename = filenames, measure = "percent", time_agg = 1, qa = F,
-       ind_id = c(1539:1543), year_type = "financial")
+# Data splits:
+# Main - Yes
+# Deprivation - Yes
+# Pop groups - No
 
 
-##END
+# Indicator production Steps:
+# Part 1 - Housekeeping
+# Part 2 - Read in and clean data 
+# Part 3 - Create main indicator file 
+# Part 4 - create deprivation file
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part 1 - Housekeeping ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+source("functions/main_analysis.R") # source main analysis function 
+source("functions/deprivation_analysis.R") # source deprivation function 
+library(arrow) # for reading parquet files
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part 2 - Read in and clean data  ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# get path to data file provided by smoking team
+filepath <- file.path(profiles_data_folder, "Received Data", "Smoking quit attempts", "scotpho_simd_data.parquet")
+
+# read in data 
+data <- read_parquet(filepath) |>
+  # temporary step May 2025: remove 2024/25 data as incomplete
+  # either replace with 2025/26 at next update if required or remove
+  filter(finyear != "2024/25")
+
+# remove NA geography codes - already included in scotland totals
+data <- data |>
+  filter(!is.na(geographic_code))
+
+
+# create 'total' rows for each group
+# step required as data split by simd quintile (Q1-5 + unknown)
+data <- data |>
+  group_by(finyear, geographic_level, geographic_code, sim_type) |>
+  group_modify(~ .x |> adorn_totals()) |>
+  ungroup() |>
+  filter(simd != "Unknown") # remove unknown quintiles after calculating totals
+
+
+# get starting year from fin year
+data <- data |>
+  mutate(year = as.numeric(substr(finyear, 1, 4)))
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part 3 - Create main indicator file ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+main_data <- data |>
+  # filter on council area totals
+  filter(simd == "Total" & sim_type == "simd_sc" & geographic_level == "ca") |>
+  # select and rename required columns
+  select(
+    year, 
+    geographic_code, 
+    numerator = number_all_4_week_quits, 
+    denominator = number_all_quit_attempts
+  )
+
+# save temp file to be used in main_analysis function 
+saveRDS(main_data, file.path(profiles_data_folder, "Prepared Data", "1536_quit_rate_4weeks_raw.rds"))
+
+# run analysis function 
+main_analysis(filename = "1536_quit_rate_4weeks", ind_id = "1536", measure = "percent", geography = "council", 
+              time_agg = 1, year_type = "financial",yearstart = 2014, yearend = 2023)
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Part 4 - create deprivation file ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Data already aggregated at HB, CA, Scotland level for each SIMD quintile and quint type
+# so no need to run through the deprivation_analysis function
+# the steps below calculate rates and ensure all variables/values in required format for final file
+
+# rename quint columns and recode quint type values
+simd_data <- data |>
+  rename("quintile" = "simd",
+         "quint_type" = "sim_type") |>
+  mutate(quint_type = case_when(quint_type == "simd_sc" ~ "sc_quin",
+                                quint_type == "simd_ca" ~ "ca_quin",
+                                quint_type == "simd_hb" ~ "hb_quin", TRUE ~ "unknown"))
+
+# recode scotland geography code
+simd_data <- simd_data |>
+  mutate(geographic_code = if_else(geographic_code == "S92000003", "S00000001", geographic_code))
+
+
+# prepare final deprivation file
+simd_data <- simd_data |>
+  # select and rename columns
+  select(
+    year, 
+    code = geographic_code, 
+    numerator = number_all_4_week_quits, 
+    denominator = number_all_quit_attempts,
+    quint_type,
+    quintile
+  ) |>
+  # calculate % rate 
+  calculate_percent() |>
+  # caculate SII/RII/PAR
+  calculate_inequality_measures() |>
+  # add columns required for final file 
+  mutate(ind_id = "1536") |>
+  create_trend_axis_column(year_type = "financial", agg = 1) |>
+  create_def_period_column(year_type = "financial", agg = 1)
+
+# save final deprivation file
+saveRDS(simd_data, file.path(profiles_data_folder, "Data to be checked", "1536_quit_rate_4weeks_depr_ineq.rds"))
+
+
+# QA deprivation file 
+run_qa(filename = "1536_quit_rate_4weeks_depr", type = "deprivation", test_file = FALSE)
+
+
+## END

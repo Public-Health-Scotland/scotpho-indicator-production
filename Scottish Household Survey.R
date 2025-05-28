@@ -104,21 +104,21 @@ import_shos_xlsx <- function(suffix, filename) {
 shos_scot <- import_shos_xlsx("_1", file) %>%
   mutate(areatype = "Scotland",
          areaname = "Scotland",
-         split_name = "Sex",
+         split_name = "Total",
          split_value = "Total") 
 
 # Get the CA data (tab suffix _2)
 shos_ca <- import_shos_xlsx("_2", file) %>%
   rename(areaname = council) %>%
   mutate(areatype = "Council area",
-         split_name = "Sex",
+         split_name = "Total",
          split_value = "Total")
 
 # Get the HB data (tab suffix _3)
 shos_hb <- import_shos_xlsx("_3", file) %>%
   rename(areaname = hb2014) %>%
   mutate(areatype = "Health board",
-         split_name = "Sex",
+         split_name = "Total",
          split_value = "Total")
 
 # Get the SIMD data (tab suffix _4)
@@ -181,7 +181,7 @@ shos_needing_totals <- shos_df %>%
   distinct() # the groups we need totals for
 
 shos_totals_to_add <- shos_df %>%
-  filter(code=="S00000001" & split_name=="Sex" & split_value=="Total") %>%
+  filter(code=="S00000001" & split_name=="Total" & split_value=="Total") %>%
   select(-split_name) # the Scotland totals 
 
 shos_totals_for_splits <- shos_needing_totals %>%
@@ -200,7 +200,7 @@ prepare_final_files <- function(indicator_name){
   # 1 - main data (ie data behind summary/trend/rank tab)
   main_data <- shos_df %>% 
     filter(ind_name == indicator_name,
-           split_name=="Sex",
+           split_name=="Total",
            split_value=="Total") %>% 
     unique() %>%
     select(-ind_name, -split_name, -split_value) %>%
@@ -216,18 +216,25 @@ prepare_final_files <- function(indicator_name){
   
   if(indicator_name!="high_risk_loans") { # don't run for the loans indicator, as too few obs
     
-    # 2 - population groups data (ie data behind population groups tab)
-    pop_grp_data <- shos_df %>% 
-      filter(ind_name == indicator_name,
-             code=="S00000001",
-             split_name == "Sex") %>% 
-      unique() %>%
-      select(-ind_name) %>%
-      arrange(code, year, split_name, split_value)
-    
-    # Save
-    write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", indicator_name, "_shiny_popgrp.csv"), row.names = FALSE)
-    write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", indicator_name, "_shiny_popgrp.rds"))
+    if("Sex" %in% shos_df$split_name[shos_df$ind_name == indicator_name]) {
+      
+      # 2 - population groups data (ie data behind population groups tab)
+      pop_grp_data <- shos_df %>% 
+        filter(ind_name == indicator_name,
+               code=="S00000001",
+               split_name == "Sex") %>% 
+        unique() %>%
+        select(-ind_name) %>%
+        arrange(code, year, split_name, split_value)
+      
+      # Save
+      write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", indicator_name, "_shiny_popgrp.csv"), row.names = FALSE)
+      write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", indicator_name, "_shiny_popgrp.rds"))
+      
+      # Make data created available outside of function so it can be visually inspected if required
+      pop_grp_data_result <<- pop_grp_data
+      
+    }
     
     # 3 - SIMD data (ie data behind deprivation tab)
     
@@ -259,10 +266,7 @@ prepare_final_files <- function(indicator_name){
     # save the data as RDS file
     saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", indicator_name, "_ineq.rds"))
     
-    
-    
     # Make data created available outside of function so it can be visually inspected if required
-    pop_grp_data_result <<- pop_grp_data
     simd_data_result <<- simd_data
     
     
@@ -288,18 +292,18 @@ prepare_final_files(indicator_name = "high_risk_loans")
 
 # Run QA reports 
 # main data
-run_qa(filename = "influence_local_decisions", test_file = FALSE)
-run_qa(filename = "managing_well_financially", test_file = FALSE)
-run_qa(filename = "neighbourhood_belonging", test_file = FALSE)
-run_qa(filename = "neighbourhood_good_place", test_file = FALSE)
-run_qa(filename = "neighbourhood_trust", test_file = FALSE)
-run_qa(filename = "open_space_use", test_file = FALSE)
-run_qa(filename = "volunteering", test_file = FALSE)
-run_qa(filename = "discrimination", test_file = FALSE)
-run_qa(filename = "harassment", test_file = FALSE)
-run_qa(filename = "feeling_lonely", test_file = FALSE)
-run_qa(filename = "noisy_neighbours", test_file = FALSE)
-run_qa(filename = "high_risk_loans", test_file = FALSE) # "Warning: Error in eval: object 'S08' not found"
+run_qa(type = "main", filename = "influence_local_decisions", test_file = FALSE)
+run_qa(type = "main", filename = "managing_well_financially", test_file = FALSE)
+run_qa(type = "main", filename = "neighbourhood_belonging", test_file = FALSE)
+run_qa(type = "main", filename = "neighbourhood_good_place", test_file = FALSE)
+run_qa(type = "main", filename = "neighbourhood_trust", test_file = FALSE)
+run_qa(type = "main", filename = "open_space_use", test_file = FALSE)
+run_qa(type = "main", filename = "volunteering", test_file = FALSE)
+run_qa(type = "main", filename = "discrimination", test_file = FALSE)
+run_qa(type = "main", filename = "harassment", test_file = FALSE)
+run_qa(type = "main", filename = "feeling_lonely", test_file = FALSE)
+run_qa(type = "main", filename = "noisy_neighbours", test_file = FALSE)
+run_qa(type = "main", filename = "high_risk_loans", test_file = FALSE) # "Warning: Error in eval: object 'S08' not found"
 
 
 # ineq data:
@@ -314,5 +318,5 @@ run_qa(type = "deprivation", filename = "discrimination", test_file=FALSE)
 run_qa(type = "deprivation", filename = "harassment", test_file=FALSE)
 run_qa(type = "deprivation", filename = "feeling_lonely", test_file=FALSE)
 run_qa(type = "deprivation", filename = "noisy_neighbours", test_file=FALSE)
-run_qa(type = "deprivation", filename = "high_risk_loans", test_file=FALSE) 
 
+# END
