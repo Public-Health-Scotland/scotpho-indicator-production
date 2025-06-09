@@ -1,3 +1,8 @@
+# indicator archived in May 2025 once alternative source of data identified.
+# New script created and new indicator ID assigned (#99142) as the new indicator 
+# reports on dependent children aged 0-15 so not strictly an exact match
+
+
 ################################################################################
 ################################################################################
 #########                                                              #########
