@@ -290,7 +290,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
 
      # read in the simd population lookup, filter by age group and summarise
          population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
-         filter(year >= yearstart) 
+         filter(year >= yearstart & year <=yearend) 
          
          
     # if indicator is not for all ages, filter by age range. Otherwise do not filter
