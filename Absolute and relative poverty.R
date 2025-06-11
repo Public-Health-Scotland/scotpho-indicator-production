@@ -37,21 +37,22 @@
 # This means, for example, that the three-year periods 2018-21, 2019-22 and 2020-23 only contain data from two financial years each. 
 
 
-# statistics.gov.scot data were downloaded using opendatascot: 
-# https://scotgovanalysis.github.io/opendatascot/
-# How to install:
-# download the zipped repository from the opendatascot github page to a UNIX space.
+# # statistics.gov.scot data were downloaded using opendatascot:
+# # https://scotgovanalysis.github.io/opendatascot/
+# # How to install:
+# # download the zipped repository from the opendatascot github page to a UNIX space.
 # install.packages("devtools")
 # library(devtools)
 # devtools::install_local(
-#   "<FILEPATH OF ZIPPED FILE>/opendatascot-main.zip",
+# #  "<FILEPATH OF ZIPPED FILE>/opendatascot-main.zip",
+#   "//PHI_conf/PHSci/Liz/packages/opendatascot-master",
 #   upgrade = "never",
 #   build_vignettes = TRUE
 # )
 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
+source("functions/main_analysis.R") #Normal indicator functions
 
 library(opendatascot)
 
