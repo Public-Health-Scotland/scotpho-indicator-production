@@ -39,8 +39,8 @@ library(janitor) # for function to clean column names
 library(stringr) # for replacing strings
 
 
-# QA function 
-source("functions/helper functions/run_rmarkdown_QA.R")
+# Source main analysis script which enable QA reports to be called and run
+source("functions/main_analysis.R")
 
 
 # filepaths 
@@ -188,7 +188,7 @@ prepare_indicator <- function(data, age_group, sex_group, ind_id){
 
 
 # run functions to update each indicator and QA the files
-prepare_indicator(data, ind_id = 1570, age_group = "16+", sex_group = "All")
+prepare_indicator(data=data, ind_id = 1570, age_group = "16+", sex_group = "All")
 prepare_indicator(data, ind_id = 1571, age_group = "16 to 34", sex_group = "All")
 prepare_indicator(data, ind_id = 1572, age_group = "16 to 64", sex_group = "All")
 prepare_indicator(data, ind_id = 1573, age_group = "65+", sex_group = "All")
@@ -197,10 +197,11 @@ prepare_indicator(data, ind_id = 1575, age_group = "16+", sex_group = "Male")
 prepare_indicator(data, ind_id = 1576, age_group = "16+", sex_group = "Female")
 
 
-## Create a population group split file for the smoiking prevalence in 16+ indicator
+## Create a population group split file for the smoking prevalence in 16+ indicator
 ## the 16+ indicator features in the care and wellbeing profile and would be helpful to provide age and sex breakdowns
 
 pop_groups_age <- data |>
+  filter(sex=="All") |> #only provide age breakdown for 'all' sex not for males/females
   filter(age_grp %in% c("16+","16 to 34","35 to 64","65+"))|>
   # Create 'split-name' & split_value columns based
   mutate(split_value= case_when(age_grp=="16+" ~ "All (16+)", TRUE ~age_grp),
@@ -213,20 +214,22 @@ pop_groups_sex <- data |>
   filter(age_grp %in% c("16+"))|>
   # Create 'split-name' & split_value columns based
   mutate(split_value= case_when(sex=="All" ~ "All (16+)", TRUE ~ sex),
-         split_name = "Sex") |>
+         split_name = "Sex")|>
   # Remove columns no longer needed  
   select(!c(age_grp, sex))
 
                                 
 pop_groups_data <- bind_rows(pop_groups_age,pop_groups_sex) |>
-  mutate(ind_id=1570)
+  mutate(ind_id=1570) |>
+  filter(!is.na(code)) # exclude where geography is unknown
   
 
 # save final files
 saveRDS(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.rds"))
 write.csv(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.csv"), row.names = FALSE)
 
-
+#run QA report
+run_qa(filename="1570_smoking_prev_16+", type="popgrp", test_file = FALSE)
 
 
 ## END
