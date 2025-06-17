@@ -87,7 +87,7 @@ import_schdest_split_data <- function(sheet, rows, split_name) {
 }
 
 # Run the function to import the data for the various splits available:
-schdest_sex <- import_schdest_split_data(sheet = "L.1.2", rows = c(6:188), split_name = "Sex")
+schdest_sex <- import_schdest_split_data(sheet = "L.1.2", rows = c(6:188), split_name = "Sex") 
 schdest_urbrur <- import_schdest_split_data(sheet = "L1.3", rows = c(6:188), split_name = "Urban/Rural status") 
 schdest_ethnicity <- import_schdest_split_data(sheet = "L1.4", rows = c(6:188), split_name = "Ethnicity") %>%
   mutate(split_value = str_replace_all(split_value, "/ ", "/"), # extra tidying of values needed
@@ -162,6 +162,7 @@ hb_series <- ca_series %>%
 all_data <- rbind(scot_all, ca_series, hb_series) %>%
   mutate(ind_id = 13010,
          year = substr(trend_axis, 1, 4),
+         trend_axis = gsub("-", "/", trend_axis),
          def_period = paste0("School year (", trend_axis, ")")) %>%
   # confidence intervals
   mutate(ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method. 
