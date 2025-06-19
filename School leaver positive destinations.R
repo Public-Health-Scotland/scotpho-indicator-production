@@ -2,7 +2,7 @@
 
 # this script produces data for indicator 13030 - school leavers from publicly funded secondary schools in positive destinations, 9 months after leaving school
 # Summary Statistics for Attainment and Initial Leaver Destinations, No. 6: 2024 Edition, released on 27th February 2024
-# https://www.gov.scot/publications/summary-statistics-follow-up-leaver-destinations-no-6-2024-edition/
+# https://www.gov.scot/news/school-leaver-attainment-and-destinations-8/
 # Script updated in Nov 2024 (by ER) to import more population group splits from the data file (previously only Scotland and CA data were imported)
 # Script updated in March 2025 (by ER) to use the new indicator production paths and functions.
 
@@ -23,7 +23,7 @@ library(openxlsx)
 
 # Identify data folder
 schdest_data_folder <- paste0(profiles_data_folder, "/Received Data/School leaver positive destinations/")
-file <- "summary-statistics-attainment-initial-leaver-destinations-no-6-2024.xlsx"
+file <- "SSAILD+2025+supplementary+tables+L1.6+correction.xlsx"
 
 
 ### Lookups ----
@@ -50,7 +50,8 @@ geo_lookup %<>% distinct %>% rename(ca = ca2019, hb = hb2019)
 scot_series <- read.xlsx(paste0(schdest_data_folder, file),
                          sheet = "L1.1",
                          colNames = TRUE,
-                         rows = c(6:37)) %>%
+                         startRow = 6
+                         ) %>%
   rename(trend_axis = "Year.[note.19][note.20]") %>%
   mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
          across(contains(c("Voluntary", "Activity", "Personal")), as.numeric),
@@ -64,12 +65,12 @@ scot_series <- read.xlsx(paste0(schdest_data_folder, file),
 # Scotland data, by population groups
 
 ## Function to read in population group data
-import_schdest_split_data <- function(sheet, rows, split_name) {
+import_schdest_split_data <- function(sheet, split_name) {
   
   df <- read.xlsx(paste0(schdest_data_folder, file),
                   sheet = sheet,
                   colNames = TRUE,
-                  rows = rows) %>%
+                  startRow = 6) %>%
     mutate(Initial.Destination = str_trim(Initial.Destination)) %>%
     filter(Initial.Destination %in% c("All Positive Destinations", "Number of Leavers")) %>%
     pivot_longer(-c(Year, Initial.Destination), names_to = "split_value", values_to = "value") %>%
@@ -87,16 +88,17 @@ import_schdest_split_data <- function(sheet, rows, split_name) {
 }
 
 # Run the function to import the data for the various splits available:
-schdest_sex <- import_schdest_split_data(sheet = "L.1.2", rows = c(6:188), split_name = "Sex")
-schdest_urbrur <- import_schdest_split_data(sheet = "L1.3", rows = c(6:188), split_name = "Urban/Rural status") 
-schdest_ethnicity <- import_schdest_split_data(sheet = "L1.4", rows = c(6:188), split_name = "Ethnicity") %>%
+# note the rows will need changed each year to ensure latest years data included
+schdest_sex <- import_schdest_split_data(sheet = "L1.2", split_name = "Sex")
+schdest_urbrur <- import_schdest_split_data(sheet = "L1.3", split_name = "Urban/Rural status")
+schdest_ethnicity <- import_schdest_split_data(sheet = "L1.4", split_name = "Ethnicity") %>%
   mutate(split_value = str_replace_all(split_value, "/ ", "/"), # extra tidying of values needed
          split_value = str_replace(split_value, " \\[.*\\]", ""),
          split_value = str_to_title(split_value))
-schdest_disabled <- import_schdest_split_data(sheet = "L1.6", rows = c(6:136), split_name = "Disabled (declared or assessed)") %>%
+schdest_disabled <- import_schdest_split_data(sheet = "L1.6", split_name = "Disabled (declared or assessed)") %>%
   mutate(split_value = str_replace(split_value, "Declared or assessed disabled: ", ""),
          split_value = str_to_title(split_value))
-schdest_simd <- import_schdest_split_data(sheet = "Table_2", rows = c(6:188), split_name = "Deprivation (SIMD)") %>%
+schdest_simd <- import_schdest_split_data(sheet = "Table_2", split_name = "Deprivation (SIMD)") %>%
   mutate(split_value = case_when(split_value=="Quintile 0-20% (most deprived)"  ~ "1", # recode the splits
                                  split_value=="Quintile 20-40%" ~ "2",
                                  split_value=="Quintile 40-60%" ~ "3",
@@ -130,7 +132,7 @@ saveRDS(depr_pop_schoolleavers, paste0(profiles_lookups, "/Population/depr_pop_s
 ca_series <- read.xlsx(paste0(schdest_data_folder, file),
                        sheet = "L2.1",
                        colNames = TRUE,
-                       rows = c(6:468)) %>%
+                       startRow = 6) %>%
   rename(trend_axis = Year) %>%
   filter(LA.Name!="Scotland") %>% # longer time series in the scot_series data
   mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
@@ -162,6 +164,7 @@ hb_series <- ca_series %>%
 all_data <- rbind(scot_all, ca_series, hb_series) %>%
   mutate(ind_id = 13010,
          year = substr(trend_axis, 1, 4),
+         trend_axis = gsub("-", "/", trend_axis),
          def_period = paste0("School year (", trend_axis, ")")) %>%
   # confidence intervals
   mutate(ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method. 
