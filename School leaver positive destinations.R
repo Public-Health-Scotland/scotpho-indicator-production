@@ -164,6 +164,7 @@ hb_series <- ca_series %>%
 all_data <- rbind(scot_all, ca_series, hb_series) %>%
   mutate(ind_id = 13010,
          year = substr(trend_axis, 1, 4),
+         trend_axis = gsub("-", "/", trend_axis),
          def_period = paste0("School year (", trend_axis, ")")) %>%
   # confidence intervals
   mutate(ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method. 
