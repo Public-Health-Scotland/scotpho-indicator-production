@@ -1,7 +1,7 @@
 calculate_perc_pcf <- function(dataset){
   dataset <- dataset |>
     # if no est_pop then assume is 0
-    mutate(est_pop = case_when(is.na(denominator) ~ 0, TRUE ~ denominator),
+    mutate(est_pop = case_when(is.na(denominator) ~ 0, TRUE ~ est_pop),
            # Calculate the finite population correction factor.
            # Read more about it here: http://www.statisticshowto.com/finite-population-correction-factor/.
            pcf = case_when(est_pop > 0 ~ sqrt((est_pop-denominator)/(est_pop - 1)),
