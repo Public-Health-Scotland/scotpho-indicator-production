@@ -27,6 +27,7 @@ validate_deprivation_columns <- function(data, measure){
   # get names of all required columns, depending on measure type
   required_cols <- switch(measure,
                           "percent" = c("datazone", "year", "numerator", "denominator"),
+                          "perc_pcf" = c("datazone", "year", "numerator", "denominator"),
                           "stdrate" = c("datazone", "year", "numerator", "sex_grp", "age_grp"),
                           "crude" = c("datazone", "year", "numerator")
                           )
