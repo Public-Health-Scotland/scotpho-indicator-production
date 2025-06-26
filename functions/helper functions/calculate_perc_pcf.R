@@ -21,6 +21,7 @@ calculate_perc_pcf <- function(dataset){
            upci = rate + ci_interval,
            # if over 100 or under 0, set to these values as it is a percentage
            upci = case_when(upci > 100 ~ 100, TRUE ~ upci),
-           lowci = case_when(lowci < 0 ~ 0, TRUE ~ lowci))
+           lowci = case_when(lowci < 0 ~ 0, TRUE ~ lowci)) |>
+    select(-pcf, -est_pop, -ci_interval)
   return(dataset)
 }
