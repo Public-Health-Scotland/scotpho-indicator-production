@@ -105,7 +105,7 @@ if (columns_expected == FALSE) {
 }
   
 # paste warning if the column count isnt as expected (either too many or too few or missing expected)
-if (column_count != 11 | columns_expected == FALSE) {
+if (column_count != 12 | columns_expected == FALSE) {
     paste0("Check columns in shiny input file - wrong column count or missing column")
 } else {
     paste0("No extra columns")
