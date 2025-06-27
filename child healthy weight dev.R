@@ -228,8 +228,8 @@ find_na <- function(geography = c("council", "board")){
   # https://www.opendata.nhs.scot/dataset/primary-1-body-mass-index-bmi-statistics/ 
   res_id <- ifelse(
     geography == "council", 
-    "e9f8d10c-9c06-4e77-a0f5-70ff14af25a4", # Epidemiological BMI at Health Board Level
-    "2cb9d907-7149-4bbd-904a-174f15344585" # Epidemiological BMI at Council Level
+    "e9f8d10c-9c06-4e77-a0f5-70ff14af25a4", # Epidemiological BMI at Council Level
+    "2cb9d907-7149-4bbd-904a-174f15344585" # Epidemiological BMI at Health board Level
   )
   
   # geography column name
@@ -289,39 +289,49 @@ rm(geo_lookup, ca_no_reviews, hb_no_reviews, affected_geos)
 # 7 -  suppress datasets ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-suppress_data <- function(filename){
+suppress_data <- function(file = c("main", "deprivation", "popgrp")){
+  
+  # filename 
+  filename <- switch(file,
+                     "main" = "child_healthyweight_shiny",
+                     "deprivation" = "child_healthyweight_depr_ineq",
+                     "popgrp" = "child_healthyweight_shiny_popgrp"
+                     )
+  
   # read in data 
   dataset <- readRDS(file.path(profiles_data_folder, "Data to be checked", paste0(filename, ".rds")))
-  
+
   # suppress data
   dataset_suppressed <- dataset |>
   left_join(all_suppression_required, by = c("code", "year")) |>
-  mutate(across(contains(c("numerator", "denominator", "rate", "upci", "lowci", "par", "sii", "rii")), ~ case_when(suppress == "Y" ~ NA_real_ , TRUE ~ .))) |>
+  mutate(across(contains(c("numerator", "denominator", "rate", "upci", "lowci", "par", "sii", "rii", "abs", "rel")), ~ case_when(suppress == "Y" ~ NA_real_ , TRUE ~ .))) |>
   select(-c(ValidReviews, SchoolYear, suppress))
+  
+  # remove rows of suppressed data
+  dataset_suppressed <- dataset_suppressed |>
+    filter(!is.na(rate))
 
-  # save suppressed file 
+  # re-save file in data to be checked folder 
   saveRDS(dataset_suppressed, file.path(profiles_data_folder, "Data to be checked", paste0(filename, ".rds")))
   write.csv(dataset_suppressed, file.path(profiles_data_folder, "Data to be checked", paste0(filename, ".csv")), row.names = FALSE)
-  
   cli::cli_alert(paste0(filename, " files re-saved"))
 }
 
 
 # suppress datasets
-suppress_data("child_healthyweight_shiny")
-suppress_data("child_healthyweight_depr_ineq")
-suppress_data("child_healthyweight_shiny_popgrp")
+suppress_data(file = "main")
+suppress_data(file = "deprivation")
+suppress_data(file = "popgrp")
 
 
 # ~~~~~~~~~~~~~~~~~~~
 # 8 - QA datasets ----
 # ~~~~~~~~~~~~~~~~~~~~
 
+# note these checks will flag that there are some geographies missing for some years
+# mostly earliers years (due to not being part of the (CHSP) School System)
+# and covid years (2019/20 and 2020/21)
 run_qa(filename = "child_healthyweight", type = "main", test_file = FALSE)
-
-# note this will flag that there are a few missing councils/boards for the year 2020
-# whilst some boards/councils have rows that are any due to step above, there are a 
-# few that have no rows because there was no DZ data for them in the raw data at all.
 run_qa(filename = "child_healthyweight_depr", type = "deprivation", test_file = FALSE)
 run_qa(filename = "child_healthyweight", type = "popgrp", test_file = FALSE)
 
