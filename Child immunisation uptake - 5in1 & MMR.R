@@ -144,7 +144,7 @@ deprivation_analysis(filename="Immunisation_5in1_depr", measure="percent", time_
                     ind_id = 21103)
 
 ###############################################.
-## Part 5 - Call analysis macros: MMR ----
+## Part 5 - Call analysis functions: MMR ----
 ###############################################.
 
 main_analysis(filename = "Immunisation_MMR_dz11", geography = "datazone11", measure = "percent", 
