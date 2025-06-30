@@ -1,10 +1,15 @@
 #new indicators introduced for care and wellbeing portfolio
+
+###################################################################################################################################################################
+####### JUNE 2025: ##########
+####### NB. Persistent poverty now produced in a separate script (Persistent poverty.R), as more recent data are available from a different source. ###############
+###################################################################################################################################################################
+
+
 # TO DO: enable automated checking at end of the indicator production
 #         create a deprivation data file output (for any indicators that may have sutiable data)
 
 ###   Update ScotPHO Care and Wellbeing indicators: 
-#   99116: Persistent poverty (includes both adults and children)
-#   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
 #   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
@@ -379,18 +384,6 @@ prepare_final_files <- function(ind, agerange=NULL){
 
 #== Create final files and run QA reports ----
 
-# Indicator 99116: Persistent poverty ---- 
-prepare_final_files(ind = "persistent_poverty")
-
-# Indicator 30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
-cyp_pers_pov <- pop_grp_data_result %>%
-  filter(split_value == "Children") %>% 
-  mutate(ind_id = 30155) %>%
-  select(-starts_with("split"))  
-# Save files
-write_rds(cyp_pers_pov, paste0(profiles_data_folder, "/Data to be checked/cyp_persistent_poverty_shiny.rds"))
-write.csv(cyp_pers_pov, paste0(profiles_data_folder, "/Data to be checked/cyp_persistent_poverty_shiny.csv"), row.names = FALSE)
-
 
 # Indicator 99117: Young peoples mental wellbeing  ----
 prepare_final_files(ind = "young_peoples_mental_wellbeing", agerange="4to12y")
@@ -406,8 +399,6 @@ prepare_final_files(ind = "gender_balance_in_organisations", agerange="16+")
 
 
 ###  Run QA reports ----
-run_qa(type = "main", filename = "persistent_poverty", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_persistent_poverty", test_file = FALSE) 
 run_qa(type = "main", filename = "young_peoples_mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "main", filename = "gender_balance_in_organisations", test_file = FALSE)
