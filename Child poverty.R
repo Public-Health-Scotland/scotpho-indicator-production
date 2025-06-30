@@ -171,23 +171,23 @@ childpov <- childpov_raw %>%
 totals <- childpov %>% 
   filter(split_name == "Total" & split_value == "Total") %>% 
   select(c(ind_id, indicator, code, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
-  distinct() # n=64
+  distinct() # n=67
 
 # Get the unique splits (by indicator-trendaxis-code) and drop their indicator data
 splits_needing_totals <- childpov %>%
   filter(split_name != "Total") %>%
   select(c(ind_id, indicator, code, split_name, year, trend_axis, def_period)) %>%
-  distinct() # n=204
+  distinct() # n=219
 
 # Add in the total indicator data for each of those unique splits (the same total from the totals df is added to each unique split, by indicator-trendaxis-code)
 splits_with_totals <- splits_needing_totals %>%
   merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")#, all.x=TRUE
-        ) # n=146 (why fewer? ah: there are no totals for the 5-y aggregations used for the Ethnicity splits, so these get dropped)
+        ) # n=158 (why fewer? ah: there are no totals for the 5-y aggregations used for the Ethnicity splits, so these get dropped)
 
 # Get the original split data, and drop their total rows, if present
 splits_without_totals <- childpov %>%
   filter(split_value != "Total") %>%
-  filter(split_name != "Total") #856
+  filter(split_name != "Total") #931
 
 # Add geography totals 
 all_data_with_totals <- totals %>%
@@ -211,7 +211,7 @@ ftable(availability, row.vars = c("geog", "ind_id", "split_name"), col.vars = c(
 # The preparation of the final files, below, revealed that the SIMD decile and ethnicity splits are too patchy to be useful and/or unproblematic (e.g., in most years the only ethnicity data not suppressed are for White British and White other.)
 # Drop these splits:
 all_data_with_totals <- all_data_with_totals %>%
-  filter(!split_name %in% c("Ethnicity", "Deprivation (SIMD)")) # n=768
+  filter(!split_name %in% c("Ethnicity", "Deprivation (SIMD)")) # n=813
 
 
 
