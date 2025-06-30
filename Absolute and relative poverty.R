@@ -32,9 +32,10 @@
 # Adults are defined as all working age and pensionable age adults.
 
 # Coverage:
-# 1994/95-1996/97 to 2020/21-2022/23 (some splits don't go back this far though).
-# N.B. The pandemic severely affected data collection and as a result, data from 2020/21 was not used to produce any of the three-year- averaged estimates. 
+# 1994/95-1996/97 to 2021/22-2023/24 (some splits don't go back this far though).
+# N.B. The pandemic severely affected data collection and as a result, data from 2020/21 was not used to produce any of the averaged estimates. 
 # This means, for example, that the three-year periods 2018-21, 2019-22 and 2020-23 only contain data from two financial years each. 
+# From 2011 the dataset includes both 3-year and 5-year rolling averages. 5-year aggregations used for religion breakdown.
 
 
 # # statistics.gov.scot data were downloaded using opendatascot:
@@ -164,8 +165,8 @@ prepare_final_files <- function(ind){
     unique() %>%
     arrange(code,year)
   
-  write.csv(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
 
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland data by sex (including total)
@@ -177,8 +178,8 @@ prepare_final_files <- function(ind){
   
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
 
   # Make data created available outside of function so it can be visually inspected if required
   assign(paste0("main_", ind), main_data, envir=.GlobalEnv)
@@ -194,9 +195,9 @@ prepare_final_files(ind = "relative-poverty")
 
 # # Run QA reports 
 # # main data: failing because the data aren't available at HB level (fix the .rmd later) "Warning: Error in eval: object 'S08' not found"
- run_qa(filename = "absolute-poverty")
- run_qa(filename = "relative-poverty")
-
+run_qa(type = "main", filename = "absolute-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "relative-poverty", test_file = FALSE)
+ 
 # Manual plot checks - which include pop groups
 
 # main data
@@ -217,3 +218,4 @@ rbind(`main_absolute-poverty`, `main_relative-poverty`) %>%
   geom_point() + geom_line() +
   geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) +
   facet_wrap(~split_name)
+
