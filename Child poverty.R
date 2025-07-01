@@ -11,8 +11,8 @@
 
 # Child poverty indicators (part of the CYP mental health profile and CWB profile)
 
-# 30152 = Percentage of 'dependent children' living in relative poverty (before housing costs). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
-# 30153 = Percentage of 'dependent children' living in absolute poverty (before housing costs). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
+# 30152 = Percentage of 'dependent children' living in relative poverty (AFTER housing costs (NEW June 2025)). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
+# 30153 = Percentage of 'dependent children' living in absolute poverty (AFTER housing costs (NEW June 2025)). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
 # 30154 = Percentage of 'dependent children' in combined material deprivation and low income after housing costs (below 70% of UK median income).
 # N.B. This data source (child poverty data download from statistics.gov.scot) gives better resolution data than the NPF spreadsheet (also downloaded from statistics.gov.scot).
 
@@ -158,9 +158,8 @@ childpov <- childpov_raw %>%
          year = as.numeric(substr(trend_axis, 1, 4)) + 0.5*(as.numeric(substr(trend_axis, 9, 12)) - as.numeric(substr(trend_axis, 1, 4)))  # 3 or 5 year average, so find mid point
   ) %>%
   
-  # select before/after housing costs based on indicator definition
-  filter((ind_id %in% c(30152, 30153) & housing_costs=="before-housing-costs") |
-           (ind_id == 30154 & housing_costs=="after-housing-costs")) %>%
+  # select before/after housing costs based on indicator definition (JUNE 2025: NOW ALL ARE AFTER)
+  filter(housing_costs=="after-housing-costs") %>%
   
   # select right variables
   select(-c(housing_costs, age, ethnicity, household_disability_status, urban_rural_classification, simd_deciles, ci_wald, samplesize))
