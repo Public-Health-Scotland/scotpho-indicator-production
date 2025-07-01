@@ -8,6 +8,11 @@
 # The 2001 datazone data is no longer refreshed when indicator is updated, the same data file is used to source dz01 uptake for period 2003 to 2013 
 # Prior to 2022 immunisation team provided data in spss format however 
 
+# Note indicator used to be called 5 in 1, and was changed to 6 in 1. 
+# Technically, the data covers a combination of both for different time periods: 
+# Immunisation uptake at 24 months for 5 in 1 (Diphtheria, Pertussis, Tetanus, Polio, Hib) 
+# and 6-in-1 (from 1st October 2017) (to include hepatitis B)
+
 
 #   Part 1 - Prepare basefiles (DZ01 & DZ11): 5 in 1 vaccine
 #   Part 2 - Prepare basefiles (DZ01 & DZ11): MMR vaccine
@@ -75,7 +80,7 @@ source("./functions/deprivation_analysis.R") # deprivation function
 
 ## DATAZONE 2001 ----
 ## Data now fixed so just read in data that was prepared in part 0
-immunisation_6in1_dz01 <-readRDS(paste0(profiles_data_folder,"/Received Data/Childhood Immunisation/immunisations_2003to2013_dz01_5in1_DO_NOT_DELETE.rds"))
+immunisation_5in1_dz01 <-readRDS(paste0(profiles_data_folder,"/Received Data/Childhood Immunisation/immunisations_2003to2013_dz01_5in1_DO_NOT_DELETE.rds"))
 immunisation_mmr_dz01 <-readRDS(paste0(profiles_data_folder,"/Received Data/Childhood Immunisation/immunisations_2003to2013_dz01_mmr_DO_NOT_DELETE.rds"))
 
 
