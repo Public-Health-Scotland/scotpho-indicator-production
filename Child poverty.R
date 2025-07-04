@@ -11,8 +11,8 @@
 
 # Child poverty indicators (part of the CYP mental health profile and CWB profile)
 
-# 30152 = Percentage of 'dependent children' living in relative poverty (before housing costs). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
-# 30153 = Percentage of 'dependent children' living in absolute poverty (before housing costs). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
+# 30152 = Percentage of 'dependent children' living in relative poverty (AFTER housing costs (NEW June 2025)). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
+# 30153 = Percentage of 'dependent children' living in absolute poverty (AFTER housing costs (NEW June 2025)). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
 # 30154 = Percentage of 'dependent children' in combined material deprivation and low income after housing costs (below 70% of UK median income).
 # N.B. This data source (child poverty data download from statistics.gov.scot) gives better resolution data than the NPF spreadsheet (also downloaded from statistics.gov.scot).
 
@@ -158,9 +158,8 @@ childpov <- childpov_raw %>%
          year = as.numeric(substr(trend_axis, 1, 4)) + 0.5*(as.numeric(substr(trend_axis, 9, 12)) - as.numeric(substr(trend_axis, 1, 4)))  # 3 or 5 year average, so find mid point
   ) %>%
   
-  # select before/after housing costs based on indicator definition
-  filter((ind_id %in% c(30152, 30153) & housing_costs=="before-housing-costs") |
-           (ind_id == 30154 & housing_costs=="after-housing-costs")) %>%
+  # select before/after housing costs based on indicator definition (JUNE 2025: NOW ALL ARE AFTER)
+  filter(housing_costs=="after-housing-costs") %>%
   
   # select right variables
   select(-c(housing_costs, age, ethnicity, household_disability_status, urban_rural_classification, simd_deciles, ci_wald, samplesize))
@@ -171,23 +170,23 @@ childpov <- childpov_raw %>%
 totals <- childpov %>% 
   filter(split_name == "Total" & split_value == "Total") %>% 
   select(c(ind_id, indicator, code, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
-  distinct() # n=64
+  distinct() # n=67
 
 # Get the unique splits (by indicator-trendaxis-code) and drop their indicator data
 splits_needing_totals <- childpov %>%
   filter(split_name != "Total") %>%
   select(c(ind_id, indicator, code, split_name, year, trend_axis, def_period)) %>%
-  distinct() # n=204
+  distinct() # n=219
 
 # Add in the total indicator data for each of those unique splits (the same total from the totals df is added to each unique split, by indicator-trendaxis-code)
 splits_with_totals <- splits_needing_totals %>%
   merge(y=totals, by=c("ind_id", "indicator", "code", "year", "trend_axis", "def_period")#, all.x=TRUE
-        ) # n=146 (why fewer? ah: there are no totals for the 5-y aggregations used for the Ethnicity splits, so these get dropped)
+        ) # n=158 (why fewer? ah: there are no totals for the 5-y aggregations used for the Ethnicity splits, so these get dropped)
 
 # Get the original split data, and drop their total rows, if present
 splits_without_totals <- childpov %>%
   filter(split_value != "Total") %>%
-  filter(split_name != "Total") #856
+  filter(split_name != "Total") #931
 
 # Add geography totals 
 all_data_with_totals <- totals %>%
@@ -211,7 +210,7 @@ ftable(availability, row.vars = c("geog", "ind_id", "split_name"), col.vars = c(
 # The preparation of the final files, below, revealed that the SIMD decile and ethnicity splits are too patchy to be useful and/or unproblematic (e.g., in most years the only ethnicity data not suppressed are for White British and White other.)
 # Drop these splits:
 all_data_with_totals <- all_data_with_totals %>%
-  filter(!split_name %in% c("Ethnicity", "Deprivation (SIMD)")) # n=768
+  filter(!split_name %in% c("Ethnicity", "Deprivation (SIMD)")) # n=813
 
 
 
