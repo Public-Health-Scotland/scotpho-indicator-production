@@ -1,7 +1,7 @@
 # ScotPHO indicators: 
 
 # 30008 Adult deaths from suicide 
-# 13033 Deaths from suicide in young people (previously processed in "Deaths from suicide - old.R" script)
+# 13033 Deaths from suicide in young people
 
 
 #   Part 1 - Extract data from SMRA.
