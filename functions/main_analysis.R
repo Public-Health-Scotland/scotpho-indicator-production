@@ -313,8 +313,9 @@ main_analysis <- function(filename,
     # identify which variables to join data by - the population lookups used for
     # standardised rates also include age and sex splits
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
-
-    data <- full_join(x = data, y = pop_lookup, by = joining_vars)
+    
+    # right_join keeps all groups in the pop_lookup file, and drops years that aren't in the pop_lookup file
+    data <- right_join(x = data, y = pop_lookup, by = joining_vars) 
 
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
