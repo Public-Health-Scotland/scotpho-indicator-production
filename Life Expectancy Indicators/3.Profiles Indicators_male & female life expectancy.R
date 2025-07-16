@@ -23,7 +23,7 @@
 ###############################################.
 
 source("Life Expectancy Indicators/1.Functions_life_expectancy.R")
-source("1.indicator_analysis.R") #doesn't use the functions, but quick way of getting packages and folders
+source("functions/main_analysis.R") #doesn't use the functions, but quick way of getting packages and folders
 
 ##########################################################################################.
 ## Part 1 - read in file with life expectancy figures at IZ  ----
@@ -53,59 +53,49 @@ rm(le0_data)
 ##########################################################################################.
 ## Part 2 - Read in Life Expectancy estimates from NRS at Scotland, NHS Board and LA level ----
 ## Note these estimates are the official national statistics and are 3 year rolling averages.
-## Figures orignally supplied by population & migration team at NRS but in future may be available online.
+## Figures orignally supplied by population & migration team at NRS but issues reported in July 2025 meant indicator rerun using
+## data sourced from Statistics.gov.scot which may contain rebased estimates calculated following 2022census
 ##########################################################################################. 
 
-NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023.csv")) %>%
-  arrange(code, time_period, sex_grp)
+# NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023_corrected LA codes.csv")) %>%
+#   arrange(code, time_period, sex_grp)
 
-# NRS data contains geography name and GSS geography codes - however the GSS are out of date for some areas
-NRS_data <-NRS_data |>
-  mutate(code = case_when(code=="S08000018" ~"S08000029", #2019 fife code
-                          code=="S08000013" ~"S08000030", # tayside
-                          code=="S08000007" ~"S08000031", # GGC 2019 boundary change
-                          code=="S08000021" ~"S08000031", # GGC 2019 boundary change
-                          code=="S08000009" ~"S08000032", # lanarkshire
-                          TRUE ~ code))
+# open data from statistics.gov
+statsgov_data <- read_csv(paste0(source_network,"statistics_gov 2001 to 2023.csv")) |>
+  arrange(code, time, sex_grp) |>
+  mutate(time_period=paste0(substr(time,1,4)," to ",substr(time,6,9))) |>
+  select(-time)
 
-NRS_data <- NRS_data %>%
+#format fields
+NRS_data <- statsgov_data %>%
   mutate(def_period=paste0(time_period," (3 year aggregate)"),
-         year=as.numeric(substr(time_period,1,4))+1,# year should be mid-point of time series - this forumla assumes 3 year time period
+         year=as.numeric(substr(time_period,1,4))+1,# year should be mid-point of time series - this formula assumes 3 year time period
          trend_axis=paste0(as.character(year)," Midpoint"),
          sex=as.character(sex_grp)) %>%
-  select(-sex_grp, -geography, -time_period) %>%
+  select(-sex_grp, -time_period) |> #-geography) %>%
   rename(sex_grp=sex)
 
 ## Create HSCP geography data file from council figures 
 #  One HSCP (Stirling & Clacks) is formed of two council areas combined
 #  This HSCP will be excluded as it is not possible to average LE, NRS do not produce HSCP geography estimates and ScotPHO cannot exactly replicate NRS methodology which uses modelling
 
-lookup_hscp <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/HSCPdictionary.rds") %>%
-  mutate(areaname=case_when(
-    areaname == "Edinburgh" ~ 'City of Edinburgh', #names of partnership and ca don't quite match
-    areaname == "Western Isles" ~ "Na h-Eileanan Siar",#names of partnership and ca don't quite match
-    TRUE ~ areaname)) 
+profiles_tool_geo_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/DataZone11_All_Geographies_Lookup.rds") |>
+  select (ca2019,hscp2019) |>
+  unique() |>
+  filter(hscp2019 != "S37000005") # exclude Clackmannanshire & Stirling HSCP since we can't combine LE estimates from two distinct councils (2 councils but only 1 HSCP)
 
-lookup_ca <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds")
-
-#create lookup that matches HSCP code to CA code (note stirling and clacks have no match and will be dropped)
-hscp_ca <- merge(lookup_ca,lookup_hscp, by="areaname", all.x = TRUE) %>%
-  rename(code=code.x) %>%
-  select(-areaname) %>% 
-  tibble::add_row(code = c("S12000015", "S12000024", "S12000046", "S12000044"), 
-                  code.y = c("S37000032", "S37000033", "S37000034", "S37000035"))   # Adds old CA code for Fife, Perth, Glasgow and North Lanarkshire
-
-NRS_ca_data <- NRS_data %>%  #select only council data from NRS file
+# duplicate the LA adata and call it HSCP data 
+hscp_data <- NRS_data %>%
   subset(substr(NRS_data$code, 1, 3) =="S12") 
 
-NRS_ca_data <- left_join(NRS_ca_data, hscp_ca, by="code") # match on 
+#match to HSCP lookup so we can convert LA life expectancy as if it was for HSCP (note clacks & stirling will be missing)
+hscp_data <- left_join(hscp_data, profiles_tool_geo_lookup ,by=c('code' = 'ca2019'))
+hscp_data <- hscp_data |>
+  filter(!is.na(hscp2019))
 
-NRS_hscp_data <- NRS_ca_data %>%
-  select(-code) %>%
-  rename(code=code.y.y) %>%
-  filter(!is.na(code))
+#bind data so it will include Scotland, NHS board, Local Authority and HSCP level
+le_data <- bind_rows(NRS_data, hscp_data)
 
-NRS_data <- bind_rows(NRS_data,NRS_hscp_data)
 
 ##########################################################################################.
 ## Part3 - Generate data files for Shiny profile tool ----
@@ -118,7 +108,7 @@ all_le_data<- bind_rows(le0_iz_profiles, NRS_data) %>%
          code = case_when(code=="S92000003"~"S00000001", TRUE~as.character(code))) %>%
   arrange(ind_id, year, code) %>% 
   mutate(numerator="") %>% #insert column where numerator would ordinarily be - there is no numerator for LE
-  select(code, ind_id, year, numerator, rate=LEx,lowci=lci,upci=uci, def_period, trend_axis)
+  select(code, ind_id, year, numerator, rate=lex,lowci,upci, def_period, trend_axis)
 
 ## Male life expectancy file
 profile_data_male_LE <- all_le_data %>% subset(ind_id=="20101") 
@@ -128,7 +118,7 @@ write_csv(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_ma
 write_rds(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.rds"))
 
 # This indicator script doesn't use analysis functions but indicator checking report can still be called:
-run_qa(filename="life_expectancy_male")
+run_qa(filename="life_expectancy_male", type="main",check_extras = "S12000005")
 
 
 ## Female life expectancy file
@@ -138,4 +128,4 @@ write_csv(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_
 write_rds(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.rds"))
 
 # This indicator script doesn't use analysis functions but indicator checking report can still be called:
-run_qa(filename="life_expectancy_female")
+run_qa(filename="life_expectancy_female", type="main",check_extras = "S12000005")
