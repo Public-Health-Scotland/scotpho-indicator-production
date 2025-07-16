@@ -1,4 +1,4 @@
-run_qa <- function(filename, old_file="default", check_extras=c(), type = c("main", "deprivation", "popgrp"), test_file){
+run_qa <- function(filename, old_file="default", check_extras=c(), type = c("main", "deprivation", "popgrp"), test_file=FALSE){
   if(type == "main"){
   run("3.Data Quality Checks.Rmd")
   } else if (type=="deprivation") {
