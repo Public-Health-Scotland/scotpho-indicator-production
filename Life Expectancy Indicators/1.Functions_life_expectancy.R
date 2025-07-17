@@ -11,20 +11,12 @@ library(readr)    #reading in file
 
 
 #change filepaths depending on whether using PWB or Rstudio desktop
-if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
   cl_out_pop <- "/conf/linkage/output/lookups/Unicode/Populations/Estimates/"
   temp_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/temporary/"
   source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/"
   output_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Output Data/"
   shiny_network <- "/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/"
-  
-} else {
-  cl_out_pop <- "//stats/linkage/output/lookups/Unicode/Populations/Estimates/"
-  temp_network <- "//stats/ScotPHO/Life Expectancy/Data/temporary/"
-  source_network <- "//stats/ScotPHO/Life Expectancy/Data/Source Data/"
-  output_network <- "//stats/ScotPHO/Life Expectancy/Data/Output Data/"
-  shiny_network <- "//stats/ScotPHO/Profiles/Data/Data to be checked/"
-}
+
 
 
 ###############################################.
