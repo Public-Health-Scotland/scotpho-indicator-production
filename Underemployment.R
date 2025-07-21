@@ -74,14 +74,14 @@ underemp_ca_count <- read.xlsx(paste0(aps_data_folder, file),
                               cols = c(1:35),
                               colNames = TRUE) 
 names(underemp_ca_count) <- c("spatial.unit", # correct the column names
-                             paste0("denominator_", c(2004:2020)))
+                             paste0("numerator_", c(2004:2020)))
 underemp_ca_n <- underemp_ca_count %>%
   pivot_longer(-spatial.unit, names_to = c("statistic", "year"), names_sep="_", 
                values_to = "value" ) %>%
   pivot_wider(names_from = statistic, values_from = value) 
 underemp_ca <- underemp_ca %>%
   merge(y=underemp_ca_n, by=c("spatial.unit", "year")) %>%
-  mutate(numerator = denominator * rate/100,
+  mutate(denominator = 100 * numerator/rate,
          spatial.scale = ifelse(spatial.unit=="Scotland", "Scotland", "Council area"),
          spatial.unit = gsub(" and ", " & ", spatial.unit),
          spatial.unit = gsub("Edinburgh, City of", "City of Edinburgh", spatial.unit)) %>%
