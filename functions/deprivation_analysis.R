@@ -47,6 +47,7 @@ source("functions/helper functions/calculate_inequality_measures.R") # for calcu
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
+source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_easr.R") # for european age-sex standarised rates and confidence intervals
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
@@ -104,7 +105,7 @@ profiles_lookups <- file.path(profiles_data_folder, "Lookups")
 #' `age_grp` and `sex_grp` if measure is `stdrate`
 #'
 #'@param filename name of the rds file to read in. File should end in '_raw.rds' but this shouldn't be added to the argument.
-#'@param measure type of rate to calculate - one of `percent`, `stdrate` or `crude`,
+#'@param measure type of rate to calculate - one of `percent`, `stdrate`, `crude` or `perc_pcf`,
 #'@param time_agg number of years to aggregate the data by. 
 #'@param year_type type of year data refers to, for creating time period columns - one of `financial`, `calendar`, `survey`, `snapshot` or `school`.
 #'@param pop_age age range of population for denominator. Numeric vector with start and end age i.e. c(0, 15) Arg only required if measure is `stdrate` or `crude` and if indicator is not for all ages.
@@ -122,7 +123,7 @@ profiles_lookups <- file.path(profiles_data_folder, "Lookups")
 
 deprivation_analysis <- function(filename, yearstart, yearend, time_agg, 
                                  year_type = c("financial", "calendar", "survey", "snapshot", "school"),
-                                 measure = c("percent", "crude", "stdrate"),
+                                 measure = c("percent", "crude", "stdrate", "perc_pcf"),
                                  pop_sex = c("male", "female", "all"),
                                  epop_age = NULL, epop_total = NULL, pop_age = NULL,
                                  pop_pcf = NULL, crude_rate = NULL, 
@@ -267,7 +268,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
    # SIMD datazone level population lookup file from scotphos population lookups folder
    # and filters the sex and age range according to the population of interest
 
-   if(measure %in% c("stdrate", "crude")){
+   if(measure %in% c("stdrate", "crude", "perc_pcf")){
 
      if(!is.null(pop_age)){
      lower_age = pop_age[1] # minimum age
@@ -314,9 +315,15 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
          group_by(across(all_of(grouping_vars))) |>
          summarise(denominator = sum(denominator), .groups = "drop")
     
+       # rename the column holding population estimates
+       # if measureis perc_pcf since this measure type alreaedy contains a column called denominator
+       if(measure == "perc_pcf"){
+         population_lookup <- population_lookup |>
+           rename(est_pop = denominator)
+       }
          
     # join data with population lookup to add population column to use as denominator
-   simd_data <- right_join(simd_data, population_lookup, by = grouping_vars)
+   simd_data <- left_join(simd_data, population_lookup, by = grouping_vars)
 
 
    cli::cli_alert_success("'Add population figures' step complete")
@@ -358,13 +365,10 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
      arrange(across(all_of(var_order))) |> # arrange data by var order
      group_by(across(all_of(setdiff(var_order, "year")))) |>
      # calculating rolling averages
-     mutate(numerator = RcppRoll::roll_meanr(numerator, time_agg),
-            denominator = RcppRoll::roll_meanr(denominator, time_agg)
-     ) |>
+     mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
      filter(!is.na(denominator)) |>
      ungroup()
-   
-   
+
    # step complete
    cli::cli_alert_success("'Aggregate by time period' step complete - aggregated by {time_agg} year{?s}")
    
@@ -387,6 +391,8 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
      simd_data <- calculate_crude_rate(simd_data, crude_rate) # calculate crude rate
    } else if(measure == "stdrate"){
      simd_data <- calculate_easr(simd_data, epop_total, epop_age) # calculate standarised rate
+   } else if(measure == "perc_pcf"){
+     simd_data <- calculate_perc_pcf(simd_data)
    }
    
    
