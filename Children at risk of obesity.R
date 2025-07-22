@@ -48,47 +48,74 @@ View(data) # view data to see format - may need adjust number of rows being skip
 # 2. clean data ----
 # ~~~~~~~~~~~~~~~~~~~~
 
-# filter on the 'At risk of obesity' indicator
+# The published data includes rates and a weighted base
+# We can use both of these to back-calculate the numerator which
+# allows us to calculate confidence intervals
+
+# get rows of data containing weighted bases
+weighted_base <- data |>
+  filter(between(row_number(), 21, 23)) |>
+  mutate(var = "denominator") |>
+  rename(split_value = `BMI status (National BMI percentiles)`)
+  
+
+
+# get rows of data containing % rates by filtering on 'At risk of obesity' indicator
 # note it has a 'g' on the end due to excel tables having superscript footnote letters!
 # This may change as at next update...
-filtered_data <- data |>
+rate <- data |>
   filter(`BMI status (National BMI percentiles)` == "At risk of obesityg") |>
-  select(-`BMI status (National BMI percentiles)`)
-
-
-# add sex col - there wasn't one in the original dataset but we know from looking at the excel tables
-# (or checking the df called 'data') that there was a row for 'Males', then 'Females' then 'All' so we can use row number 
+  select(-`BMI status (National BMI percentiles)`) |>
+  mutate(var = "rate") |>
+# add sex col - we know from looking at the excel tables (or checking the df called 'data') 
+# that there was a row for 'Males', then 'Females' then 'All' so we can use row number 
 # Double check order still the same as at next update
-filtered_data <- filtered_data |>
   mutate(split_value = case_when(row_number() == 1 ~ "Males",
                          row_number() == 2 ~ "Females",
-                         row_number() == 3 ~ "All", .default = "other"))
+                         row_number() == 3 ~ "All children", .default = "other"))
+
+
+
+# combine weighted data and % rate data 
+all_data <- rbind(rate, weighted_base)
 
 
 # pivot data longer so theres just 1 year column
 # Note there is only data for 1998, 2003 and then 2008-2023 (excluding 2020 due to covid)
-filtered_data <- filtered_data |>
+all_data <- all_data |>
   pivot_longer(
-  cols = -split_value, 
+  cols = -c(split_value, var), 
   names_to = "year", 
-  values_to = "rate",
+  values_to = "value",
   names_transform = list(year = ~substr(.x, 1, 4)), # clean years - some have rogue letters next to them due to superscripting
-  values_transform = list(rate = ~round(as.numeric(.x))) # remove decimal places from rates - only appear in latest years data
-  )
+  values_transform = list(value = ~round(as.numeric(.x))) # remove decimal places from rates - only appear in latest years data
+  ) |>
+  filter(year >= 2003) # decision made to start trend from 2003 onwards
 
+
+# pivot data wider so separate rate and denominator columns
+all_data <- all_data |>
+  pivot_wider(names_from = "var")
+
+
+# calculate confidence intervals
+all_data <- all_data |>
+  # calculate numerator 
+  mutate(numerator = (rate/100) * denominator) |>
+  # re-calculate rate with confidence intervals
+  calculate_percent() |>
+  # remove denominator col and make numerators NA
+  select(-denominator) |>
+  mutate(numerator = NA)
 
 # add columns required for final file 
-filtered_data <- filtered_data |>
+all_data <- all_data |>
   mutate(
     split_name = "sex",
     code = "S00000001",
-    numerator = NA,
-    upci = NA,
-    lowci = NA,
     trend_axis = year,
     def_period = year,
-    ind_id = 99144,
-  )
+    ind_id = 99144)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,8 +123,8 @@ filtered_data <- filtered_data |>
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # remove sex splits 
-main <- filtered_data |>
-  filter(split_value == "All") |>
+main <- all_data |>
+  filter(split_value == "All children") |>
   select(-c(split_name, split_value))
 
 # save final files
@@ -110,8 +137,8 @@ saveRDS(main, file.path(profiles_data_folder, "Data to be checked", "99144_child
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # save popgroup files 
-write.csv(filtered_data, file.path(profiles_data_folder, "Data to be checked", "99144_children_obesity_risk_shiny_popgrp.csv"), row.names = FALSE)
-saveRDS(filtered_data, file.path(profiles_data_folder, "Data to be checked", "99144_children_obesity_risk_shiny_popgrp.rds"))
+write.csv(all_data, file.path(profiles_data_folder, "Data to be checked", "99144_children_obesity_risk_shiny_popgrp.csv"), row.names = FALSE)
+saveRDS(all_data, file.path(profiles_data_folder, "Data to be checked", "99144_children_obesity_risk_shiny_popgrp.rds"))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~
