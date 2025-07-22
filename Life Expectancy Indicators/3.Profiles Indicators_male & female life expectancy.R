@@ -44,7 +44,10 @@ le0_iz_profiles <- le0_data %>%
          year=as.numeric(substr(time_period,1,4))+2, # year should be mid-point - this forumla assumes 5 year time period
          trend_axis=paste0(as.character(year)," Midpoint")) %>%
   select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis) %>%
-  rename(code=geography)
+  rename(code=geography,
+         lex = LEx,
+         lowci = lci,
+         upci = uci)
 
 #close all life expectancy data - the difference in row numbers will be those areas excluded because of small numbers
 #it can be useful to know which areas were excluded if customers ask why the figure is missing
