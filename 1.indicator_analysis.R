@@ -67,8 +67,8 @@ if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc
     lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
     
   } else { #else assumes using desktop
-    data_folder <- "//stats/ScotPHO/Profiles/Data/"
-    lookups <- "//stats/ScotPHO/Profiles/Data/Lookups/" 
+    data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+    lookups <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/" 
   }
 
 # Setting permissions so files can be overwritten, read without permission issues
