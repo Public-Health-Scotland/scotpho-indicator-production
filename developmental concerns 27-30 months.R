@@ -9,12 +9,13 @@
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/deprivation_analysis.R") # deprivation function
 
+library(readxl)
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
 
 # read in the data
-dev_concerns <- read_excel(file.path(profiles_data_folder, "/Received Data/Developmental concerns/IR2025-00535.xlsx")) 
+dev_concerns <- read_xlsx(file.path(profiles_data_folder, "/Received Data/Developmental concerns/IR2025-00535.xlsx")) 
 
 # tidy up col names
 dev_concerns <- dev_concerns |> 
@@ -35,6 +36,7 @@ dev_concerns <- dev_concerns |>
   ungroup()
 
 saveRDS(dev_concerns, file=file.path(profiles_data_folder, '/Prepared Data/dev_concerns_raw.rds')) 
+saveRDS(dev_concerns, file=file.path(profiles_data_folder, '/Prepared Data/dev_concerns_depr_raw.rds'))
 
 ###############################################.
 ## Part 2 - calling analysis functions ----
@@ -44,3 +46,7 @@ main_analysis(filename = "dev_concerns", geography = "datazone11", measure = "pe
               yearstart = 2013, yearend = 2023, time_agg = 3, year_type = "financial",
               ind_id = 13048)
 
+deprivation_analysis(filename = "dev_concerns", yearstart = 2013, yearend = 2023, 
+                     time_agg = 3, year_type = "financial", measure = "percent", 
+                     ind_id = 13048)
+ 
