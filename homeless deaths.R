@@ -170,6 +170,12 @@ popgroups <- rbind(age_sex_formatted, select_causes_formatted)
 saveRDS(popgroups, file.path(profiles_data_folder, "Data to be checked", "99143_homeless_deaths_shiny_popgrp.rds"))
 write.csv(popgroups, file.path(profiles_data_folder, "Data to be checked", "99143_homeless_deaths_shiny_popgrp.csv"), row.names = FALSE)
 
+# ~~~~~~~~~~~~~~~~~
+# QA files ----
+# ~~~~~~~~~~~~~~~~
+run_qa(file ="99143_homeless_deaths", type = "main")
+run_qa(file ="99143_homeless_deaths", type = "popgrp")
+
 
 ## END
 
