@@ -46,17 +46,15 @@ data <- data |>
 
 
 #Fix CA names and convert to S-codes
-data2 <- ca_names_to_codes(data, `Local Authority`)
-
-###############################################################################
+data <- ca_names_to_codes(data, `Local Authority`)
 
 # select final columns 
 data <- data |> 
-  select(ca, year, numerator, denominator)
+  select(code, year, numerator, denominator)
 
 # drop N/A rows
 data <- data |>
-  filter(if_any(c(ca, numerator, denominator), complete.cases))
+  filter(if_any(c(code, numerator, denominator), complete.cases))
 
 
 # save file to be used in analysis functions 
@@ -64,7 +62,7 @@ saveRDS(data, paste0(data_folder, "Prepared Data/active_travel_to_school_raw.rds
 
 ### 4. Run analysis functions ------
 main_analysis(filename = "active_travel_to_school", geography = "council",
-              measure = "percent", yearstart = 2008, yearend = 2023, time_agg = 1,
+              measure = "percent", yearstart = 2008, yearend = 2024, time_agg = 1,
               ind_id = 13040, year_type = "school")
 
 

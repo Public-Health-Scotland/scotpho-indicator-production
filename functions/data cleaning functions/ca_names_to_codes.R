@@ -26,12 +26,10 @@ ca_names_to_codes <- function(df, council_area){
                                 TRUE ~ {{council_area}})) 
   
   #Read in the CA dictionary that matches names to S-codes
-  ca_dict <- readRDS(file.path("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds")) |> 
-    rename({{council_area}} := areaname) #rename areaname col of lookup to match data passed into function
-  #ensures left_join below will work as expected. 
+  ca_dict <- readRDS(file.path("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds")) 
   
   df2 <- left_join(df, ca_dict) |> #join df passed into function to lookup
-    select(- {{council_area}} ) #drop ca names leaving only S-codes
+    select(-areaname, -{{council_area}}) #drop ca names leaving only S-codes
   
 }
 
