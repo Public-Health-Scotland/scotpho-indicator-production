@@ -34,7 +34,7 @@ source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/HLE data w
 ons_data <- read_excel((paste0(source_network,"ons-data-tables (from NRS HLE Publication July 2025).xlsx")), sheet = "pivot_extract") %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   mutate(trend_axis =paste0(substr(period,1,4),"-",substr(period,9,12)),
-         def_period = paste0(trend_axis, "(3 year aggregate)"),
+         def_period = paste(trend_axis, "(3 year aggregate)"),
          year = as.numeric(substr(trend_axis,1,4))+1, # year for LE is mid-point of aggregate years (this helps line up data series when comparing le & hle which aren't always same periods)
          code = case_when(`area code` == "S92000003" ~ "S00000001", TRUE ~ `area code`),
          split_value=sex, # required for pop group file
