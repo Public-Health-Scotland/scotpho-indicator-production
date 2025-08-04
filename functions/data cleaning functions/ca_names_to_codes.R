@@ -7,7 +7,6 @@
 
 #df - the indicator dataframe that is being prepared
 #council_area - the column of the dataframe containing the names of the council areas. 
-#This argument does not need to take any particular value as the lookup will be changed to match. 
 
 ca_names_to_codes <- function(df, council_area){
   
