@@ -4,9 +4,13 @@
 # Data is supplied annually  Hands Up Scotland (HandsUpScotland@sustrans.org.uk) after the release of their annual publication
 # They usually sent across without having to request as it's a regular request
 
+# Note Aug 2025: We're provided data for primary and secondary schools separately.
+# Could look to develop popgroups file at next update?
+
 ### 2. Packages/dependencies ------
 source("./functions/main_analysis.R")
 source("./functions/data cleaning functions/ca_names_to_codes.R")
+library(readxl)
 
 ### 3. Clean data ------
 
