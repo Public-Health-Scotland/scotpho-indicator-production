@@ -225,14 +225,19 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
   # Note that we only calculate deprivation data for these 3 geography levels because 
   # aggregating by smaller geography levels (i.e. intermediate zones, HSC localities) 
   # would likely result in small numbers/volatility of rates/statistical disclosure issues
+  # (ADP, HSCP AND PD ARE BIGGER THAN CA, SO COULD THEY BE INCLUDED HERE?)
 
     simd_data <- rbind(
-   aggregate_by_simd(data, geo_col = "scotland", simd_col = "sc_decile"), # scotland data, split by scotland deciles
+    aggregate_by_simd(data, geo_col = "scotland", simd_col = "sc_decile"), # scotland data, split by scotland deciles
     aggregate_by_simd(data, geo_col = "scotland", simd_col = "sc_quin"), # scotland data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "hb", simd_col = "hb_quin"), # health board data, split by board quintiles
-    aggregate_by_simd(data, geo_col = "hb", simd_col = "sc_quin"), # health board data, split by sotland quintiles
+    aggregate_by_simd(data, geo_col = "hb", simd_col = "sc_quin"), # health board data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "ca", simd_col = "ca_quin"), # council area data, split by council quintiles
-    aggregate_by_simd(data, geo_col = "ca", simd_col = "sc_quin") # council area data, split by scotland quintiles
+    aggregate_by_simd(data, geo_col = "ca", simd_col = "sc_quin"), # council area data, split by scotland quintiles
+    aggregate_by_simd(data, geo_col = "pd", simd_col = "sc_quin"), # police division data, split by scotland quintiles
+    aggregate_by_simd(data, geo_col = "adp", simd_col = "sc_quin"), # ADP data, split by scotland quintiles
+    aggregate_by_simd(data, geo_col = "hscp", simd_col = "sc_quin"), # HSCP data, split by scotland quintiles
+    aggregate_by_simd(data, geo_col = "hscp", simd_col = "hscp_quin") # HSCP data, split by HSCP quintiles
   )
 
   # create overall totals
@@ -289,8 +294,9 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
      
 
      # read in the simd population lookup, filter by age group and summarise
-         population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
-         filter(year >= yearstart & year <=yearend) 
+     # population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
+     population_lookup <- readRDS(file.path(population_lookups, "basefile_deprivation.rds")) |> #file with PD, ADP, HSCP in it (no DZ)
+       filter(year >= yearstart & year <=yearend) 
          
          
     # if indicator is not for all ages, filter by age range. Otherwise do not filter
