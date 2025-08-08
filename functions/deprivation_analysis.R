@@ -327,7 +327,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
        }
          
     # join data with population lookup to add population column to use as denominator
-   simd_data <- left_join(simd_data, population_lookup, by = grouping_vars)
+   simd_data <- right_join(simd_data, population_lookup, by = grouping_vars)
 
 
    cli::cli_alert_success("'Add population figures' step complete")
