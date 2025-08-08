@@ -2,6 +2,10 @@
 # Analyst notes -----
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Suggestion for future updates - consider asking NRS for source data that includes confidence intervals around rates?
+# Tab 'Data for figure 1' includes confidence intervals for estimated number of deaths but this is around numbers of deaths
+# and only calculated for Scotland?
+
 # This script updates the following indicator:
 # 99143 - Homeless deaths
 
