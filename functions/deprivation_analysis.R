@@ -235,7 +235,6 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
     aggregate_by_simd(data, geo_col = "ca", simd_col = "ca_quin"), # council area data, split by council quintiles
     aggregate_by_simd(data, geo_col = "ca", simd_col = "sc_quin"), # council area data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "pd", simd_col = "sc_quin"), # police division data, split by scotland quintiles
-    aggregate_by_simd(data, geo_col = "adp", simd_col = "sc_quin"), # ADP data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "hscp", simd_col = "sc_quin"), # HSCP data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "hscp", simd_col = "hscp_quin") # HSCP data, split by HSCP quintiles
   )
@@ -295,7 +294,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
 
      # read in the simd population lookup, filter by age group and summarise
      # population_lookup <- readRDS(file.path(population_lookups, "simd_population_lookup.rds")) |>
-     population_lookup <- readRDS(file.path(population_lookups, "basefile_deprivation.rds")) |> #new file with PD, ADP, HSCP in it (revert to simd_population_lookup once that file has these geogs in)
+     population_lookup <- readRDS(file.path(population_lookups, "basefile_deprivation.rds")) |> #new file with PD, HSCP in it (revert to simd_population_lookup once that file has these geogs in)
        filter(year >= yearstart & year <=yearend) 
          
          
