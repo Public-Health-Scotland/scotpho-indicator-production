@@ -3,7 +3,7 @@
 #########################################################
 
 # To do:
-# look at deriving own estimates from APS (in SRS) as none published since 2022
+# look at deriving own estimates from APS (in SRS) as none published since 2022 (get nums and denoms too, so can calc CIs for all geogs)
 # look at possibility of SIMD data from SRS
 
 ### Update ScotPHO indicators sourced from SG Scotland's Labour Market data: 
@@ -18,6 +18,7 @@
 # Source: APS via SG Regional Employment Patterns xlsx
 # Downloaded from https://www.gov.scot/publications/scotlands-labour-market-people-places-and-regions-background-tables-and-charts/
 # N here are just the population level if percent is grossed up, not the survey base, so don't use
+# We use N (grossed up numerator) to derive numerators and to aggregate the data up to higher geogs, but can't then use these to calculate CIs. CIs left blank for aggregated geogs. 
 
 ### functions/packages -----
 source("functions/main_analysis.R") # for packages and QA
@@ -36,26 +37,26 @@ file <- "Scotland%27s+Labour+Market+-+People+Places+and+Regions+-+Jan-Dec+Tables
 
 ## Geography lookup -----
 
-# Read in geography lookup
-geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
+# Read in lookup for getting area codes
+code_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
-# LAs to HBs lookup
-hb <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
-  select(ca2019, hb2019) %>%
+# Create lookup from CAs to higher geogs
+geog_lookup <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
+  select(ca2019, hb2019, hscp2019, adp, pd) %>%
   distinct(.)
 
 ## Read in data
 
 # rates for council areas x year
 underemp_ca_pc <- read.xlsx(paste0(aps_data_folder, file),
-                      sheet = "Table 1.15",
-                      startRow = 5,
-                      rows = c(6:40),
-                      cols = c(1:35),
-                      colNames = TRUE) 
+                            sheet = "Table 1.15",
+                            startRow = 5,
+                            rows = c(6:40),
+                            cols = c(1:35),
+                            colNames = TRUE) 
 names(underemp_ca_pc) <- c("spatial.unit", # correct the column names
-                             paste0(c("rate_", "ci_"), rep(2004:2020, each=2)))
+                           paste0(c("rate_", "ci_"), rep(2004:2020, each=2)))
 underemp_ca <- underemp_ca_pc %>%
   pivot_longer(-spatial.unit, names_to = c("statistic", "year"), names_sep="_", 
                values_to = "value" ) %>%
@@ -68,13 +69,13 @@ underemp_ca <- underemp_ca_pc %>%
 
 # counts for council areas x year
 underemp_ca_count <- read.xlsx(paste0(aps_data_folder, file),
-                              sheet = "Table 1.15",
-                              startRow = 5,
-                              rows = c(45:79),
-                              cols = c(1:35),
-                              colNames = TRUE) 
+                               sheet = "Table 1.15",
+                               startRow = 5,
+                               rows = c(45:79),
+                               cols = c(1:35),
+                               colNames = TRUE) 
 names(underemp_ca_count) <- c("spatial.unit", # correct the column names
-                             paste0("numerator_", c(2004:2020)))
+                              paste0("numerator_", c(2004:2020)))
 underemp_ca_n <- underemp_ca_count %>%
   pivot_longer(-spatial.unit, names_to = c("statistic", "year"), names_sep="_", 
                values_to = "value" ) %>%
@@ -86,26 +87,41 @@ underemp_ca <- underemp_ca %>%
          spatial.unit = gsub(" and ", " & ", spatial.unit),
          spatial.unit = gsub("Edinburgh, City of", "City of Edinburgh", spatial.unit)) %>%
   # add the geog codes, 
-  merge(y=geo_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"), all.x=T)  %>% 
+  merge(y=code_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"), all.x=T)  %>% 
   filter(!is.na(rate)) %>%
   select(-spatial.unit, -spatial.scale)
 
-# Aggregate the CA data up to HB
-underemp_hb <- underemp_ca %>%
-  filter(substr(code, 1, 3) == "S12") %>% # just the council areas
-  merge(y=hb, by.x="code", by.y= "ca2019") %>%
-  select(-code, -rate, -lowci, -upci) %>%
-  rename(code = hb2019) %>%
-  group_by(code, split_name, split_value, year) |>
-  summarise(numerator = sum_(numerator), # sum_ function from hablar keeps NA when there should be NA, and doesn't replace with 0 (as occurs if summed with na.rm=T). This helps to avoid Inf and NaN values from incomplete rate calcs. 
-            denominator = sum_(denominator)) %>%
-  ungroup() %>%
-  # use helper function to calculate the % and the confidence intervals (Byars method)
-  calculate_percent() 
+# Aggregate the CA data up to higher geogs
+agg_to_higher <- function(df, geog) {
+  
+  df <- df %>%
+    filter(substr(code, 1, 3) == "S12") %>% # just the council areas
+    merge(y=geog_lookup, by.x="code", by.y= "ca2019") %>%
+    select(-code, -rate, -lowci, -upci) %>%
+    rename(code = geog) %>%
+    group_by(code, split_name, split_value, year) |>
+    summarise(numerator = sum_(numerator), # sum_ function from hablar keeps NA when there should be NA, and doesn't replace with 0 (as occurs if summed with na.rm=T). This helps to avoid Inf and NaN values from incomplete rate calcs. 
+              denominator = sum_(denominator)) %>%
+    ungroup() %>%
+    # use helper function to calculate the % and the confidence intervals (Byars method)
+    calculate_percent() %>%
+    # but drop the CIs as these have been calculated from grossed up counts, so are artificially small
+    mutate(lowci = as.numeric(NA),
+           upci = as.numeric(NA))
+}
 
-# Add in HB data
+underemp_hb <- agg_to_higher(underemp_ca, "hb2019")
+underemp_pd <- agg_to_higher(underemp_ca, "pd")
+underemp_adp <- agg_to_higher(underemp_ca, "adp")
+underemp_hscp <- agg_to_higher(underemp_ca, "hscp2019")
+
+
+# Combine
 underemp_all <- underemp_ca %>%
-  rbind(underemp_hb) %>%
+  rbind(underemp_hb, 
+        underemp_pd, 
+        underemp_adp,
+        underemp_hscp) %>%
   select(-denominator, -numerator) 
 
 
@@ -127,7 +143,7 @@ underemp_sex <- underemp_sex_pc %>%
          spatial.unit = "Scotland",
          split_name = "Sex") %>%
   # add the geog codes, 
-  merge(y=geo_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"))  %>% 
+  merge(y=code_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"))  %>% 
   filter(!is.na(rate)) %>%
   select(-ci, -spatial.scale, -spatial.unit)
 underemp_sex_with_totals <- underemp_all %>%
@@ -135,7 +151,7 @@ underemp_sex_with_totals <- underemp_all %>%
   mutate(split_name = "Sex",
          split_value = "Total") %>%
   rbind(underemp_sex)
-  
+
 
 # by age
 underemp_age_pc <- read.xlsx(paste0(aps_data_folder, file),
@@ -144,9 +160,9 @@ underemp_age_pc <- read.xlsx(paste0(aps_data_folder, file),
                              rows = c(5:22),
                              cols = c(1:16)) 
 names(underemp_age_pc) <- c("year", # correct the column names
-                             paste0(c("rate_", "ci_"), 
-                                    rep(c("16 to 24 y", "25 to 34 y", "35 to 49 y", 
-                                          "50 to 64 y", "50+ y", "65+ y", "Total"), each=2)))
+                            paste0(c("rate_", "ci_"), 
+                                   rep(c("16 to 24 y", "25 to 34 y", "35 to 49 y", 
+                                         "50 to 64 y", "50+ y", "65+ y", "Total"), each=2)))
 underemp_age_with_totals <- underemp_age_pc %>%
   pivot_longer(-year, names_to = c("statistic", "split_value"), names_sep="_", values_to = "value") %>%
   pivot_wider(names_from = statistic, values_from = value) %>%
@@ -156,7 +172,7 @@ underemp_age_with_totals <- underemp_age_pc %>%
          spatial.scale = "Scotland",
          split_name = "Age") %>%
   # add the geog codes, 
-  merge(y=geo_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"))  %>% 
+  merge(y=code_lookup, by.x=c("spatial.unit", "spatial.scale"), by.y=c("areaname", "areatype"))  %>% 
   filter(!is.na(rate)) %>%
   select(-ci, -spatial.scale, -spatial.unit)
 
@@ -167,9 +183,10 @@ all_data <- rbind(underemp_all,
   mutate(ind_id = 30033,
          numerator = as.numeric(NA), # insert column where numerator would ordinarily be 
          trend_axis = as.character(year),
+         year = as.numeric(year),
          def_period = paste0("Survey year (", trend_axis, ")"))
-         
-  
+
+
 
 
 
@@ -195,7 +212,7 @@ prepare_final_files <- function(ind){
   
   write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
-
+  
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland data 
   pop_grp_data <- all_data %>% 
@@ -207,7 +224,7 @@ prepare_final_files <- function(ind){
   # Save
   write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
-
+  
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
   pop_grp_data_result <<- pop_grp_data
@@ -240,14 +257,6 @@ all_data %>%
   ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
   geom_point() + geom_line() +
   geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# LAs vs. Scotland
-all_data %>%
-  filter(split_name=="None") %>% 
-  ggplot(aes(year, rate, group = spatial.unit, colour = spatial.unit, shape = spatial.unit)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) +
-  facet_wrap(~spatial.scale)
 
 
 
