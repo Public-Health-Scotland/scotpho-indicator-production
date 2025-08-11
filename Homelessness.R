@@ -67,47 +67,19 @@ file <- "Adhoc - 2024.11.13 - Homeless Adults gender breakdown & children in TA 
 geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
-# LAs to HBs lookup
-hb <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds")) %>%
-  select(ca2019, hb2019) %>%
-  distinct(.)
+# Path to population lookups 
+pop_lookup <- "/PHI_conf/ScotPHO/Profiles/Data/Lookups/Population/"
 
-# Read in population lookups:
+# Make 19y+ denominator files for crude rates by sex:
+CA_pop_M_19plus <- readRDS(file=paste0(pop_lookup, "CA_pop_19+_SR.rds")) %>% 
+  filter(sex_grp==1) %>% 
+  group_by(year, code, sex_grp) %>% summarise(denominator=sum(denominator)) %>% ungroup()
+saveRDS(CA_pop_M_19plus, file=paste0(pop_lookup, 'CA_pop_M_19+.rds'))
 
-# Get adult populations 
-la_pops <- read_rds("/conf/linkage/output/lookups/Unicode/Populations/Estimates/CA2019_pop_est_1981_2023.rds") %>%
-  filter(age>=19) %>% #homeless application data: adults = 19+
-  group_by(year, ca2019, sex) %>%
-  summarise(pop = sum(pop, na.rm=T)) %>%
-  ungroup() %>%
-  rename(code = ca2019) 
-
-hb_pops <- la_pops %>%
-  merge(y=hb, by.x="code", by.y= "ca2019") %>%
-  select(-code) %>%
-  rename(code = hb2019) %>%
-  group_by(code, year, sex) |>
-  summarise(pop = sum(pop, na.rm=T)) %>%
-  ungroup()
-
-scot_pops <- la_pops %>%
-  group_by(year, sex) %>%
-  summarise(pop = sum(pop, na.rm=T)) %>%
-  ungroup() %>%
-  mutate(code = "S00000001")
-
-pops19plus <- rbind(la_pops, hb_pops, scot_pops) %>%
-  mutate(sex=3) %>% #repeats all the rows to give for total pop
-  rbind(la_pops, hb_pops, scot_pops) %>% # add M and F rows back in 
-  group_by(year, sex, code) %>%
-  summarise(pop = sum(pop, na.rm=T)) %>%
-  ungroup() %>%
-  mutate(sex = case_when(sex==1 ~ "Male",
-                         sex==2 ~ "Female",
-                         sex==3 ~ "Total"))
-
-# Get child populations: (use file already produced for ScotPHO use)
-child_pops <- readRDS(paste0(profiles_lookups, "/Population/CA_pop_under16.rds"))
+CA_pop_F_19plus <- readRDS(file=paste0(pop_lookup, "CA_pop_19+_SR.rds")) %>% 
+  filter(sex_grp==2) %>% 
+  group_by(year, code, sex_grp) %>% summarise(denominator=sum(denominator)) %>% ungroup()
+saveRDS(CA_pop_F_19plus, file=paste0(pop_lookup, 'CA_pop_F_19+.rds'))
 
 
 #########################################
@@ -116,7 +88,7 @@ child_pops <- readRDS(paste0(profiles_lookups, "/Population/CA_pop_under16.rds")
 
 ## Function to read in data
 
-get_data <- function(sheetnum, gender, ind_id) {
+get_data <- function(sheetnum, gender) {
 
 df <- read.xlsx(paste0(homeless_data_folder, file),
                       sheet = sheetnum,
@@ -126,8 +98,7 @@ df <- read.xlsx(paste0(homeless_data_folder, file),
   
   # reshape the data 
   pivot_longer(-areaname, values_to="numerator", names_to = "trend_axis") %>%
-  mutate(trend_axis = gsub("-", "/", trend_axis),
-         year = as.numeric(substr(trend_axis, 1, 4)),
+  mutate(year = as.numeric(substr(trend_axis, 1, 4)),
          split_name = "Gender",
          split_value = gender) %>%
   
@@ -137,9 +108,9 @@ df <- read.xlsx(paste0(homeless_data_folder, file),
                           areaname=="Orkney" ~ "Orkney Islands",
                           TRUE ~ areaname)) %>% 
   mutate(areatype = ifelse(areaname=="Scotland", "Scotland", "Council area")) %>%
-  
-  # add ind_id column
-  mutate(ind_id = ind_id) 
+  merge(y=geo_lookup, by = c("areatype", "areaname")) %>% # add geog codes
+  filter(code!="S00000001") %>% # drop Scotland data as these are calculated in the aggregation
+  select(-areatype, -areaname, -trend_axis) 
   
 }
 
@@ -147,129 +118,58 @@ df <- read.xlsx(paste0(homeless_data_folder, file),
 # Run the function to extract the data:
 
 # Adult homelessness indicator:
-homeless_male <- get_data("T1", "Male", 30034)
-homeless_female <- get_data("T2", "Female", 30034)
-homeless_total <- get_data("T3", "Total", 30034)
+homeless_total <- get_data("T3", "Total" )
+homeless_male <- get_data("T1", "Male")
+homeless_female <- get_data("T2", "Female")
 
-# CYP temporary accom indicator:
-tempaccom_total <- get_data("T4", "Total", 30161)
+# CYP temporary accom indicator: (30161)
+tempaccom_total <- get_data("T4", "Total")
 
-
-# Create data for HBs by aggregating LAs:
-
-# Adult homelessness indicator:
-
-# Append extracted data and add geog codes
-homeless_la_scot <- rbind(homeless_male,
-                     homeless_female,
-                     homeless_total) %>%
-  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
-  select(-areatype, -areaname)
-
-# Add HB codes and aggregate
-homeless_hb <- homeless_la_scot %>%
-  merge(y=hb, by.x="code", by.y= "ca2019") %>%
-  select(-code) %>%
-  rename(code = hb2019) %>%
-  group_by(code, trend_axis, year, split_name, split_value, ind_id) |>
-  summarise_all(sum) %>% 
-  ungroup()
-
-# Combine
-homeless <- rbind(homeless_la_scot, homeless_hb)
+# Save ready for the main analysis function
+saveRDS(homeless_total, file=paste0(profiles_data_folder, '/Prepared Data/homeless_total_raw.rds'))
+saveRDS(homeless_male, file=paste0(profiles_data_folder, '/Prepared Data/homeless_male_raw.rds'))
+saveRDS(homeless_female, file=paste0(profiles_data_folder, '/Prepared Data/homeless_female_raw.rds'))
+saveRDS(tempaccom_total, file=paste0(profiles_data_folder, '/Prepared Data/tempaccom_total_raw.rds'))
 
 
-# CYP temporary accom indicator:
+#########################################
+# 3 - Run main analysis to aggregate and calculate rates ---- 
+#########################################
 
-# Append extracted data and add geog codes
-tempaccom_la_scot <- tempaccom_total %>%
-  merge(y=geo_lookup, by = c("areatype", "areaname")) %>%
-  select(-areatype, -areaname)
+# Run main analysis function
+main_analysis(filename = "homeless_total", ind_id = 30034, geography = "council", measure = "crude", 
+              pop = "CA_pop_19+", yearstart = 2002, yearend = 2023,
+              time_agg = 1, crude_rate = 1000, year_type = "financial")
 
-# Add HB codes and aggregate
-tempaccom_hb <- tempaccom_la_scot %>%
-  merge(y=hb, by.x="code", by.y= "ca2019") %>%
-  select(-code) %>%
-  rename(code = hb2019) %>%
-  group_by(code, trend_axis, year, split_name, split_value, ind_id) |>
-  summarise_all(sum) %>% 
-  ungroup()
+main_analysis(filename = "homeless_male", ind_id = 30034, geography = "council", measure = "crude", 
+              pop = "CA_pop_M_19+", yearstart = 2002, yearend = 2023,
+              time_agg = 1, crude_rate = 1000, year_type = "financial")
 
-# Combine
-tempaccom <- rbind(tempaccom_la_scot, tempaccom_hb)
+main_analysis(filename = "homeless_female", ind_id = 30034, geography = "council", measure = "crude", 
+              pop = "CA_pop_F_19+", yearstart = 2002, yearend = 2023,
+              time_agg = 1, crude_rate = 1000, year_type = "financial")
 
-###############################################.
-## 3 - Computing rates and adding labels ----
-###############################################.
-
-# adult homelessness
-homeless <- homeless %>%
-  merge(y=pops19plus, by.x = c("code", "year", "split_value"), by.y = c("code", "year", "sex")) %>% 
-  rename(denominator = pop) %>%
-  # add in the definition period label.
-  mutate(def_period = paste0(trend_axis, " financial year")) %>%
-  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
-  calculate_crude_rate (crude_rate=1000) %>%
-  select(-denominator) 
+main_analysis(filename = "tempaccom_total", ind_id = 30161, geography = "council", measure = "crude", 
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2024, # requires the 2024 MYE, due Aug 2025.
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot")
 
 
-# children in temporary accommodation
-tempaccom <- tempaccom %>%
-  merge(y=child_pops, by.x = c("code", "year"), by.y = c("code", "year")) %>% 
-  # add in the definition period label.
-  mutate(def_period = paste0("Yearly snapshot (", trend_axis, ")")) %>%
-  # use helper function to calculate the crude rate per 1,000 and the confidence intervals (Byars method)
-  calculate_crude_rate (crude_rate=1000) %>%
-  mutate(lowci = ifelse(is.nan(lowci), 0, lowci)) %>% # replaces NaN with 0 for the lowcis when rate==0
-  select(-denominator) 
 
 
 ##########################################################
-### 4 - Prepare final files -----
+### 4 - Prepare final files (required for popgroups only) -----
 ##########################################################
 
+homeless_male <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_male_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Male")
+homeless_female <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_female_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Femle")
+homeless_total <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_total_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Total")
+homeless_popgroup <- rbind(homeless_male, homeless_female, homeless_total)
 
-# Function to prepare final files: main_data and popgroup
-prepare_final_files <- function(input_file, ind){
-  
-  # 1 - main data (ie data behind summary/trend/rank tab)
-  main_data <- input_file %>% 
-    filter(split_value == "Total") %>% 
-    select(code, ind_id, year, 
-           numerator, rate, upci, lowci, 
-           def_period, trend_axis) %>%
-    unique() %>%
-    arrange(code, year)
-  
-  # Save
-  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
-  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE) 
-  
-  # 2 - population groups data (ie data behind population groups tab)
-  
-  if("Male" %in% unique(input_file$split_value)) {
-    
-  pop_grp_data <- input_file %>% 
-    select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value) %>%
-    arrange(code, year)
-  
-  # Save
-  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
-  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  
-  }
-  
-}
+# Save
+write_rds(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.rds"))
+write.csv(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.csv"), row.names = FALSE)
 
 
-# Run function to create final files
-prepare_final_files(ind = "adults_homeless", input_file = homeless)
-prepare_final_files(ind = "cyp_temporary_accommodation", input_file = tempaccom)
-
-# Run QA reports 
-run_qa(type = "main", filename = "adults_homeless", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_temporary_accommodation", test_file = FALSE) 
 
 
 ##END
