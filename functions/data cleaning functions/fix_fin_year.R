@@ -7,7 +7,7 @@
 #If a column called year is present within the dataframe, it will be dropped and replaced with the new fin_year data.
 
 #df - the indicator dataframe that is being prepared
-#fy_col_name - the column of the dataframe containing strings of financial years. must be passed in in quotes e.g. fin_year = "fin_year"
+#fy_col_name - the column of the dataframe containing strings of financial years. must be passed in in quotes e.g. fy_col_name = "fin_year"
 #first_year_digits - takes either "2" or "4" i.e. does fin_year start with YY or YYYY. 
 
 library(dplyr)
@@ -27,35 +27,35 @@ fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
   #If fin_year format is e.g. YYYY/YY or YYYY-YY or YYYY-Y etc. First part has 4 digits
   if(first_year_digits == "4"){
     df <- df |> 
-      mutate(!!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case format is YYYY YY numerically - no punctuation
+      mutate(!!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case fy provided as a number e.g. 202223
              !!fy_col_name_sym := str_sub(!!fy_col_name_sym, 1, 4)) #keep only first four digits
     
     #If fin_year format is e.g. YY/YY, YY-YY. First part has 2 digits            
   }else if(first_year_digits == "2"){
     df <- df |> 
       mutate(
-        !!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case format is YY YY numerically - no punctuation
-        temp_year := as.numeric(str_sub(!!fy_col_name_sym, 1, 2)), #keep only first two digits and convert to numeric
+        !!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case fy provided as a number e.g. 2223
+        temp_year := as.numeric(str_sub(!!fy_col_name_sym, 1, 2)), #keep only first two digits and convert to numeric, store in temp variable
         !!fy_col_name_sym := case_when(
           temp_year > 50 ~ paste0("19", temp_year),  #This is guesswork for correct century!
-          TRUE ~ paste0("20", temp_year))) |> #If >50 guess 1900s, if <=50 guess 2000s
+          TRUE ~ paste0("20", temp_year))) |> #If remaining 2 digits >50 guess 1900s, if <=50 guess 2000s
       select(-temp_year) #drop the temporary year variable
   }
   
-  #Convert 4-digit output to numeric
+  #Convert output from both scenarios to numeric
   df <- df |> 
     mutate(!!fy_col_name_sym := as.numeric(!!fy_col_name_sym))
   
-  #Next step - conditionally renaming the fin_year column to year and dropping any other year cols present
-  if (fy_col_name_chr != "year" && "year" %in% colnames(df)) { #if the dataframe includes a column called year in addition to the col passed in as fin_year
+  #Final formatting step - rename fin_year col to fin as expected by analysis functions if needed. If there's already a col called year, drop it
+  if (fy_col_name_chr != "year" && "year" %in% colnames(df)) { #if both year and fin_year present
     df <- df |> 
       select(-c("year")) |>  #drop the extra year col 
-      rename(year := !!fy_col_name_sym) #rename fin_year to year as expected by analysis functions
-  } else if(fy_col_name_chr != "year"){ #if fin_year is not called year but there are no other variables called year preventing the name change
+      rename(year := !!fy_col_name_sym) #rename fin_year to year
+  } else if(fy_col_name_chr != "year"){ #if fin_year needs renaming but there is no other col called year
     df <- df |> 
       rename(year := !!fy_col_name_sym) #rename fin_year to year
   }else{
-    df #no action needed in fin_year col is already called year
+    df #no action needed if column was passed in as "year" to begin with 
   }
   
 }

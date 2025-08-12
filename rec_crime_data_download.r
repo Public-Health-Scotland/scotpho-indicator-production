@@ -40,7 +40,8 @@ sheets_list <- list(
 sheets_list <- lapply(sheets_list, function(df) {
   names(df)[c(2, 3, 6, 13)] <- c("crime_offence_group", "crime_offence_type", "2017-18", "2024-25") #renaming crime/offence cols so they can be combined vertically
   df <- df |> 
-  mutate(across(4:13, as.character)) #mutating all years to character as they're a mixture of strings and numeric
+  mutate(across(4:13, as.character)) |>   #mutating all years to character as they're a mixture of strings and numeric
+  slice(1:(n() - 2))  # remove last two rows from each df which contain metadata
   
   df
 })
@@ -50,23 +51,21 @@ crime_offence <- bind_rows(sheets_list) |>
   filter(local_authority != "Scotland") |>   #remove Scotland figs - to be re-added by analysis functions 
   select(-c(14:15)) |>  #drop percentage change cols 
   tidyr::pivot_longer(cols = c(4:13), names_to = "year", values_to = "numerator") |>  #pivot longer to only end up with one year type
-  mutate(year = str_sub(year, start = 2))  #cut off the x from the beginning of all the years
-
- 
-  fix_fin_year(ref_period) |>  #converts string financial year to numeric first year
-  #mutate(numerator = as.numeric(value), .keep = "unused") |>  #creates numerator column which is value column as numeric, then drops val
+  mutate(year = str_sub(year, start = 2)) |>   #cut off the x from the beginning of all the years
+  fix_fin_year(fy_col_name = "year", first_year_digits = "4") |>  #converts string financial year to numeric first year
+  filter(!numerator %in% c("n/l", "x")) |>  #removing rows for years where the offence was not in place yet
+  mutate(numerator = as.numeric(numerator)) |> #convert string numerators to numeric
   filter(year >= 2010) |> #filtering out incomplete early data
-  filter(year != 2024) #filter out incomplete 24/25 data
+  filter(year != 2024) |>  #filter out incomplete 24/25 data
+  ca_names_to_codes(local_authority) #convert ca names to codes
 
 
 ###############################################.
 ## Part 2 - Create Recorded Crime Indicator (21108)  ----
 ###############################################.
 
-recorded_crime <- crime_data_2 |> 
-  filter(crime_or_offence == c("all-offences", "all-crimes"))
-
-#exp 32 councils x 2 crime types x 14 years = 896 rows. Only have 415 rows.
+recorded_crime <- crime_offence |> 
+  filter(crime_offence_group %in% c("Total Crimes", "Total Offences"))
 
 
 
