@@ -41,6 +41,7 @@ library(htmltools) # used in rmarkdown
 library(shiny) # used in rmarkdown
 library(flextable) # used in rmarkdown
 library(ggplot2) # used in rmarkdown
+library(hablar) # sum_ function from hablar keeps NA when there should be NA
 
 
 
@@ -266,7 +267,7 @@ main_analysis <- function(filename,
   # and finally, aggregate the data by each geography code
   data <- data |>
     group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
-    summarise_all(sum, na.rm = T) |>
+    summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
     ungroup()
 
   # step complete
@@ -330,12 +331,6 @@ main_analysis <- function(filename,
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
 
 
-  # replace NAs with 0 before aggregating data by time period
-  data <- data |>
-    tidyr::replace_na(list(numerator = 0,
-                           denominator = 0))
-
-
   # determine sort order or variables before aggregating
   var_order <- if(measure == "stdrate"){
     c("code", "sex_grp", "age_grp", "year")
@@ -349,7 +344,7 @@ main_analysis <- function(filename,
     arrange(across(all_of(var_order))) |> # arrange data by var order
     group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
     # calculating rolling averages
-    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
     filter(!is.na(denominator)) |>
     ungroup()
 
