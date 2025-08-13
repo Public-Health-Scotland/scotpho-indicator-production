@@ -58,6 +58,7 @@ hle_main_file <- function(indicator, sex_filter){
   
   if (sex_filter=="Female"){
     hle_main_file_female <<- maindata_df #saving sex specific dataframe to posit environment so it can be visually checked
+
   } else if (sex_filter=="Male") {
     hle_main_file_male <<- maindata_df #saving sex specific dataframe to posit environment so it can be visually checked
   }
@@ -91,10 +92,12 @@ hle_pop_file <- function(indicator, sex, ind_id ){
       select(ind_id,year,code, split_name, split_value,numerator, rate, upci, lowci, numerator, trend_axis, def_period)
     
     if (sex=="Female"){
-    hle_popgrp_female <<- hle_popgrp #save sex specific dataframe as this will be overwritten by next function call
+    hle_popgrp <- hle_popgrp |> #save sex specific dataframe as this will be overwritten by next function call
+      mutate(ind_id = 99101) 
     
     } else if (sex=="Male") {
-    hle_popgrp_male <<- hle_popgrp #save sex specific dataframe as this will be overwritten by next function call
+    hle_popgrp <- hle_popgrp |> #save sex specific dataframe as this will be overwritten by next function call
+    mutate(ind_id = 99102) 
     }
   
   write_csv(hle_popgrp, file = paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny_popgrp.csv"))
