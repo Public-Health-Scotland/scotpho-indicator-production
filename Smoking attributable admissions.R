@@ -39,7 +39,6 @@ source("./functions/data cleaning functions/hb_names_to_codes.R") #CA lookup fun
 
 library(readxl) #for reading in xlsx files
 
-
 ###############################################.
 # Part 1  - Compile smoking prevalence data ----
 # Requires 2 data series both are trends in percentage of ex & current smokers in those aged 35 year plus, by year, by sex
@@ -61,27 +60,21 @@ area_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Da
   mutate(period=as.character(year),
          source="SHoS") 
 
-#Separate out CA data, then use lookup to convert names to codes
-area_prev_shos_ca <- area_prevalence_shos |> 
-  filter(type == "ca") |> 
-  ca_names_to_codes(area)
+#Apply ca_names_to_codes and hb_names_to_codes helper functions to convert area names to codes
 
-#Separate out HB data, then use lookup to convert names to codes
-area_prev_shos_hb <- area_prevalence_shos |> 
-  filter(type == "hb") |> 
-  hb_names_to_codes(area) |> 
-  mutate(code = replace_na(code, "S00000001")) #add Scotland code
+names_to_codes <- function(df) {
+  ca <- df |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
+  hb <- df |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
+    mutate(code = replace_na(code, "S00000001")) #Add Scotland code manually
+  bind_rows(ca, hb) #recombine into 1 df
+}
 
-#Rejoin HB and CA
-area_prevalence_shos <- rbind(area_prev_shos_ca, area_prev_shos_hb)
-
+area_prevalence_shos <- names_to_codes(area_prevalence_shos)
+                                     
 # read in SHsS data (for period 2019 onward)
 area_prevalence_shes <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"), 
                                    sheet = "area_prev_shes") |> 
-  janitor::clean_names()   #variables to lower case
-
-#filter & reshape shes data
-area_prevalence_shes <- area_prevalence_shes |> 
+  janitor::clean_names() |>   #variables to lower case
   select(-c("frequency","lci","uci")) |> 
   mutate(smoking_categories=case_when(
     smoking_categories=="Never smoked/Used to smoke occasionally" ~ "never",
@@ -92,46 +85,30 @@ area_prevalence_shes <- area_prevalence_shes |>
               values_from = "percent") %>%
   filter(sex!=3) |>  #exclude sex 3 (all)
   select(-"never")
-
-#Separate out CA data, then use lookup to convert names to codes
-area_prev_shes_ca <- area_prevalence_shes |> 
-  filter(type == "ca") |> 
-  ca_names_to_codes(area)
-
-#Separate out HB data, then use lookup to convert names to codes
-area_prev_shes_hb <- area_prevalence_shes |> 
-  filter(type == "hb") |> 
-  hb_names_to_codes(area) |> 
-  mutate(code = replace_na(code, "S00000001")) #add Scotland code
-
-#Rejoin HB and CA
-area_prevalence_shes <- rbind(area_prev_shes_ca, area_prev_shes_hb)
-
-
-################################################################################
+  
+#Apply HB and CA lookups
+area_prevalence_shes <- names_to_codes(area_prevalence_shes)
 
 # add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
-smok_prev_area_shes_scot <- smok_prev_area_shes %>%
-  filter(code=="S00000001") %>%
-  select(-c("area","type","source","code")) %>%
+area_prevalence_shes_scot <- area_prevalence_shes |> 
+  filter(code=="S00000001") |> 
+  select(-c("type","source","code")) |> 
   rename(scot_current=current_area, scot_ex=ex_area)
 
-smok_prev_area_shes <-left_join(smok_prev_area_shes,smok_prev_area_shes_scot,by = c("sex","period","year"))
+area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot,by = c("sex","period","year"))
 
 # 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020 data
 # scotpho indicator a 2 year rolling average therefore doesn't cope well with missing years of data
-smok_prev_area_shes2020 <-smok_prev_area_shes  %>%
-  filter(year==2019) %>%
-  mutate(source=case_when(year==2019 ~ "shes duplicate2019"),
-         year=case_when(year==2019 ~ 2020))
+area_prevalence_shes_2020 <-area_prevalence_shes  |> 
+  filter(year==2019) |> 
+  mutate(source = "shes duplicate2019",
+         year = 2020)
 
 #bind shos and shes area prevalence
-smok_prev_area <- rbind(smok_prev_area_shes,smok_prev_area_shos,smok_prev_area_shes2020) %>%
-  mutate(sex_grp=as.character(sex)) %>%
-  select (-sex) %>%
+area_prevalence <- rbind(area_prevalence_shes,area_prevalence_shos, area_prevalence_shes_2020) |> 
+  mutate(sex_grp=as.character(sex)) |> 
+  select (-sex) |> 
   arrange(code, year, sex_grp)
-
-rm(smok_prev_area_shes, smok_prev_area_shos,smok_prev_area_shes_scot,smok_prev_area_shes2020) # remove df not needed
 
 ###############################################.
 ## Prevalence data series 2: AGE PREVALENCE ----
