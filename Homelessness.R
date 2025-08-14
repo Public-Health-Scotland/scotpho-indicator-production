@@ -169,6 +169,8 @@ homeless_popgroup <- rbind(homeless_male, homeless_female, homeless_total)
 write_rds(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.rds"))
 write.csv(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.csv"), row.names = FALSE)
 
+# QA popgrp data:
+run_qa(type = "popgrp", filename = "homeless", test_file=FALSE)
 
 
 
