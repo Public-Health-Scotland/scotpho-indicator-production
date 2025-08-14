@@ -143,24 +143,19 @@ ca_series <- read.xlsx(paste0(schdest_data_folder, file),
   select(year, code, numerator, denominator = `Number.of.leavers`) 
 
 # Save ready for the main analysis function
-saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/positive_destinations_ca_raw.rds'))
+saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/school_leaver_destinations_raw.rds'))
 
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
-main_analysis(filename = "positive_destinations_ca", ind_id = 13010, 
+main_analysis(filename = "school_leaver_destinations", ind_id = 13010, 
               geography = "council", measure = "percent", 
               yearstart = 2009, yearend = 2023,
               time_agg = 1, year_type = "school")
 
 # Aggregated Scotland data do not equal the original Scotland data from the spreadsheet (likely due to some suppression), so drop the aggregated data for Scotland:
-ca_data <- readRDS(file.path(profiles_data_folder, "Data to be checked", "positive_destinations_ca_shiny.rds") ) %>%
-  filter(code != "S00000001")
+ca_data <- readRDS(file.path(profiles_data_folder, "Data to be checked", "school_leaver_destinations_shiny.rds") ) %>%
+  filter(code != "S00000001") %>%
+  mutate(across(c("numerator", "rate", "lowci", "upci"), ~ ifelse(is.nan(.), NA, .))) 
 
-# Also, NA (suppressed) in original data have been replaced by zeroes during the main_analysis function, so need to revert to NA:
-ca_data <- ca_data %>%
-  mutate(upci = ifelse(numerator==0, as.numeric(NA), upci),
-         lowci = ifelse(numerator==0, as.numeric(NA), lowci),
-         rate = ifelse(numerator==0, as.numeric(NA), rate),
-         numerator = ifelse(numerator==0, as.numeric(NA), numerator))
 
 ##########################################################
 ### Part 3 - Prepare final files -----
