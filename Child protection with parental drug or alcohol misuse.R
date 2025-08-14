@@ -138,7 +138,9 @@ additional_2018 <- "childrens-social-work-statistics-2018-19-revised-additional-
 additional_2017 <- "additional-tables_2017to2018.xlsx"                                                       
 additional_2016 <- "CSWS-2016-17.xlsx"                                                                  
 additional_2015 <- "CSWS+Additional+Tables+2015-16.xlsx"      
-
+additional_2014 <- "CSWS-addtional-2014-15.xlsx"      
+additional_2013 <- "CSWS-2013-14.xlsx"      
+additional_2012 <- "CSWS-2012-13.xls"      
 additional_2011 <- "CSWS-2011-12.xls"      
 
 ### Bespoke functions ----
@@ -163,10 +165,10 @@ import_wide_LA_data <- function(filename, sheetnum, range, year) {
     mutate(across(everything(), ~str_replace(., " and ", " & "))) %>%
     mutate(across(-1, ~as.numeric(.))) %>%
     pivot_longer(-(1), names_to = "indicator", values_to = "numerator") %>%
-    mutate(trend_axis = year,
+    mutate(year = as.numeric(year),
            areatype = "Council area") %>%
     rename(areaname = 1) %>%
-    select(areaname, areatype, trend_axis, indicator, numerator)   
+    select(areaname, areatype, year, indicator, numerator)   
 }  
 
 
@@ -174,7 +176,10 @@ import_wide_LA_data <- function(filename, sheetnum, range, year) {
 ## Part 1 - Read in data downloaded from SG and format for functions ----
 ################################################################################.
 
+
+########################################################################################
 # CHILD PROTECTION REGISTER DATA
+########################################################################################
 
 # Import the data: 
 
@@ -267,10 +272,10 @@ register_la_2007to2012 <- register_la_2007to2012 %>%
 # Combine LA data
 register_la <- rbind(register_la_2007to2012, register_la_2013to2024) 
 # Save ready for the main analysis function
-saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_prot_register_ca_raw.rds'))
+saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_prot_register_raw.rds'))
 
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
-main_analysis(filename = "child_prot_register_ca", ind_id = 13035, geography = "council", measure = "crude",
+main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18_to2024", yearstart = 2007, yearend = 2024,
               time_agg = 1, crude_rate = 1000, year_type = "snapshot")
 
@@ -287,23 +292,48 @@ main_analysis_result <- main_analysis_result %>%
   rbind(register_scot_main)
 
 # Save
-write_rds(main_analysis_result, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_ca_shiny.rds"))
-write.csv(main_analysis_result, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_ca_shiny.csv"), row.names = FALSE)
+write_rds(main_analysis_result, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_shiny.rds"))
+write.csv(main_analysis_result, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_shiny.csv"), row.names = FALSE)
+
+# Run QA
+run_qa(type = "main", filename = "child_prot_register", test_file = FALSE) 
 
 
 
+########################################################################################
 # CHILD PROTECTION CASES WITH CONCERNS RECORDED AS ALCOHOL/DRUGS/SUBSTANCE ABUSE
+########################################################################################
 
 # Import the data
 
 # Scotland 2013-2024
-concerns_scot_trend_count <- import_wide_data(filename = additional_2023, sheetnum = "1.2", range = "A5:M9", non_num_cols = c(1)) %>%
-  pivot_longer(-(1), names_to = "trend_axis", values_to = "numerator") %>%
-  mutate(areaname = "Scotland", areatype = "Scotland") %>%
-  filter(`Type of Concern` != "Emotional abuse") %>%
-  select(areaname, areatype, trend_axis, indicator = `Type of Concern`, numerator) 
+concerns_scot_2013to2024 <- import_wide_data(filename = additional_2023, sheetnum = "1.2", range = "A5:M9", non_num_cols = c(1)) %>%
+  pivot_longer(-(1), names_to = "year", values_to = "numerator", names_transform = list(year = as.integer)) %>%
+  select(year, indicator = `Type of Concern`, numerator) 
 
-# Scotland 2012-2015 
+# Scotland 2012 
+concerns_scot_2012 <- import_wide_data(filename = additional_2014, sheetnum = "4.3", range = "A3:B7", non_num_cols = 1) %>%
+  rename(indicator = ...1,
+         `2012` = ...2) %>%
+  pivot_longer(-indicator, names_to = "year", values_to = "numerator", names_transform = list(year = as.integer)) 
+
+# Combine Scotland data, and calculate rates
+concerns_scot <- rbind(concerns_scot_2012, concerns_scot_2013to2024) %>%
+  mutate(ind_id = case_when(str_detect(indicator, "drug|Drug") ~ 4130,
+                               str_detect(indicator, "alcohol|Alcohol") ~ 4110,
+                               str_detect(indicator, "substance|Substance") ~ 4153,
+                               TRUE ~ as.numeric(NA))) %>%
+  filter(!is.na(ind_id)) %>%
+  mutate(code = "S00000001",
+         def_period = paste0(year, " - snapshot"), 
+         trend_axis = as.character(year),
+         split_name = "Total",
+         split_value = "Total") %>%
+  merge(y = pop_lookup_incl_2024, by=c("year", "code", "split_name", "split_value")) %>%
+  calculate_crude_rate(., 10000) %>%
+  select(-starts_with("split"), -denominator, -indicator)
+  
+  
 
 # LA
 concerns_la_count_2024 <- import_wide_LA_data(filename = additional_2023, sheetnum = "1.10", range = "A5:D37", year = "2024") 
@@ -315,133 +345,64 @@ concerns_la_count_2019 <- import_wide_LA_data(filename = additional_2018, sheetn
 concerns_la_count_2018 <- import_wide_LA_data(filename = additional_2017, sheetnum = "4.5", range = "A3:D35", year = "2018") 
 concerns_la_count_2017 <- import_wide_LA_data(filename = additional_2016, sheetnum = "4.5", range = "A3:D35", year = "2017") 
 concerns_la_count_2016 <- import_wide_LA_data(filename = additional_2015, sheetnum = "4.5", range = "A3:D35", year = "2016") 
+concerns_la_count_2015 <- import_wide_LA_data(filename = additional_2014, sheetnum = "4.5", range = "A3:D35", year = "2015") 
 
 
-all_concerns <- do.call("bind_rows", mget(ls(pattern="^concerns_"))) %>%
-  mutate(indicator = case_when(str_detect(indicator, "drug|Drug") ~ "child_protection_parental_drug",
-                               str_detect(indicator, "alcohol|Alcohol") ~ "child_protection_parental_alcohol",
-                               str_detect(indicator, "substance|Substance") ~ "child_protection_parental_substance_misuse")) %>%
-  mutate(split_value = "Total",
-         split_name = "Total")
-
-
-# Combine 
-all_data_scot_la <- rbind(all_concerns, all_register_data) %>%
+concerns_la <- do.call("bind_rows", mget(ls(pattern="^concerns_la_"))) %>%
+  mutate(ind_id = case_when(str_detect(indicator, "drug|Drug") ~ 4130,
+                            str_detect(indicator, "alcohol|Alcohol") ~ 4110,
+                            str_detect(indicator, "substance|Substance") ~ 4153,
+                            TRUE ~ as.numeric(NA))) %>%
+  filter(!is.na(ind_id))  %>%
   mutate(areaname = gsub(" and ", " & ", areaname)) %>%
   mutate(areaname = case_when(areaname == "Edinburgh, City of" ~ "City of Edinburgh",
                               areaname %in% c("Glasgow", "Glasgow City(7)") ~ "Glasgow City", 
-                              areaname == "Na hNAEileanan Siar" ~ "Na h-Eileanan Siar",
+                              areaname %in% c("Na hNAEileanan Siar", "Eilean Siar") ~ "Na h-Eileanan Siar",
                               TRUE ~ areaname)) %>%
   merge(y = geo_lookup, by=c("areaname", "areatype"), all.x=T) %>%
-  merge(y = pop_lookup_incl_2024, by = c("trend_axis", "code", "split_value", "split_name"), all.x=T) %>%
-  select(-areaname, -areatype) %>%
-  filter(!is.na(denominator)) # this drops the unborn children counts, as no pop denominators for these. What could be used here?
-  
-# # aggregate to HB 
-# all_data_hb <- all_data_scot_la %>%
-#   merge(y=hb, by.x="code", by.y = "ca2019") %>%
-#   group_by(trend_axis, indicator, split_value, split_name, hb2019) %>%
-#   summarise(numerator = sum_(numerator), # sum_function from hablar keeps true NAs rather than converting to 0
-#             denominator = sum_(denominator)) %>%
-#   ungroup() %>%
-#   rename(code = hb2019)
-# 
-# # aggregate to ADP 
-# all_data_adp <- all_data_scot_la %>%
-#   merge(y=adp, by.x="code", by.y = "ca2019") %>%
-#   group_by(trend_axis, indicator, split_value, split_name, adp) %>%
-#   summarise(numerator = sum_(numerator), # sum_function from hablar keeps true NAs rather than converting to 0
-#             denominator = sum_(denominator)) %>%
-#   ungroup() %>%
-#   rename(code = adp)
-
-
-# Combine all data:
-all_data <- rbind(all_data_scot_la, all_data_hb, all_data_adp)
-
-
-
-# Calculate the indicator data
-
-# calculate crude rates
-all_data <- all_data %>%
-  # add the per x pop value (differs by indicator) 
-  mutate(crude_rate = ifelse(indicator == "child_protection_all" , 1000, 10000)) %>%
-  # calculate crude rate
-  mutate(rate = numerator/denominator * crude_rate) %>%
-  # calculate CIS
-  mutate(lowci = (numerator * (1-1/9/numerator - 1.96/3/sqrt(numerator))^3) / (denominator) * crude_rate,
-         upci = ((numerator + 1) *(1 - 1/9/(numerator + 1) + 1.96/3/sqrt(numerator + 1))^3) / (denominator) * crude_rate) %>%
-  # add required columns
-  # create indicator id column 
-  mutate(ind_id = case_when(indicator == "child_protection_all" ~ 13035,
-                            indicator == "child_protection_parental_drug" ~ 4130,
-                            indicator == "child_protection_parental_alcohol" ~ 4110,
-                            indicator == "child_protection_parental_substance_misuse" ~ 4153)) |>
-  # create trend axis column (used to create axis labels on trend charts)
-  mutate(year = as.numeric(trend_axis)) |>
-  # create definition period column (used to show time period for charts looking at a single year)
-  mutate(def_period = paste0("Snapshot 31 July, ", trend_axis))
-
-
-
-
+  select(-indicator, -areaname, -areatype)
+# A fair number of zeroes in the data: these are true zeroes in small LAs
+# Suppressed counts remain suppressed.
 
 # Function to prepare main data file: 
-prepare_main_data <- function(ind){
+prepare_main_data <- function(indicator, ind){
   
-  main_data <- all_data %>% 
-    filter(indicator == ind,
-           split_name == "Total") %>% 
-    select(code, ind_id, year, 
-           numerator, rate, upci, lowci, 
-           def_period, trend_axis) %>%
-    unique() %>%
+  main_data <- concerns_la %>% 
+    filter(ind_id == ind) 
+  
+  # Save ready for the main analysis function
+  saveRDS(main_data, file=paste0(profiles_data_folder, '/Prepared Data/', indicator, '_raw.rds'))
+
+  # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
+  main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
+                pop = "CA_pop_under18_to2024", yearstart = 2015, yearend = 2024,
+                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE)
+
+  # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
+  new_data <- main_analysis_result %>%
+    filter(code!="S00000001") %>%
+    rbind(concerns_scot) %>%
+    filter(ind_id == ind) %>%
     arrange(code, year)
   
   # save 
-  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
-  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  write_rds(new_data, paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny.rds"))
+  write.csv(new_data, paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny.csv"), row.names = FALSE)
+  
+  # Run QA now:
+  run_qa(type = "main", filename = indicator, test_file = FALSE) 
   
   # Make data created available outside of function so it can be visually inspected if required
-  main_data_result <<- main_data
-  
-}
-  
-# Function to prepare popgroup data file: 
-prepare_popgrp_data <- function(ind){
-  
-  pop_grp_data <- all_data %>% 
-    filter(indicator == ind & !(split_name %in% c("Total"))) %>% 
-    select(code, ind_id, year, numerator, rate, upci, 
-           lowci, def_period, trend_axis, split_name, split_value) %>%
-    arrange(code, year)
-  
-  # Save
-  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
-  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-
-  # Make data created available outside of function so it can be visually inspected if required
-  pop_grp_data_result <<- pop_grp_data
+  main_data_result <<- new_data
   
 }
 
 
-# Run function to create final files
-prepare_main_data(ind = "child_protection_all")
-prepare_popgrp_data(ind = "child_protection_all")
+prepare_main_data(indicator = "child_protection_parental_drug", ind = 4130) 
+prepare_main_data(indicator = "child_protection_parental_alcohol", ind = 4110) 
+prepare_main_data(indicator = "child_protection_parental_substance_misuse" , ind = 4153) 
+# zero rates found for island boards and some others, but these are based on true zeroes. 
 
-prepare_main_data(ind = "child_protection_parental_drug")
-prepare_main_data(ind = "child_protection_parental_alcohol")
-prepare_main_data(ind = "child_protection_parental_substance_misuse")
-
-# Run QA reports 
-
-# main data: 
-run_qa(type = "main", filename = "child_protection_all", test_file = FALSE) # highlights that most/all rates lower than previously, due to correcting the denominator from under 16 to under 18
-run_qa(type = "main", filename = "child_protection_parental_drug", test_file = FALSE) # differences found: investigated below
-run_qa(type = "main", filename = "child_protection_parental_alcohol", test_file = FALSE) # differences found: investigated below
-run_qa(type = "main", filename = "child_protection_parental_substance_misuse", test_file = FALSE) # differences found: investigated below
 
 
 # The rate differences for child_protection_all due to higher denominators now is understandable and to be expected.
