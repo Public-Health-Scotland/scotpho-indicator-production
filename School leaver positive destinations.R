@@ -221,7 +221,7 @@ saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/school_leav
 run_qa(type = "main", filename = "school_leaver_destinations", test_file = FALSE) # no historic file
 # Orkney has no data for latest year: plots as zero in QA file, but won't plot in the app I think
 
-# ineq data:
+# popgrp data:
 run_qa(type = "popgrp", filename = "school_leaver_destinations", test_file=FALSE)
 
 # ineq data:
