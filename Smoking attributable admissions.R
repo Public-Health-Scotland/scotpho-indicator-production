@@ -33,7 +33,12 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/data cleaning functions/ca_names_to_codes.R") #HB lookup function
+source("./functions/data cleaning functions/hb_names_to_codes.R") #CA lookup functions
+
+library(readxl) #for reading in xlsx files
+
 
 ###############################################.
 # Part 1  - Compile smoking prevalence data ----
@@ -50,86 +55,60 @@ source("1.indicator_analysis.R") #Normal indicator functions
 ###############################################.
 
 # read in SHoS data (for period 2012-2018)
-smok_prev_area_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"), 
-                                  sheet = "Area prev") %>% mutate(code = NA) %>% 
-  setNames(tolower(names(.))) %>%  #variables to lower case
+area_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"), 
+                                  sheet = "Area prev") |>  
+  janitor::clean_names() |>  #variables to lower case
   mutate(period=as.character(year),
-         source="SHoS")
+         source="SHoS") 
 
-# Re-coding names into codes. First councils and then HBs and Scotland
-smok_prev_area_shos$code[which(smok_prev_area_shos$type=="ca")] <- recode(smok_prev_area_shos$area[which(smok_prev_area_shos$type=="ca")],
-                                                                          'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
-                                                                          'Angus' = 'S12000041', 'Argyll & Bute' = 'S12000035',
-                                                                          'Clackmannanshire' = 'S12000005', 'Dumfries & Galloway' = 'S12000006', 
-                                                                          'Dundee City' = 'S12000042','East Ayrshire' = 'S12000008',
-                                                                          'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
-                                                                          'East Renfrewshire' = 'S12000011', 'Edinburgh, City of' = 'S12000036',
-                                                                          'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
-                                                                          'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
-                                                                          'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
-                                                                          'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
-                                                                          'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
-                                                                          'Orkney Islands' = 'S12000023', 'Perth & Kinross' = 'S12000048',
-                                                                          'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
-                                                                          'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
-                                                                          'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
-                                                                          'West Dunbartonshire' = 'S12000039', 'West Lothian' = 'S12000040')
+#Separate out CA data, then use lookup to convert names to codes
+area_prev_shos_ca <- area_prevalence_shos |> 
+  filter(type == "ca") |> 
+  ca_names_to_codes(area)
 
-smok_prev_area_shos$code[which(smok_prev_area_shos$type=="hb")] <- recode(smok_prev_area_shos$area[which(smok_prev_area_shos$type=="hb")],
-                                                                          'Ayrshire & Arran' = 'S08000015', 'Borders' = 'S08000016',
-                                                                          'Dumfries & Galloway' = 'S08000017', 'Fife' = 'S08000029',
-                                                                          'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
-                                                                          'Greater Glasgow & Clyde' = 'S08000031','Highland' = 'S08000022',
-                                                                          'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
-                                                                          'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
-                                                                          'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
+#Separate out HB data, then use lookup to convert names to codes
+area_prev_shos_hb <- area_prevalence_shos |> 
+  filter(type == "hb") |> 
+  hb_names_to_codes(area) |> 
+  mutate(code = replace_na(code, "S00000001")) #add Scotland code
 
+#Rejoin HB and CA
+area_prevalence_shos <- rbind(area_prev_shos_ca, area_prev_shos_hb)
 
 # read in SHsS data (for period 2019 onward)
-smok_prev_area_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"), 
-                                  sheet = "area_prev_shes") %>% mutate(code = NA) %>% 
-  setNames(tolower(names(.)))   #variables to lower case
+area_prevalence_shes <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"), 
+                                   sheet = "area_prev_shes") |> 
+  janitor::clean_names()   #variables to lower case
 
 #filter & reshape shes data
-smok_prev_area_shes <- smok_prev_area_shes %>%
-  select(-c("frequency","lci","uci")) %>%
+area_prevalence_shes <- area_prevalence_shes |> 
+  select(-c("frequency","lci","uci")) |> 
   mutate(smoking_categories=case_when(
     smoking_categories=="Never smoked/Used to smoke occasionally" ~ "never",
     smoking_categories=="Used to smoke regularly" ~ "ex_area",
     smoking_categories=="Current smoker" ~ "current_area",
-    TRUE~"other")) %>%
+    TRUE~"other")) |> 
   pivot_wider(names_from ="smoking_categories",
               values_from = "percent") %>%
-  filter(sex!=3) %>% #exclude sex 3 (all)
+  filter(sex!=3) |>  #exclude sex 3 (all)
   select(-"never")
 
-# Recoding names into codes. First councils and then HBs and Scotland
-smok_prev_area_shes$code[which(smok_prev_area_shes$type=="ca")] <- recode(smok_prev_area_shes$area[which(smok_prev_area_shes$type=="ca")],
-                                                                          'Aberdeen City' = 'S12000033', 'Aberdeenshire' = 'S12000034',
-                                                                          'Angus' = 'S12000041', 'Argyll and Bute' = 'S12000035',
-                                                                          'Clackmannanshire' = 'S12000005', 'Dumfries and Galloway' = 'S12000006', 
-                                                                          'Dundee City' = 'S12000042','East Ayrshire' = 'S12000008',
-                                                                          'East Dunbartonshire' = 'S12000045','East Lothian' = 'S12000010', 
-                                                                          'East Renfrewshire' = 'S12000011', 'Edinburgh City' = 'S12000036',
-                                                                          'Na h-Eileanan Siar' = 'S12000013','Falkirk' = 'S12000014', 
-                                                                          'Fife' = 'S12000047', 'Glasgow City' = 'S12000049',
-                                                                          'Highland' = 'S12000017', 'Inverclyde' = 'S12000018',
-                                                                          'Midlothian' = 'S12000019', 'Moray' = 'S12000020',
-                                                                          'North Ayrshire' = 'S12000021','North Lanarkshire' = 'S12000050',  
-                                                                          'Orkney Islands' = 'S12000023', 'Perth and Kinross' = 'S12000048',
-                                                                          'Renfrewshire' = 'S12000038', 'Scottish Borders' = 'S12000026',
-                                                                          'Shetland Islands' = 'S12000027','South Ayrshire' = 'S12000028',
-                                                                          'South Lanarkshire' = 'S12000029','Stirling' = 'S12000030', 
-                                                                          'West Dunbartonshire' = 'S12000039', 'West Lothian' = 'S12000040')
+#Separate out CA data, then use lookup to convert names to codes
+area_prev_shes_ca <- area_prevalence_shes |> 
+  filter(type == "ca") |> 
+  ca_names_to_codes(area)
 
-smok_prev_area_shes$code[which(smok_prev_area_shes$type=="hb")] <- recode(smok_prev_area_shes$area[which(smok_prev_area_shes$type=="hb")],
-                                                                          'Ayrshire and Arran' = 'S08000015', 'Borders' = 'S08000016',
-                                                                          'Dumfries and Galloway' = 'S08000017', 'Fife' = 'S08000029',
-                                                                          'Forth Valley' = 'S08000019','Grampian' = 'S08000020',
-                                                                          'Greater Glasgow and Clyde' = 'S08000031','Highland' = 'S08000022',
-                                                                          'Lanarkshire' = 'S08000032', 'Lothian' = 'S08000024',
-                                                                          'Orkney' = 'S08000025', 'Shetland' = 'S08000026',
-                                                                          'Tayside' = 'S08000030','Western Isles' = 'S08000028','Scotland' = 'S00000001')
+#Separate out HB data, then use lookup to convert names to codes
+area_prev_shes_hb <- area_prevalence_shes |> 
+  filter(type == "hb") |> 
+  hb_names_to_codes(area) |> 
+  mutate(code = replace_na(code, "S00000001")) #add Scotland code
+
+#Rejoin HB and CA
+area_prevalence_shes <- rbind(area_prev_shes_ca, area_prev_shes_hb)
+
+
+################################################################################
 
 # add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
 smok_prev_area_shes_scot <- smok_prev_area_shes %>%
