@@ -347,7 +347,7 @@ main_analysis <- function(filename,
     mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
     filter(!is.na(denominator)) |>
     ungroup() |>
-    mutate(across(c("numerator", "denominator", "est_pop"), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
   
 
   
