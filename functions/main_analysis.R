@@ -53,6 +53,7 @@ library(hablar) # sum_ function from hablar keeps NA when there should be NA
 source("functions/helper functions/check_file_exists.R") # to check file exists before attempting to read in 
 source("functions/helper functions/validate_columns.R") # for checking all required columns are present, named correctly and of correct class
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
+source("functions/helper functions/check_denominator_years.R") # for checking years present in population denominator files
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
@@ -303,6 +304,7 @@ main_analysis <- function(filename,
     data_max_year <- max(data$year)
 
     if(data_max_year > pop_max_year){
+      
       cli::cli_alert_warning("'Population lookup only contains population estimates up to {pop_max_year}. Unable to attach population estimates for {data_max_year}")
     }
 
@@ -315,9 +317,14 @@ main_analysis <- function(filename,
     # standardised rates also include age and sex splits
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
     
-    # right_join keeps all groups in the pop_lookup file, and drops years that aren't in the pop_lookup file
-    data <- right_join(x = data, y = pop_lookup, by = joining_vars) 
+    # full_join keeps all groups in the pop_lookup file and indicator data file
+    # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
+    # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
+    data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
 
+    # check year parameters are sensible and all required years are present
+    check_denominator_years(data, yearend, yearstart)
+    
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
   }
