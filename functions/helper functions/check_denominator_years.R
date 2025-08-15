@@ -16,7 +16,7 @@ years_check <- data |>
 denominator_max_year <- max(years_check$max_year_denominator)
 denominator_min_year <- min(years_check$min_year_denominator)
 
-# if you want am indicator time series
+# the population denominator max year should always be greater than or equal to yearend
 if(yearend > denominator_max_year){
   response <- utils::askYesNo(paste0("The maximum year in population denominator file appears to be ",denominator_max_year,", but the yearend parameter is ", yearend, ".Are you sure you want to continue
   since multiple year rolling averages will be incorrectly calculated?"))
@@ -27,7 +27,7 @@ if(yearend > denominator_max_year){
   }
   
 }
-
+# the population denominator min year should always be equal to or less than yearstart
 if(yearstart < denominator_min_year){
   response <- utils::askYesNo(paste0("The minimum year in the population denominator file appears to be",denominator_min_year," but the yearstart parameter is ", yearstart, "Are you sure you want to continue
   since multiple year rolling averages will be incorrectly calculated?"))
