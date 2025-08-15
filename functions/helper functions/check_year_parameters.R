@@ -1,3 +1,7 @@
+# This check will look at whether the indicator data file supplied contains case/event data that are for the years consistent with those
+# set in the yearstart/yearend parameters.  Its looking to see if there is numerator data present which you will not be including in the indicator 
+# data time series.  This might be because there is incomplete years of data or possibly no denominator data available for that time period yet.
+
 check_year_parameters <- function(data, yearend, year_type){
   
   
@@ -24,7 +28,7 @@ check_year_parameters <- function(data, yearend, year_type){
     max_fin_year <- paste0(max_year, "/", substr(max_year + 1, 3, 4))
     
     if(year_type == "financial"){
-    cli::cli_alert_warning("Max year in the dataset is {max_year} but 'yearend' has been set to {yearend}. 
+    cli::cli_alert_warning("Max year in the numerator dataset is {max_year} but 'yearend' has been set to {yearend}. 
                            This will only create data up to {yearend_fin_year} despite you having data to calculate up to {max_fin_year}")
     } else {
       cli::cli_alert_warning("Max year in the dataset is {max_year} but 'yearend' has been set to {yearend}")
@@ -35,9 +39,9 @@ check_year_parameters <- function(data, yearend, year_type){
   if(yearend > max_year){
     if(year_type == "financial"){
       max_fin_year <- paste0(max_year, "/", substr(max_year + 1, 3, 4))
-    cli::cli_alert_warning("'yearend' has been set to {yearend} but dataset only includes data up to {max_year}. Data can only be created up to {max_fin_year}")
+    cli::cli_alert_warning("'yearend' has been set to {yearend} but numerator dataset only includes data up to {max_year}. Data can only be created up to {max_fin_year}")
     } else {
-      cli::cli_alert_warning("'yearend' has been set to {yearend} but dataset only includes data up to {max_year}. Data can only be created up to {max_year}")
+      cli::cli_alert_warning("'yearend' has been set to {yearend} but numerator dataset only includes data up to {max_year}. Data can only be created up to {max_year}")
       
     }
   }
