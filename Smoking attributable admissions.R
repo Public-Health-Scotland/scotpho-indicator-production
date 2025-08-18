@@ -13,7 +13,7 @@
 # areas - this isn't ideal as scotpho indicator is a rolling average
 # but smoking attributable admissions/deaths are artificial construct and using best available data should be acceptable.  
 
-# As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scot Kilgariff,
+# As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
 # who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
@@ -95,7 +95,7 @@ area_prevalence_shes_scot <- area_prevalence_shes |>
   select(-c("type","source","code")) |> 
   rename(scot_current=current_area, scot_ex=ex_area)
 
-area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot,by = c("sex","period","year"))
+area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot, by = c("sex","period","year"))
 
 # 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020 data
 # scotpho indicator a 2 year rolling average therefore doesn't cope well with missing years of data
@@ -110,51 +110,52 @@ area_prevalence <- rbind(area_prevalence_shes,area_prevalence_shos, area_prevale
   select (-sex) |> 
   arrange(code, year, sex_grp)
 
+rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_scot, area_prevalence_shes_2020)
+
 ###############################################.
 ## Prevalence data series 2: AGE PREVALENCE ----
 ###############################################.
 
 # read in SHoS age data (for period 2012-2018)
-smok_prev_age_shos <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"),
-                                 sheet = "Age prev") %>% rename(sex_grp = sex) %>% 
-  setNames(tolower(names(.))) %>%
-  #variables to lower case
-  mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
-                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
-  select(-agegrp, -code) %>% 
-  mutate(sex_grp = as.character(sex_grp)) %>% #to allow merging in next section
-  mutate(source="SHoS") %>%
-  arrange(sex_grp, year, source, ex_age,current_age, age_grp2)
+age_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"),
+                                 sheet = "Age prev") |>
+  clean_names() |> 
+  mutate(source = "SHoS",
+         sex_grp = as.character(sex),
+         age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
+                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) |> 
+  select(-c("agegrp", "sex", "code")) |> 
+  arrange(sex_grp, year, source, ex_age, current_age, age_grp2)
 
 # read in SHeS age data (for period 2019 onwards)
-smok_prev_age_shes <- read_excel(paste0(data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for agegroups.xlsx"),
-                                 sheet = "age_prev_shes") %>% 
-  setNames(tolower(names(.))) %>%
-  select(-c("frequency")) %>%
+age_prevalence_shes <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/shes smoking prevalence_for agegroups.xlsx"),
+                                  sheet = "age_prev_shes") |> 
+  clean_names() |> 
   mutate(smoking_category=case_when(
     smoking_category=="Never smoked/Used to smoke occasionally" ~ "never",
     smoking_category=="Used to smoke regularly" ~ "ex_age",
     smoking_category=="Current smoker" ~ "current_age",
-    TRUE~"other")) %>%
+    TRUE~"other")) |> 
+  select(-frequency) |> 
   pivot_wider(names_from ="smoking_category",
-              values_from = "percent") %>%
-  filter(sex_grp!=3) %>% #exclude sex 3 (all)
+              values_from = "percent") |> 
+  filter(sex_grp!=3) |>  #exclude sex 3 (all)
   mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
                               agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
-  select(-agegrp, -code) %>% 
-  mutate(sex_grp = as.character(sex_grp)) #to allow merging in next section
+  select(-agegrp, -code) |>  
+  mutate(sex_grp = as.character(sex_grp)) 
 
 # 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020
-smok_prev_age_shes2020 <-smok_prev_age_shes  %>%
-  filter(year==2019) %>%
-  mutate(source=case_when(year==2019 ~ "shes duplicate2019"),
-         year=case_when(year==2019 ~ 2020))
+age_prevalence_shes_2020 <- age_prevalence_shes |> 
+  filter(year == 2019) |> 
+  mutate(source = "shes duplicate2019",
+         year = 2020)
 
 #bind shos and shes area prevalence
-smok_prev_age <- rbind(smok_prev_age_shes,smok_prev_age_shos,smok_prev_age_shes2020) %>%
-  arrange(year,sex_grp)
+age_prevalence <- rbind(age_prevalence_shes, age_prevalence_shos, age_prevalence_shes_2020) |> 
+  arrange(year, sex_grp)
 
-rm(smok_prev_age_shes,smok_prev_age_shos, smok_prev_age_shes2020 )  # remove df not needed
+rm(age_prevalence_shos, age_prevalence_shes, age_prevalence_shes_2020)  # remove df not needed
 
 
 ###############################################.
