@@ -214,17 +214,17 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
     WHERE end_cis between '1 January 2012' and '31 December 2022' 
         AND age > 34 
         AND sex_grp in ('1', '2') 
-        AND regexp_like(diag, '", smoking_diag, "')"))) %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
+        AND regexp_like(diag, '", smoking_diag, "')"))) |>  
+  clean_names() |> 
   create_agegroups() # Creating age groups for standardization.
 
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2023_1.rds') %>% 
-  setNames(tolower(names(.))) %>%   #variables to lower case
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') |>  
+  clean_names() |>   
   select(pc7, ca2019, hb2019)
 
 # Bringing  LA and datazone info.
 
-smoking_adm <- left_join(smoking_adm, postcode_lookup, "pc7") %>% 
+smoking_adm <- left_join(smoking_adm, postcode_lookup, "pc7") |>  
   mutate(scotland = "S00000001") # creating variable for Scotland
 
 ###############################################.
@@ -366,22 +366,22 @@ smoking_adm %<>%
 ###############################################.
 ## Part 4 - Aggregating geographic areas ----
 ###############################################.
-smoking_adm %<>% 
+smoking_adm <- smoking_adm |>  
   # Excluding cases where young people has a disease for which only risk for older people.
-  filter(current > 0) %>% 
-  mutate(scotland = "S00000001") %>%  # creating variable for Scotland
+  filter(current > 0) |> 
+  mutate(scotland = "S00000001") |>   # creating variable for Scotland
   #creating code variable with all geos and then aggregating to get totals
-  gather(geolevel, code, c(ca, hb, scotland)) %>% 
-  select(-c(geolevel)) %>% 
-  group_by(code, year, sex_grp, age_grp, current, ex) %>% count() %>% ungroup() %>% 
+  gather(geolevel, code, c(ca, hb, scotland)) |>  
+  select(-geolevel) |>  
+  group_by(code, year, sex_grp, age_grp, current, ex)  |>  count() |>  ungroup() |>  
   # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
   filter(!(is.na(code)))
 
-saveRDS(smoking_adm, file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
+saveRDS(smoking_adm, file.path(profiles_data_folder, '/Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 # Merging prevalence with smoking adm basefile 
-smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "sex_grp")) %>% 
+smoking_adm <- left_join(smoking_adm, area_prevalence, by = c("code", "year", "sex_grp")) |> 
   #recode age groups to match prevalence by age file
   mutate(age_grp = as.numeric(age_grp),
          age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
@@ -390,7 +390,7 @@ smoking_adm <- left_join(smoking_adm, smok_prev_area, by = c("code", "year", "se
                               age_grp>=16 ~ 5))
 
 #And now merging with the file with prevalence by age and sex 
-smoking_adm <- left_join(smoking_adm, smok_prev_age, by = c("age_grp2", "year", "sex_grp")) 
+smoking_adm <- left_join(smoking_adm, age_prevalence, by = c("age_grp2", "year", "sex_grp")) 
 
 #smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
@@ -400,7 +400,7 @@ smoking_adm <- left_join(smoking_adm, smok_prev_age, by = c("age_grp2", "year", 
 ###############################################.
 # Calculate age, sex and area specific esimtated prevalence info using 
 # Public Health England formula. divide by 100 to get a proportion.
-smoking_adm %<>% 
+smoking_adm <- smoking_adm |> 
   mutate(# current and ex smoker prevalence specific to area, age and sex group.
     prev_current = (current_area/scot_current)*current_age/100,
     prev_ex=(ex_area/scot_ex)*ex_age/100,
@@ -408,30 +408,30 @@ smoking_adm %<>%
     saf = (prev_current*(current-1) + prev_ex*(ex-1))/ 
       (1 + prev_current*(current-1) + prev_ex*(ex-1)),
     # compute total number of admissions attributable to smoking, using SAF
-    numerator = n * saf) %>% 
+    numerator = n * saf) |>  
 # sum up safs to get total deaths attributable to smoking.
-  group_by(code, year, sex_grp, age_grp) %>% 
-  summarise(numerator = sum(numerator)) %>% ungroup()
+  group_by(code, year, sex_grp, age_grp) |>  
+  summarise(numerator = sum(numerator), .groups = "drop")
 
-saveRDS(smoking_adm, file=paste0(data_folder, 'Prepared Data/smoking_adm_raw.rds'))
+saveRDS(smoking_adm, file.path(profiles_data_folder, '/Prepared Data/smoking_adm_raw.rds'))
 
 ###############################################.
 ## Part 6 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "smoking_adm",  measure = "stdrate", geography = "all",
-              pop = "CA_pop_allages", yearstart = 2012, yearend = 2021,
-              time_agg = 2, epop_age = "normal")
 
-analyze_second(filename = "smoking_adm", measure = "stdrate", time_agg = 2, 
-               epop_total = 120000, ind_id = 1548, year_type = "calendar")
+main_analysis(filename = "smoking_adm", measure = "stdrate", geography = "multiple",
+             pop = "CA_pop_allages", yearstart = 2012, yearend = 2021,
+             time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 1548, 
+             year_type = "calendar")
 
+  
 # Rounding figures - they are estimates and rounding helps to understand that
 # they are not precise
-data_shiny <- readRDS(file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds")) %>% 
-  mutate(numerator = round(numerator, -1)) %>% #to nearest 10
+data_shiny <- readRDS(file.path(profiles_data_folder, "/Data to be checked/smoking_adm_shiny.rds")) |>  
+  mutate(numerator = round(numerator, -1)) |>  #to nearest 10
   mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
 
-saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
-write_csv(data_shiny, file = paste0(data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+saveRDS(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write_csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 
 ##END
