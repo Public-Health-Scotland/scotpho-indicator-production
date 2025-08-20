@@ -41,6 +41,7 @@ library(htmltools) # used in rmarkdown
 library(shiny) # used in rmarkdown
 library(flextable) # used in rmarkdown
 library(ggplot2) # used in rmarkdown
+library(hablar) # sum_ function from hablar keeps NA when there should be NA
 
 
 
@@ -52,6 +53,7 @@ library(ggplot2) # used in rmarkdown
 source("functions/helper functions/check_file_exists.R") # to check file exists before attempting to read in 
 source("functions/helper functions/validate_columns.R") # for checking all required columns are present, named correctly and of correct class
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
+source("functions/helper functions/check_denominator_years.R") # for checking years present in population denominator files
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
@@ -265,7 +267,7 @@ main_analysis <- function(filename,
   # and finally, aggregate the data by each geography code
   data <- data |>
     group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
-    summarise_all(sum, na.rm = T) |>
+    summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
     ungroup()
 
   # step complete
@@ -301,6 +303,7 @@ main_analysis <- function(filename,
     data_max_year <- max(data$year)
 
     if(data_max_year > pop_max_year){
+      
       cli::cli_alert_warning("'Population lookup only contains population estimates up to {pop_max_year}. Unable to attach population estimates for {data_max_year}")
     }
 
@@ -312,13 +315,52 @@ main_analysis <- function(filename,
     # identify which variables to join data by - the population lookups used for
     # standardised rates also include age and sex splits
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
+    
+    # full_join keeps all groups in the pop_lookup file and indicator data file
+    # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
+    # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
+    data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
 
-    data <- full_join(x = data, y = pop_lookup, by = joining_vars)
-
+    # check year parameters are sensible and all required years are present
+    check_denominator_years(data, yearend, yearstart)
+    
+    
+    # Temporary step for indicators being updated to include 2024 data that we publish at IZ/Locality level
+    # 2024 data at IZ/HSC locality level cannot be used (incuding within any rolling averages) until the release of SAPE 2024 in Winter 2025
+    # This step alerts analysts and removes any 2024 figures at IZ/locality level in step PRIOR to aggregating data by time periods to 
+    # ensure these data not included in any rolling averages.
+    # This code can be removed following release of SAPE 2023 and 2024 
+    
+    # Note commented out until:
+    # re-based SAPE 2011-2022 released (Autumn 2025)
+    # and scotpho lookups refreshed (including adding MYE 2024 for higher geographies)
+    
+    # if(geography == "datazone11" & yearend == 2024){
+    # 
+    #   response <- utils::askYesNo(paste(
+    #     "\n2024 figures (including inclusion in any rolling averages) can only currently be calculated for council level and above.\n",
+    #     "IZ/Locality level data can only be calculated up to 2023. Figures for these geographies will be refreshed using 2011-2021 rebased population\n",
+    #     "estimates and 2022 small area population estimates (SAPE) for 2022 and (provisionally) for 2023.\n\n",
+    #     "Ensure the 'notes_caveats' column of the techdoc explains this for users. Also ensure the 'next_update' date of this indicator is Winter 2025,\n",
+    #     "following the release of SAPE 2023 and 2024. This will ensure ALL geography levels include data up to 2024.\n\n",
+    #     "Type 'Yes' to continue",
+    #     sep = ""
+    #   ))
+    #   
+    #   if (isTRUE(response)) {
+    #     cli::cli_alert_success("Removing 2024 data at IZ/Locality level.")
+    #     data <- data |>
+    #       filter(!(grepl("S02|S99", code) & year == 2024))
+    #   } else {
+    #     cli::cli_abort("Process aborted")
+    #   }
+    # 
+    # }
+    
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
+    
   }
-  
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate by time period ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -326,12 +368,6 @@ main_analysis <- function(filename,
   # Up until this stage, the numerators and denominators are calculated for each geography, for a single year only.
   # However, we often need to combine years in order to publish data if the figures are small or sensitive. This step
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
-
-
-  # replace NAs with 0 before aggregating data by time period
-  data <- data |>
-    tidyr::replace_na(list(numerator = 0,
-                           denominator = 0))
 
 
   # determine sort order or variables before aggregating
@@ -347,9 +383,11 @@ main_analysis <- function(filename,
     arrange(across(all_of(var_order))) |> # arrange data by var order
     group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
     # calculating rolling averages
-    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
     filter(!is.na(denominator)) |>
-    ungroup()
+    ungroup() |>
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
+  
 
   
   # step complete
