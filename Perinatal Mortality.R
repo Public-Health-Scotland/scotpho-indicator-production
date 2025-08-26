@@ -64,8 +64,8 @@ clean_data <- clean_data |>
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Save files in folder to be checked
-write.csv(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.csv"), row.names = FALSE)
-write_rds(perinatal_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.rds"))
+write.csv(clean_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.csv"), row.names = FALSE)
+write_rds(clean_data, file.path(profiles_data_folder, "Data to be checked/99139_perinatal_mortality_shiny.rds"))
 
 # QA the data (note there are no CIs so it will flag an error about them)
 run_qa("99139_perinatal_mortality", type = "main")
