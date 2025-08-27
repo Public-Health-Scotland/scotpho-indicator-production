@@ -28,7 +28,8 @@ ca_names_to_codes <- function(df, council_area){
   ca_dict <- readRDS(file.path("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds")) 
   
   df2 <- left_join(df, ca_dict) |> #join df passed into function to lookup
-    select(-areaname, -{{council_area}}) #drop ca names leaving only S-codes
+    select(-areaname, -{{council_area}}) |>  #drop ca names leaving only S-codes 
+    select(code, everything()) #reordering so code is the first col
   
 }
 
