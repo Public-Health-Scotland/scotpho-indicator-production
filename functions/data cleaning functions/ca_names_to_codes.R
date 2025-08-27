@@ -22,14 +22,16 @@ ca_names_to_codes <- function(df, council_area){
                                 {{council_area}} == "Edinburgh, City of" ~ "City of Edinburgh",
                                 {{council_area}} == "Orkney" ~ "Orkney Islands", 
                                 {{council_area}} == "Shetland" ~ "Shetland Islands",
+                                grepl(pattern = "Glasgow", {{council_area}}, ignore.case = TRUE) ~ "Glasgow City",
+                                grepl(pattern = "Dundee", {{council_area}}, ignore.case = TRUE) ~ "Dundee City",
                                 TRUE ~ {{council_area}})) 
   
   #Read in the CA dictionary that matches names to S-codes
   ca_dict <- readRDS(file.path("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geography/CAdictionary.rds")) 
   
-  df2 <- left_join(df, ca_dict) |> #join df passed into function to lookup
+  df2 <- left_join(df, ca_dict, by = "areaname") |> #join df passed into function to lookup
     select(-areaname, -{{council_area}}) #drop ca names leaving only S-codes
-  
+  return(df2)
 }
 
 #End
