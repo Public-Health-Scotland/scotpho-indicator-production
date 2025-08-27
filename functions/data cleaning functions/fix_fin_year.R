@@ -61,30 +61,3 @@ fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
 }
 
 #End
-# 
-# #Testing - delete during PR
-# library(lubridate)
-# library(phsmethods)
-# library(dplyr)
-# 
-# #4 digit testing - simple renaming required
-# df<- data.frame(fin_year = c("2021/22", "202223", "2023-24", "2024/5"))
-# df2<- fix_fin_year(df, fy_col_name = "fin_year", first_year_digits = "4")
-# 
-# #2 digit testing - no renaming required
-# df3<- data.frame(year = c("21/22", "2223", "23-24", "21/2"))
-# df4 <- fix_fin_year(df, fy_col_name = "year", first_year_digits = "2")
-# 
-# #Testing with phsmethods extract_fin_year function
-# df5 <- data.frame(year = as_date(ymd(c("2010-08-03", "2010-02-01", "2021-02-23", "2022-06-30"))))
-# 
-# df5 <- df5 |>
-#   mutate(fin_year = phsmethods::extract_fin_year(year)) |>
-#   fix_fin_year(fy_col_name = "fin_year", "4")
-# 
-# #Testing - year col needs dropping so fin_year col can be renamed. 
-# df6 <- data.frame(year = c("A", "B", "C", "D"),
-#                   fin_year = c("2021/22", "202223", "2023-24", "2024/5"))
-# 
-# df6 <- df6 |> 
-#   fix_fin_year(fy_col_name = "fin_year", "4")
