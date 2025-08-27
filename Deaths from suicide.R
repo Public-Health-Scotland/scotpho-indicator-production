@@ -3,6 +3,8 @@
 # 30008 Adult deaths from suicide 
 # 13033 Deaths from suicide in young people
 
+# To do:
+# Get crude rate calc in main_analysis to take splits by sex (as is possible for standardised rates). Then update code for the YP suicides indicator. 
 
 #   Part 1 - Extract data from SMRA.
 #   Part 2 - Create the different geographies basefiles
@@ -30,7 +32,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 # with any icd10 code of suicide in any cause (includes non-Scottish residents).
 # NB. Restricted to 2002 to match the population lookup as of June 2025. Could revisit in future if population lookup extended back further.
 deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
-  "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
+                                         "SELECT year_of_registration year, age, SEX sex_grp, POSTCODE pc7
     FROM ANALYSIS.GRO_DEATHS_C
       WHERE  year_of_registration between '2002' and '2023' 
       AND sex <> 9
@@ -39,7 +41,7 @@ deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 
-# Bringing LA and datazone info. 
+# Bringing LA and datazone info. (as not all records have datazone info attached initially)
 # latest postcode directory from lookups folder
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -47,8 +49,10 @@ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scott
 
 # join the data sets with postcode info
 deaths_suicide <- left_join(deaths_suicide, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, age, sex_grp, datazone2001, datazone2011, ca2019) %>% 
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish
+  mutate(datazone = case_when(year < 2014 ~ datazone2001,
+                              year > 2013 ~ datazone2011)) %>%
+  select(year, age_grp, age, sex_grp, datazone, ca = ca2019) %>% 
+  subset(!(is.na(datazone))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
 ###############################################.
@@ -60,10 +64,9 @@ deaths_suicide <- left_join(deaths_suicide, postcode_lookup, "pc7") %>%
 # ALL 16+
 suicides_ca_16plus <- deaths_suicide %>%
   filter(age>15) %>%
-  group_by(year, age_grp, sex_grp, ca2019) %>%  
+  group_by(year, age_grp, sex_grp, ca) %>%  
   summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
+  ungroup() 
 
 saveRDS(suicides_ca_16plus, file=paste0(profiles_data_folder, '/Prepared Data/suicides_ca_16plus_raw.rds'))
 
@@ -81,10 +84,9 @@ saveRDS(suicides_ca_M_16plus, file=paste0(profiles_data_folder, '/Prepared Data/
 # 11 to 25 year olds
 suicides_young <- deaths_suicide %>%
   filter(age>10 & age<26) %>%
-  group_by(year, sex_grp, ca2019) %>%  
+  group_by(year, sex_grp, ca) %>%  
   summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(ca = ca2019)
+  ungroup() 
 
 saveRDS(suicides_young, file=paste0(profiles_data_folder, '/Prepared Data/suicides_young_raw.rds'))
 
@@ -98,71 +100,52 @@ suicides_young_M <- suicides_young %>% subset(sex_grp==1)
 
 saveRDS(suicides_young_M, file=paste0(profiles_data_folder, '/Prepared Data/suicides_young_M_raw.rds'))
 
-###############################################.
-# Deprivation basefile
+##############################################.
+# Deprivation basefiles
 
 # ALL 16+
-# DZ 2011
-suicides_dz11_16plus <- deaths_suicide %>% 
-  filter(age>15) %>%
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%  
-  rename(datazone = datazone2011)
-
-# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-suicides_dz01_16plus <- deaths_suicide %>% 
-  filter(age>15) %>%
-  group_by(year, datazone2001, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>% 
-  rename(datazone = datazone2001) %>% 
-  subset(year<=2013)
-
-dep_file_16plus <- rbind(suicides_dz01_16plus, suicides_dz11_16plus %>% subset(year>=2014)) #joining dz01 and dz11
+dep_file_16plus <- deaths_suicide %>%
+  mutate(sex_grp == "Total") %>%
+  filter(age>15) %>% group_by(year, age_grp, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(dep_file_16plus, file=paste0(profiles_data_folder, '/Prepared Data/suicide_depr_16plus_raw.rds'))
 
 # FEMALE 16+
-dep_file_F_16plus <- dep_file_16plus %>% subset(sex_grp==2)
+dep_file_F_16plus <- deaths_suicide %>%
+  filter(age>15 & sex_grp==2) %>% group_by(year, age_grp, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(dep_file_F_16plus, file=paste0(profiles_data_folder, '/Prepared Data/suicide_depr_F_16plus_raw.rds'))
 
 # MALE 16+
-dep_file_M_16plus <- dep_file_16plus %>% subset(sex_grp==1)
+dep_file_M_16plus <- deaths_suicide %>%
+  filter(age>15 & sex_grp==1) %>% group_by(year, age_grp, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(dep_file_M_16plus, file=paste0(profiles_data_folder, '/Prepared Data/suicide_depr_M_16plus_raw.rds'))
 
 
 # 11 to 25 year olds
-# DZ 2011
-suicides_dz11_11to25 <- deaths_suicide %>% 
-  filter(age>10 & age<26) %>%
-  group_by(year, sex_grp, datazone2011) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%  
-  rename(datazone = datazone2011)
-
-# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
-suicides_dz01_11to25 <- deaths_suicide %>% 
-  filter(age>10 & age<26) %>%
-  group_by(year, sex_grp, datazone2001) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>% 
-  rename(datazone = datazone2001) %>% 
-  subset(year<=2013)
-
-suicides_young_depr <- rbind(suicides_dz01_11to25, suicides_dz11_11to25 %>% subset(year>=2014)) #joining dz01 and dz11
+suicides_young_depr <- deaths_suicide %>%
+  mutate(sex_grp == "Total") %>%
+  filter(age>10 & age<26) %>% 
+  group_by(year, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(suicides_young_depr, file=paste0(profiles_data_folder, '/Prepared Data/suicides_young_depr_raw.rds'))
 
 # FEMALE 11 to 25 year olds
-suicides_young_depr_F <- suicides_young_depr %>% subset(sex_grp==2)
+suicides_young_depr_F <- deaths_suicide %>%
+  filter(age>10 & age<26 & sex_grp==2) %>% group_by(year, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(suicides_young_depr_F, file=paste0(profiles_data_folder, '/Prepared Data/suicides_young_depr_F_raw.rds'))
 
 # MALE 11 to 25 year olds
-suicides_young_depr_M <- suicides_young_depr %>% subset(sex_grp==1)
+suicides_young_depr_M <- deaths_suicide %>%
+  filter(age>10 & age<26 & sex_grp==1) %>% group_by(year, sex_grp, datazone) %>%
+  summarise(numerator = n()) %>% ungroup()
 
 saveRDS(suicides_young_depr_M, file=paste0(profiles_data_folder, '/Prepared Data/suicides_young_depr_M_raw.rds'))
 
@@ -185,7 +168,7 @@ main_analysis(filename = "suicides_ca_16plus", ind_id = 30008, geography = "coun
 # deprivation analysis function
 deprivation_analysis(filename="suicide_depr_16plus", measure="stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 165800, epop_age = "16+",
-                    yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "all")
+                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "all")
 
 
 
@@ -238,12 +221,13 @@ deprivation_analysis(filename = "suicides_young_depr", measure = "crude", time_a
 
 ###############################################.
 
-# Female 
+# Female
 
-# main analysis function 
-main_analysis(filename = "suicides_young_F", ind_id = 13033, geography = "council", measure = "crude", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2023,
-              time_agg = 5, crude_rate = 100000, year_type = "calendar")
+# # No M or F rates calculated as the crude rate calc doesn't currently split by sex
+# # main analysis function
+# main_analysis(filename = "suicides_young_F", ind_id = 13033, geography = "council", measure = "crude",
+#               pop = "CA_pop_11to25", yearstart = 2002, yearend = 2023,
+#               time_agg = 5, crude_rate = 100000, year_type = "calendar")
 
 # deprivation analysis function
 deprivation_analysis(filename = "suicides_young_depr_F", measure = "crude", time_agg = 5,
@@ -252,12 +236,12 @@ deprivation_analysis(filename = "suicides_young_depr_F", measure = "crude", time
 
 ###############################################.
 
-# Male 
+# Male
 
-# main analysis function 
-main_analysis(filename = "suicides_young_M", ind_id = 13033, geography = "council", measure = "crude", 
-              pop = "CA_pop_11to25", yearstart = 2002, yearend = 2023,
-              time_agg = 5, crude_rate = 100000, year_type = "calendar")
+# # main analysis function
+# main_analysis(filename = "suicides_young_M", ind_id = 13033, geography = "council", measure = "crude",
+#               pop = "CA_pop_11to25", yearstart = 2002, yearend = 2023,
+#               time_agg = 5, crude_rate = 100000, year_type = "calendar")
 
 # deprivation analysis function
 deprivation_analysis(filename = "suicides_young_depr_M", measure = "crude", time_agg = 5,
@@ -276,7 +260,7 @@ deprivation_analysis(filename = "suicides_young_depr_M", measure = "crude", time
 # keep all even counts of 1-4 as NRS publish these for Scotland and LAs
 main <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_ca_16plus_shiny.rds")) 
 
-# keep all even counts of 1-4 as NRS publish these for Scotland and LAs by sex
+# keep all even counts of 1-4 as NRS publish these for Scotland and LAs by sex (and all aggregated geogs: HB, PD, ADP, HSCP)
 female <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_ca_F_16plus_shiny.rds")) %>% mutate(split_value="Female", split_name="Sex")
 male <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_ca_M_16plus_shiny.rds")) %>% mutate(split_value="Male", split_name="Sex")
 popgrp <- rbind(female, male)
@@ -286,7 +270,7 @@ popgrp <- rbind(female, male)
 total_dep <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicide_depr_16plus_ineq.rds")) %>% mutate(sex="Total")
 f_dep <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicide_depr_F_16plus_ineq.rds")) %>% mutate(sex="Female")
 m_dep <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicide_depr_M_16plus_ineq.rds")) %>% mutate(sex="Male")
-dep <- rbind(total_dep, f_dep, m_dep) %>% filter(substr(code, 1, 3) == "S00")
+dep <- rbind(total_dep, f_dep, m_dep) %>% filter(substr(code, 1, 3) == "S00") # Select Scotland only
 
 
 # Get all young person data, add relevant columns, suppress as required, and combine
@@ -298,14 +282,15 @@ main_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_yo
   mutate(numerator = case_when(substr(code, 1, 3) != "S00" & numerator > 0 & numerator < 5 ~ as.numeric(NA),
                                TRUE ~ numerator))
 
-# NRS publish counts of 1-4 for Scottish data by sex, but not for lower geogs
-# ScotPHO has not previously published young suicide rates by sex.
-# Decision: Drop the counts for lower geogs
-female_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_F_shiny.rds")) %>% mutate(split_value="Female", split_name="Sex")
-male_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_M_shiny.rds")) %>% mutate(split_value="Male", split_name="Sex")
-popgrp_yp <- rbind(female_yp, male_yp) %>%
-  mutate(numerator = case_when(substr(code, 1, 3) != "S00" & numerator > 0 & numerator < 5 ~ as.numeric(NA),
-                               TRUE ~ numerator))
+# # N.B. No pop group tab for this profile (CYP) yet, so come back to this if/when that is added
+# # NRS publish counts of 1-4 for Scottish data by sex, but not for lower geogs
+# # ScotPHO has not previously published young suicide rates by sex.
+# # Decision: Drop the counts for lower geogs
+# female_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_F_shiny.rds")) %>% mutate(split_value="Female", split_name="Sex")
+# male_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_M_shiny.rds")) %>% mutate(split_value="Male", split_name="Sex")
+# popgrp_yp <- rbind(female_yp, male_yp) %>%
+#   mutate(numerator = case_when(substr(code, 1, 3) != "S00" & numerator > 0 & numerator < 5 ~ as.numeric(NA),
+#                                TRUE ~ numerator))
 
 # NRS publish no SIMD data by age group, so there is no precedent to follow.
 # ~5% of the Scotland level quintile numerators are >0 and <5
@@ -340,9 +325,9 @@ write_rds(dep, paste0(profiles_data_folder, "/Shiny Data/suicides_16plus_ineq.rd
 write.csv(main_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny.csv"), row.names = FALSE)
 write_rds(main_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny.rds"))
 
-# popgroups data
-write.csv(popgrp_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny_popgrp.csv"), row.names = FALSE)
-write_rds(popgrp_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny_popgrp.rds"))
+# # popgroups data
+# write.csv(popgrp_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny_popgrp.csv"), row.names = FALSE)
+# write_rds(popgrp_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_shiny_popgrp.rds"))
 
 # inequalities data
 write.csv(dep_yp, paste0(profiles_data_folder, "/Shiny Data/suicides_young_ineq.csv"), row.names = FALSE)
