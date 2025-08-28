@@ -71,19 +71,31 @@ names_to_codes <- function(df) {
 
 area_prevalence_shos <- names_to_codes(area_prevalence_shos)
                                      
-# read in SHsS data (for period 2019 onward)
-area_prevalence_shes <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"), 
-                                   sheet = "area_prev_shes") |> 
-  janitor::clean_names() |>   #variables to lower case
-  select(-c("frequency","lci","uci")) |> 
-  mutate(smoking_categories=case_when(
-    smoking_categories=="Never smoked/Used to smoke occasionally" ~ "never",
-    smoking_categories=="Used to smoke regularly" ~ "ex_area",
-    smoking_categories=="Current smoker" ~ "current_area",
-    TRUE~"other")) |> 
-  pivot_wider(names_from ="smoking_categories",
-              values_from = "percent") %>%
-  filter(sex!=3) |>  #exclude sex 3 (all)
+# read in SHeS data (for period 2019 onward)
+# This data is obtained via information request to the Scottish Government and is also used for the Smoking Prevalence indicators
+area_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_16andover_sup - REVISED.csv")) |> 
+  janitor::clean_names() |> #variables to snake case
+  filter(sex != "All") |> 
+  rename(period = year, #changing to match SHoS format
+         type = geography) |> 
+  mutate(smoking_status = case_when(smoking_status == "Never smoked/Used to smoke occasionally" ~ "never", #recoding smoking status to simplify
+                                    smoking_status == "Used to smoke regularly" ~ "ex_area",
+                                    smoking_status == "Current smoker" ~ "current_area",
+                                    TRUE ~ "other"),
+         sex = case_when(sex == "Male" ~ 1, #recoding sex to 1/2
+                         sex == "Female" ~ 2,
+                         TRUE ~ NA_real_),
+         type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
+                          type == "Local Authority" ~ "ca",
+                          TRUE ~ type),
+         area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
+         area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
+         source = "SHeS", #adding source
+         year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
+  select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
+  filter(year > 2018 & year < 2023) |>  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
+  pivot_wider(names_from ="smoking_status",
+              values_from = "percent") |> 
   select(-"never")
   
 #Apply HB and CA lookups
