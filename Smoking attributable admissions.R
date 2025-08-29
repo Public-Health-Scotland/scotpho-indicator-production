@@ -177,8 +177,14 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
 # Smoking attributable diagnosis
-smoking_diag <- paste0("C3[34]|C0|C1[0-6]|C25|C32|C53|C6[4-8]|C80|C92|J4[0-4]|",
-                       "J1[0-8]|I0|I[234]|I5[01]|I6|I7[0-8]|K2[567]|K50|K05|H25|O03|S72[012]")
+smoking_diag <- paste0("A1[5-9]|C1[0145689]|C2[025]|C3[0-4]|C4[34]|C5[03]|C6[4-7]|C92|E11|F0[1-3]|",
+                       "F2[0-5]|F2[89]|F3[23]|F502|F5081|G30|G473|H25|H35[3-9]|H3[6-9]|H4[0-9]|",
+                       "H5[01]|H5(20|21|22|23|24)|H9[01]|I2[0-6]|I6[0-7]|I71|I739]|I8[0-2]|J09|J1[0-8]|",
+                       "J4[0-7]|J841|K227|K50|L40|M0[56]|M32|M545|N18[0-9]|O0[03]|O4[245]|S72[0-2]|",
+                       "T814|Y83")
+
+
+
 # Sorting variables
 sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # Extracting one row per hospital admission in which there was at least one episode containing
