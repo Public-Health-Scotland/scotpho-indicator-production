@@ -228,12 +228,12 @@ Shiny app to view data trends for one or more geography - some population gruop 
                    "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#b15928")
     
     #tool tip text for trend chart on population groups
-    tooltiptext_trend <- c(paste0(trend_data()$year, ": ","<br>",
+    tooltiptext_trend <- c(paste0(trend_data()$trend_axis, ": ","<br>",
                               trend_data()$split_value,"<br>",
                               ": ",trend_data()$rate))
     
     #Create trend plot
-    rate_trend <- plot_ly(data= trend_data(), x=~year, hoverinfo="text") %>%
+    rate_trend <- plot_ly(data= trend_data(), x=~trend_axis, hoverinfo="text") %>%
       add_lines(y = ~get(input$var_plot_trend), name = ~split_value , type = 'scatter',
                 text = tooltiptext_trend,mode = 'lines', color = ~split_value,  colors = trend_palette) %>%
       layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
