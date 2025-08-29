@@ -13,7 +13,7 @@
 
 ## files created ----
 # main_dataset - Y
-# deprivation_dataset - Y (for scqf 6 at scotland level only)
+# deprivation_dataset - Y (scotland level only)
 # popgroups_dataset - N
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,6 +60,15 @@ data <- data |>
   mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA))) |>
   mutate(across(c("denominator", "scqf_4", "scqf_6"), as.numeric))
 
+# fix quintile labels
+data <- data |>
+  mutate(quintile = case_when(quintile == "0-20% (Most Deprived)" ~ "1",
+                            quintile == "20-40%" ~ "2",
+                            quintile == "40-60%" ~ "3",
+                            quintile == "60-80%" ~ "4",
+                            quintile == "80-100% (Least Deprived)"  ~ "5",
+                            TRUE ~ "Total"))
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Identify areas to be suppressed ----
@@ -98,7 +107,6 @@ suppress <- ca_suppress |>
 # identify suppression required for SCQF 4
 scqf_4_suppress <- suppress |>
   select(-scqf_6) |>
-  filter(quintile == "Total") |>
   filter(is.na(scqf_4) | is.na(denominator)) |>
   mutate(suppress = "Y") |>
   select(year, code, quintile, suppress)
@@ -137,7 +145,6 @@ data <- data |>
 
 # scqf 4 data with suppression applied
 scqf_4 <- data |>
-  filter(quintile == "Total") |>
   select(-scqf_6) |>
   rename(numerator = scqf_4) |>
   left_join(scqf_4_suppress, by = c("year", "code", "quintile")) |>
@@ -154,7 +161,10 @@ scqf_6 <- data |>
 
 
 # filter on totals for scqf main file
-scqf_main <- scqf_6 |>
+scqf_6_main <- scqf_6 |>
+  filter(quintile == "Total")
+
+scqf_4_main <- scqf_4 |>
   filter(quintile == "Total")
 
 # save temp files to use in analysis functions
@@ -173,7 +183,7 @@ main_analysis(filename = "13009_scqf_4_plus", measure = "percent",
 
 main_analysis(filename = "13006_scqf_6_plus", measure = "percent", 
               yearstart = "2012", yearend = "2023", time_agg = 1, 
-              geography = "multiple", ind_id = 13009, year_type = "school")
+              geography = "multiple", ind_id = 13006, year_type = "school")
 
 
 
@@ -181,18 +191,12 @@ main_analysis(filename = "13006_scqf_6_plus", measure = "percent",
 # Create deprivation dataset ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # only doing for scotland level just now
-# due to error when trying to calculate inequality measures for HB/CA level
-# revisit to work out why happening
+# as a lot of HB/CA data suppressed at SIMD level
+
 
 scqf_6_depr <- scqf_6 |>
   filter(grepl(pattern = "S00", code)) |>
   mutate(quint_type = "sc_quin") |>
-  mutate(quintile = case_when(quintile == "0-20% (Most Deprived)" ~ "1",
-                              quintile == "20-40%" ~ "2",
-                              quintile == "40-60%" ~ "3",
-                              quintile == "60-80%" ~ "4",
-                              quintile == "80-100% (Least Deprived)"  ~ "5",
-                              TRUE ~ "Total")) |>
   calculate_percent()|>
   calculate_inequality_measures() |>
   mutate(year = as.numeric(year)) |>
@@ -203,10 +207,26 @@ scqf_6_depr <- scqf_6 |>
             least_rate, par_rr, count))
 
 
+
+scqf_4_depr <- scqf_4 |>
+  filter(grepl(pattern = "S00", code)) |>
+  mutate(quint_type = "sc_quin") |>
+  calculate_percent()|>
+  calculate_inequality_measures() |>
+  mutate(year = as.numeric(year)) |>
+  create_def_period_column(year_type = "financial", agg = 1) |>
+  create_trend_axis_column(year_type = "financial", agg = 1) |>
+  mutate(ind_id = 13009) |>
+  select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
+            least_rate, par_rr, count))
+
+
 # save final depr file in data to be checked folder
 saveRDS(scqf_6_depr, file.path(profiles_data_folder, "Data to be checked", "13006_scqf_6_plus_ineq.rds"))
+saveRDS(scqf_4_depr, file.path(profiles_data_folder, "Data to be checked", "13009_scqf_4_plus_ineq.rds"))
 
 # QA file
 run_qa(filename = "13006_scqf_6_plus", type = "deprivation")
+run_qa(filename = "13009_scqf_4_plus", type = "deprivation")
 
 ## END
