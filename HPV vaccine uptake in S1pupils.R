@@ -69,7 +69,7 @@ export_list(df_list, file.path(profiles_data_folder, "Prepared Data", paste0("%s
 
 # Uptake in females only 
 main_analysis(filename = "Female_hpv_uptake_s1", ind_id = 99145,  measure = "percent", 
-              geography = "datazone11", year_type = "school", time_agg = 1, yearstart = 2014, yearend = 2023)
+              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2014, yearend = 2023)
 
 
 # Uptake in all pupils 
