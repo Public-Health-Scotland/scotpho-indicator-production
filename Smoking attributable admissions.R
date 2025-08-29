@@ -13,7 +13,7 @@
 # areas - this isn't ideal as scotpho indicator is a rolling average
 # but smoking attributable admissions/deaths are artificial construct and using best available data should be acceptable.  
 
-# As of June 2023 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
+# As of September 2025 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
 # who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
@@ -93,7 +93,7 @@ area_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data
          source = "SHeS", #adding source
          year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
   select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
-  filter(year > 2018 & year < 2023) |>  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
+  filter(year > 2018) |>  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
   pivot_wider(names_from ="smoking_status",
               values_from = "percent") |> 
   select(-"never")
@@ -140,29 +140,27 @@ age_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Dat
   arrange(sex_grp, year, source, ex_age, current_age, age_grp2)
 
 # read in SHeS age data (for period 2019 onwards)
-age_prevalence_shes <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/shes smoking prevalence_for agegroups.xlsx"),
-                                  sheet = "age_prev_shes") |> 
+# This data file obtained from the Tobacco team
+
+age_prevalence_shes_2 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
   clean_names() |> 
-  mutate(smoking_category=case_when(
-    smoking_category=="Never smoked/Used to smoke occasionally" ~ "never",
-    smoking_category=="Used to smoke regularly" ~ "ex_age",
-    smoking_category=="Current smoker" ~ "current_age",
-    TRUE~"other")) |> 
-  select(-frequency) |> 
-  pivot_wider(names_from ="smoking_category",
-              values_from = "percent") |> 
-  filter(sex_grp!=3) |>  #exclude sex 3 (all)
-  mutate(age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
-                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) %>% 
-  select(-agegrp, -code) |>  
-  mutate(sex_grp = as.character(sex_grp)) 
-
-# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020
-age_prevalence_shes_2020 <- age_prevalence_shes |> 
-  filter(year == 2019) |> 
-  mutate(source = "shes duplicate2019",
-         year = 2020)
-
+  select(c("status", "age_grp", "sex", "year2019", "year2022", "year2023")) |> 
+  mutate(status=case_when(
+    status=="Ex-regular cigarette smoker" ~ "ex_age",
+    status=="Current cigarette smoker" ~ "current_age",
+    TRUE~"other"),
+    source = "SHeS",
+    sex = as.character(sex),
+    year2020 = year2019, #To align with tobacco team using 2019 data for 2020 since no SHeS that year
+    year2021 = year2022) |>  #2021 SHeS figure was very low so using 2022 figure as a proxy
+tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "year2023"), names_to = "year", values_to = "percent") |> 
+  tidyr::pivot_wider(id_cols = c("age_grp", "sex", "year", "source"), names_from = "status", values_from = "percent") |> 
+  filter(sex != "all", 
+         age_grp != "All") |> 
+  rename(sex_grp = sex,
+         agegrp = age_grp) |> 
+  mutate(year = as.numeric(substr(year, 5, 9)))
+  
 #bind shos and shes area prevalence
 age_prevalence <- rbind(age_prevalence_shes, age_prevalence_shos, age_prevalence_shes_2020) |> 
   arrange(year, sex_grp)
