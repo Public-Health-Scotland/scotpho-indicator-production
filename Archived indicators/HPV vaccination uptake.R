@@ -1,3 +1,17 @@
+# ~~~~~~~~~~~~~~~~~~~~~
+# Archived -----
+# ~~~~~~~~~~~~~~~~~~~~~~
+
+# This indicator was archived in August 2024 due to outdated criteria.
+# It has been replaced with 2 new indicators which better reflect the current JCVA guidelines
+# and vaccination schedule in schools (see script named 'HPV vaccine uptake in S1 pupils'):
+# 99144 - Uptake of HPV vaccine in S1 females
+# 99145 - Uptake of HPV vaccine in S1 pupils 
+
+# IMPORTANT: This indicator still needs updated following any boundary changes,
+# such as new localities, datazones etc. as it is still in the tool, just not being
+# updated with more recent years data.
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 # Analyst notes ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~
