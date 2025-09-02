@@ -1,32 +1,30 @@
 # ScotPHO indicator: Smoking attributable admissions
 
 # Notes for analyst:
-# Smoking attributable admissions/deaths are estimates only - it is calculated by following methodology laid out by PHE.
+# Smoking attributable admissions/deaths are modelled estimates rather than measured values
 # Put simply calculation involves multiplying certain types of admissions/deaths by the attributable fractions that are 
 # associated with smoking and then also factoring percentage of the population that are current or ex smokers.
 
-# In June 2023 the indicator switched from using SHoS(household survey) data as the source of smoking prevalence to using SHeS (health survey) data instead.
-# Around 2020 the SHoS survey stopped asking questions on ex-smoking status - which is essential for attributable calculation. 
-# The switch was also made on the recommendation of SG SHoS team as SHeS is deemed best source of health data
-# SHeS was not previously used as the sample size did not allow for robust estimates at LA level.
-# Since sample size of SHeS is small and local authority level data not robust we need to use aggregated years to provide smoking status for 
-# areas - this isn't ideal as scotpho indicator is a rolling average
-# but smoking attributable admissions/deaths are artificial construct and using best available data should be acceptable.  
+# For 2019 onwards the indicator switched from using SHoS (Household Survey) as the source of smoking prevalence to using SHeS (Health Survey).
+# This was because around this time SHoS stopped asking about ex-smoking status, which is essential to calculate attributable hospitalisations/deaths.
+# This change was recommended by the SG SHoS team as SHeS is deemed the best source of health data.
+# SHes was not previously used as the sample size did not allow for robust estimates at LA level.
+# Therefore we now need to use aggregated years to provide smoking status for areas, which is not ideal as the ScotPHO indicator is a rolling average.
+# However as smoking attributable admissions/deaths are modelled estimates use of the best available data should be acceptable. 
 
 # As of September 2025 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
 # who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
-# The estimates produced by the two teams serve different purposes and data is generated using different scripts - the outputs are 
+# The estimates produced by the two teams serve different purposes and are generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
 # totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
 
 # Although both teams now use SHeS as source of smoking prevalence our scotland totals will differ as ScotPHO indicator is a 2 year rolling figure
 # (tobacco team produce scotland only data for individual years)
-# scotpho estimates that include data prior to 2019 will still be based on SHoS (when we switched we did not back calculate historic data)
 
 # Part 1 - Compile smoking prevalence data
 # Part 2 - Extract data from SMRA
-# Part 3 - add in relative risks of each disease as a result of smoking
-# Part 4 - Aggregating geographic areas
+# Part 3 - Add in relative risks of each disease as a result of smoking
+# Part 4 - Aggregate geographic areas
 # Part 5 - Calculate smoking attributable fraction
 # Part 6 - Run analysis functions
 
@@ -41,67 +39,73 @@ library(readxl) #for reading in xlsx files
 
 ###############################################.
 # Part 1  - Compile smoking prevalence data ----
-# Requires 2 data series both are trends in percentage of ex & current smokers in those aged 35 year plus, by year, by sex
-# Series 1 : prevalence across all age groups but split by ca/NHS board with overall Scotland values
-# Series 2 : Scotland level prevalence buy split by age groups
 ###############################################.
 
-# Historically there are 2 potential sources of smoking prevalence data,both national surveys but due to differences in sample size and available data meant that scotpho indicator 
-# needed to switch from using SHoS (Scottish Household survey) to SHeS (Scottish Health survey) as the source of smoking prevalence data for generation the smoking attributable deaths/admissions indicators. 
+#Requires two data series. Both are trends in the percentage of ex and current smokers aged 35+ split by sex.
+#Series 1 - prevalence across all age groups but split by CA/HB with overall Scotland values. 
+#Series 2 - prevalence at Scotland level in over 35s split by age groups
 
 ###############################################.
 # Prevalence data series 1:  AREA PREVALENCE ----
 ###############################################.
 
-# read in SHoS data (for period 2012-2018)
-area_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"), 
-                                  sheet = "Area prev") |>  
-  janitor::clean_names() |>  #variables to lower case
-  mutate(period=as.character(year),
-         source="SHoS") 
+#These data are stored in 3 data files
+#1 - SHoS data (2012-2018)
+#2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
+#3 - SHeS data file 2 (2022-2023, 2022 used as a proxy for 2021 in line with tobacco team)
 
-#Apply ca_names_to_codes and hb_names_to_codes helper functions to convert area names to codes
+#Note - ideally get a full time series from the SG for age 35+ with smoking prevalence data 2019 onwards for 2024 data update
+#SHeS data obtained from the SG via IR
 
-names_to_codes <- function(df) {
-  ca <- df |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
-  hb <- df |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
-    mutate(code = replace_na(code, "S00000001")) #Add Scotland code manually
-  bind_rows(ca, hb) #recombine into 1 df
-}
+#1. SHos Data (2012-18)
+area_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHoS_area_prevalence_DO_NOT_DELETE.rds"))
 
-area_prevalence_shos <- names_to_codes(area_prevalence_shos)
-                                     
-# read in SHeS data (for period 2019 onward)
-# This data is obtained via information request to the Scottish Government and is also used for the Smoking Prevalence indicators
-area_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_16andover_sup - REVISED.csv")) |> 
+#2. SHeS Data (2019)
+area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"),
+                                   sheet = "area_prev_shes")|> 
+  janitor::clean_names() |> #variables to snake case
+  select(-c("lci", "uci", "frequency")) |> 
+  filter(sex != 3, #drop sex = all
+         year == 2019) |>  #keep only 2019 figures
+  rename(smoking_status = smoking_categories)
+
+#3. SHeS Data (2022-2023)
+area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_35andover_sup.csv")) |> 
   janitor::clean_names() |> #variables to snake case
   filter(sex != "All") |> 
   rename(period = year, #changing to match SHoS format
          type = geography) |> 
-  mutate(smoking_status = case_when(smoking_status == "Never smoked/Used to smoke occasionally" ~ "never", #recoding smoking status to simplify
+  mutate(sex = case_when(sex == "Male" ~ 1, #recoding sex to 1/2
+                       sex == "Female" ~ 2,
+                       TRUE ~ NA_real_),
+       type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
+                        type == "Local Authority" ~ "ca",
+                        TRUE ~ type),
+       area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
+       area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
+       source = "SHeS", #adding source
+       year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
+  select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
+  filter(year > 2021)  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
+
+#Join both SHeS data frames
+area_prevalence_shes <- rbind(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
+  mutate(smoking_status = case_when(smoking_status == "Never smoked/Used to smoke occasionally" ~ "never", #recoding to match SHoS
                                     smoking_status == "Used to smoke regularly" ~ "ex_area",
                                     smoking_status == "Current smoker" ~ "current_area",
-                                    TRUE ~ "other"),
-         sex = case_when(sex == "Male" ~ 1, #recoding sex to 1/2
-                         sex == "Female" ~ 2,
-                         TRUE ~ NA_real_),
-         type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
-                          type == "Local Authority" ~ "ca",
-                          TRUE ~ type),
-         area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
-         area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
-         source = "SHeS", #adding source
-         year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
-  select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
-  filter(year > 2018) |>  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
-  pivot_wider(names_from ="smoking_status",
-              values_from = "percent") |> 
-  select(-"never")
+                                    TRUE ~ smoking_status)) |> 
+  tidyr::pivot_wider(id_cols = c("area", "sex", "source", "period", "type", "year"),
+                     names_from = smoking_status, values_from = percent) |> 
+  select(-never) #drop never-smokers
   
-#Apply HB and CA lookups
-area_prevalence_shes <- names_to_codes(area_prevalence_shes)
+#Use helper functions to convert CA and HB names to codes
+ca <- area_prevalence_shes |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
+hb <- area_prevalence_shes |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
+  mutate(code = replace_na(code, "S00000001")) #Add Scotland code manually
 
-# add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
+area_prevalence_shes <- bind_rows(ca, hb)  #recombine into 1 df
+
+#Add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
 area_prevalence_shes_scot <- area_prevalence_shes |> 
   filter(code=="S00000001") |> 
   select(-c("type","source","code")) |> 
@@ -109,20 +113,25 @@ area_prevalence_shes_scot <- area_prevalence_shes |>
 
 area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot, by = c("sex","period","year"))
 
-# 2020 prevalence data not available due to issues with pandemic period survey collection - to compensate apply 2019 prevalence rates to 2020 data
-# scotpho indicator a 2 year rolling average therefore doesn't cope well with missing years of data
-area_prevalence_shes_2020 <-area_prevalence_shes  |> 
-  filter(year==2019) |> 
-  mutate(source = "shes duplicate2019",
-         year = 2020)
+#Duplicate 2019 prevalence figures for 2020 as no survey that year
+#And duplicate 2022 for 2021 as odd trend (in line with tobacco team)
+area_prevalence_shes_20_21 <- area_prevalence_shes |> 
+  filter(year %in% c(2019, 2022)) |> 
+  mutate(year = case_when(year == 2022 ~ 2021,
+                          year == 2019 ~ 2020,
+                          TRUE ~ year),
+         source = case_when(year == 2020 ~ "shes_duplicate2019",
+                            year == 2021 ~ "shes_duplicate2020",
+                            TRUE ~ source))
+area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_20_21)  #bind proxy years
 
 #bind shos and shes area prevalence
-area_prevalence <- rbind(area_prevalence_shes,area_prevalence_shos, area_prevalence_shes_2020) |> 
+area_prevalence <- rbind(area_prevalence_shos, area_prevalence_shes) |> 
   mutate(sex_grp=as.character(sex)) |> 
   select (-sex) |> 
   arrange(code, year, sex_grp)
 
-rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_scot, area_prevalence_shes_2020)
+rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_prevalence_shes_2019, area_prevalence_shes_2022_2023, ca, hb)
 
 ###############################################.
 ## Prevalence data series 2: AGE PREVALENCE ----
@@ -142,7 +151,7 @@ age_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Dat
 # read in SHeS age data (for period 2019 onwards)
 # This data file obtained from the Tobacco team
 
-age_prevalence_shes_2 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
+age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv"))# |> 
   clean_names() |> 
   select(c("status", "age_grp", "sex", "year2019", "year2022", "year2023")) |> 
   mutate(status=case_when(
@@ -162,9 +171,9 @@ tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "ye
   mutate(year = as.numeric(substr(year, 5, 9)))
   
 #bind shos and shes area prevalence
-age_prevalence <- rbind(age_prevalence_shes, age_prevalence_shos, age_prevalence_shes_2020) |> 
+age_prevalence <- rbind(age_prevalence_shes, age_prevalence_shos) |> 
   arrange(year, sex_grp)
-
+d
 rm(age_prevalence_shos, age_prevalence_shes, age_prevalence_shes_2020)  # remove df not needed
 
 
@@ -177,13 +186,12 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
 # Smoking attributable diagnosis
+# Based on royal college of physicians so do not change often - changed in 2025 and in the early 00s before that
 smoking_diag <- paste0("A1[5-9]|C1[0145689]|C2[025]|C3[0-4]|C4[34]|C5[03]|C6[4-7]|C92|E11|F0[1-3]|",
                        "F2[0-5]|F2[89]|F3[23]|F502|F5081|G30|G473|H25|H35[3-9]|H3[6-9]|H4[0-9]|",
-                       "H5[01]|H5(20|21|22|23|24)|H9[01]|I2[0-6]|I6[0-7]|I71|I739]|I8[0-2]|J09|J1[0-8]|",
+                       "H5[01]|H5(20|21|22|23|24)|H9[01]|I2[0-6]|I6[0-7]|I71|I739|I8[0-2]|J09|J1[0-8]|",
                        "J4[0-7]|J841|K227|K50|L40|M0[56]|M32|M545|N18[0-9]|O0[03]|O4[245]|S72[0-2]|",
                        "T814|Y83")
-
-
 
 # Sorting variables
 sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
@@ -221,31 +229,77 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
               AND regexp_like(main_condition, '", smoking_diag, "')
               AND age_in_years > 34
-              AND discharge_date between '1 January 2012' and '31 December 2022' 
+              AND discharge_date between '1 January 2012' and '31 December 2023' 
         )
     )
     SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
            start_cis, end_cis, ca, hb, pc7
     FROM adm_table 
-    WHERE end_cis between '1 January 2012' and '31 December 2022' 
+    WHERE end_cis between '1 January 2012' and '31 December 2023' 
         AND age > 34 
         AND sex_grp in ('1', '2') 
+        AND pc7 IS NOT NULL 
         AND regexp_like(diag, '", smoking_diag, "')"))) |>  
   clean_names() |> 
   create_agegroups() # Creating age groups for standardization.
 
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') |>  
-  clean_names() |>   
-  select(pc7, ca2019, hb2019)
+##########################
+#Temp code to output SMR file and re-read in to save running over and over again
 
-# Bringing  LA and datazone info.
+saveRDS(smoking_adm, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_290825.rds"))
 
-smoking_adm <- left_join(smoking_adm, postcode_lookup, "pc7") |>  
-  mutate(scotland = "S00000001") # creating variable for Scotland
-
+smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_290825.rds")) |> 
+  filter(!is.na(pc7)) |> 
+  mutate(scotland = "S00000001",   # creating variable for Scotland
+  ten_year_age_band = case_when(age > 34 & age < 55 ~ "35 - 54",
+                       age > 54 & age < 65 ~ "55 - 64",
+                       age > 64 & age < 75 ~ "65 - 74",
+                       age > 74 ~ "75+",
+                       TRUE ~ as.character(age)),
+  fifty_plus = case_when(age > 49 ~ 1,
+                         TRUE ~ 0))
+    
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
+smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
+  mutate(age_text = case_when(
+    age_text == "35+" ~ NA_character_,
+    TRUE ~ age_text),
+    gender = as.character(gender)) |> 
+  rename(diag = icd,
+         sex_grp = gender)
+
+#Separate into age-specific conditions and non-age specific conditions
+smoking_risks_non_spec <- smoking_risks |> 
+  filter(is.na(age_text)) |> 
+  select(-age_text)
+
+smoking_risks_ten_year_age_band <- smoking_risks |> 
+  filter(!is.na(age_text) & age_text != "50+") |> 
+  rename(age_t)
+
+smoking_risks_fifty_plus <- smoking_risks |> 
+  filter(age_text == "50+")
+
+#Joining each group to the main SMR df
+joined_non_spec <- left_join(smoking_adm, smoking_risks_non_spec, by = c("diag", "sex_grp")) 
+joined_ten_year <- left_join(smoking_adm, smoking_risks_age_spec, by = c("diag", "sex_grp", "age_text"))
+
+#Coalescing the 3 ds together to overwrite the NAs
+smoking_joined <- joined_age_spec |> 
+  mutate(
+    current = coalesce(current, joined_non_spec$current),
+    ex = coalesce(ex, joined_non_spec$ex),
+    disease = coalesce(disease, joined_non_spec$disease),
+    group = coalesce(group, joined_non_spec$group)
+  )
+
+
+#Dealing with two separate types of age banding - ten year bands and 50+
+
+
+
 # Taken from Public Health England profiles
 smoking_adm %<>% 
   mutate(current = case_when( #Current smokers risk
