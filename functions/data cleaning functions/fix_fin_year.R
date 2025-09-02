@@ -8,7 +8,7 @@
 
 #df - the indicator dataframe that is being prepared
 #fy_col_name - the column of the dataframe containing strings of financial years. must be passed in in quotes e.g. fy_col_name = "fin_year"
-#first_year_digits - takes either "2" or "4" i.e. does fin_year start with YY or YYYY. 
+#first_year_digits - takes "2", "3" or "4" i.e. does fin_year start with YY , YYY or YYYY. 
 
 library(dplyr)
 library(stringr)
@@ -16,9 +16,9 @@ library(rlang)
 
 fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
   
-  #If first_year_digits are neither 2 nor 4 stop the function and print an error
-  if (!(first_year_digits %in% c("2", "4"))) {
-    stop("first_year_digits must be either '2' or '4'.")
+  #If first_year_digits are none of 2, 3 or 4 stop the function and print an error
+  if (!(first_year_digits %in% c("2", "3", "4"))) {
+    stop("first_year_digits must be either '2' , '3' or '4'.")
   }
   
   fy_col_name_sym <- rlang::sym(fy_col_name) #used for tidyverse data cleaning of column with variable name
@@ -40,7 +40,19 @@ fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
           temp_year > 50 ~ paste0("19", temp_year),  #This is guesswork for correct century!
           TRUE ~ paste0("20", temp_year))) |> #If remaining 2 digits >50 guess 1900s, if <=50 guess 2000s
       select(-temp_year) #drop the temporary year variable
-  }
+    
+    #If fin year format is YYY (only a few indicators) i.e. 203 = 02/03. Likely due to Excel dropping leading zero.
+  }else if(first_year_digits == "3"){
+    df <- df |> 
+      mutate(
+        !!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case fy provided as a number e.g. 203
+        !!fy_col_name_sym := case_when(
+          nchar(!!fy_col_name_sym) == 3 ~ paste0("200", !!fy_col_name_sym), 
+          nchar(!!fy_col_name_sym) == 4 ~ paste0("20", !!fy_col_name_sym),
+          TRUE ~ !!fy_col_name_sym),
+          !!fy_col_name_sym := str_sub(!!fy_col_name_sym, 1, 4)) #keep only first four digits
+      
+}
   
   #Convert output from both scenarios to numeric
   df <- df |> 
@@ -61,3 +73,11 @@ fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
 }
 
 #End
+
+#Testing new section
+# source("./functions/main_analysis.R")
+# postpartum <- read.csv(file.path(profiles_data_folder, "Received Data/Post-partum Smoking/IR2025-00008.csv"))
+# 
+# postpartum <- postpartum |> 
+#   fix_fin_year("fin_year", "3")
+
