@@ -365,7 +365,7 @@ prep_popgrp_data_by_stage <- function(ind, ind_num) {
 # SIMD data processing
 ##################################
 
-process_simd_data <- function(ind) {
+process_simd_data <- function(ind, ind_num) {
   
   # Process SIMD data
   data <- data_scot_la_simd %>% 
@@ -389,6 +389,7 @@ process_simd_data <- function(ind) {
     filter(substr(code, 1, 3) %in% c("S00", "S12")) %>% 
     select(year, code, quintile=sc_quin, numerator, denominator, quint_type) %>%
     rbind(simd_df1) %>%
+    mutate(ind_id = ind_num) %>%
     calculate_percent() # call helper function
 
   # calculate the inequality measures
@@ -474,7 +475,7 @@ prepare_final_files <- function(ind_name){
   # 2 - SIMD data
   
   #run the SIMD processing function:
-  simd_data <- process_simd_data(ind = ind_name)
+  simd_data <- process_simd_data(ind = ind_name, ind_num = ind_num)
 
   # save the data as RDS file
   saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind_name, "_ineq.rds"))
