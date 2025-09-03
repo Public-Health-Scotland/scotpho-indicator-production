@@ -49,12 +49,13 @@ library(readxl) #for reading in xlsx files
 # Prevalence data series 1:  AREA PREVALENCE ----
 ###############################################.
 
-#These data are stored in 3 data files
+#These data are stored in 3 data files which are read in, cleaned then combined
 #1 - SHoS data (2012-2018)
 #2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
 #3 - SHeS data file 2 (2022-2023, 2022 used as a proxy for 2021 in line with tobacco team)
 
 #Note - ideally get a full time series from the SG for age 35+ with smoking prevalence data 2019 onwards for 2024 data update
+#This would combine data files 2 and 3.
 #SHeS data obtained from the SG via IR
 
 #1. SHos Data (2012-18)
@@ -72,8 +73,8 @@ area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Receive
 #3. SHeS Data (2022-2023)
 area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_35andover_sup.csv")) |> 
   janitor::clean_names() |> #variables to snake case
-  filter(sex != "All") |> 
-  rename(period = year, #changing to match SHoS format
+  filter(sex != "All") |> #filter out both sexes combined
+  rename(period = year, 
          type = geography) |> 
   mutate(sex = case_when(sex == "Male" ~ 1, #recoding sex to 1/2
                        sex == "Female" ~ 2,
@@ -86,7 +87,7 @@ area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Rec
        source = "SHeS", #adding source
        year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
   select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
-  filter(year > 2021)  #filtering for 2019 onwards, when SHoS stopped reporting on ex-smoker status
+  filter(year > 2021)  #filtering for 2019 onwards, when ShoS series ends
 
 #Join both SHeS data frames
 area_prevalence_shes <- rbind(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
@@ -137,21 +138,14 @@ rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_
 ## Prevalence data series 2: AGE PREVALENCE ----
 ###############################################.
 
-# read in SHoS age data (for period 2012-2018)
-age_prevalence_shos <- read_excel(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_smoking_prevalence_formatted (DO NOT DELETE old data before move to shes).xlsx"),
-                                 sheet = "Age prev") |>
-  clean_names() |> 
-  mutate(source = "SHoS",
-         sex_grp = as.character(sex),
-         age_grp2 = case_when(agegrp=='35-54' ~ 2, agegrp=='55-64' ~ 3, 
-                              agegrp=='65-74' ~ 4, agegrp=='75+' ~ 5)) |> 
-  select(-c("agegrp", "sex", "code")) |> 
-  arrange(sex_grp, year, source, ex_age, current_age, age_grp2)
+#1 - SHoS data (2012-2018)
+#2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
 
-# read in SHeS age data (for period 2019 onwards)
-# This data file obtained from the Tobacco team
+#1 - SHoS age data (for period 2012-2018)
+age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds"))
 
-age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv"))# |> 
+#2 - SHeS age data (for period 2019 onwards). This file is obtained from the Tobacco Team
+age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
   clean_names() |> 
   select(c("status", "age_grp", "sex", "year2019", "year2022", "year2023")) |> 
   mutate(status=case_when(
@@ -161,7 +155,7 @@ age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/
     source = "SHeS",
     sex = as.character(sex),
     year2020 = year2019, #To align with tobacco team using 2019 data for 2020 since no SHeS that year
-    year2021 = year2022) |>  #2021 SHeS figure was very low so using 2022 figure as a proxy
+    year2021 = year2022) |>  #Using 2022 as proxy for 2021 as recommended by tobacco team
 tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "year2023"), names_to = "year", values_to = "percent") |> 
   tidyr::pivot_wider(id_cols = c("age_grp", "sex", "year", "source"), names_from = "status", values_from = "percent") |> 
   filter(sex != "all", 
@@ -171,11 +165,10 @@ tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "ye
   mutate(year = as.numeric(substr(year, 5, 9)))
   
 #bind shos and shes area prevalence
-age_prevalence <- rbind(age_prevalence_shes, age_prevalence_shos) |> 
+age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
   arrange(year, sex_grp)
-d
-rm(age_prevalence_shos, age_prevalence_shes, age_prevalence_shes_2020)  # remove df not needed
 
+rm(age_prevalence_shos, age_prevalence_shes, age_prevalence_shes_2020)  # remove df not needed
 
 ###############################################.
 ## Part 2 - Extract data from SMRA ----
@@ -195,17 +188,18 @@ smoking_diag <- paste0("A1[5-9]|C1[0145689]|C2[025]|C3[0-4]|C4[34]|C5[03]|C6[4-7
 
 # Sorting variables
 sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
+
 # Extracting one row per hospital admission in which there was at least one episode containing
 # a smoking attributable condition in the main condition field.
 # The indicator counts hospital stays but will only includes stays if there was at least one episode with 
-# related diagnosis within the financial year if interest. Patients must also be aged over 34 years on admission to be counted. 
+# related diagnosis within the financial year of interest. Patients must also be aged over 34 years on admission to be counted. 
 
 # For each admission it extracts the information from the first episode within a hospital stay.
 # Then of these admissions selecting the ones that had an smoking attributable
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
-smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+smoking_adm_2 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
             FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
@@ -232,7 +226,7 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
               AND discharge_date between '1 January 2012' and '31 December 2023' 
         )
     )
-    SELECT admission_id, substr(diag, 1, 3) diag, sex_grp, age, year, 
+    SELECT admission_id, substr(diag, 1, 5) diag, sex_grp, age, year, 
            start_cis, end_cis, ca, hb, pc7
     FROM adm_table 
     WHERE end_cis between '1 January 2012' and '31 December 2023' 
@@ -246,192 +240,88 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
 ##########################
 #Temp code to output SMR file and re-read in to save running over and over again
 
-saveRDS(smoking_adm, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_290825.rds"))
+#saveRDS(smoking_adm_2, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds"))
 
-smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_290825.rds")) |> 
+smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds")) |> 
   filter(!is.na(pc7)) |> 
-  mutate(scotland = "S00000001",   # creating variable for Scotland
-  ten_year_age_band = case_when(age > 34 & age < 55 ~ "35 - 54",
-                       age > 54 & age < 65 ~ "55 - 64",
-                       age > 64 & age < 75 ~ "65 - 74",
-                       age > 74 ~ "75+",
-                       TRUE ~ as.character(age)),
-  fifty_plus = case_when(age > 49 ~ 1,
-                         TRUE ~ 0))
-    
+  mutate(scotland = "S00000001")   # creating variable for Scotland
+
+
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
   mutate(age_text = case_when(
-    age_text == "35+" ~ NA_character_,
+    age_text == "35+" ~ NA_character_, #converting 35+ age risks to NA as they affect entirety of population of interest
     TRUE ~ age_text),
-    gender = as.character(gender)) |> 
+    gender = as.character(gender),
+    age_text = stringr::str_replace_all(age_text, "\\s+", "")) |> #remove spaces in age bands e.g. 65 - 74 -> 65-74
   rename(diag = icd,
-         sex_grp = gender)
+         sex_grp = gender) 
 
-#Separate into age-specific conditions and non-age specific conditions
-smoking_risks_non_spec <- smoking_risks |> 
-  filter(is.na(age_text)) |> 
+
+#Calculating age bands for joining with both age-specific relative risks of disease, and also for applying age prevalence of smoking later
+#Smoking risks file has two overlapping sets of age groups, those aligning with SHoS prevalence, and also some conditions are 50+
+#Makes joining dfs a challenge
+
+#Creating three vectors containing a list of all the codes of each length
+three_chr_codes <- smoking_risks |> filter(nchar(diag) == 3) |> distinct(diag) |> pull(diag) |> append(values = c("C43", "C44"))
+four_chr_codes <- smoking_risks |> filter(nchar(diag) == 4) |> distinct(diag) |> pull(diag)
+five_chr_codes <- smoking_risks |> filter(nchar(diag) == 5) |> distinct(diag) |> pull(diag)
+
+smoking_adm <- smoking_adm |> 
+  mutate(age_band = case_when(age > 34 & age < 55 ~ "35-54",
+                                            age > 54 & age < 65 ~ "55-64", #create age group bracket columns for joining to smoking risks
+                                            age > 64 & age < 75 ~ "65-74",
+                                            age > 74 ~ "75+",
+                                            TRUE ~ as.character(age)),
+         fifty_plus = case_when(age > 49 ~ 1,
+                                TRUE ~ 0)) |> 
+  mutate(icd_trimmed = case_when(
+  diag %in% five_chr_codes ~ diag,
+  diag %in% four_chr_codes ~ diag,
+  diag %in% three_chr_codes ~ diag,
+  substr(diag, 1, 4) %in% four_chr_codes ~ substr(diag, 1, 4),
+  substr(diag, 1, 3) %in% three_chr_codes ~ substr(diag, 1, 3),
+  TRUE ~ "Not in lookup"
+), .after = diag)
+
+
+#Split the smoking risks lookup into 3 based on age groups. Non-age specific, age groups aligning with ShoS prevalence, and 50+
+smoking_risks <- smoking_risks |> 
+  rename(icd_trimmed = diag)
+
+smoking_risks_non_spec <- smoking_risks |>
+  filter(is.na(age_text)) |>
   select(-age_text)
 
-smoking_risks_ten_year_age_band <- smoking_risks |> 
+smoking_risks_age_band <- smoking_risks |>
   filter(!is.na(age_text) & age_text != "50+") |> 
-  rename(age_t)
+  rename(age_band = age_text)
 
 smoking_risks_fifty_plus <- smoking_risks |> 
-  filter(age_text == "50+")
+  filter(age_text == "50+") |> 
+  mutate(fifty_plus = 1) 
 
 #Joining each group to the main SMR df
-joined_non_spec <- left_join(smoking_adm, smoking_risks_non_spec, by = c("diag", "sex_grp")) 
-joined_ten_year <- left_join(smoking_adm, smoking_risks_age_spec, by = c("diag", "sex_grp", "age_text"))
+joined_non_spec <- left_join(smoking_adm, smoking_risks_non_spec, by = c("icd_trimmed", "sex_grp"))
+joined_age_band <- left_join(smoking_adm, smoking_risks_age_band, by = c("icd_trimmed", "sex_grp", "age_band"))
+joined_fifty_plus <- left_join(smoking_adm, smoking_risks_fifty_plus, by = c("icd_trimmed", "sex_grp", "fifty_plus")) 
 
-#Coalescing the 3 ds together to overwrite the NAs
-smoking_joined <- joined_age_spec |> 
+#Coalescing the 2 dfs together to overwrite the NAs
+smoking_joined <- joined_age_band |>
   mutate(
     current = coalesce(current, joined_non_spec$current),
     ex = coalesce(ex, joined_non_spec$ex),
     disease = coalesce(disease, joined_non_spec$disease),
     group = coalesce(group, joined_non_spec$group)
-  )
+  ) 
 
+#Removing some records for combinations of sex, age and diagnosis that are not associated with risk
+#Eg C43 and C44 have no fraction associated with women or under 50s
 
-#Dealing with two separate types of age banding - ten year bands and 50+
-
-
-
-# Taken from Public Health England profiles
-smoking_adm %<>% 
-  mutate(current = case_when( #Current smokers risk
-    sex_grp == 1 & diag >= "C00" & diag <= "C14" ~ 10.89, #Upper respiratory sites cancers
-    sex_grp == 2 & diag >= "C00" & diag <= "C14" ~ 5.08,
-    sex_grp == 1 & diag == "C15" ~ 6.76, #Oesaphagus cancers
-    sex_grp == 2 & diag == "C15" ~ 7.75,
-    sex_grp == 1 & diag == "C16" ~ 1.96, #Stomach cancers
-    sex_grp == 2 & diag == "C16" ~ 1.36,
-    sex_grp == 1 & diag == "C25" ~ 2.31, #Panchreas cancers
-    sex_grp == 2 & diag == "C25" ~ 2.25,
-    sex_grp == 1 & diag == "C32" ~ 14.60, #Larynx cancers
-    sex_grp == 2 & diag == "C32" ~ 13.02,
-    sex_grp == 1 & diag %in% c("C33", "C34") ~ 23.26, #Trachea, lung, bronchus cancers
-    sex_grp == 2 & diag %in% c("C33", "C34") ~ 12.69,
-    sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
-    sex_grp == 2 & diag == "C53" ~ 1.59,
-    sex_grp == 1 & diag %in% c("C64", "C65", "C66", "C68") ~ 2.50, #Kidney, renal pelvis cancers
-    sex_grp == 2 & diag %in% c("C64", "C65", "C66", "C68") ~ 1.40,
-    sex_grp == 1 & diag == "C67" ~ 3.27, #Bladder cancers
-    sex_grp == 2 & diag == "C67" ~ 2.22,
-    sex_grp == 1 & diag == "C80" ~ 4.40, #Unspecified site cancers
-    sex_grp == 2 & diag == "C80" ~ 2.20,
-    sex_grp == 1 & diag == "C92" ~ 1.80, #Myeloid leukaemia
-    sex_grp == 2 & diag == "C92" ~ 1.20,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp <= 11 ~ 4.20, #Ischaemic heart disease
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp %in% c(12, 13) ~ 2.50,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp %in% c(14, 15) ~ 1.80,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp >= 16 ~ 1.40,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp <= 11 ~ 5.30,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp %in% c(12, 13) ~ 2.80,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp %in% c(14, 15) ~ 2.10,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp >= 16 ~ 1.40,
-    sex_grp == 1 & ((diag >= "I00" & diag <= "I09") | #Other heart disease
-                      (diag >= "I26" & diag <= "I51")) ~ 1.78,
-    sex_grp == 2 & ((diag >= "I00" & diag <= "I09") |
-                      (diag >= "I26" & diag <= "I51")) ~ 1.49,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp <= 11 ~ 4.40, #Cerebrovascular disease
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp %in% c(12, 13) ~ 3.10,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp %in% c(14, 15) ~ 2.20,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" & age_grp >= 16 ~ 1.60,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp <= 11 ~ 5.40,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp %in% c(12, 13) ~ 3.70,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp %in% c(14, 15) ~ 2.60,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp >= 16 ~ 1.30,
-    sex_grp == 1 & diag == "I70" ~ 2.44, #Atherosclerosis.
-    sex_grp == 2 & diag == "I70" ~ 1.83,
-    sex_grp == 1 & diag == "I71" ~ 6.21, #Aortic aneurysm
-    sex_grp == 2 & diag == "I71" ~ 7.07,
-    sex_grp == 1 & diag >= "I72" & diag <= "I78" ~ 2.07, #Other arterial disease
-    sex_grp == 2 & diag >= "I72" & diag <= "I78" ~ 2.17,
-    sex_grp == 1 & diag >= "J10" & diag <= "J18" & age_grp <=13 ~ 2.50, #Pneumonia, influenza
-    sex_grp == 1 & diag >= "J10" & diag <= "J18" & age_grp >= 14 ~ 2.00,
-    sex_grp == 2 & diag >= "J10" & diag <= "J18" & age_grp <=13 ~ 4.30, 
-    sex_grp == 2 & diag >= "J10" & diag <= "J18" & age_grp >= 14 ~ 2.20,
-    sex_grp == 1 & diag %in% c("J40", "J41", "J42", "J43") ~ 17.10, #Chronic obstructive lung disease
-    sex_grp == 2 & diag %in% c("J40", "J41", "J42", "J43")  ~ 12.04,
-    sex_grp == 1 & diag == "J44" ~ 10.58, #Chronic airway obstruction
-    sex_grp == 2 & diag == "J44" ~ 13.08,
-    sex_grp == 1 & diag %in% c("K25", "K26", "K27") ~ 5.40, #Stomach / duodenal ulcer
-    sex_grp == 2 & diag %in% c("K25", "K26", "K27") ~ 5.50,
-    diag == "K50" ~ 2.10, #Crohns disease
-    diag == "K05" ~ 3.97, #Periodontal disease / Periodonitis
-    diag == "H25" & age_grp >= 10 ~ 1.54, #Age related cataract
-    diag == "S72" & age_grp %in% c(12, 13) ~ 1.17, #Hip fracture
-    diag == "S72" & age_grp %in% c(14, 15) ~ 1.41,
-    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.76,
-    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.85,
-    sex_grp == 2 & diag == "O03" ~ 1.28, #Spontaneous abortion
-    TRUE ~ 0
-)) %>% 
-  mutate(ex = case_when( #Ex-smokers risk
-    sex_grp == 1 & diag >= "C00" & diag <= "C14" ~ 3.40, #Upper respiratory sites cancers
-    sex_grp == 2 & diag >= "C00" & diag <= "C14" ~ 2.29,
-    sex_grp == 1 & diag == "C15" ~ 4.46, #Oesaphagus cancers
-    sex_grp == 2 & diag == "C15" ~ 2.79,
-    sex_grp == 1 & diag == "C16" ~ 1.47, #Stomach cancers
-    sex_grp == 2 & diag == "C16" ~ 1.32,
-    sex_grp == 1 & diag == "C25" ~ 1.15, #Panchreas cancers
-    sex_grp == 2 & diag == "C25" ~ 1.55,
-    sex_grp == 1 & diag == "C32" ~ 6.34, #Larynx cancers
-    sex_grp == 2 & diag == "C32" ~ 5.16,
-    sex_grp == 1 & diag %in% c("C33", "C34") ~ 8.70, #Trachea, lung, bronchus cancers
-    sex_grp == 2 & diag %in% c("C33", "C34") ~ 4.53,
-    sex_grp == 1 & diag == "C53" ~ 1, #Cervical cancers
-    sex_grp == 2 & diag == "C53" ~ 1.14,
-    sex_grp == 1 & diag %in% c("C64", "C65", "C66", "C68") ~ 1.70, #Kidney, renal pelvis cancers
-    sex_grp == 2 & diag %in% c("C64", "C65", "C66", "C68") ~ 1.10,
-    sex_grp == 1 & diag == "C67" ~ 2.09, #Bladder cancers
-    sex_grp == 2 & diag == "C67" ~ 1.89,
-    sex_grp == 1 & diag == "C80" ~ 2.50, #Unspecified site cancers
-    sex_grp == 2 & diag == "C80" ~ 1.30,
-    sex_grp == 1 & diag == "C92" ~ 1.40, #Myeloid leukaemia
-    sex_grp == 2 & diag == "C92" ~ 1.30,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp <= 11 ~ 2.00, #Ischaemic heart disease
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp %in% c(12, 13) ~ 1.60,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp %in% c(14, 15) ~ 1.30,
-    sex_grp == 1 & diag >= "I20" & diag <= "I25" & age_grp >= 16 ~ 1.10,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp <= 11 ~ 2.60,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp %in% c(12, 13) ~ 1.10,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp %in% c(14, 15) ~ 1.20,
-    sex_grp == 2 & diag >= "I20" & diag <= "I25" & age_grp >= 16 ~ 1.20,
-    sex_grp == 1 & ((diag >= "I00" & diag <= "I09") | #Other heart disease
-                      (diag >= "I26" & diag <= "I51")) ~ 1.22,
-    sex_grp == 2 & ((diag >= "I00" & diag <= "I09") |
-                      (diag >= "I26" & diag <= "I51")) ~ 1.14,
-    sex_grp == 1 & diag >= "I60" & diag <= "I69" ~ 1.10, #Cerebrovascular disease
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp <= 15 ~ 1.30,
-    sex_grp == 2 & diag >= "I60" & diag <= "I69" & age_grp >= 16 ~ 1,
-    sex_grp == 1 & diag == "I70" ~ 1.33, #Atherosclerosis.
-    sex_grp == 2 & diag == "I70" ~ 1,
-    sex_grp == 1 & diag == "I71" ~ 3.07, #Aortic aneurysm
-    sex_grp == 2 & diag == "I71" ~ 2.07,
-    sex_grp == 1 & diag >= "I72" & diag <= "I78" ~ 1.01, #Other arterial disease
-    sex_grp == 2 & diag >= "I72" & diag <= "I78" ~ 1.12,
-    sex_grp == 1 & diag >= "J10" & diag <= "J18"~ 1.40, #Pneumonia, influenza
-    sex_grp == 2 & diag >= "J10" & diag <= "J18" ~ 1.10,
-    sex_grp == 1 & diag %in% c("J40", "J41", "J42", "J43") ~ 15.64, #Chronic obstructive lung disease
-    sex_grp == 2 & diag %in% c("J40", "J41", "J42", "J43")  ~ 11.77,
-    sex_grp == 1 & diag == "J44" ~ 6.80, #Chronic airway obstruction
-    sex_grp == 2 & diag == "J44" ~ 6.78,
-    sex_grp == 1 & diag %in% c("K25", "K26", "K27") ~ 1.80, #Stomach / duodenal ulcer
-    sex_grp == 2 & diag %in% c("K25", "K26", "K27") ~ 1.40,
-    diag == "K50" ~ 1, #Crohns disease
-    diag == "K05" ~ 1.68, #Periodontal disease / Periodonitis
-    diag == "H25" & age_grp >= 10 ~ 1.11, #Age related cataract
-    diag == "S72" & age_grp %in% c(12, 13) ~ 1.02, #Hip fracture
-    diag == "S72" & age_grp %in% c(14, 15) ~ 1.08,
-    sex_grp == 1 & diag == "S72" & age_grp >= 16 ~ 1.14,
-    sex_grp == 2 & diag == "S72" & age_grp >= 16 ~ 1.22,
-    sex_grp == 2 & diag == "O03" ~ 1, #Spontaneous abortion
-    TRUE ~ 0))
+smoking_joined <- smoking_joined |> 
+  filter(!is.na(disease))
 
 ###############################################.
 ## Part 4 - Aggregating geographic areas ----
