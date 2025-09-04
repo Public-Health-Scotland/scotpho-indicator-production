@@ -389,7 +389,6 @@ process_simd_data <- function(ind, ind_num) {
     filter(substr(code, 1, 3) %in% c("S00", "S12")) %>% 
     select(year, code, quintile=sc_quin, numerator, denominator, quint_type) %>%
     rbind(simd_df1) %>%
-    mutate(ind_id = ind_num) %>%
     calculate_percent() # call helper function
 
   # calculate the inequality measures
@@ -404,6 +403,7 @@ process_simd_data <- function(ind, ind_num) {
     mutate(across(is.numeric, ~ as.numeric(NA))) %>%
     mutate(year = 2019) %>%
     rbind(simd_data) %>%
+    mutate(ind_id = ind_num) %>%
     # create trend axis column (used to create axis labels on trend charts)
     create_trend_axis_column(year_type="school", agg=1) |>
     # create definition period column (used to show time period for charts looking at a single year)
