@@ -134,31 +134,26 @@ rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_
 #2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
 
 #1 - SHoS age data (for period 2012-2018)
-age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds"))
+age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds")) 
 
 #2 - SHeS age data (for period 2019 onwards). This file is obtained from the Tobacco Team
 age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
   clean_names() |> 
-  select(c("status", "age_grp", "sex", "year2019", "year2022", "year2023")) |> 
-  mutate(status=case_when(
-    status=="Ex-regular cigarette smoker" ~ "ex_age",
-    status=="Current cigarette smoker" ~ "current_age",
-    TRUE~"other"),
-    source = "SHeS",
+  select(status, age_grp, sex, year2019, year2022, year2023) |> 
+  mutate(status = recode(status,
+                         "Ex-regular cigarette smoker" = "ex_age",         
+                         "Current cigarette smoker" = "current_age"),
     sex = as.character(sex),
     year2020 = year2019, #To align with tobacco team using 2019 data for 2020 since no SHeS that year
     year2021 = year2022) |>  #Using 2022 as proxy for 2021 as recommended by tobacco team
-tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "year2023"), names_to = "year", values_to = "percent") |> 
-  tidyr::pivot_wider(id_cols = c("age_grp", "sex", "year", "source"), names_from = "status", values_from = "percent") |> 
-  filter(sex != "all", 
-         age_grp != "All") |> 
-  rename(sex_grp = sex,
-         agegrp = age_grp) |> 
+tidyr::pivot_longer(cols = starts_with("year"), names_to = "year", values_to = "percent") |> 
+  tidyr::pivot_wider(id_cols = c(age_grp, sex, year), names_from = status, values_from = percent) |> 
+  filter(sex != "all", age_grp != "All") |> 
+  rename(sex_grp = sex, agegrp = age_grp) |> 
   mutate(year = as.numeric(substr(year, 5, 9)))
   
 #bind shos and shes area prevalence
 age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
-  arrange(year, sex_grp) |> 
   rename(agegrp2 = agegrp)
 
 rm(age_prevalence_shos, age_prevalence_shes)  # remove df not needed
