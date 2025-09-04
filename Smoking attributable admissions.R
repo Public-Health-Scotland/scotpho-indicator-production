@@ -59,7 +59,7 @@ library(readxl) #for reading in xlsx files
 #SHeS data obtained from the SG via IR
 
 #1. SHos Data (2012-18)
-area_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHoS_area_prevalence_DO_NOT_DELETE.rds"))
+area_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHoS_area_prevalence_DO_NOT_DELETE.rds")) #read in historic data
 
 #2. SHeS Data (2019)
 area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"),
@@ -74,28 +74,25 @@ area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Receive
 area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_35andover_sup.csv")) |> 
   janitor::clean_names() |> #variables to snake case
   filter(sex != "All") |> #filter out both sexes combined
-  rename(period = year, 
-         type = geography) |> 
-  mutate(sex = case_when(sex == "Male" ~ 1, #recoding sex to 1/2
-                       sex == "Female" ~ 2,
-                       TRUE ~ NA_real_),
-       type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
-                        type == "Local Authority" ~ "ca",
+  rename(period = year,
+         type = geography) |>
+  mutate(sex = recode(sex, "Male" = 1, "Female" = 2), #recoding sex to 1 and 2 
+         type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
+                        type == "Local Authority" ~ "ca", #recoding to match SHoS data
                         TRUE ~ type),
        area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
        area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
-       source = "SHeS", #adding source
        year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
-  select(-c("lower_ci", "upper_ci", "health_board", "local_authority")) |> #dropping unnecessary cols
+  select(-lower_ci, -upper_ci, -health_board, -local_authority) |> #dropping unnecessary cols
   filter(year > 2021)  #filtering for 2019 onwards, when ShoS series ends
 
 #Join both SHeS data frames
-area_prevalence_shes <- rbind(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
-  mutate(smoking_status = case_when(smoking_status == "Never smoked/Used to smoke occasionally" ~ "never", #recoding to match SHoS
-                                    smoking_status == "Used to smoke regularly" ~ "ex_area",
-                                    smoking_status == "Current smoker" ~ "current_area",
-                                    TRUE ~ smoking_status)) |> 
-  tidyr::pivot_wider(id_cols = c("area", "sex", "source", "period", "type", "year"),
+area_prevalence_shes <- bind_rows(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
+  mutate(smoking_status = recode(smoking_status,
+                                    "Never smoked/Used to smoke occasionally" = "never", #recoding to match SHoS
+                                    "Used to smoke regularly" = "ex_area",
+                                    "Current smoker" = "current_area")) |> 
+  tidyr::pivot_wider(id_cols = c(area, sex, period, type, year), #create cols for each smoking status
                      names_from = smoking_status, values_from = percent) |> 
   select(-never) #drop never-smokers
   
@@ -109,7 +106,7 @@ area_prevalence_shes <- bind_rows(ca, hb)  #recombine into 1 df
 #Add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
 area_prevalence_shes_scot <- area_prevalence_shes |> 
   filter(code=="S00000001") |> 
-  select(-c("type","source","code")) |> 
+  select(-type, -code) |> 
   rename(scot_current=current_area, scot_ex=ex_area)
 
 area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot, by = c("sex","period","year"))
@@ -118,19 +115,14 @@ area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot
 #And duplicate 2022 for 2021 as odd trend (in line with tobacco team)
 area_prevalence_shes_20_21 <- area_prevalence_shes |> 
   filter(year %in% c(2019, 2022)) |> 
-  mutate(year = case_when(year == 2022 ~ 2021,
-                          year == 2019 ~ 2020,
-                          TRUE ~ year),
-         source = case_when(year == 2020 ~ "shes_duplicate2019",
-                            year == 2021 ~ "shes_duplicate2020",
-                            TRUE ~ source))
+  mutate(year = recode(year,`2019` = 2020, `2022` = 2021))
+
 area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_20_21)  #bind proxy years
 
 #bind shos and shes area prevalence
-area_prevalence <- rbind(area_prevalence_shos, area_prevalence_shes) |> 
+area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes) |> 
   mutate(sex_grp=as.character(sex)) |> 
-  select (-sex) |> 
-  arrange(code, year, sex_grp) 
+  select (-sex, -type) 
 
 rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_prevalence_shes_2019, area_prevalence_shes_2022_2023, ca, hb, area_prevalence_shes_scot)
 
