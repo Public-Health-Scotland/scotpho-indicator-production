@@ -19,6 +19,7 @@
 # Functions/packages ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
 source("functions/main_analysis.R")
+source("functions/data cleaning functions/ca_names_to_codes.R")
 library(openxlsx)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -27,7 +28,7 @@ library(openxlsx)
 
 # get filepath to data file
 folder <- file.path(profiles_data_folder, "Received Data", "Children referred to childrens reporter")
-file <- "ScotPHO NHS Non-offence and offence children.xlsx"
+file <- "ScotPHO NHS Non-offence and offence children 24-25 update.xlsx"
 path <- file.path(folder, file)
 
 # read in data
@@ -57,26 +58,9 @@ data <- pivot_longer(
   names_transform = list(year = ~ paste0("20", substr(.,1, 2)))
 )
 
-
-
-# get council area lookup 
-geo_lookup <- readRDS(file.path(profiles_data_folder,"Lookups/Geography/CAdictionary.rds"))
-
-
-# clean some council area names to allow join with lookup 
+# clean areanames and add ca area codes
 data <- data |>
-  mutate(areaname = case_when(str_detect(areaname,"&") ~ str_replace(areaname,"&","and"),
-                              areaname == "Dundee" ~ "Dundee City",
-                              areaname == "Glasgow" ~ "Glasgow City",
-                              areaname == "Orkney" ~ "Orkney Islands",
-                              areaname == "Shetland" ~ "Shetland Islands",
-                              str_detect(areaname, "Edinburgh") ~ "City of Edinburgh",
-                              str_detect(areaname,"Siar") ~ "Na h-Eileanan Siar",
-                              TRUE ~ areaname))
-
-# join with lookup 
-data <- left_join(data, geo_lookup, by = "areaname") |>
-  select(-areaname)
+  ca_names_to_codes(areaname)
 
 
 # split data by indicator 
@@ -95,12 +79,12 @@ saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "208
 # Children referred to the Children's Reporter for care and protection
 main_analysis(filename = "13001_scra_care_protection", measure = "crude", ind_id = 13001,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2023)
+              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2024)
 
 
 # Children referred to the Children's Reporter for offences
 main_analysis(filename = "20803_scra_offence", measure = "crude", ind_id = 20803,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2023)
+              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2024)
 
 ## END
