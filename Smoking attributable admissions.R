@@ -130,9 +130,9 @@ area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_20_
 area_prevalence <- rbind(area_prevalence_shos, area_prevalence_shes) |> 
   mutate(sex_grp=as.character(sex)) |> 
   select (-sex) |> 
-  arrange(code, year, sex_grp)
+  arrange(code, year, sex_grp) 
 
-rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_prevalence_shes_2019, area_prevalence_shes_2022_2023, ca, hb)
+rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_prevalence_shes_2019, area_prevalence_shes_2022_2023, ca, hb, area_prevalence_shes_scot)
 
 ###############################################.
 ## Prevalence data series 2: AGE PREVALENCE ----
@@ -166,9 +166,10 @@ tidyr::pivot_longer(cols = c("year2019", "year2020", "year2021", "year2022", "ye
   
 #bind shos and shes area prevalence
 age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
-  arrange(year, sex_grp)
+  arrange(year, sex_grp) |> 
+  rename(agegrp2 = agegrp)
 
-rm(age_prevalence_shos, age_prevalence_shes, age_prevalence_shes_2020)  # remove df not needed
+rm(age_prevalence_shos, age_prevalence_shes)  # remove df not needed
 
 ###############################################.
 ## Part 2 - Extract data from SMRA ----
@@ -320,37 +321,40 @@ smoking_joined <- joined_age_band |>
 #Removing some records for combinations of sex, age and diagnosis that are not associated with risk
 #Eg C43 and C44 have no fraction associated with women or under 50s
 
-smoking_joined <- smoking_joined |> 
-  filter(!is.na(disease))
+smoking_adm <- smoking_joined |> 
+  filter(!is.na(disease)) 
+
+rm(joined_age_band, joined_fifty_plus, joined_non_spec, smoking_joined, smoking_risks_age_band, smoking_risks_fifty_plus, smoking_risks_non_spec)
 
 ###############################################.
 ## Part 4 - Aggregating geographic areas ----
 ###############################################.
-smoking_adm <- smoking_adm |>  
-  # Excluding cases where young people has a disease for which only risk for older people.
-  filter(current > 0) |> 
-  mutate(scotland = "S00000001") |>   # creating variable for Scotland
+smoking_adm_2 <- smoking_adm |>  
   #creating code variable with all geos and then aggregating to get totals
-  gather(geolevel, code, c(ca, hb, scotland)) |>  
-  select(-geolevel) |>  
+  pivot_longer(cols = c(ca, hb, scotland), names_to = "geo_level", values_to = "code") |> 
+  select(-c("geo_level")) |>  
   group_by(code, year, sex_grp, age_grp, current, ex)  |>  count() |>  ungroup() |>  
   # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
   filter(!(is.na(code)))
 
-saveRDS(smoking_adm, file.path(profiles_data_folder, '/Temporary/smoking_adm_part3.rds'))
+saveRDS(smoking_adm_2, file.path(profiles_data_folder, '/Temporary/smoking_adm_part3.rds'))
 
 ###############################################.
 # Merging prevalence with smoking adm basefile 
-smoking_adm <- left_join(smoking_adm, area_prevalence, by = c("code", "year", "sex_grp")) |> 
+smoking_adm_2 <- left_join(smoking_adm_2, area_prevalence, by = c("code", "year", "sex_grp")) |> 
   #recode age groups to match prevalence by age file
   mutate(age_grp = as.numeric(age_grp),
-         age_grp2 = case_when(age_grp>=8 & age_grp<=11 ~ 2,
-                              age_grp>=12 & age_grp<=13 ~ 3,
-                              age_grp>=14 & age_grp<=15 ~ 4,
-                              age_grp>=16 ~ 5))
+         agegrp2 = case_when(
+           year > 2018 & age_grp %in% c(8, 9) ~ "35-44",
+           year > 2018 & age_grp %in% c(10, 11) ~ "45-54",
+           year <= 2018 & age_grp %in% c(8, 9, 10, 11) ~ "35-54",
+           age_grp %in% c(12, 13) ~ "55-64",
+           age_grp %in% c(14, 15) ~ "65-74",
+           age_grp > 15 & age_grp < 20 ~ "75+",
+           TRUE ~ NA_character_  ))
 
 #And now merging with the file with prevalence by age and sex 
-smoking_adm <- left_join(smoking_adm, age_prevalence, by = c("age_grp2", "year", "sex_grp")) 
+smoking_adm <- left_join(smoking_adm_2, age_prevalence, by = c("agegrp2", "year", "sex_grp", "source")) 
 
 #smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
 
@@ -360,7 +364,7 @@ smoking_adm <- left_join(smoking_adm, age_prevalence, by = c("age_grp2", "year",
 ###############################################.
 # Calculate age, sex and area specific esimtated prevalence info using 
 # Public Health England formula. divide by 100 to get a proportion.
-smoking_adm <- smoking_adm |> 
+smoking_adm_test <- smoking_adm |> 
   mutate(# current and ex smoker prevalence specific to area, age and sex group.
     prev_current = (current_area/scot_current)*current_age/100,
     prev_ex=(ex_area/scot_ex)*ex_age/100,
@@ -373,16 +377,16 @@ smoking_adm <- smoking_adm |>
   group_by(code, year, sex_grp, age_grp) |>  
   summarise(numerator = sum(numerator), .groups = "drop")
 
-saveRDS(smoking_adm, file.path(profiles_data_folder, '/Prepared Data/smoking_adm_raw.rds'))
+saveRDS(smoking_adm_test, file.path(profiles_data_folder, '/Prepared Data/smoking_adm_raw.rds'))
 
 ###############################################.
 ## Part 6 - Run analysis functions ----
 ###############################################.
 
 main_analysis(filename = "smoking_adm", measure = "stdrate", geography = "multiple",
-             pop = "CA_pop_allages", yearstart = 2012, yearend = 2021,
+             pop = "CA_pop_allages", yearstart = 2012, yearend = 2023,
              time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 1548, 
-             year_type = "calendar")
+             year_type = "calendar", test_file = T)
 
   
 # Rounding figures - they are estimates and rounding helps to understand that
