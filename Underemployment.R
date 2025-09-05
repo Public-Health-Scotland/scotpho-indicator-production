@@ -99,7 +99,7 @@ agg_to_higher <- function(df, geog) {
     merge(y=geog_lookup, by.x="code", by.y= "ca2019") %>%
     select(-code, -rate, -lowci, -upci) %>%
     rename(code = geog) %>%
-    group_by(code, split_name, split_value, year) |>
+    group_by(across(any_of(c("code", "split_name", "split_value", "year")))) |>
     summarise(numerator = sum_(numerator), # sum_ function from hablar keeps NA when there should be NA, and doesn't replace with 0 (as occurs if summed with na.rm=T). This helps to avoid Inf and NaN values from incomplete rate calcs. 
               denominator = sum_(denominator)) %>%
     ungroup() %>%
@@ -112,7 +112,7 @@ agg_to_higher <- function(df, geog) {
 
 underemp_hb <- agg_to_higher(underemp_ca, "hb2019")
 underemp_pd <- agg_to_higher(underemp_ca, "pd")
-underemp_adp <- agg_to_higher(underemp_ca, "adp")
+#underemp_adp <- agg_to_higher(underemp_ca, "adp") #exclude adp for now as this indicator less relevant for alcohol and drug partnerships?
 underemp_hscp <- agg_to_higher(underemp_ca, "hscp2019")
 
 
@@ -120,7 +120,6 @@ underemp_hscp <- agg_to_higher(underemp_ca, "hscp2019")
 underemp_all <- underemp_ca %>%
   rbind(underemp_hb, 
         underemp_pd, 
-        underemp_adp,
         underemp_hscp) %>%
   select(-denominator, -numerator) 
 
@@ -237,8 +236,8 @@ prepare_final_files(ind = "underemployment")
 # # Run QA reports 
 run_qa(type ="main",filename="underemployment", test_file=FALSE)
 
-
-
+# # Run Pop group reports 
+run_qa(type ="popgrp",filename="underemployment", test_file=FALSE)
 
 # Plot the indicator(s)
 # =================================================================================================================
