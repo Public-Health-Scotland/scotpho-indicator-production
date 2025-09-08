@@ -98,7 +98,7 @@ pop_15 <- map(simd_pop_index, ~ sum(.x$pop) * 0.15)
 
 # For each SIMD, read in the lookup from cl-out and select access domain rank and any geography cols
 # Note versions of SIMD that are DZ01 based won't have an intzone2011 col
-# This means indicator time series will only include IZ/locality trends from 2017 onwards
+# This means indicator time series will only include IZ/locality trends from 2014 onwards
 simd_data <- imap(simd_info, ~ {
   
   # name of domain col e.g. "simd2020v2_access_rank"
