@@ -19,36 +19,36 @@
 
 ###1.a load dependencies/functions ----
 
-source("./functions/main_analysis.R") 
+source("functions/main_analysis.R") 
 
 ###1.b read in data ----
 
-dat <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Annual participation measure/annual-participation-measure-2024-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
+dat <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Annual participation measure/2025-annual-participation-measure-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
 
 ###1.c clean data ----
 
 dat_cleaned <- dat |> 
-  slice(8:305) |>  #remove metadata from top and bottom of spreadsheet
-  row_to_names(row_number = 1) |>  #set 1st row as column names
-  clean_names() |> #tidy up column names
-  select(year, council_area_2019_code, participating_16_19, total_cohort_16_19) |> #drop unnecessary variables
-  rename(numerator = participating_16_19,
-         denominator = total_cohort_16_19,
-         ca = council_area_2019_code) |> #rename columns to format expected by analysis functions
-  mutate(across(c(year, numerator, denominator), as.numeric)) |>  #convert numerator and denominator from string to numeric
-  filter(!is.na(ca)) #drop Scotland totals which are showing as NA codes - will be re-added by analysis functions
+  slice(9:339) |> # This will need adjusted each year
+  select(
+    year = 1, # Year
+    ca = 3, # Council Area 2019 Code
+    denominator = 4, # Total Cohort (16-19)
+    numerator = 5) |> # Participating (16-19)
+  slice(-1) |>
+  mutate(across(c(year, numerator, denominator), as.numeric)) |>  # convert cols to numeric
+  filter(!is.na(ca)) # drop Scotland totals which are showing as NA codes - will be calculated in analysis function
 
 #1.d. Save file to be used in part 2 ----
-  saveRDS(dat_cleaned, file=paste0(profiles_data_folder, '/Prepared Data/participation_raw.rds'))
+saveRDS(dat_cleaned, file=paste0(profiles_data_folder, '/Prepared Data/participation_raw.rds'))
 
 
 ###############################################.
-## Part 2 - Run analysis functions ----
+## Part 2 - Run analysis function ----
 ###############################################.
   
  main_analysis(filename = "participation", measure = "percent", geography = "council",
                year_type = "calendar", ind_id = 13053, time_agg = 1, yearstart = 2016,
-               yearend = 2024)
+               yearend = 2025)
 
 
 #End.
