@@ -2,11 +2,6 @@
 # Analyst notes ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# MM note June 2025 - when CA population lookups are updated to include 2024
-# this script can be re-run. Just need to change 'year_end' parameter to 2024 in the 
-# main_analysis function as the steps below already prepare the 2024 numerator data
-# year_end parameter currently set to 2023 to filter out 2024 records until populations (denominator) are ready
-
 # This script prepares data for the following indicator:-
 # 20503 - Children looked after by local authority
 
@@ -99,6 +94,8 @@ pub_tables <- pub_tables |>
     )
 
 
+
+
 # read in council area lookup containing geography codes
 ca_dictionary <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "CAdictionary.rds"))
 
@@ -131,7 +128,7 @@ saveRDS(data_combined, file.path(profiles_data_folder, 'Prepared Data/looked_aft
 
 main_analysis(filename = "looked_after", ind_id = 20503, geography = "council", 
               measure = "crude", pop = "CA_pop_under18", crude_rate = 1000,
-              yearstart = 2009, yearend = 2023, time_agg = 1, year_type = "snapshot")
+              yearstart = 2009, yearend = 2024, time_agg = 1, year_type = "snapshot")
 
 
 
