@@ -166,7 +166,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
-# Smoking attributable diagnosis
+# Smoking attributable diagnoses
 # Based on royal college of physicians so do not change often - changed in 2025 and in the early 00s before that
 smoking_diag <- paste0("A1[5-9]|C1[0145689]|C2[025]|C3[0-4]|C4[34]|C5[03]|C6[4-7]|C92|E11|F0[1-3]|",
                        "F2[0-5]|F2[89]|F3[23]|F502|F5081|G30|G473|H25|H35[3-9]|H3[6-9]|H4[0-9]|",
@@ -180,7 +180,7 @@ sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # Extracting one row per hospital admission in which there was at least one episode containing
 # a smoking attributable condition in the main condition field.
 # The indicator counts hospital stays but will only includes stays if there was at least one episode with 
-# related diagnosis within the financial year of interest. Patients must also be aged over 34 years on admission to be counted. 
+# related diagnosis within the year of interest. Patients must also be aged over 34 years on admission to be counted. 
 
 # For each admission it extracts the information from the first episode within a hospital stay.
 # Then of these admissions selecting the ones that had an smoking attributable
@@ -223,34 +223,26 @@ smoking_adm_2 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
         AND pc7 IS NOT NULL 
         AND regexp_like(diag, '", smoking_diag, "')"))) |>  
   clean_names() |> 
-  create_agegroups() # Creating age groups for standardization.
+  create_agegroups() |>  # Creating age groups for standardization.
+  filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
+  mutate(scotland = "S00000001")
 
 ##########################
 #Temp code to output SMR file and re-read in to save running over and over again
-
 #saveRDS(smoking_adm_2, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds"))
 
 smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds")) |> 
   filter(!is.na(pc7)) |> 
   mutate(scotland = "S00000001")   # creating variable for Scotland
 
-
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
-  mutate(age_text = case_when(
-    age_text == "35+" ~ NA_character_, #converting 35+ age risks to NA as they affect entirety of population of interest
-    TRUE ~ age_text),
-    gender = as.character(gender),
-    age_text = stringr::str_replace_all(age_text, "\\s+", "")) |> #remove spaces in age bands e.g. 65 - 74 -> 65-74
-  rename(diag = icd,
-         sex_grp = gender) 
+    mutate(sex_grp = as.character(sex_grp))
 
-
-#Calculating age bands for joining with both age-specific relative risks of disease, and also for applying age prevalence of smoking later
-#Smoking risks file has two overlapping sets of age groups, those aligning with SHoS prevalence, and also some conditions are 50+
-#Makes joining dfs a challenge
+#ICD10 codes in relative risk lookup could be presented with 3, 4 or 5 digits. 
+#All SMR records have been extracted with the maximum granularity, but now may need to be truncated to match lookups
 
 #Creating three vectors containing a list of all the codes of each length
 three_chr_codes <- smoking_risks |> filter(nchar(diag) == 3) |> distinct(diag) |> pull(diag) |> append(values = c("C43", "C44"))
@@ -263,16 +255,14 @@ smoking_adm <- smoking_adm |>
                                             age > 64 & age < 75 ~ "65-74",
                                             age > 74 ~ "75+",
                                             TRUE ~ as.character(age)),
-         fifty_plus = case_when(age > 49 ~ 1,
-                                TRUE ~ 0)) |> 
-  mutate(icd_trimmed = case_when(
+         fifty_plus = if_else(age > 49, 1, 0),
+         icd_trimmed = case_when(
   diag %in% five_chr_codes ~ diag,
   diag %in% four_chr_codes ~ diag,
   diag %in% three_chr_codes ~ diag,
   substr(diag, 1, 4) %in% four_chr_codes ~ substr(diag, 1, 4),
   substr(diag, 1, 3) %in% three_chr_codes ~ substr(diag, 1, 3),
-  TRUE ~ "Not in lookup"
-), .after = diag)
+  TRUE ~ "Not in lookup"))
 
 
 #Split the smoking risks lookup into 3 based on age groups. Non-age specific, age groups aligning with ShoS prevalence, and 50+
