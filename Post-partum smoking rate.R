@@ -26,16 +26,31 @@ postpartum <- postpartum |>
   select(-fin_year) |> 
   mutate(year = as.numeric(year))
 
-saveRDS(postpartum, file.path(profiles_data_folder, '/Prepared Data/postpartum_smoking_raw.rds'))
+#Aggregating over three-year period
+postpartum_test <- postpartum |> 
+  group_by(code) |> 
+  mutate(year2 = lead(year, 1),
+         year3 = lead(year, 2),
+         num2 = lead(numerator, 1),
+         num3 = lead(numerator, 2),
+         denom2 = lead(denominator, 1),
+         denom3 = lead(denominator, 2)) |> 
+  filter(!is.na(year3)) |> 
+  reframe(numerator = numerator + num2 + num3,
+            denominator = denominator + denom2 + denom3,
+          year = year2)
+
+
+saveRDS(postpartum_test, file.path(profiles_data_folder, '/Prepared Data/postpartum_smoking_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 main_analysis(filename = "postpartum_smoking", geography = "datazone11", measure = "percent",
-              yearstart = 2002, yearend = 2023, time_agg = 3, ind_id = 1552, year_type = "financial")
+              yearstart = 2002, yearend = 2022, time_agg = 1, ind_id = 1552, year_type = "financial")
 
-deprivation_analysis(filename = "postpartum_smoking", yearstart = 2002, yearend = 2023,
-                       time_agg = 3, year_type = "financial", measure = "percent", pop_sex = "all",
+deprivation_analysis(filename = "postpartum_smoking", yearstart = 2002, yearend = 2022,
+                       time_agg = 1, year_type = "financial", measure = "percent", pop_sex = "all",
                        ind_id = 1552)
 
 ##END
