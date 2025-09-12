@@ -326,7 +326,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
            rename(est_pop = denominator)
        }
          
-    # join data with population lookup to add population column to use as denominator
+    # join data with population lookup to add population column to use as denominator (when 2024 populations added double check that right join is most appropriate)
    simd_data <- right_join(simd_data, population_lookup, by = grouping_vars)
 
 
