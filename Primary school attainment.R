@@ -1,6 +1,6 @@
-#########################################################
+#########################################################.
 # SG Curriculum for Excellence attainment: P1, P4 and P7 - data import
-#########################################################
+#########################################################.
 
 ### ScotPHO indicators sourced from SG CfE attainment data: 
 ### Author: Liz Richardson, 8 Aug 2025
@@ -23,9 +23,9 @@
 # Denominator data obtained directly from Keith Hoy (school.stats@gov.scot). 
 
 
-##########################################################
+##########################################################.
 ### Source functions and additional packages ----
-##########################################################
+##########################################################.
 
 ### functions/packages -----
 source("functions/main_analysis.R") # for packages and QA
@@ -34,9 +34,9 @@ source("functions/deprivation_analysis.R") # for packages and QA
 # Load additional packages
 library(openxlsx)
 
-##########################################################
+##########################################################.
 ### 1. Paths and lookups ----
-##########################################################
+##########################################################.
 
 # Identify data folder
 cfe_profiles_data_folder <- paste0(profiles_data_folder, "/Received Data/Curriculum for Excellence/")
@@ -45,7 +45,7 @@ cohort <- "ACEL 23-24 Table 11 with cohort for Elizabeth Richardson.xlsx"
 geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
 
 ## Geography lookups -----
-#########################################################
+#########################################################.
 
 # Read in geog code lookup
 code_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")) %>% 
@@ -59,7 +59,7 @@ geography_lookup <- readRDS(file.path(geography_lookups, "DataZone11_All_Geograp
 
 
 ## Population lookup -----
-#########################################################
+#########################################################.
 
 ## Make a denominator population lookup -----
 # (by CA, SIMD, school stage, year)
@@ -122,9 +122,9 @@ denoms <- rbind(denoms, denoms_scotland) %>%
   mutate(quint_type = "sc_quin")
 
 
-##########################################################
+##########################################################.
 ### 2. Read in data ----
-##########################################################
+##########################################################.
 
 # A. First read in the national, SIMD and SIMDxCA level data.
 # B. Then read in the data for other population splits (sex, ethnicity, urban/rural).
@@ -339,14 +339,14 @@ data_popgroups <- rbind(split_sex, split_ethnicity, split_urbanrural) %>%
          upci = as.numeric(NA)) 
 
 
-##########################################################
+##########################################################.
 ### 3. Final processing functions ----
-##########################################################
+##########################################################.
 
 
 
 # Pop group processing
-#################################
+#################################.
 
 # Function to prepare the popgroup data by stage (can aggregate up from CA to HB, etc, using main_analysis function)
 prep_popgrp_data_by_stage <- function(ind, ind_num) {
@@ -363,7 +363,7 @@ prep_popgrp_data_by_stage <- function(ind, ind_num) {
 }
 
 # SIMD data processing
-##################################
+##################################.
 
 process_simd_data <- function(ind, ind_num) {
   
@@ -419,12 +419,12 @@ process_simd_data <- function(ind, ind_num) {
   
 
 
-##########################################################
+##########################################################.
 ### 4. Prepare final files -----
-##########################################################
+##########################################################.
 
 # Main data processing
-#################################
+#################################.
 
 main_analysis(filename = "Literacy", ind_id = 30157, geography = "council", measure = "percent", 
               yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school")
