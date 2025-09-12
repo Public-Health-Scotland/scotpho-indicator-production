@@ -122,15 +122,14 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 #'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25` = 'normal' if the age groupings are fit standard 5 year banding 0-4,5-9,10-14 etc
 #'@param epop_total only applicable to standardised rates
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
-
-
+#'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
 
 main_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
                           geography = c("scotland", "board", "council", "intzone11", "datazone11", "multiple"),
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
-                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE){
+                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -227,6 +226,11 @@ main_analysis <- function(filename,
                          "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019"),
                          "datazone11" = c("datazone2011", "intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality")
                          )
+    
+    # if police division is set to true then add to geography list, default is false so will skip this step
+    if (police_div==TRUE){
+      area_types <- c(area_types,"pd")
+    }
 
     # select those columns from the lookup
     geography_lookup <- geography_lookup |>
