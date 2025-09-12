@@ -234,7 +234,7 @@ deprivation_analysis <- function(filename, yearstart, yearend, time_agg,
     aggregate_by_simd(data, geo_col = "hb", simd_col = "sc_quin"), # health board data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "ca", simd_col = "ca_quin"), # council area data, split by council quintiles
     aggregate_by_simd(data, geo_col = "ca", simd_col = "sc_quin"), # council area data, split by scotland quintiles
-    aggregate_by_simd(data, geo_col = "pd", simd_col = "sc_quin"), # police division data, split by scotland quintiles
+    #aggregate_by_simd(data, geo_col = "pd", simd_col = "sc_quin"), # police division data, split by scotland quintiles - #option to add in future but maybe not yet
     aggregate_by_simd(data, geo_col = "hscp", simd_col = "sc_quin"), # HSCP data, split by scotland quintiles
     aggregate_by_simd(data, geo_col = "hscp", simd_col = "hscp_quin") # HSCP data, split by HSCP quintiles
   )
