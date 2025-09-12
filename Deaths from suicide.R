@@ -184,18 +184,19 @@ deprivation_analysis(filename="suicides_16plus_depr", measure="stdrate", time_ag
 
 # Female suicides 16+ : not a standalone indicator
 # data run through main function then combined with other gender to create popgroup file later in script
+# you can toggle on/off the QA report by switch false to true if you want to inspect numbers
 
 # main analysis function 
 main_analysis(filename = "suicides_16plus_F_ca", ind_id = 30008, geography = "council", measure = "stdrate", 
               pop = "CA_pop_16+", yearstart = 2002, yearend = 2024,
-              time_agg = 5, epop_age = "16+", epop_total = 82900, year_type = "calendar", police_div = TRUE)
+              time_agg = 5, epop_age = "16+", epop_total = 82900, year_type = "calendar", police_div = TRUE, QA=FALSE)
 
 
 # deprivation analysis function : not a standalone indicator
 # generating data to allow assessment for suitability to publish
 deprivation_analysis(filename = "suicides_16plus_F_depr", measure = "stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 82900, epop_age = "16+",
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "female")
+                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "female", QA=FALSE)
 
 ###############################################.
 
@@ -205,14 +206,14 @@ deprivation_analysis(filename = "suicides_16plus_F_depr", measure = "stdrate", t
 # main analysis function not a standalone indicator
 main_analysis(filename = "suicides_16plus_M_ca", ind_id = 30008, geography = "council", measure = "stdrate", 
               pop = "CA_pop_16+", yearstart = 2002, yearend = 2024,
-              time_agg = 5, epop_age = "16+", epop_total = 82900, year_type = "calendar",police_div = TRUE)
+              time_agg = 5, epop_age = "16+", epop_total = 82900, year_type = "calendar",police_div = TRUE, QA=FALSE)
 
 
 # deprivation analysis function : not a standalone indicator
 # generating data to allow assessment for suitability to publish
 deprivation_analysis(filename = "suicides_16plus_M_depr", measure = "stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 82900, epop_age = "16+",
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "male")
+                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "male", QA=FALSE)
 
 
 
