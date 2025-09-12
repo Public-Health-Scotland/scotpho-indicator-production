@@ -139,19 +139,21 @@ saveRDS(tempaccom_total, file=paste0(profiles_data_folder, '/Prepared Data/tempa
 # Run main analysis function
 main_analysis(filename = "homeless_total", ind_id = 30034, geography = "council", measure = "crude", 
               pop = "CA_pop_19+", yearstart = 2002, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial")
+              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div=TRUE)
 
+#saved to 'to be checked folder' but is not standalone indicator - only required to generate popgrp data
 main_analysis(filename = "homeless_male", ind_id = 30034, geography = "council", measure = "crude", 
               pop = "CA_pop_M_19+", yearstart = 2002, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial")
+              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div=TRUE)
 
-main_analysis(filename = "homeless_female", ind_id = 30034, geography = "council", measure = "crude", 
+#saved to 'to be checked folder' but is not standalone indicator - only required to generate popgrp data
+main_analysis(filename = "homeless_female_X", ind_id = 30034, geography = "council", measure = "crude", 
               pop = "CA_pop_F_19+", yearstart = 2002, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial")
+              time_agg = 1, crude_rate = 1000, year_type = "financial",police_div=TRUE)
 
 main_analysis(filename = "tempaccom_total", ind_id = 30161, geography = "council", measure = "crude", 
               pop = "CA_pop_under16", yearstart = 2002, yearend = 2024, # requires the 2024 MYE, due Aug 2025.
-              time_agg = 1, crude_rate = 1000, year_type = "snapshot")
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
 
 
 
