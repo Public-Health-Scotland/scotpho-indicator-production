@@ -149,7 +149,7 @@ saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/school_leav
 main_analysis(filename = "school_leaver_destinations", ind_id = 13010, 
               geography = "council", measure = "percent", 
               yearstart = 2009, yearend = 2023,
-              time_agg = 1, year_type = "school")
+              time_agg = 1, year_type = "school", police_div=TRUE)
 
 # Aggregated Scotland data do not equal the original Scotland data from the spreadsheet (likely due to some suppression), so drop the aggregated data for Scotland:
 ca_data <- readRDS(file.path(profiles_data_folder, "Data to be checked", "school_leaver_destinations_shiny.rds") ) %>%
