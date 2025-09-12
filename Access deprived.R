@@ -110,12 +110,12 @@ simd_data <- imap(simd_info, ~ {
       rank = {{domain_col}},
       any_of(c(
         "ca2019" = matches("^CA2019$", ignore.case = TRUE),
+        "hb2019" = matches("^HB2019$", ignore.case = TRUE),
         "hscp2019" = matches("^HSCP2019$", ignore.case = TRUE),
         "intzone2011" = matches("^intzone2011$", ignore.case = TRUE)
       ))
     )
 })
-
 
 
 # For each SIMD, join with pop index year data and arrange dzs from most (no 1) to least access deprived
@@ -127,7 +127,7 @@ simd_data <- imap(simd_info, ~ {
     arrange(rank) |>
     mutate(cumsum = cumsum(pop)) |>
     mutate(depr_status = if_else(cumsum <= pop_15[[.y]], "15% most deprived", "85% least deprived")) |>
-    select(any_of(c("datazone", "intzone2011", "ca2019", "hscp2019", "rank", "depr_status")))
+    select(any_of(c("datazone", "intzone2011", "ca2019","hb2019", "hscp2019", "rank", "depr_status")))
 })
 
 
