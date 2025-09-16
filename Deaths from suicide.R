@@ -317,10 +317,12 @@ main_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_yo
 total_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_depr_ineq.rds")) %>% mutate(sex="Total")
 f_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_F_depr_ineq.rds")) %>% mutate(sex="Female")
 m_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_M_depr_ineq.rds")) %>% mutate(sex="Male")
+
 dep_yp <- rbind(total_dep_yp, f_dep_yp, m_dep_yp) %>% 
   filter(substr(code, 1, 3) == "S00" & quint_type == "sc_quin") %>% # drop lower geogs, and the deciles (which had smaller counts)
   mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA),
                                TRUE ~ numerator))
+
 
 #################################################################################.
 # Save files final (ie files post suppression that are to be used in live tool
@@ -366,6 +368,6 @@ write.csv(dep_yp, paste0(profiles_data_folder, "/Data to be checked/suicides_you
 write_rds(dep_yp, paste0(profiles_data_folder, "/Data to be checked/suicides_young_ineq.rds"))
 
 # check final output
-run_qa(filename ="suicides_young_ineq", type = "deprivation", test=FALSE )
+run_qa(filename ="suicides_young", type = "deprivation", test=FALSE )
 
 ##END
