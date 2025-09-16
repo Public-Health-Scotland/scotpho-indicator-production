@@ -5,8 +5,9 @@
 # This script updates the following indicator:
 # Population living in the 20% most access deprived datazones in Scotland
 
-# Note indicator used to be based on 15% most deprived but was updated to 20% in
-# September 2025 to make consistent with other 3 domain-specific indicators in profiles tool.
+# Note there used to be an indicator based on 15% most deprived (ind_id 20902 - inactive) 
+# In Sep 2025 this new indicator was created based on 20% most deprived
+# to make consistent with other 3 domain-specific indicators in profiles tool.
 
 # This indicator is created using the different versions of SIMD in cl-out
 # and DZ level population estimates. It can therefore be updated each 
@@ -199,7 +200,7 @@ result <- result |>
 
 
 # save temp file for analysis function 
-saveRDS(result, file.path(profiles_data_folder, "Prepared Data", "20902_pop_access_deprived_raw.rds"))
+saveRDS(result, file.path(profiles_data_folder, "Prepared Data", "99147_pop_access_deprived_raw.rds"))
 
 
 
@@ -217,7 +218,7 @@ saveRDS(result, file.path(profiles_data_folder, "Prepared Data", "20902_pop_acce
 # 3.IZ/locality trends may produce odd looking trends - this is to be expected e.g. where an IZ is comprised of a small
 # number of DZs where they may fall within the 20% most deprived in one version of SIMD but not another.
 
-main_analysis(ind_id = 20902, filename = "20902_pop_access_deprived", measure = "percent", 
+main_analysis(ind_id = 99147, filename = "99147_pop_access_deprived", measure = "percent", 
               geography = "multiple", year_type = "calendar", time_agg = 1, yearstart = 2002, yearend = 2023)
 
 
