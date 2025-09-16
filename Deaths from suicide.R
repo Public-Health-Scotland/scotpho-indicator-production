@@ -254,7 +254,7 @@ deprivation_analysis(filename = "suicides_young_F_depr", measure = "crude", time
 #               time_agg = 5, crude_rate = 100000, year_type = "calendar")
 
 # deprivation analysis function
-deprivation_analysis(filename = "suicides_young_F_depr", measure = "crude", time_agg = 5,
+deprivation_analysis(filename = "suicides_young_M_depr", measure = "crude", time_agg = 5,
                      pop_age = c(11, 25), crude_rate = 100000,
                      yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 13033, pop_sex = "male")
 
@@ -315,8 +315,8 @@ main_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_yo
 # ~5% of the Scotland level quintile numerators are >0 and <5
 # Decision: keep only Scotland level SIMD quintile data for young person suicides, and suppress any counts <5
 total_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_depr_ineq.rds")) %>% mutate(sex="Total")
-f_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_depr_F_ineq.rds")) %>% mutate(sex="Female")
-m_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_depr_M_ineq.rds")) %>% mutate(sex="Male")
+f_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_F_depr_ineq.rds")) %>% mutate(sex="Female")
+m_dep_yp <- readRDS(paste0(profiles_data_folder, "/Data to be checked/suicides_young_M_depr_ineq.rds")) %>% mutate(sex="Male")
 dep_yp <- rbind(total_dep_yp, f_dep_yp, m_dep_yp) %>% 
   filter(substr(code, 1, 3) == "S00" & quint_type == "sc_quin") %>% # drop lower geogs, and the deciles (which had smaller counts)
   mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA),
