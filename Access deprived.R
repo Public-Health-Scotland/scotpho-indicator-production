@@ -3,11 +3,18 @@
 # ~~~~~~~~~~~~~~~~~~~~~~
 
 # This script updates the following indicator:
-# Population living in the 15% most access deprived datazones in Scotland
+# Population living in the 20% most access deprived datazones in Scotland
+
+# Note indicator used to be based on 15% most deprived but was updated to 20% in
+# September 2025 to make consistent with other 3 domain-specific indicators in profiles tool.
+
+# This indicator is created using the different versions of SIMD in cl-out
+# and DZ level population estimates. It can therefore be updated each 
+# year once our scotpho population lookups have been updated.
 
 # We apply population weighting i.e. ranking the DZs according to their access 
 # deprivation score alongside a cumulative total of DZ populations. 
-# The cut-off for the most deprived DZs is the point at which 15% of the population has been included.
+# The cut-off for the most deprived DZs is the point at which 20% of the population has been included.
 # For a more thorough explanation of methodology, refer to the metadata in the techdoc.
 
 # Each year when updating this indicator, the 'simd_list' below needs reviewed to 
@@ -49,7 +56,7 @@ simd_info <- list(
 
 
 # The purrr::imap() function is used to iterate over this list and prepare
-# data for SIMD version. When using this function:
+# data for each SIMD version. When using this function:
 # '.y' refers to the name of the simd version e.g. "2004"
 # '.x' refers to an element in the list for that particular simd version e.g. dz_year
 
@@ -91,9 +98,8 @@ simd_pop_index <- imap(simd_info, ~ {
 })
 
 
-# Calculate 15% of the population for the year each SIMD is based on
-pop_15 <- map(simd_pop_index, ~ sum(.x$pop) * 0.15)
-
+# Calculate 20% of the population for the year each SIMD is based on
+pop_20 <- map(simd_pop_index, ~ sum(.x$pop) * 0.20)
 
 
 # For each SIMD, read in the lookup from cl-out and select access domain rank and any geography cols
@@ -119,14 +125,14 @@ simd_data <- imap(simd_info, ~ {
 
 
 # For each SIMD, join with pop index year data and arrange dzs from most (no 1) to least access deprived
-# calculate a cumulative total of the population - when 15% of pop is reached, label DZs as 'most deprived'
+# calculate a cumulative total of the population - when 20% of pop is reached, label DZs as 'most deprived'
 simd_data <- imap(simd_info, ~ {
   
   simd_data[[.y]] |>
     left_join(simd_pop_index[[.y]], by = "datazone") |>
     arrange(rank) |>
     mutate(cumsum = cumsum(pop)) |>
-    mutate(depr_status = if_else(cumsum <= pop_15[[.y]], "15% most deprived", "85% least deprived")) |>
+    mutate(depr_status = if_else(cumsum <= pop_20[[.y]], "20% most deprived", "80% least deprived")) |>
     select(any_of(c("datazone", "intzone2011", "ca2019","hb2019", "hscp2019", "rank", "depr_status")))
 })
 
@@ -169,7 +175,7 @@ result <- result |>
   left_join(localities, by = c("datazone" = "datazone2011"))
 
 
-# aggregate by geography level and remove IZ/locality data pre-2017
+# aggregate by geography level and remove IZ/locality data pre-2014
 result <- result |>
   select(-datazone) |>
   pivot_longer(
@@ -185,7 +191,7 @@ result <- result |>
 
 # create numerator and denominator data 
 result <- result |>
-  mutate(numerator = if_else(depr_status == "15% most deprived", denominator, 0)) |>
+  mutate(numerator = if_else(depr_status == "20% most deprived", denominator, 0)) |>
   select(-depr_status) |>
   group_by(year, code) |>
   summarise_all(sum) |>
@@ -205,11 +211,11 @@ saveRDS(result, file.path(profiles_data_folder, "Prepared Data", "20902_pop_acce
 
 # 1. Results should confirm that IZ/locality data only available for 2014 onwards
 
-# 2. Scotland trend will always be around 15% since the 15% most deprived areas hold approx 15% of the scottish pop 
+# 2. Scotland trend will always be around 20% since the 20% most deprived areas hold approx 20% of the scottish pop 
 # (although rate may rise slightly in between pop index years before resetting again).
 
 # 3.IZ/locality trends may produce odd looking trends - this is to be expected e.g. where an IZ is comprised of a small
-# number of DZs where they may fall within the 15% most deprived in one version of SIMD but not another.
+# number of DZs where they may fall within the 20% most deprived in one version of SIMD but not another.
 
 main_analysis(ind_id = 20902, filename = "20902_pop_access_deprived", measure = "percent", 
               geography = "multiple", year_type = "calendar", time_agg = 1, yearstart = 2002, yearend = 2023)
