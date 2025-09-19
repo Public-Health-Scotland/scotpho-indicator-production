@@ -476,7 +476,7 @@ shinyApp(
     #reactive simd trend data
     simd_trend_data<- reactive({
     rate_data <- data_indicator %>% # reactive dataset for trend chart
-    select(code,code_name, year, sex, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
+    select(code,code_name, year, sex, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii,trend_axis) %>%
     subset(quint_type==input$quint_selected & code_name==input$code_selected & sex == input$sex_selected) %>%
     arrange(quintile) %>% #this is needed to make palette assignments work well
     droplevels()
@@ -523,7 +523,7 @@ shinyApp(
     tooltiptext_trend <- c(paste0(simd_trend_data()$year, ": ", simd_trend_data()$rate))
     
     #Create trend plot
-    rate_trend <- plot_ly(data= simd_trend_data(), x=~year,hoverinfo="text") %>%
+    rate_trend <- plot_ly(data= simd_trend_data(), x=~trend_axis,hoverinfo="text") %>%
       add_lines(y = ~rate, name = ~quintile, type = 'scatter',text = tooltiptext_trend,
                 mode = 'lines', color = ~quintile,  colors = pal_simd_trend) %>%
               layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
