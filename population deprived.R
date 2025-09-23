@@ -8,7 +8,7 @@
 # 20904 - Population living in the 20% most deprived datazones
 # 20905 - Population living in the 20% most income deprived datazones 
 #             (note similar but different to archived indicator 20701 "Population income deprived" which was based on count of those income deprived from SIMD index)
-# 20902 - Population living in the 20% most access deprived datazones
+# 20906 - Population living in the 20% most access deprived datazones
 # 20907 - Working age population living in the 20% most income deprived datazones 
 #             (note similar but not the same as 20702 - Working age population employment deprived)
 # 13003 - Young people living in the 20% most access deprived datazones 
@@ -354,11 +354,11 @@ create_indicator_data(ind_id = 20904, domain = "overall", population = "all_ages
 
 
 ###  20701 - Population income deprived  ----
-create_indicator_data(ind_id = 20701, domain = "income", population = "all_ages", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 20905, domain = "income", population = "all_ages", yearstart = 2002, yearend = 2023)
 
 
 ###  20902 - Population living in the most access deprived datazones ----
-create_indicator_data(ind_id = 20902, domain = "access", population = "all_ages", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 20906, domain = "access", population = "all_ages", yearstart = 2002, yearend = 2023)
 
 
 
@@ -394,7 +394,7 @@ create_indicator_data(ind_id = 13005, domain = "crime", population = "under26", 
 # i.e. The DZs in each quintile hold approximately 20% of the 16-64 population 
 
 ###  20702 - Working age population employment deprived ----
-create_indicator_data(ind_id = 20702, domain = "employment", population = "working_age", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 20907, domain = "employment", population = "working_age", yearstart = 2002, yearend = 2023)
 
 
 
