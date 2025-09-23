@@ -5,13 +5,15 @@
 # Recommend opening session with 10GB memory to run this script!
 
 # This script updates the following 7 indicators:
+# 20904 - Population living in the 20% most deprived datazones
+# 20905 - Population living in the 20% most income deprived datazones 
+#             (note similar but different to archived indicator 20701 "Population income deprived" which was based on count of those income deprived from SIMD index)
 # 20902 - Population living in the 20% most access deprived datazones
-# 20701 - Population income deprived
-# 20702 - Working age population employment deprived
+# 20907 - Working age population living in the 20% most income deprived datazones 
+#             (note similar but not the same as 20702 - Working age population employment deprived)
 # 13003 - Young people living in the 20% most access deprived datazones 
 # 13005 - Young people living in the 20% most crime deprived datazones
 # 13004 - Young people living in the 20% most income deprived datazones
-# 20904 - Population living in the 20% most deprived datazones
 
 # We apply population weighting to calculate quintiles separately for each domain and overall
 # i.e. ranking the DZs according to their domain deprivation scores alongside a cumulative total of DZ populations. 
@@ -79,7 +81,7 @@ pop_data <- imap(pop_data, ~ {
     group_by(across(contains("datazone")), year) |>
     summarise(
       all_ages = sum(denominator), # total pop
-      under25 = sum(denominator[age >= 0 & age <= 25]), # 0-25 pop (i.e. 'young people')
+      under26 = sum(denominator[age >= 0 & age <= 25]), # 0-25 pop (i.e. 'young people')
       working_age = sum(denominator[age >= 16 & age <= 64]), # 16-64 pop (i.e. 'working age')
       .groups = "drop"
     ) |>
@@ -95,7 +97,6 @@ pop_data <- imap(pop_data, ~ {
 # so are not part of any of the SIMD lookups - have to add them on as a column 
 localities <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "DataZone11_HSCLocality_Lookup.rds")) |>
   select(datazone = datazone2011, hscp_locality)
-
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -190,7 +191,7 @@ quint_breaks <- map(simd_data, ~ {
   list(
     "all_ages" = seq(from = 0, to = sum(.x$all_ages), length.out = 6),
     "working_age" = seq(from = 0, to = sum(.x$working_age), length.out = 6),
-    "under25" = seq(from = 0, to = sum(.x$under25), length.out = 6)
+    "under26" = seq(from = 0, to = sum(.x$under26), length.out = 6)
   )
 })
 
@@ -234,8 +235,8 @@ simd_quintiles <- imap(simd_data, ~ {
           
           # calculate that domains quintiles based on young population (0-25)
           arrange(!!sym(domain)) |>
-          mutate("{domain}_quint_under25" := cut(cumsum(under25),
-                                                 breaks = quint_breaks[[.y]]$under25,
+          mutate("{domain}_quint_under26" := cut(cumsum(under26),
+                                                 breaks = quint_breaks[[.y]]$under26,
                                                  labels = 1:5,
                                                  include.lowest = TRUE)) |>
           # remove domain rank col
@@ -247,7 +248,7 @@ simd_quintiles <- imap(simd_data, ~ {
     },
     .init = .x
   ) |>
-    select(-c(under25, all_ages, working_age))
+    select(-c(under26, all_ages, working_age))
   
 })
 
@@ -307,7 +308,7 @@ result <- result |>
 # Function to create indicator data for different domains/populations 
 create_indicator_data <- function(df = result, 
                                 domain = c("overall", "access", "income", "crime", "employment"), 
-                                population = c("all_ages", "under25", "working_age"),
+                                population = c("all_ages", "under26", "working_age"),
                                 ind_id, yearstart, yearend
                                 ){
    
@@ -371,15 +372,15 @@ create_indicator_data(ind_id = 20902, domain = "access", population = "all_ages"
 # i.e. The DZs in each quintile hold approximately 20% of the 0-25 population 
 
 ### 13003 - Young people living in the most access deprived datazones ----
-create_indicator_data(ind_id = 13003, domain = "access", population = "under25", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 13003, domain = "access", population = "under26", yearstart = 2002, yearend = 2023)
 
 
 ### 13004 - Young people living in the most income deprived datazones ----
-create_indicator_data(ind_id = 13004, domain = "income", population = "under25", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 13004, domain = "income", population = "under26", yearstart = 2002, yearend = 2023)
 
 
 ###  13005 - Young people living in the most crime deprived datazones ----
-create_indicator_data(ind_id = 13005, domain = "crime", population = "under25", yearstart = 2002, yearend = 2023)
+create_indicator_data(ind_id = 13005, domain = "crime", population = "under26", yearstart = 2002, yearend = 2023)
 
 
 
