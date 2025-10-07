@@ -327,7 +327,7 @@ main_analysis <- function(filename,
     # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
     # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
     
-    #should this be full or left - based on which?
+    #should this be full or left - based on population lookup?
     data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
 
     # check year parameters are sensible and all required years are present
