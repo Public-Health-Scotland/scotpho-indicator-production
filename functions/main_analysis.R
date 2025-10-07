@@ -134,7 +134,7 @@ main_analysis <- function(filename,
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+
   # ensure arguments with finite choices are valid
   # this section should only work when calling the entire function, not running individually
   geography <- rlang::arg_match(geography)
@@ -222,7 +222,7 @@ main_analysis <- function(filename,
     area_types <- switch(geography,
                          "scotland" =  c("scotland"),
                          "board" = c("hb2019", "scotland"),
-                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland", "hscp2019"),
+                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland"),
                          "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019"),
                          "datazone11" = c("datazone2011", "intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality")
                          )
@@ -268,10 +268,13 @@ main_analysis <- function(filename,
     
    }
 
+
   # and finally, aggregate the data by each geography code
   data <- data |>
     group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
-    summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
+    summarise_all(sum, na.rm = T) |>
+    # revert to base sum function as hablar allows presence of NA that generate issues later on in script 
+    # summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
     ungroup()
 
   # step complete
@@ -323,6 +326,8 @@ main_analysis <- function(filename,
     # full_join keeps all groups in the pop_lookup file and indicator data file
     # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
     # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
+    
+    #should this be full or left - based on which?
     data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
 
     # check year parameters are sensible and all required years are present
@@ -373,7 +378,12 @@ main_analysis <- function(filename,
   # However, we often need to combine years in order to publish data if the figures are small or sensitive. This step
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
 
-
+  # replace NAs with 0 before aggregating data by time period
+  data <- data |>
+    tidyr::replace_na(list(numerator = 0,
+                           denominator = 0))
+  
+  
   # determine sort order or variables before aggregating
   var_order <- if(measure == "stdrate"){
     c("code", "sex_grp", "age_grp", "year")
@@ -381,13 +391,14 @@ main_analysis <- function(filename,
     c("code", "year")
   }
 
-
+  
   # aggregate by time period
-  data <- data |>
+  data<- data |>
     arrange(across(all_of(var_order))) |> # arrange data by var order
     group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
     # calculating rolling averages
-    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
+  # mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) # na.rm TRUE 
     filter(!is.na(denominator)) |>
     ungroup() |>
     mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
