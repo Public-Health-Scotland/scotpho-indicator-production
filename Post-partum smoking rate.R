@@ -7,7 +7,7 @@
 # raw data requested from child health team and is processed using analysis function however there is some post function processing to remove
 # unwanted geographies and suppress numerators where counts are small.
 # note that although small counts are suppressed we still release percentages based on small counts given there is ambiguity introduced by using 3/5 year rolling rates
-# and for deprivation data self identifition wouldl also require knowledge ofwhich datazones were in which deprivation quintile
+# and for deprivation data self identification would also require knowledge of which datazones were in which deprivation quintile
 
 
 #   Part 1 - Prepare basefile
@@ -36,21 +36,6 @@ postpartum <- postpartum |>
          denominator = total_valid_status) |> 
   select(-fin_year) |> 
   mutate(year = as.numeric(year))
-
-# remove this code chunk when everyone happy with option to present main 3yrs and depr 5 years
-# #Aggregating over three-year period
-# postpartum_test <- postpartum |> 
-#   group_by(code) |> 
-#   mutate(year2 = lead(year, 1),
-#          year3 = lead(year, 2),
-#          num2 = lead(numerator, 1),
-#          num3 = lead(numerator, 2),
-#          denom2 = lead(denominator, 1),
-#          denom3 = lead(denominator, 2)) |> 
-#   filter(!is.na(year3)) |> 
-#   reframe(numerator = numerator + num2 + num3,
-#             denominator = denominator + denom2 + denom3,
-#           year = year2)
 
 saveRDS(postpartum, file.path(profiles_data_folder, '/Prepared Data/postpartum_smoking_raw.rds'))
 
