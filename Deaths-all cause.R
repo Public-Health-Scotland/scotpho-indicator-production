@@ -115,7 +115,7 @@ deaths_1544_dz01 <- data_deaths %>%
 
 dep_1544_file <- rbind(deaths_1544_dz01, deaths_1544_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_1544_file, file=paste0(profiles_data_folder, 'Prepared Data/deaths_15to44_depr_raw.rds'))
+saveRDS(dep_1544_file, file=paste0(profiles_data_folder, '/Prepared Data/deaths_15to44_depr_raw.rds'))
 
 
 ###############################################.
