@@ -115,7 +115,7 @@ deaths_1544_dz01 <- data_deaths %>%
 
 dep_1544_file <- rbind(deaths_1544_dz01, deaths_1544_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_1544_file, file=paste0(profiles_data_folder, 'Prepared Data/deaths_15to44_depr_raw.rds'))
+saveRDS(dep_1544_file, file=paste0(profiles_data_folder, '/Prepared Data/deaths_15to44_depr_raw.rds'))
 
 
 ###############################################.
@@ -143,18 +143,20 @@ saveRDS(dep_under75_file, file=paste0(profiles_data_folder, '/Prepared Data/deat
 ## Part 3 - Run analysis functions ----
 ###############################################.
 
+# N.B. Any indicator using the DZ or SIMD population files limited to 2023 as at Oct 2025, until 2024 population data are available.
+
 ###############################################.
 #Deaths all ages
 
 #call main analysis function 
-main_analysis(filename = "deaths_allages_dz11",
+main_analysis(filename = "deaths_allages_dz11", #max year 2023 
               measure = "stdrate",
               geography = "datazone11",
               year_type = "calendar",  
               ind_id = 20103, 
               time_agg = 3,  
               yearstart = 2002,   
-              yearend = 2024, 
+              yearend = 2023, 
               pop = "DZ11_pop_allages",
               epop_total = 200000,
               epop_age = "normal",
@@ -162,31 +164,33 @@ main_analysis(filename = "deaths_allages_dz11",
               QA = TRUE)
 
 
-analyze_first(filename = "deaths_allages_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
-
-analyze_second(filename = "deaths_allages_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20103, year_type = "calendar")
-
 #Deprivation analysis function
-analyze_deprivation(filename="deaths_allages_depr", measure="stdrate", time_agg=3, 
+deprivation_analysis(filename="deaths_allages_depr", measure="stdrate", time_agg=3, 
                     yearstart= 2002, yearend=2023,  
-                    year_type = "calendar", pop = "depr_pop_allages", 
-                    epop_age="normal", epop_total =200000, ind_id = 20103)
-
-
+                    year_type = "calendar",  
+                    pop_sex = "all",
+                    pop_age = NULL,
+                    epop_age="normal", epop_total =200000, ind_id = 20103,
+                    QA = TRUE, test_file = FALSE)
+                                 
+  
 
 ###############################################.
 # Deaths aged 1-15
-analyze_first(filename = "deaths_1to15", geography = "council", measure = "crude", 
-              pop = "CA_pop_1to15", yearstart = 2002, yearend = 2023, 
-              time_agg = 5, hscp = T)
 
-analyze_second(filename = "deaths_1to15", measure = "crude", time_agg = 5, 
-               crude_rate = 100000, ind_id = 13034, year_type = "calendar")
-
-
+#call main analysis function 
+main_analysis(filename = "deaths_1to15",
+              measure = "crude",
+              geography = "council",
+              year_type = "calendar",  
+              ind_id = 13034, 
+              time_agg = 5,  
+              yearstart = 2002,   
+              yearend = 2024, 
+              pop = "CA_pop_1to15",
+              crude_rate = 100000,
+              test_file = FALSE, 
+              QA = TRUE)
 
 ###############################################.
 # Deaths under 1 (indicator name : Infant deaths, aged 0-1 years)
@@ -199,51 +203,79 @@ main_analysis(filename = "deaths_under1",  measure = "crude",
               crude_rate = 1000, # rate is crude rate per 1000
               test_file = FALSE, QA = TRUE)
 
-# old analysis function scripts can be deleted once new functions are working
-# analyze_first(filename = "deaths_under1", geography = "council", measure = "crude", 
-#               pop = "live_births", yearstart = 2002, yearend = 2022, 
-#               time_agg = 5, hscp = T)
-# 
-# analyze_second(filename = "deaths_under1", measure = "crude", time_agg = 5, 
-#                crude_rate = 1000, ind_id = 13026, year_type = "calendar")
+#remove ADPs as these are not in the live births lookup (alternatively: amend the lookup)
+deaths_under1 <- main_analysis_result %>%
+  filter(!(substr(code, 1, 3)=="S11"))
+
+# save the data as both an RDS and CSV file
+saveRDS(deaths_under1, paste0(output_folder, "/deaths_under1_shiny.rds"))
+write.csv(deaths_under1, paste0(output_folder, "/deaths_under1_shiny.csv"), row.names = FALSE)
+
+# run QA again
+run_qa(type = "main", filename="deaths_under1",test_file=FALSE)
 
 rm(postcode_lookup)
 
 ###############################################.
 # Deaths 15-44
 #epop_age can set to normal even though a subset of whole pop (since only matches on pop which are present in file)
-analyze_first(filename = "deaths_15to44_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_15to44", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
 
-analyze_second(filename = "deaths_15to44_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 76000, ind_id = 20104, year_type = "calendar")
+#call main analysis function 
+main_analysis(filename = "deaths_15to44_dz11", #max year 2023 
+              measure = "stdrate",
+              geography = "datazone11",
+              year_type = "calendar",  
+              ind_id = 20104, 
+              time_agg = 3,  
+              yearstart = 2002,   
+              yearend = 2023, 
+              pop = "DZ11_pop_15to44",
+              epop_total = 76000,
+              epop_age = "normal",
+              test_file = FALSE, 
+              QA = TRUE)
+
 
 #Deprivation analysis function
-analyze_deprivation(filename="deaths_15to44_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2023,  
-                    year_type = "calendar", pop = "depr_pop_15to44", 
-                    epop_age="normal", epop_total = 76000, ind_id = 20104)
+deprivation_analysis(filename="deaths_15to44_depr", measure="stdrate", time_agg=3, 
+                     yearstart= 2002, yearend=2023,  
+                     year_type = "calendar",  
+                     pop_sex = "all",
+                     pop_age = c(15, 44),
+                     epop_age="normal", epop_total =76000, ind_id = 20104,
+                     QA = TRUE, test_file = FALSE)
 
 
 
 ###############################################.
 # Deaths under 75 
 #epop_age can set to normal even though a subset of whole pop (since only matches on pop which are present in file)
-analyze_first(filename = "deaths_under75_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_under75", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
 
-analyze_second(filename = "deaths_under75_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 182000, ind_id = 8, year_type = "calendar")
+
+#call main analysis function 
+main_analysis(filename = "deaths_under75_dz11", #max year 2023 
+              measure = "stdrate",
+              geography = "datazone11",
+              year_type = "calendar",  
+              ind_id = 8, 
+              time_agg = 3,  
+              yearstart = 2002,   
+              yearend = 2023, 
+              pop = "DZ11_pop_under75",
+              epop_total = 182000,
+              epop_age = "normal",
+              test_file = FALSE, 
+              QA = TRUE)
+
 
 #Deprivation analysis function
-analyze_deprivation(filename="deaths_under75_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2023,  
-                    year_type = "calendar", pop = "depr_pop_under75", 
-                    epop_age="normal", epop_total = 182000, ind_id = 8)
-
-
+deprivation_analysis(filename="deaths_under75_depr", measure="stdrate", time_agg=3, 
+                     yearstart= 2002, yearend=2023,  
+                     year_type = "calendar",  
+                     pop_sex = "all",
+                     pop_age = c(0,74),
+                     epop_age="normal", epop_total =182000, ind_id = 8,
+                     QA = TRUE, test_file = FALSE)
 
 
 
