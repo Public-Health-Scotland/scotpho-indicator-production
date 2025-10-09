@@ -44,7 +44,7 @@ scot_series <- read.xlsx(paste0(schdest_data_folder, file),
                          startRow = 6
                          ) %>%
   rename(trend_axis = "Year.[note.19][note.20]") %>%
-  mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA
+  mutate(across(everything(), ~replace(., . %in% c("[c]", "[z]", "[low]", "S"), NA)), #replace suppression symbols with NA 
          across(contains(c("Voluntary", "Activity", "Personal")), as.numeric),
          rate = rowSums(pick("Higher.Education":"Personal.Skills.Development.[note.13]"), na.rm = T),
          denominator = `Number.of.Leavers`,
@@ -109,10 +109,12 @@ scot_all <- rbind(scot_series,
          ind_id = 13010,
          year = as.numeric(substr(trend_axis, 1, 4)),
          trend_axis = gsub("-", "/", trend_axis),
-         def_period = paste0("School year (", trend_axis, ")")) %>%
+      #   def_period = paste0("School year (", trend_axis, ")")) %>%
+         def_period = trend_axis) %>% # changed to match the def_period that main_analysis produces from CA data
   rename(rate_orig = rate) %>% #checked and it's a perfect match with calculated one, so can drop
   calculate_percent() %>%
   select(-c(denominator, rate_orig))
+# NAs here are true suppressed values, and all relate to certain ethnicity categories
 
 # make population file for school leavers by year and SIMD quintile, for inequalities metrics:
 depr_pop_schoolleavers <- schdest_simd %>%
@@ -141,6 +143,7 @@ ca_series <- read.xlsx(paste0(schdest_data_folder, file),
          areaname = str_replace(areaname, "&","and")) %>%
   merge(ca, by = "areaname") %>% # join with council area lookup
   select(year, code, numerator, denominator = `Number.of.leavers`) 
+# Check: any NAs are true suppression values? Yes, all are either Orkney, Shetland or WIsles
 
 # Save ready for the main analysis function
 saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/school_leaver_destinations_raw.rds'))
@@ -149,12 +152,11 @@ saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/school_leav
 main_analysis(filename = "school_leaver_destinations", ind_id = 13010, 
               geography = "council", measure = "percent", 
               yearstart = 2009, yearend = 2023,
-              time_agg = 1, year_type = "school", police_div=TRUE)
+              time_agg = 1, year_type = "school", police_div=TRUE, NA_means_suppressed=TRUE)
 
 # Aggregated Scotland data do not equal the original Scotland data from the spreadsheet (likely due to some suppression), so drop the aggregated data for Scotland:
 ca_data <- readRDS(file.path(profiles_data_folder, "Data to be checked", "school_leaver_destinations_shiny.rds") ) %>%
-  filter(code != "S00000001") %>%
-  mutate(across(c("numerator", "rate", "lowci", "upci"), ~ ifelse(is.nan(.), NA, .))) 
+  filter(code != "S00000001") 
 
 
 ##########################################################
@@ -167,6 +169,7 @@ main_data <- scot_all %>%
   select(-starts_with("split")) %>%
   rbind(ca_data) %>%
   arrange(code, year)
+# NA are true NA (i.e., suppressed)
 
 # save to folder that QA script accesses:
 write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/school_leaver_destinations_shiny.rds"))
@@ -178,6 +181,7 @@ pop_grp_data <- scot_all %>%
   select(code, ind_id, year, numerator, rate, upci,
          lowci, def_period, trend_axis, split_name, split_value) %>%
   arrange(code, year)
+# NA are true NA (i.e., suppressed)(all are ethnicity)
 
 # Save
 write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/school_leaver_destinations_shiny_popgrp.rds"))
@@ -197,8 +201,7 @@ simd_data <- scot_all %>%
 # add population data (quintile level) so that inequalities can be calculated
 simd_data <-  simd_data|>
   add_population_to_quintile_level_data(pop="depr_pop_schoolleavers", # the population file created above
-                                        ind = 13010, ind_name = "school_leaver_destinations") |>
-  filter(!is.na(rate)) # not all years have data
+                                        ind = 13010, ind_name = "school_leaver_destinations") 
 
 # calculate the inequality measures
 simd_data <- simd_data |>
