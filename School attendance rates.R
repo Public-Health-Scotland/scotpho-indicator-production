@@ -74,16 +74,17 @@ data_simd <- "AAE014_attendance_by_simd_final.xlsx"
 
 # A. Importing and processing wide format data ----
 
-# # Function to get Scotland data (percents) from a wide format tab
-# import_scot_wide_data <- function(filename, sheetnum, rowrange, split_type, value_type) {
-#   df <- read_excel(paste0(attendance_folder, filename),
-#                   sheet = paste0("Table ", sheetnum),
-#                   range = cell_rows(rowrange)) %>%
-#     mutate(across(-1, ~str_replace(., "z", "0"))) %>%
-#     mutate(across(-1, ~str_replace(., "c", "0"))) %>%
-#     pivot_longer(-1, names_to = split_type, values_to = value_type) %>%
-#     mutate(code = "S00000001")
-# }  
+# Function to get Scotland data from a wide format tab
+import_scot_wide_data <- function(filename, sheetnum, rowrange, split_type, value_type) {
+  df <- read_excel(paste0(attendance_folder, filename),
+                  sheet = paste0("Table ", sheetnum),
+                  range = cell_rows(rowrange)) %>%
+    mutate(across(-1, ~str_replace(., "z", "NA"))) %>% # z = not applicable (changed this: used to be recoded to 0)
+    mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # c = suppressed
+    # Any cells with c or z in them are summed with others, using na.rm=TRUE, so the sums will undercount by the amount being suppressed, but the overall totals are large so perecntages will not be affected
+    pivot_longer(-1, names_to = split_type, values_to = value_type) %>%
+    mutate(code = "S00000001")
+}
 
 
 # Function to import LA data (percents) from a wide format tab
@@ -102,8 +103,8 @@ import_la_wide_data <- function(filename, sheetnum, range, split_type, value_typ
   }
   
   df <- df  %>%
-    mutate(across(-1, ~str_replace(., "z", "0"))) %>% # added to another column, so a true zero
-    mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # suppressed
+    mutate(across(-1, ~str_replace(., "z", "NA"))) %>% # z = not applicable (changed this: used to be recoded to 0, but some LA don't have special schools, so more correct to list their attendance as NA than 0)
+    mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # c = suppressed
     mutate(across(-1, ~as.numeric(.))) %>%
     pivot_longer(-1, names_to = split_type, values_to = value_type) %>%
     clean_names() 
@@ -133,7 +134,9 @@ import_scot_halfdays <- function(filename, sheetnum, rowrange, split_type, year)
       pivot_wider(names_from = attendance_absence_reason, values_from = count) %>%
       clean_names() %>%
       rename(denominator = possible_attendance) %>%
-      mutate(numerator = attendance_in_scho + attendance_late + attendance_work_ex + attendance_sicknes) %>%   
+      rowwise() %>%
+      mutate(numerator = sum(across(attendance_in_scho:attendance_sicknes), na.rm=TRUE)) %>%  
+      ungroup() %>%
       calculate_percent() %>%
       # NB. we're only deriving rates from the numerator and denominator data for Scotland, as there are no suppression issues and the % produced match the published data exactly (while we get additional numerator data for the app)
       select(-contains("attendance"))
@@ -145,8 +148,9 @@ import_scot_halfdays <- function(filename, sheetnum, rowrange, split_type, year)
       pivot_wider(names_from = attendance_absence_reason, values_from = count) %>%
       clean_names() %>%
       rename(denominator = possible_attendance_schools_open) %>%
-      mutate(numerator = attendance_schools_open_in_school + attendance_schools_open_late + attendance_schools_open_work_experien +
-               attendance_schools_open_sickness_with + attendance_schools_open_covid_19_sick + attendance_schools_open_covid_19_self) %>%
+      rowwise() %>%
+      mutate(numerator = sum(across(attendance_schools_open_in_school:attendance_schools_open_covid_19_self), na.rm=TRUE)) %>%  
+      ungroup() %>%
       calculate_percent() %>%
       select(-contains("attendance"))
     
@@ -157,7 +161,7 @@ import_scot_halfdays <- function(filename, sheetnum, rowrange, split_type, year)
 # B. Importing and processing older format data (2009/10 to 2018/19) ----
 
 # Function to import old format Scottish data (counts)
-get_old_file_attainment_data_scotland <- function(filename, trend_axis, range_scot, range_rural, range_ethnic) {
+get_old_file_attendance_data_scotland <- function(filename, trend_axis, range_scot, range_rural, range_ethnic) {
   
   # Just one sheet with counts: Stage (1ry, 2ry, Special, Total) and Sex
   scot_counts <- read_excel(paste0(attendance_folder, filename),
@@ -211,7 +215,7 @@ get_old_file_attainment_data_scotland <- function(filename, trend_axis, range_sc
 
 
 # Function to import old format LA data
-get_old_file_attainment_data_la <- function(filename, trend_axis, range_la) {
+get_old_file_attendance_data_la <- function(filename, trend_axis, range_la) {
   
   # 2010/11 LA data (percents from wide) (NB. ranges and post-processing differ here from later files)
   la_1ry <- import_la_wide_data(filename, sheetnum = "2.1", range = range_la, split_type = "na", value_type = "rate", year = trend_axis) %>%  
@@ -283,9 +287,11 @@ simd_scot_and_ca <- numerator_data %>%
   select(-areatype, -areaname) 
 
 # make totals 
+# N.B. Small boards without every SIMD quintile (e.g., Shetland, Orkney) still can have children attending school from quintiles not represented on the island: 
+# counts are sometimes 0 and sometimes not, so 0 is more appropriate than NA here
 simd_scot_and_ca <- simd_scot_and_ca %>%
   group_by(year, code) %>%
-  summarise(numerator = sum(numerator, na.rm=T),
+  summarise(numerator = sum(numerator, na.rm=T), # No NAs in the provided data, but could be in future? 
             denominator = sum(denominator, na.rm = T)) %>%
   ungroup() %>%
   mutate(quintile = "Total") %>% # includes pupils where quintile is not known (implications for inequalities calc?)
@@ -322,8 +328,10 @@ simd_all <- rbind(simd_scot_and_ca,
                   simd_hscp) %>%
   mutate(quint_type = "sc_quin",
          trend_axis = paste0(year, "/", as.character(substr(year+1, 3, 4))),
+         def_period = paste0("School year (", trend_axis, ")"),
          ind_id = 30140) %>%
-  calculate_percent()
+  calculate_percent() %>%
+  mutate(across(everything(), ~replace(., is.nan(.), NA))) #replace rate and CIs with NA for cases with 0 denominator
 
 # calculate the inequality measures
 simd_all <- simd_all |>
@@ -397,7 +405,7 @@ scot_2023 <- rbind(scot_rural_2023, scot_ethnic_2023, scot_stages_2023_all, scot
 
 la_1ry_2023 <- import_la_wide_data(filename = data_2023, sheetnum = "2.1", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2023/24") %>%  mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
 la_2ry_2023 <- import_la_wide_data(filename = data_2023, sheetnum = "2.2", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2023/24") %>%  mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
-la_2023_stage <- import_la_wide_data(filename = data_2023, sheetnum = "2.9", range = c(2:37), split_type = "split_value", value_type = "rate", year = "2023/24") %>% mutate(split_name = "School stage") 
+la_2023_stage <- import_la_wide_data(filename = data_2023, sheetnum = "2.9", range = c(2:37), split_type = "split_value", value_type = "rate", year = "2023/24") %>% mutate(split_name = "School stage") # Z NEEDS TO BE NA AS THERE ARE NO SPECIAL SCHOOLS IN SOME AREAS
 la_2023_sex_all <- import_la_wide_data(filename = data_2023, sheetnum = "2.10", range = c(4:39), split_type = "split_value", value_type = "rate", year = "2023/24") %>% mutate(split_name = "Sex") 
 
 # Combine LA splits data
@@ -498,21 +506,21 @@ rm(la_2020_stage, la_2020_sex_all, la_1ry_2020, la_2ry_2020)
 
 # Import Scottish data
 
-scot_2018 <- get_old_file_attainment_data_scotland(filename = "Attendance+and+Absence+201819+-+Excel+web+version.xlsx", trend_axis = "2018/19", range_scot = c(4:12), range_rural = c(4:10), range_ethnic = c(4:20))
-scot_2016 <- get_old_file_attainment_data_scotland("attendance-absence-2016-17.xlsx", "2016/17", range_scot = c(4:12), range_rural = c(4:10), range_ethnic = c(4:20))
-scot_2014 <- get_old_file_attainment_data_scotland("attendance-absence-2014-15.xls", "2014/15", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:20))
-scot_2012 <- get_old_file_attainment_data_scotland("attendance-absence-2012-13.xls", "2012/13", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:20))
-scot_2010 <- get_old_file_attainment_data_scotland("attendance-absence-2010-11.xls", "2010/11", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:27))
-scot_2009 <- get_old_file_attainment_data_scotland("attendance-absence-2009-10.xls", "2009/10", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:27))
+scot_2018 <- get_old_file_attendance_data_scotland(filename = "Attendance+and+Absence+201819+-+Excel+web+version.xlsx", trend_axis = "2018/19", range_scot = c(4:12), range_rural = c(4:10), range_ethnic = c(4:20))
+scot_2016 <- get_old_file_attendance_data_scotland("attendance-absence-2016-17.xlsx", "2016/17", range_scot = c(4:12), range_rural = c(4:10), range_ethnic = c(4:20))
+scot_2014 <- get_old_file_attendance_data_scotland("attendance-absence-2014-15.xls", "2014/15", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:20))
+scot_2012 <- get_old_file_attendance_data_scotland("attendance-absence-2012-13.xls", "2012/13", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:20))
+scot_2010 <- get_old_file_attendance_data_scotland("attendance-absence-2010-11.xls", "2010/11", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:27))
+scot_2009 <- get_old_file_attendance_data_scotland("attendance-absence-2009-10.xls", "2009/10", range_scot = c(4:12), range_rural = c(4:11), range_ethnic = c(4:27))
 
 # Import LA data 
 
-la_2018 <- get_old_file_attainment_data_la("Attendance+and+Absence+201819+-+Excel+web+version.xlsx", "2018/19", range_la="R4C1:R42C2")
-la_2016 <- get_old_file_attainment_data_la("attendance-absence-2016-17.xlsx", "2016/17", range_la="R4C1:R42C2")
-la_2014 <- get_old_file_attainment_data_la("attendance-absence-2014-15.xls", "2014/15", range_la="R5C1:R43C6")
-la_2012 <- get_old_file_attainment_data_la("attendance-absence-2012-13.xls", "2012/13", range_la="R5C1:R43C6")
-la_2010 <- get_old_file_attainment_data_la("attendance-absence-2010-11.xls", "2010/11", range_la="R5C1:R43C6")
-la_2009 <- get_old_file_attainment_data_la("attendance-absence-2009-10.xls", "2009/10", range_la="R5C1:R43C6")
+la_2018 <- get_old_file_attendance_data_la("Attendance+and+Absence+201819+-+Excel+web+version.xlsx", "2018/19", range_la="R4C1:R42C2")
+la_2016 <- get_old_file_attendance_data_la("attendance-absence-2016-17.xlsx", "2016/17", range_la="R4C1:R42C2")
+la_2014 <- get_old_file_attendance_data_la("attendance-absence-2014-15.xls", "2014/15", range_la="R5C1:R43C6")
+la_2012 <- get_old_file_attendance_data_la("attendance-absence-2012-13.xls", "2012/13", range_la="R5C1:R43C6")
+la_2010 <- get_old_file_attendance_data_la("attendance-absence-2010-11.xls", "2010/11", range_la="R5C1:R43C6")
+la_2009 <- get_old_file_attendance_data_la("attendance-absence-2009-10.xls", "2009/10", range_la="R5C1:R43C6")
 
 
 #####################
