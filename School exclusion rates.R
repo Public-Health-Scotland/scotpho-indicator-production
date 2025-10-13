@@ -140,6 +140,7 @@ simd_all <- rbind(simd_scot_and_ca,
                   simd_hscp) %>%
   mutate(quint_type = "sc_quin",
          trend_axis = paste0(year, "/", as.character(substr(year+1, 3, 4))),
+         def_period = paste0("School year (", trend_axis, ")"),
          ind_id = 13016) %>%
   calculate_crude_rate(., 1000)
 
