@@ -7,12 +7,35 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/deprivation_analysis.R") #Deprivation function
+
+library(opendatascot) 
+
+#Install opendatascot - uncomment if not already installed
+# devtools::install_github(
+#   "ScotGovAnalysis/opendatascot",
+#   upgrade = "never",
+#   build_vignettes = TRUE
+# )
 
 ###############################################.
 ## Part 1 - Create basefile ----
 ###############################################.
+
+single_adult_dwellings <- opendatascot::ods_get_csv("household-estimates")
+
+sad_2 <- opendatascot::ods_dataset("household-estimates", 
+                                   measureType = "count",
+                                   geography = "dz",
+                                   indicatordwellings = c("with-single-adult-discounts", "total-dwellings"),
+                                   refPeriod = as.character(2019:2024))
+
+
+ods_structure("household-estimates")
+
+x <- opendatascot::ods_all_datasets()
+
 #Reading data in directly from website that was manually downloaded for previous program
 
 
