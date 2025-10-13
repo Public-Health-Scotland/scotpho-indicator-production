@@ -94,9 +94,9 @@ geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds"))
 popfile <- readRDS("/conf/linkage/output/lookups/Unicode/Populations/Estimates/CA2019_pop_est_1981_2024.rds") %>%
   filter(age<18) %>%
   mutate(agegp = case_when(age %in% c(0:4) ~ "0-4", # age groups in the data
-                                 age %in% c(5:10) ~ "5-10",
-                                 age %in% c(11:15) ~ "11-15",
-                                 age %in% c(16:17) ~ "16-17")) %>%
+                           age %in% c(5:10) ~ "5-10",
+                           age %in% c(11:15) ~ "11-15",
+                           age %in% c(16:17) ~ "16-17")) %>%
   mutate(sex = case_when(sex_name == "M" ~ "Male",
                          sex_name == "F" ~ "Female")) %>%
   select(year, code = ca2019, agegp, sex, denominator = pop)
@@ -221,7 +221,7 @@ saveRDS(IRD_2023, file=paste0(profiles_data_folder, '/Prepared Data/IRD_2023_raw
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "IRD_2023", ind_id = 30169, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2023, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE, NA_means_suppressed=TRUE)
 # Correct: Ab'shre CA and the geogs that are coincident with it (HB and HSCP) are NA, all others have data.
 
 
@@ -290,7 +290,7 @@ register_scot <- rbind(register_scot_agegp, register_scot_sex) %>%
   calculate_crude_rate(., 1000) %>%
   select(-denominator) %>%
   arrange(code, year, split_name, split_value)
-  
+
 # Save
 write_rds(register_scot, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_shiny_popgrp.rds"))
 write.csv(register_scot, paste0(profiles_data_folder, "/Data to be checked/child_prot_register_shiny_popgrp.csv"), row.names = FALSE)
@@ -328,7 +328,7 @@ saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_pro
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2007, yearend = 2024,
-              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE, NA_means_suppressed = TRUE)
 
 # Aggregated Scotland data match original Scotland data perfectly apart from 2015-2017, due to some suppression in smaller CAs. 
 # So replace the aggregated Scotland data with the original data:
@@ -372,9 +372,9 @@ concerns_scot_2012 <- import_wide_data(filename = additional_2014, sheetnum = "4
 # Combine Scotland data, and calculate rates
 concerns_scot <- rbind(concerns_scot_2012, concerns_scot_2013to2024) %>%
   mutate(ind_id = case_when(str_detect(indicator, "drug|Drug") ~ 4130,
-                               str_detect(indicator, "alcohol|Alcohol") ~ 4110,
-                               str_detect(indicator, "substance|Substance") ~ 4153,
-                               TRUE ~ as.numeric(NA))) %>%
+                            str_detect(indicator, "alcohol|Alcohol") ~ 4110,
+                            str_detect(indicator, "substance|Substance") ~ 4153,
+                            TRUE ~ as.numeric(NA))) %>%
   filter(!is.na(ind_id)) %>%
   mutate(code = "S00000001",
          def_period = paste0(year, " - snapshot"), 
@@ -384,8 +384,8 @@ concerns_scot <- rbind(concerns_scot_2012, concerns_scot_2013to2024) %>%
   merge(y = pop_lookup, by=c("year", "code", "split_name", "split_value")) %>%
   calculate_crude_rate(., 10000) %>%
   select(-starts_with("split"), -denominator, -indicator)
-  
-  
+
+
 
 # LA
 concerns_la_count_2024 <- import_wide_LA_data(filename = additional_2023, sheetnum = "1.10", range = "A5:D37", year = "2024") 
@@ -419,12 +419,12 @@ prepare_main_data <- function(indicator, ind){
   
   # Save ready for the main analysis function
   saveRDS(main_data, file=paste0(profiles_data_folder, '/Prepared Data/', indicator, '_raw.rds'))
-
+  
   # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
-                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE)
-
+                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE, NA_means_suppressed = TRUE)
+  
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
   new_data <- main_analysis_result %>%
     filter(code!="S00000001") %>%
