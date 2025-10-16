@@ -426,7 +426,7 @@ main_analysis <- function(filename,
   }
   
   data <- data |>
-    filter(!is.na(denominator)) |>
+    filter(!is.na(denominator) | is.nan(denominator)) |> # want to keep NaN but drop NA
     mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
   #Want to keep suppressed data as NA so that these are available to show as empty cells on the dashboard, and are included in data downloads from there
   
