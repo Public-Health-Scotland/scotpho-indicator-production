@@ -27,9 +27,7 @@ data <- opendatascot::ods_dataset("recorded-crime",
 data <- data |> 
   fix_fin_year("refPeriod", first_year_digits = "4") |>  # extract year from financial year
   rename(numerator = value, ca = refArea) |>  # rename cols
-  select(year, ca, numerator) #|> 
-  #mutate(numerator = case_when(numerator == "-" ~ NA_character_,
-                               #TRUE ~ numerator)) #24/25 data not published by SG due to DQ issue so convert - to NA to break trend for next year
+  select(year, ca, numerator) 
 
 # find max year in dataset to add to analyze_first() argument
 max_year = max(data$year)
