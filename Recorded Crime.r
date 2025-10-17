@@ -55,8 +55,7 @@ crime_offence <- bind_rows(sheets_list) |>
   tidyr::pivot_longer(cols = c(4:13), names_to = "year", values_to = "numerator") |>  #pivot longer to only end up with one year type
   mutate(year = str_sub(year, start = 2)) |>   #cut off the x from the beginning of all the years
   fix_fin_year(fy_col_name = "year", first_year_digits = "4") |>  #converts string financial year to numeric first year
-  filter(!(year == 2024 & numerator == "n/l")) |> #temporary line of code if 24/25 offence data is fixed when running 25/26 data. #Filter out all lines where the crime wasn't an offence yet but keep x rows
-  filter(!(year != 2024 & numerator %in% c("x", "n/l"))) |> #For all other years remove x and n/l
+  filter(!numerator %in% c("n/l", "x")) |> #removing rows for years where the offence was not in place yet 
   mutate(numerator = case_when(year = 2024 & numerator == "x" ~ NA_character_,
                                TRUE ~ numerator)) |> 
   mutate(numerator = as.numeric(numerator)) |> #convert string numerators to numeric
