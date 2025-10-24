@@ -33,6 +33,7 @@ source("functions/deprivation_analysis.R") # for packages and QA
 
 # Load additional packages
 library(openxlsx)
+library(hablar)
 
 ##########################################################.
 ### 1. Paths and lookups ----
@@ -70,6 +71,7 @@ geography_lookup <- readRDS(file.path(geography_lookups, "DataZone11_All_Geograp
 # The denominator data had to be requested from SG.
 
 # Process the denominator data (requested from SG)
+
 denoms <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
                      sheet = "ACEL Table_11",
                      startRow = 5,
@@ -88,6 +90,12 @@ denoms <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
   
   # numeric year column (used to match to the indicator data)
   mutate(year = as.numeric(substr(year, 1, 4))) %>%
+  
+  # NA means different things in this file. 
+  # Need to recode the splits where the denominator should be 0 rather than NA, as these will be dropped. 
+  # NA also used for 2019 here (no data rather than no cases), which needs to be kept in (so the plots work).
+  mutate(denominator = case_when(is.na(denominator) & year!=2019 ~ 0, # these were NA but should be 0
+                                 TRUE ~ denominator)) %>%
   
   # SIMD column
   mutate(quintile = case_when(quintile %in% c("SIMD Quintile 1 - most deprived", "SIMD Quintile 1") ~ "1",
@@ -113,7 +121,7 @@ denoms <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
 # Aggregate denoms to Scotland
 denoms_scotland <- denoms %>%
   group_by(year, quintile, split_name, split_value) %>%
-  summarise(denominator = sum(denominator, na.rm = TRUE)) %>%
+  summarise(denominator = sum_(denominator)) %>% # sum_ means NAs in 2019 sum to NA (rather than 0)
   ungroup() %>%
   mutate(code = "S00000001") 
 
@@ -131,9 +139,27 @@ denoms <- rbind(denoms, denoms_scotland) %>%
 
 # Define some functions ----
 
+
+# Some cells (LA data only currently) contain a range (e.g., 96-100%) for suppression: we derive an approximate value by calculating the range midpoint
+# Function to calculate range midpoint
+get_range_midpoint <- function(var) {
+  
+  lower = as.numeric(str_split_i(var, pattern="-", 1)) # extract lower number from the range (or the number if it's not a range)
+  upper = as.numeric(gsub("%", "", str_split_i(var, pattern="-", 2 ))) # extract upper number from the range, if exists (NA otherwise)
+  newvar = ifelse(!is.na(upper), 
+                  (upper + lower) / 2, # if there's an upper value take the average
+                  lower) # return original value if no upper value found
+
+  return(newvar) # the var now will contain the original values for the variable, with any ranges replaced by their midpoint
+  
+}
+
+
 # Function to read in data from any spreadsheet tab
 
 get_attainment_data <- function (sheetname, startnumber) {
+  
+  non_numeric_cols <- c("organiser", "local", "simd", "year", "sex", "ethnicity", "urban", "stage")
   
   df <- read.xlsx(paste0(cfe_profiles_data_folder, file),
                   sheet = sheetname,
@@ -142,18 +168,26 @@ get_attainment_data <- function (sheetname, startnumber) {
     clean_names() %>%
     # filter and recode if 'stage' is a column
     filter(if_any(matches("stage"), ~ grepl("^P", .))) %>% # select P1, P4, P7, and all combined
-    mutate(across(any_of(c("stage")), ~ case_when(. %in% c("P1 - Early level", "P1 (Early Level)") ~ "P1",
-                                                  . %in% c("P4 - First level", "P4 (First Level)") ~ "P4",
-                                                  . %in% c("P7 - Second level", "P7 (Second Level)") ~ "P7",
-                                                  . == "P1, P4 and P7 combined" ~ "Total"))) %>%
-    # convert missing/suppressed values to NA
-    mutate(across(.cols = -c(starts_with(c("organiser", "local", "simd", "year", "stage"))), # works even if these cols don't exist... result!
-                  .fns = ~ case_when(. %in% c("[w]", "[c]", "[x]", "c") ~ NA, # replace the missing codes with NA
+    mutate(stage = case_when(stage %in% c("P1 - Early level", "P1 (Early Level)") ~ "P1",
+                             stage %in% c("P4 - First level", "P4 (First Level)") ~ "P4",
+                             stage %in% c("P7 - Second level", "P7 (Second Level)") ~ "P7",
+                             stage == "P1, P4 and P7 combined" ~ "Total")) %>%
+    # convert to character for next bit of processing
+    mutate(across(everything(), ~ as.character(.))) %>%
+    # convert suppressed (or 2019) values to NA
+    mutate(across(.cols = -c(starts_with(c(non_numeric_cols))), # works even if these cols don't exist... result!
+                  .fns = ~ case_when(. %in% c("[w]", "[c]", "c", "[x]") ~ NA, # replace the missing codes with NA
                                      TRUE ~ .))) %>%
-    # convert indicator data columns to numeric
-    mutate(across(.cols = -c(starts_with(c("organiser", "local", "simd", "year", "sex", "ethnicity", "urban", "stage"))), 
-                  .fns = ~ as.numeric(.)))
+    # # convert [x] to 0
+    # mutate(across(.cols = -c(starts_with(c(non_numeric_cols)), contains("2019")), 
+    #               .fns = ~ case_when(. == "[x]" &  ~ "0", # replace the x codes with 0 (unless they occur in 2019 data, in which they should be NA)
+    #                                  TRUE ~ .))) %>%
+    # when cells contain a range (e.g., 96-100%) for suppression this should be split and the midpoint used as the value
+    mutate(across(.cols = -c(starts_with(c(non_numeric_cols))), 
+                .fns = ~ get_range_midpoint(.))) 
+  
 }
+
 
 # Function to perform the repeated processing steps on the national data
 
@@ -211,7 +245,7 @@ format_simd_data <- function(data) {
 
 # Scotland, overall (Table 1) (used for Scot splits by stage (P1, P4, P7))
 
-scotland <- get_attainment_data(sheetname="Table_1", startnumber=5) %>%
+scotland <- get_attainment_data(sheetname="Table_1", startnumber=5) %>% 
   process_national_data()
 
 # Scotland, by deprivation (Table 2.4) (used for Scot splits by SIMD)
@@ -258,10 +292,11 @@ data_scot_la_simd <- simd %>%
   
   # add in denominators 
   merge(y=denoms, by=c("year", "split_value", "split_name", "code", "quintile")) %>% # add denominators
+  filter(denominator>0 |is.na(denominator)) %>% # if denominator is zero the split shouldn't be included in the output data (e.g., some SIMD quintiles in small boards)
   mutate(numerator = round(denominator * rate/100))  %>% # back calculate the numerators
-# rate is NA if suppressed (based on small counts)
-# which gives numerator of NA
-# Don't drop, as the NA provide gaps in trend charts, and keeps x-axis spacing uniform
+  # rate is NA if suppressed (based on small counts)
+  # which gives numerator of NA
+  # Don't drop, as the NA provide gaps in trend charts, and keeps x-axis spacing uniform
   # add ind_id column
   mutate(ind_id = case_when(indicator == "Numeracy" ~ 30158,
                             indicator == "Literacy" ~ 30157)) 
@@ -269,7 +304,7 @@ data_scot_la_simd <- simd %>%
 
 
 # Save subsets ready for the main analysis function
-# NB. There are no NA/suppressed values in the LA data, so can remove Scotland values and recalculate them accurately during the aggregation
+# NB. There were no suppressed values in the LA Totals (in simd_LA), so can remove Scotland values and recalculate them accurately during the aggregation
 
 # Main data
 saveRDS(subset(data_scot_la_simd, indicator=="Literacy" & split_value=="Total" & quintile=="Total" & code!="S00000001"), 
@@ -353,7 +388,7 @@ prep_popgrp_data_by_stage <- function(ind, ind_num) {
   
   for (stage in c("P1", "P4", "P7")) {
     main_analysis(filename = paste0(ind, "_", stage), ind_id = ind_num, geography = "council", measure = "percent", 
-                  yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", QA = FALSE)
+                  yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", QA = FALSE, NA_means_suppressed=TRUE)
     df1 <- main_analysis_result %>% mutate(split_name="Stage", split_value=stage)
     df_name <- stage
     assign(df_name, df1)
@@ -427,10 +462,10 @@ process_simd_data <- function(ind, ind_num) {
 #################################.
 
 main_analysis(filename = "Literacy", ind_id = 30157, geography = "council", measure = "percent", 
-              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school")
+              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
 
 main_analysis(filename = "Numeracy", ind_id = 30158, geography = "council", measure = "percent", 
-              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school")
+              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
 
 # QA and main_analysis_result df show that 2019/20 has been retained despite being all NA, which is the desired result
 
