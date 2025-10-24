@@ -14,15 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include=FALSE}
 library(reactable)
 
-
 data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
-#Read in indicator file being checked (switch file path if working on test in
-profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+#Runing create_geo_parents() will run a function (in helper functions folder) that generates a dataframe that is available to 
+# the rest of this script which details what the parent areas for intermediate zone, council areas or HSCP localities are.
+# the dataframe will be called "master_parent_geos"
+create_geo_parents()
 
+#Read in indicator file being checked (switch file path to a different location if working on test indicators)
+profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 output_folder <- if(test_file){
     file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
     } else {
@@ -59,6 +62,7 @@ adp <- any(substr(data_indicator$code,1,3) == "S11")
 locality <- any(substr(data_indicator$code,1,3) == "S99")
 iz <- any(substr(data_indicator$code,1,3) == "S02")
 pd <- any(substr(data_indicator$code,1,3) == "S32")
+
 
 #Recode missing CI to zeros rather than NA to allow report to run
 data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
@@ -397,6 +401,87 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 }
 
 ```
+
+
+###**Data check 6b:**
+<br>
+####Do numerators sum like they should _Council and NHS Board comparisons, 
+Checking if the numerators for councils sum to health board - for some indicators there are no numerators 
+
+```{r, include=FALSE}
+
+# calculate sum of numerators for locality data and compare to parent hscp total
+# this might flat if hscp localities are incorrectly labelled, for example when LIST datazone to HSCP locality lookup isn't updated 
+
+numerators_present <-ifelse(all(data_indicator$numerator == "", na.rm = TRUE),FALSE,TRUE)
+       
+
+# if locality data and numerators present check if numerator totals agree
+if(locality==TRUE & numerators_present == TRUE){ # 
+
+#filter indicator data to only HSCP locality data
+locality_sum <-data_indicator |>
+  filter(substr(code,1,3) == "S99") #filter indicator data to only HSCP locality data  
+
+#match on parent geographies
+locality_sum <- left_join(x=locality_sum, y=master_parent_geos , by="code") # join parent area lookup
+
+#sum HSCP localities data to give a total at the hsc partnership level 
+locality_sum  <- locality_sum |>
+  group_by(year,hscp2019) |>
+    summarise(locality_numerator_sum=sum(numerator))|>
+    ungroup()
+
+#filter the actual HSCP level indicator data so it can be compared to the summed totals from child areas
+data_hscp <- data_indicator |>
+  filter(substr(code,1,3) == "S37")
+
+check_locality <- left_join(x=data_hscp, y=locality_sum, by = c("code"="hscp2019","year"))|>
+  mutate(locality_match=round(numerator-locality_numerator_sum,2)) |>
+  filter(locality_match>0)
+
+flextable(check_locality)
+
+rm(data_hscp, locality_sum)
+}
+
+ 
+# if council data and numerators present check if numerator totals agree  
+if(ca==TRUE & numerators_present == TRUE){ # 
+
+#filter indicator data to only council data
+council_sum <-data_indicator |>
+  filter(substr(code,1,3) == "S12") #filter indicator data to only ca data  
+
+#match on parent geographies
+council_sum <- left_join(x=council_sum, y=master_parent_geos , by="code") # join parent area lookup
+
+#sum HSCP localities data to give a total at the hsc partnership level 
+council_sum  <- council_sum |>
+  group_by(year,hb2019) |>
+    summarise(council_numerator_sum=sum(numerator))|>
+    ungroup()
+
+#filter the actual nhs board level indicator data so it can be compared to the summed totals from child areas
+data_hb <- data_indicator |>
+  filter(substr(code,1,3) == "S08")
+
+check_council <- left_join(x=data_hb, y=council_sum, by = c("code"="hb2019","year"))|>
+  mutate(council_match=round(numerator-council_numerator_sum,2)) |>
+  filter(council_match>0)
+
+flextable(check_council)
+
+rm(data_hb, council_sum)
+}
+```
+
+```{r, echo=FALSE}
+flextable(check_locality)
+```
+
+
+
 
 ------------------------------------------------------------------------------------ 
 
