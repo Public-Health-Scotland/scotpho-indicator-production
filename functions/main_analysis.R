@@ -64,7 +64,7 @@ source("functions/helper functions/get_population_lookup.R") # for reading in co
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
 
-
+source("functions/helper functions/create_geo_parents.R")
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
 # this filepath object will be created if the main_analysis script is sourced (before and functions are called)
@@ -489,7 +489,7 @@ main_analysis <- function(filename,
 
   if(QA){
     cli::cli_alert_info("Running QA")
-    run_qa(type = "main", filename={{filename}},test_file={{test_file}})
+    run_qa(type = "main", filename={{filename}},test_file={{test_file}}, geography={{geography}})
   }
   
   
