@@ -321,9 +321,11 @@ scot_check
 
 ------------------------------------------------------------------------------------
 
-###**Data check 6:**
+###**Data check 6: Checking values for different geography types seem to agree**
 <br>
-#### Are geographies that ought to be the same matching?
+#### Sometimes mistakes creep in when aggregating larger geographies from smaller ones. The following checks look at whether rates (& numerators if available)
+#### seem to make sense. Council areas can be aggregated and the totals should be equal to health boards (eg Borders council is the same as NHS borders, 5 councils make up #### NGS GGC) and HSCP partnerships are generally the same as HSCPs. Numerators for HSCP locality should alos generally sum up to the HSCP partnership total.
+
 Most council areas are the same as HSC Partnerships.
 If these geographies are available, use the chart to look at whether the rates for council are and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
 
@@ -351,7 +353,6 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
   labs(x = "", y =  "Measure")
 
 # Additional check of numerators (where present) to test if all numerators agree
-
 if(all(data_indicator$numerator != "", na.rm = TRUE)){    #if numerator column is not blank
 edinburgh_data <- data_indicator %>%        # create data frame filtered for edinburgh geographies
   filter(areaname =="City of Edinburgh" | areaname=="Edinburgh" | areaname=="Edinburgh North East"| 
@@ -390,7 +391,7 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 
 ```
 
-If dataset contains numerators check if for agreement between geography types. <br>
+If dataset contains numerators check if for agreement between council, NHS board and partnership areas in Lothian/Edinburgh. <br>
 
 ```{r, echo=FALSE}
 if(ca==TRUE & hscp==TRUE){ #only include if ca and hscp data available
@@ -403,16 +404,15 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 ```
 
 
-###**Data check 6b:**
+###**Additional comparisons for numerators across scotland**
 <br>
-####Do numerators sum like they should _Council and NHS Board comparisons, 
-Checking if the numerators for councils sum to health board - for some indicators there are no numerators 
+
+Checking if the numerators for councils sum to health board (bear in mind some indicators there are don't have numerators so this check won't run) 
 
 ```{r, include=FALSE}
 
 # calculate sum of numerators for locality data and compare to parent hscp total
-# this might flat if hscp localities are incorrectly labelled, for example when LIST datazone to HSCP locality lookup isn't updated 
-
+# these checks might flag if hscp localities are incorrectly labelled, for example when LIST datazone to HSCP locality lookup isn't updated 
 numerators_present <-ifelse(all(data_indicator$numerator == "", na.rm = TRUE),FALSE,TRUE)
        
 
@@ -438,14 +438,20 @@ data_hscp <- data_indicator |>
 
 check_locality <- left_join(x=data_hscp, y=locality_sum, by = c("code"="hscp2019","year"))|>
   mutate(locality_match=round(numerator-locality_numerator_sum,2)) |>
-  filter(locality_match>0)
-
-flextable(check_locality)
+  filter(locality_match>0) |>
+  select(year,code,areaname,code_name, geo_type,numerator,locality_numerator_sum,locality_match)
 
 rm(data_hscp, locality_sum)
 }
 
- 
+```
+If dataset contains numerators & locality data present - check that locality numerators sum is the same for their corresponding HSCP partnership.
+If there are large discrepanies consider if the HSCP locality lookup is correct.<br>
+```{r, echo=FALSE}
+flextable(check_locality)
+```
+
+```{r, include=FALSE}
 # if council data and numerators present check if numerator totals agree  
 if(ca==TRUE & numerators_present == TRUE){ # 
 
@@ -466,18 +472,17 @@ council_sum  <- council_sum |>
 data_hb <- data_indicator |>
   filter(substr(code,1,3) == "S08")
 
-check_council <- left_join(x=data_hb, y=council_sum, by = c("code"="hb2019","year"))|>
+check_council <- full_join(x=data_hb, y=council_sum, by = c("code"="hb2019","year"))|>
   mutate(council_match=round(numerator-council_numerator_sum,2)) |>
-  filter(council_match>0)
-
-flextable(check_council)
+  filter(council_match>0) |>
+  select(year,code,areaname,code_name, geo_type,numerator,council_numerator_sum,council_match)
 
 rm(data_hb, council_sum)
 }
 ```
-
+If dataset contains numerators - check that the sum of council area figures matches the health board totals .<br>
 ```{r, echo=FALSE}
-flextable(check_locality)
+flextable(check_council)
 ```
 
 
