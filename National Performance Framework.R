@@ -1,4 +1,4 @@
-#new indicators introduced for care and wellbeing portfolio
+#new indicators introduced for Population health Framework/care and wellbeing portfolio
 
 ###################################################################################################################################################################
 ####### JUNE 2025: ##########
@@ -6,15 +6,12 @@
 ###################################################################################################################################################################
 
 
-# TO DO: enable automated checking at end of the indicator production
-#         create a deprivation data file output (for any indicators that may have sutiable data)
-
-###   Update ScotPHO Care and Wellbeing indicators: 
+##  This script will update indicators: 
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
 
-# Indicator 99117 (Young peoples mental wellbeing) was previously produced here, but as this is sourced from the SHeS, and hasn't been updated in the NPF data file, we're
-# now producing it with other SHeS indicators: starting with extraction of the microdata in the ScotPHO_survey_data repo, and then finishing the processing in this repo.
+#   Indicator 99117 (Young peoples mental wellbeing) was previously produced here, but as this is sourced from the SHeS, and hasn't been updated in the NPF data file, we're
+#   now producing it with other SHeS indicators: starting with extraction of the microdata in the ScotPHO_survey_data repo, and then finishing the processing in this repo.
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
 # 2024 update (August 2024): https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
@@ -365,7 +362,7 @@ prepare_final_files <- function(ind, agerange=NULL){
 
 
 
-#== Create final files and run QA reports ----
+# Create final files and run QA reports ----
 
 
 # Indicator  99121: Health risk behaviours ----
