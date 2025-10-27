@@ -323,11 +323,9 @@ scot_check
 
 ###**Data check 6: Checking values for different geography types seem to agree**
 <br>
-#### Sometimes mistakes creep in when aggregating larger geographies from smaller ones. The following checks look at whether rates (& numerators if available)
-#### seem to make sense. Council areas can be aggregated and the totals should be equal to health boards (eg Borders council is the same as NHS borders, 5 councils make up #### NGS GGC) and HSCP partnerships are generally the same as HSCPs. Numerators for HSCP locality should alos generally sum up to the HSCP partnership total.
-
-Most council areas are the same as HSC Partnerships.
-If these geographies are available, use the chart to look at whether the rates for council are and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
+Sometimes mistakes creep in when aggregating larger geographies from smaller ones. The following checks look at whether rates (& numerators if available) seem to make sense. Council areas can be aggregated & the totals should be equal to health boards (eg Borders council is the same as NHS borders, 5 councils make up NHS GGC), also in general HSCP partnerships should match councils. Numerators for HSCP locality should also sum up to the HSCP partnership total.
+<br>
+Use the chart to look at whether the rates for Edinburgh council and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle). Edinburgh city chosen as one example, checking rates across all areas not currently done. Further tests below look at numerators across all geographies.
 
 ```{r, include=FALSE}
 
@@ -398,7 +396,7 @@ if(ca==TRUE & hscp==TRUE){ #only include if ca and hscp data available
 ed_flex}
 
 if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data available
-"No ca or hscp numerators to check"
+"No Council or HSCP numerators to check"
 }
 
 ```
@@ -407,7 +405,7 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 ###**Additional comparisons for numerators across scotland**
 <br>
 
-Checking if the numerators for councils sum to health board (bear in mind some indicators there are don't have numerators so this check won't run) 
+Checking if the numerators for councils sum to health board (bear in mind some indicators don't have numerators so this check won't always run) 
 
 ```{r, include=FALSE}
 
@@ -448,7 +446,13 @@ rm(data_hscp, locality_sum)
 If dataset contains numerators & locality data present - check that locality numerators sum is the same for their corresponding HSCP partnership.
 If there are large discrepanies consider if the HSCP locality lookup is correct.<br>
 ```{r, echo=FALSE}
-flextable(check_locality)
+if(locality==TRUE & numerators_present == TRUE){
+flextable(check_locality)}
+
+if(locality==FALSE | numerators_present == FALSE){ #only include table when hscp locality data available
+"No HSCP level data to run check on"
+}
+
 ```
 
 ```{r, include=FALSE}
@@ -480,12 +484,17 @@ check_council <- full_join(x=data_hb, y=council_sum, by = c("code"="hb2019","yea
 rm(data_hb, council_sum)
 }
 ```
-If dataset contains numerators - check that the sum of council area figures matches the health board totals .<br>
+If indicator dataset contains numerators - run a check that summing the relevant council area matches the health board total .<br>
+
 ```{r, echo=FALSE}
-flextable(check_council)
+if(ca==TRUE & numerators_present == TRUE & nrow(check_council)>0){ 
+flextable(check_council)}
+if(ca==TRUE & numerators_present == TRUE & nrow(check_council)==0){ 
+"Summing council numerators agree with NHS board numerator totals in all areas"}
+if(ca==FALSE | board == FALSE){
+"Either council and/or NHS board numerators are absent from dataset so can't check for agreement"}
+
 ```
-
-
 
 
 ------------------------------------------------------------------------------------ 
