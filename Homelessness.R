@@ -1,4 +1,5 @@
 
+
 # ============================================================================
 # ===== Processing SG HOMELESSNESS STATS =====
 # ============================================================================
@@ -89,28 +90,28 @@ saveRDS(CA_pop_F_19plus, file=paste0(pop_lookup, 'CA_pop_F_19+.rds'))
 ## Function to read in data
 
 get_data <- function(sheetnum, gender) {
-
-df <- read.xlsx(paste0(homeless_data_folder, file),
-                      sheet = sheetnum,
-                      startRow = 4,
-                      colNames = TRUE) %>%
-  rename(areaname = X1) %>%
   
-  # reshape the data 
-  pivot_longer(-areaname, values_to="numerator", names_to = "trend_axis") %>%
-  mutate(year = as.numeric(substr(trend_axis, 1, 4)),
-         split_name = "Gender",
-         split_value = gender) %>%
-  
-  mutate(areaname = case_when(areaname=="Edinburgh" ~ "City of Edinburgh",  # to ensure matches geo_lookup OK
-                          areaname=="Eilean Siar" ~ "Na h-Eileanan Siar",
-                          areaname=="Shetland" ~ "Shetland Islands",
-                          areaname=="Orkney" ~ "Orkney Islands",
-                          TRUE ~ areaname)) %>% 
-  mutate(areatype = ifelse(areaname=="Scotland", "Scotland", "Council area")) %>%
-  merge(y=geo_lookup, by = c("areatype", "areaname")) %>% # add geog codes
-  filter(code!="S00000001") %>% # drop Scotland data as these are calculated in the aggregation
-  select(-areatype, -areaname, -trend_axis) 
+  df <- read.xlsx(paste0(homeless_data_folder, file),
+                  sheet = sheetnum,
+                  startRow = 4,
+                  colNames = TRUE) %>%
+    rename(areaname = X1) %>%
+    
+    # reshape the data 
+    pivot_longer(-areaname, values_to="numerator", names_to = "trend_axis") %>%
+    mutate(year = as.numeric(substr(trend_axis, 1, 4)),
+           split_name = "Gender",
+           split_value = gender) %>%
+    
+    mutate(areaname = case_when(areaname=="Edinburgh" ~ "City of Edinburgh",  # to ensure matches geo_lookup OK
+                                areaname=="Eilean Siar" ~ "Na h-Eileanan Siar",
+                                areaname=="Shetland" ~ "Shetland Islands",
+                                areaname=="Orkney" ~ "Orkney Islands",
+                                TRUE ~ areaname)) %>% 
+    mutate(areatype = ifelse(areaname=="Scotland", "Scotland", "Council area")) %>%
+    merge(y=geo_lookup, by = c("areatype", "areaname")) %>% # add geog codes
+    filter(code!="S00000001") %>% # drop Scotland data as these are calculated in the aggregation
+    select(-areatype, -areaname, -trend_axis) 
   
 }
 
