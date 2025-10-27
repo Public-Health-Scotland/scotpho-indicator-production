@@ -93,7 +93,8 @@ SHeS_AGE <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish H
 SHeS_INCOME <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_INCOME.parquet")) %>% mutate(split_name = "Income (equivalised)")
 SHeS_CONDITIONS <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet")) %>% mutate(split_name = "Long-term illness")
 
-# Pre-processed UKDS data
+# Pre-processed UKDS data (UK data service)
+# The data read in below is prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
 shes_from_ukds <- readRDS(paste0(profiles_data_folder, "/Prepared Data/shes_raw.rds")) %>%
   mutate(code = as.character(code))
 
@@ -403,7 +404,7 @@ prepare_final_files(ind = "anxiety_symptoms")
 prepare_final_files(ind = "deliberate_selfharm")   
 prepare_final_files(ind = "attempted_suicide")
 prepare_final_files(ind = "work-life_balance")
-prepare_final_files(ind = "cyp_sdq_totaldiffs")
+prepare_final_files(ind = "cyp_sdq_totaldiffs") #note SDQ = strengths and difficulties questionnaire, indicator name "Children's behavioural and emotional difficulties"
 
 
 # Run QA reports 
