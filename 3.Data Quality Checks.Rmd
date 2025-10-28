@@ -451,7 +451,7 @@ if(locality==TRUE & numerators_present == TRUE){
 flextable(check_locality)}
 
 if(locality==FALSE | numerators_present == FALSE){ #only include table when hscp locality data available
-"No HSCP level data to run check on"
+"No HSCP locality level data to run check on"
 }
 
 ```
