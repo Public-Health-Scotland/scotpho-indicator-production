@@ -19,7 +19,7 @@ data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 #Read in geography code names dictionary
 code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
 
-#Runing create_geo_parents() will run a function (in helper functions folder) that generates a dataframe that is available to 
+#Running create_geo_parents() will run a function (in helper functions folder) that generates a dataframe that is available to 
 # the rest of this script which details what the parent areas for intermediate zone, council areas or HSCP localities are.
 # the dataframe will be called "master_parent_geos"
 create_geo_parents()
@@ -406,7 +406,7 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 <br>
 
 Checking if the numerators for councils sum to health board (bear in mind some indicators don't have numerators so this check won't always run).
-If your source data also applies suppression then its possible that different geographies won't sum to same totals. Seek advice if you can't figure out why sums aren't ageeing
+If your source data also applies suppression then its possible that different geographies won't sum to same totals. Seek advice if you can't figure out why sums aren't agreeing
 
 ```{r, include=FALSE}
 
