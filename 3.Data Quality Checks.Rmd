@@ -389,7 +389,7 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 
 ```
 
-If dataset contains numerators check if for agreement between council, NHS board and partnership areas in Lothian/Edinburgh. <br>
+If dataset contains numerators check for agreement between council, NHS board and partnership areas in Lothian/Edinburgh. <br>
 
 ```{r, echo=FALSE}
 if(ca==TRUE & hscp==TRUE){ #only include if ca and hscp data available
@@ -445,7 +445,7 @@ rm(data_hscp, locality_sum)
 
 ```
 If dataset contains numerators & locality data present - check that locality numerators sum is the same for their corresponding HSCP partnership.
-If there are large discrepanies consider if the HSCP locality lookup is correct.<br>
+If there are large discrepancies consider if the HSCP locality lookup is correct.<br>
 ```{r, echo=FALSE}
 if(locality==TRUE & numerators_present == TRUE){
 flextable(check_locality)}
