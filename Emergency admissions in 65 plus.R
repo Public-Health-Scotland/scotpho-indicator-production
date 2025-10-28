@@ -19,8 +19,11 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+#source("1.indicator_analysis.R") #Normal indicator functions
+#source("2.deprivation_analysis.R") # deprivation function
+
+source("functions/main_analysis.R") #Normal indicator functions
+source("functions/deprivation_analysis.R") # deprivation function
 
 # additional packages 
 library(lubridate)
@@ -61,7 +64,7 @@ emergency_cis <- as_tibble(dbGetQuery(channel, statement=paste0(
 WHERE rn = 1
 AND age > 64
 AND sex_grp not in ('9', '0')
-AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2024'
+AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2025'
 AND (adm_type between '20' and '22' or adm_type between '30' and '39')
 ORDER BY link_no, cis_marker"))) %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -76,7 +79,7 @@ emergency_cis <- emergency_cis %>%
          year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0))
 
 # open lookup that will allow attachment of postcode to datazone2011.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select (pc7, datazone2011, datazone2001)
 
@@ -90,7 +93,7 @@ data_ea65 <-data_ea65 %>%
   summarise(numerator=n()) %>%
   ungroup()
 
-saveRDS(data_ea65, paste0(data_folder, 'Prepared Data/smr01_emergency65_basefile.rds'))
+saveRDS(data_ea65, paste0(profiles_data_folder, '/Prepared Data/smr01_emergency65_basefile.rds'))
 
 rm(emergency_cis) #tidy large file
 
@@ -105,7 +108,7 @@ rm(emergency_cis) #tidy large file
 ######################################################################################.
 
 # Reading file
-data_ea65<- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency65_basefile.rds'))
+data_ea65<- readRDS(paste0(profiles_data_folder, '/Prepared Data/smr01_emergency65_basefile.rds'))
 
 # prepare 2011 datazone population denominator file (aged 65 and over)
 # annual populations from 2009 to latest
@@ -123,16 +126,19 @@ dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce
   rename(datazone2011=datazone)
 
 # temporary solution for delays in release of 2022 SAPE - reapply 2021 population to the 2022 data
-dz11_pop_2022 <-dz11_populations %>%
+dz11_pop_2023 <-dz11_populations %>%
   filter (year==2022) %>%
   mutate (year=2023)
 
-dz11_populations <- rbind(dz11_populations,dz11_pop_2022)
+dz11_pop_2024 <- dz11_pop_2023 |>
+  mutate (year=2024)
+  
+dz11_populations <- rbind(dz11_populations,dz11_pop_2023, dz11_pop_2024)
 
 
 # open ScotPHO geography look-up that enables matching datazones to all parent geographies
 # (there should be no duplicate dz to parent matches ie. datazones dont map to more than one NHS board/CA)
-geo_lookup <- readRDS(paste0(lookups, "Geography/DataZone11_All_Geographies_Lookup.rds"))
+geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds"))
 
 # Improvement service use crude rates so no need to split data by age and sex
 emergency_admissions_forIS <-data_ea65 %>%
@@ -162,8 +168,8 @@ emergency_admissions_forIS <- emergency_admissions_forIS %>%
          year=paste0(year,"/",year+1))
 
 # Save out CSV file that can be sent to Improvement Service 
-# log informatin request and s
-write_csv(emergency_admissions_forIS, file = paste0(data_folder, "Data to be checked/ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
+# log information request and s
+write_csv(emergency_admissions_forIS, file = paste0(profiles_data_folder, "/Data to be checked/ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
 
 rm(emergency_admissions_forIS) #tidy large file
 
@@ -174,14 +180,14 @@ rm(emergency_admissions_forIS) #tidy large file
 ######################################################################################.
 
 # Reading file
-data_ea65<- readRDS(paste0(data_folder, 'Prepared Data/smr01_emergency65_basefile.rds'))
+data_ea65<- readRDS(paste0(profiles_data_folder, '/Prepared Data/smr01_emergency65_basefile.rds'))
 
 # Datazone2011
 dz11 <- data_ea65 %>% 
   group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = sum(numerator)) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/emergency_stays65_dz11_raw.rds'))
+saveRDS(dz11, file=paste0(profiles_data_folder, '/Prepared Data/emergency_stays65_dz11_raw.rds'))
 
 
 ###############################################.
@@ -195,7 +201,7 @@ dz01_dep <- data_ea65 %>%
 
 dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joining dz01 and dz11
 
-saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/emergency_stays65_depr_raw.rds'))
+saveRDS(dep_file, file=paste0(profiles_data_folder, '/Prepared Data/emergency_stays65_depr_raw.rds'))
 
 
 ###############################################.
@@ -205,13 +211,20 @@ saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/emergency_stays65_depr
 
 
 # Emergency hospital stays in >=65years 
-
-analyze_first(filename = "emergency_stays65_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_65+", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
-
-analyze_second(filename = "emergency_stays65_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 39000, ind_id = 99103, year_type = "financial")
+#call main analysis function 
+main_analysis(filename = "emergency_stays65_dz11",
+              measure = "stdrate",
+              geography = "datazone11",
+              year_type = "financial",  
+              ind_id = 99103, 
+              time_agg = 3,  
+              yearstart = 2002,   
+              yearend = 2023, 
+              pop = "DZ11_pop_65+",
+              epop_total = 39000,
+              epop_age = "normal",
+              test_file = FALSE, 
+              QA = TRUE)
 
 
 
