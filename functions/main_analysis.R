@@ -63,8 +63,8 @@ source("functions/helper functions/create_trend_axis_column.R") # for creating t
 source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
+source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
 
-source("functions/helper functions/create_geo_parents.R")
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
 # this filepath object will be created if the main_analysis script is sourced (before and functions are called)
