@@ -14,18 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include=FALSE}
 library(reactable)
 
-data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+# Path to files (switch file path to a different location if working on test indicators)
+#profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # this path will already exist when running this QA as part of indicator production
 
 #Read in geography code names dictionary
-code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
+code_dictionary <- readRDS(paste0(profiles_data_folder,"/Lookups/Geography/codedictionary.rds")) 
 
 #Running create_geo_parents() will run a function (in helper functions folder) that generates a dataframe that is available to 
 # the rest of this script which details what the parent areas for intermediate zone, council areas or HSCP localities are.
 # the dataframe will be called "master_parent_geos"
 create_geo_parents()
 
-#Read in indicator file being checked (switch file path to a different location if working on test indicators)
-#profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # this path will already exist when running this QA as part of indicator production
+#Read in indicator file being checked 
 output_folder <- if(test_file){
     file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
     } else {
@@ -69,7 +69,7 @@ data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
 data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 
 #Read in old indicator data file from network /Shiny data folder - if one exists (new indicators won't have a historic file)
-old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.rds") #create value which is file path to old file
+old_indicator_filepath <- paste0(profiles_data_folder, "/Shiny Data/", filename, "_shiny.rds") #create value which is file path to old file
 
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
 if(file.exists(old_indicator_filepath)) {
@@ -79,7 +79,7 @@ if(file.exists(old_indicator_filepath)) {
   old_indicator_filepath <-"life expectancy indicators hard to check against historic files" #if no historic file exists
   } else {
   skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
-  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
+  old_data_indicator <- readRDS(paste0(profiles_data_folder, "/Shiny Data/", filename, "_shiny.rds"))
   old_data_indicator$year <- as.numeric(old_data_indicator$year)#read in file if one exists
 }} else {
   skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
