@@ -405,7 +405,7 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 ###**Additional comparisons for numerators across scotland**
 <br>
 
-Checking if the numerators for councils sum to health board (bear in mind some indicators don't have numerators so this check won't always run).
+Checking if the numerators for child geographies sum to parent areas (bear in mind some indicators don't have numerators so this check won't always run).
 If your source data also applies suppression then its possible that different geographies won't sum to same totals. Seek advice if you can't figure out why sums aren't agreeing
 
 ```{r, include=FALSE}
