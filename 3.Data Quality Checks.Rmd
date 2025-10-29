@@ -293,7 +293,7 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 <br>
 ####Scotland & NHS boards
 Does Scotland rate seem like a sensible figure, how wide are the confidence intervals? <br>
-Does Scotland rate look about average of all NHS boards?<br>
+Does Scotland rate look about average of all NHS boards? (N.B. if indicator only available at national level then chart will only show a data point for Scotland). <br>
 Are there any outliers or strange looking confidence intervals (expect island boards to have wide CI)?
 
 ```{r, echo=FALSE}
@@ -488,12 +488,13 @@ rm(data_hb, council_sum)
 If indicator dataset contains numerators - run a check that summing the relevant council area matches the health board total .<br>
 
 ```{r, echo=FALSE}
-if(ca==TRUE & numerators_present == TRUE & nrow(check_council)>0){ 
-flextable(check_council)}
-if(ca==TRUE & numerators_present == TRUE & nrow(check_council)==0){ 
-"Summing council numerators agree with NHS board numerator totals in all areas"}
+
 if(ca==FALSE | board == FALSE){
-"Either council and/or NHS board numerators are absent from dataset so can't check for agreement"}
+"Either council and/or NHS board numerators are absent from dataset so can't check for agreement"
+} else if(ca==TRUE & numerators_present == TRUE & nrow(check_council)>0){ 
+    flextable(check_council)
+} else if(ca==TRUE & numerators_present == TRUE & nrow(check_council)==0){ 
+    "Summing council numerators agree with NHS board numerator totals in all areas"} 
 
 ```
 
