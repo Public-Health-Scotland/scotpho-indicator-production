@@ -43,7 +43,7 @@ library(opendatascot) # to extract from statistics.gov
 
 
 # Optional for exploring fields available in working age poverty dataset
-ods_structure("poverty-working-age-adults") # see structure and variables of this dataset
+#ods_structure("poverty-working-age-adults") # see structure and variables of this dataset
 
 
 # extract data
@@ -52,43 +52,26 @@ poverty_data <- opendatascot::ods_dataset("poverty-working-age-adults",
                                           indicatorpoverty = "relative-poverty",
                                           housingCosts="after-housing-costs")|>
   clean_names() |>
-  mutate(value=as.numeric(value))|>
-  rename("code" = ref_area,"def_period" = ref_period)|>
+  mutate(value=as.numeric(value),
+         code = case_when(ref_area=="S92000003"~"S00000001", TRUE ~ ref_area))|>
+  rename("def_period" = ref_period)|>
   select(code,def_period,measure_type,value)|>
   pivot_wider(names_from="measure_type" ,values_from="value") |>
-  rename(measure = ratio,
-         numerator = count) |>
-  mutate(year=substr(def_period,1,7))|>
+  rename(rate = ratio,
+         numerator = count)|>
+  mutate(trend_axis=def_period,
+         year =substr(def_period,1,4),
+         def_period=paste0(def_period,"; 3 year average"))|>
   filter(year>"2000/01") |>
-  rename(sample)
+  rename(sample='sample-size') |># confidence intervals
+  mutate(ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/sample)), # Wald method. 
+       lowci = rate - ci_wald,
+       upci = rate + ci_wald,
+       ind_id =  99147) |>
+  select(code, ind_id, year, numerator, rate, upci,lowci, def_period, trend_axis)
 
-# confidence intervals
-mutate(ci_wald = 100 * (1.96*sqrt(((measure/100)*(1-(measure/100)))/'sample-size')), # Wald method. 
-       lowci = measure - ci_wald,
-       upci = measure + ci_wald)
+# save out main data file
+write.csv(poverty_data, paste0(profiles_data_folder, "/Data to be checked/poverty_working_age_shiny.csv"), row.names = FALSE)
+write_rds(poverty_data, paste0(profiles_data_folder, "/Data to be checked/poverty_working_age_shiny.rds"))
 
-
-
-rm(poverty_data)
-
-# Apply filters to restrict data to only precise definition we need
-
-poverty_data <- working_pov |>
-  filter(work_status=="someone-in-household-in-paid-work",
-         indicatorpoverty=="relative-poverty",
-         housing_costs=="after-housing-costs")|>
-  mutate(value=as.numeric(value))|>
-  rename("code" = ref_area, "def_period" = ref_period)|>
-  select(code,def_period,measure_type,value)|>
-  pivot_wider(names_from="measure_type" ,values_from="value") |>
-  rename(measure = ratio,
-         numerator = count) |>
-  mutate(year=substr(def_period,1,7))|>
-  filter(year>"2000/01") |>
-  mutate(denominator=numerator/(measure/100))
-
-
-
-# can i generate confidence intervals if i have sample size and count?
-# is the denominator to use in CI calculation the sample size or the working population age for scotland?
-
+run_qa(filename="poverty_working_age" , type="main")
