@@ -93,7 +93,8 @@ SHeS_AGE <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish H
 SHeS_INCOME <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_INCOME.parquet")) %>% mutate(split_name = "Income (equivalised)")
 SHeS_CONDITIONS <- read_parquet(paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet")) %>% mutate(split_name = "Long-term illness")
 
-# Pre-processed UKDS data
+# Pre-processed UKDS data (UK data service)
+# The data read in below is prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
 shes_from_ukds <- readRDS(paste0(profiles_data_folder, "/Prepared Data/shes_raw.rds")) %>%
   mutate(code = as.character(code))
 
@@ -261,8 +262,8 @@ shes_df <- shes_df %>%
 shes_df <- shes_from_ukds %>%
   rbind(shes_df)
 
-table(shes_df$ind_id, useNA="always") # 26 in total, no NA
-table(shes_df$indicator, useNA="always") # 26 in total, no NA
+table(shes_df$ind_id, useNA="always") # 27 in total, no NA
+table(shes_df$indicator, useNA="always") # 27 in total, no NA
 table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
@@ -403,6 +404,7 @@ prepare_final_files(ind = "anxiety_symptoms")
 prepare_final_files(ind = "deliberate_selfharm")   
 prepare_final_files(ind = "attempted_suicide")
 prepare_final_files(ind = "work-life_balance")
+prepare_final_files(ind = "cyp_sdq_totaldiffs") #note SDQ = strengths and difficulties questionnaire, indicator name "Children's behavioural and emotional difficulties"
 
 
 # Run QA reports 
@@ -423,6 +425,7 @@ run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)
 run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
 run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
 run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
 run_qa(type = "main", filename = "support_network", test_file = FALSE)  
 run_qa(type = "main", filename = "stress_at_work", test_file = FALSE) 
@@ -451,6 +454,7 @@ run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE)
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
 run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "support_network", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "stress_at_work", test_file = FALSE)
@@ -461,6 +465,36 @@ run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE)
+
+# popgrp data: 
+run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
+run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
+run_qa(type = "popgrp", filename = "healthy_weight", test_file=FALSE)
+run_qa(type = "popgrp", filename = "food_insecurity", test_file=FALSE)
+run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
+run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
+run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
+run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
+run_qa(type = "popgrp", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
+run_qa(type = "popgrp", filename = "binge_drinking", test_file=FALSE)
+run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE) 
+run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
+run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
+run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "support_network", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "stress_at_work", test_file = FALSE)
+run_qa(type = "popgrp", filename = "choice_at_work", test_file = FALSE)   
+run_qa(type = "popgrp", filename = "line_manager", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "depression_symptoms", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)   
+run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE)
+run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE)
+
 
 #END
 
