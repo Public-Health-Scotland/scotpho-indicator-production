@@ -221,7 +221,7 @@ saveRDS(IRD_2023, file=paste0(profiles_data_folder, '/Prepared Data/IRD_2023_raw
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "IRD_2023", ind_id = 30169, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2023, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE, NA_means_suppressed=TRUE)
 # Correct: Ab'shre CA and the geogs that are coincident with it (HB and HSCP) are NA, all others have data.
 
 
@@ -328,7 +328,7 @@ saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_pro
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2007, yearend = 2024,
-              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE, NA_means_suppressed = TRUE)
 
 # Aggregated Scotland data match original Scotland data perfectly apart from 2015-2017, due to some suppression in smaller CAs. 
 # So replace the aggregated Scotland data with the original data:
@@ -423,7 +423,8 @@ prepare_main_data <- function(indicator, ind){
   # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
-                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE)
+                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE, NA_means_suppressed = TRUE)
+
   
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
   new_data <- main_analysis_result %>%
