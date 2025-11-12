@@ -10,26 +10,34 @@
 # Whether rate of patients or stays was not specified in MHI spec. 
 # I opted to use stays, as this is the headline stat the ARHS team use in their publications. 
 
-# Data provided by Scott Kilgariff, mailto:phs.alcohol@phs.scot, in Sept 2025
-# rds file at DZ11 level: "IR2025-00668-output.RDS"
-# No suppression applied: CHECK FINAL OUTPUT WITH SCOTT'S TEAM BEFORE PUBLISHING.
-# Patients/stays from 16 years and older.
-# •	For the SIMD quintile figures I have used a top age group of 85+ whilst for the rest of the figures I have used a top age group of 90+ when calculating EASR.
-# •	SIMD has been applied as follows:
-# o	1996 to 2003 – SIMD 2004 has been used
-# o	2004 to 2006 – SIMD 2006 has been used
-# o	2007 to 2009 – SIMD 2009(v2) has been used
-# o	2010 to 2011 – SIMD 2012 has been used (NB differs from the ISD GPD guidance which applies SIMD2012 to 2010-2013 data)
-# o	2012 to 2016 – SIMD 2016 has been used
-# o	2017+ – SIMD 2020(v2) has been used
-# •	Only Scottish residents have been included
-# •	Only those patients/stays where the sex is known have been included
-# •	You’ll see in the attached that some of the population figures per group have decimal values. This is due to removing 0.2 of the 15-19 age group to create the 16-19 age group.
+# Changes in 2025: the alcohol team now provide the raw counts by DZ in an rds file:
 
-# UPDATE Oct 2025: Alc team confirmed that age_grp 4 = 16-19 years (not 15-19) and provided a new rds file "IR2025-00668-output_updated.RDS" with DZ01 for back to 1998.
-#                  Use updated file for SIMD analysis, but original file for main analysis.
-#                  Need to apply SIMD2012 to 2010 and 2011, then SIMD2016 to 2012 to 2016. 2012 and 2013 are the differences from ScotPHO protocol here. 
-#                  Note this departure in the metadata.
+# SEPT 2025: 
+# Data provided by Scott Kilgariff, mailto:phs.alcohol@phs.scot
+# rds file at DZ11 level: "IR2025-00668-output.RDS"
+# Patients/stays from 16 years and older.
+# Only Scottish residents have been included
+# Only those patients/stays where the sex is known have been included
+
+# OCT 2025: 
+# Alc team confirmed that age_grp 4 = 16-19 years (not 15-19, as labelled) and provided a new rds file "IR2025-00668-output_updated.RDS" with DZ01 for 1998 to 2011 and DZ11 for 2012 onwards.
+# Use updated file for SIMD analysis, but original file for main analysis.
+# DZ01 have been supplied up to and including 2011, because the alcohol team have been using SIMD 2016 for 2012 and 2013 data (a departure from the ISD GPD guidance which uses SIMD 2012 for these years)
+# This has been noted in the indicator metadata.
+
+# FUTURE DATA:
+# I queried the use of SIMD 2016 rather than SIMD 2012 with the alcohol team, and their analysis will be reviewed in future. Response received:
+# "Thanks for bringing the updated guidance to our attention. 
+# I’ve looked in to our existing code and we use SIMD2016 for 2012 & 2013 because we use the 2011 Data Zones for our population estimates. 
+# The current guidance states that “Pre-SIMD 2016 versions cannot be used with 2011 Data Zone” which is quoted in the commentary for the script calculating decile populations.
+# However, this was decided based on the 3.3 version of the guidance so we will be looking into this further for future updates."
+
+# No suppression applied: CHECK FINAL OUTPUT WITH SCOTT'S TEAM BEFORE PUBLISHING.
+# Scott's team added that the counts should be rounded to base 3 before publishing.
+# This has been noted in the metadata. 
+
+
+
 
 ##########################################################
 ### Functions/packages -----
@@ -37,7 +45,8 @@
 
 source("functions/main_analysis.R") # for packages and QA function 
 source("functions/deprivation_analysis.R") # for packages and QA
-
+library(poputils) # for randomly rounding to base 3, using the function rr3
+set.seed(12345) # for reproducibility of the random rounding
 
 ##########################################################
 ### Read in data -----
@@ -153,7 +162,9 @@ popgrp_f <- main_analysis_result %>%
 stays <- rbind(popgrp_total,
                popgrp_f,
                popgrp_m) %>%
-# remove small geographies
+  # randomly round numerators to base 3
+  mutate(numerator = rr3(numerator)) %>%
+  # remove small geographies
   filter(!(substr(code, 1, 3) %in% c("S02", "S99"))) #IZs and localities, these have some counts < 5
 # now smallest numerator is 15
 
@@ -327,9 +338,11 @@ arhs_simd_f <- deprivation_analysis_result %>%
 # Combine data
 stays_simd <- rbind(arhs_simd_total,
                     arhs_simd_f,
-                    arhs_simd_m) 
-# Smallest numerator is 206 for deciles (469 for quintiles)
-
+                    arhs_simd_m) %>%
+  # randomly round numerators to base 3
+  mutate(numerator = rr3(numerator)) 
+# Smallest numerator is 207 for deciles (468 for quintiles)
+  
 
 ##########################################################
 ### Prepare final files -----
@@ -364,7 +377,7 @@ write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/ARHS_m
 
 
 # 3 - SIMD data (ie data behind deprivation tab)
-# SMALLEST NUMERATOR = 206
+# SMALLEST NUMERATOR = 207
 
 # Save
 write_rds(stays_simd, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_ineq.rds"))
@@ -376,6 +389,6 @@ write.csv(stays_simd, paste0(profiles_data_folder, "/Data to be checked/ARHS_men
 ### QA -----
 ##########################################################
 
-run_qa(type = "main", filename = "ARHS_mental_and_behav", test_file = FALSE) 
+run_qa(type = "main", filename = "ARHS_mental_and_behav", test_file = FALSE) # any differences across nested geogs are <=3 (explained by the rounding)
 run_qa(type = "popgrp", filename = "ARHS_mental_and_behav", test_file = FALSE)
 run_qa(type = "deprivation", filename = "ARHS_mental_and_behav", test_file = FALSE) 
