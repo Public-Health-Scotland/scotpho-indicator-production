@@ -1,4 +1,6 @@
-## In-work poverty (working age population)
+# Adults (16-64 years) in working households in relative poverty
+
+# Indicator designed to provide insights into those living in poverty despite there being those in paid employment
 ## Number and proportions of working-age adults in relative poverty (after housing costs) living in households where someone in the household is in paid work
 ### Author: Vicky Elliott, 31 Oct 2025
 
