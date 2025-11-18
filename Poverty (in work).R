@@ -24,10 +24,7 @@
 # This indicator considers only working age adults (so it will exclude children and pensionable age adults).
 
 # Coverage:
-# 1994/95-1996/97 to 2021/22-2023/24 (some splits don't go back this far though).
-# N.B. The pandemic severely affected data collection and as a result, data from 2020/21 was not used to produce any of the averaged estimates. 
-# This means, for example, that the three-year periods 2018-21, 2019-22 and 2020-23 only contain data from two financial years each. 
-# From 2011 the dataset includes both 3-year and 5-year rolling averages. 5-year aggregations used for religion breakdown.
+# 2000/01-2002/03 to 2021/22-2023/24 (3-year averages throughout).
 
 
 
