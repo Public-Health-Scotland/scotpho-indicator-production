@@ -18,6 +18,7 @@
 # SMRA deaths file is then matched to the NRS DRD file.
 
 # PART 1 - Read in received data
+# PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Libraries, functions and filepaths ----
@@ -45,11 +46,12 @@ drug_deaths_male_02_05 <- read.csv(paste0(profiles_data_folder, "/Received Data/
 drug_deaths_NRS <- readRDS(paste0(profiles_data_folder, "/Received Data/Drug-related deaths (4121)/nrs_drugrelateddeaths_2006-24_IR2025-00814.rds")) |>
   clean_names()
 
-# Extract all deaths from SMRA from 2006 onwards and then match SMRA deaths details with the death records in the NRS DRD file provided
+# Extract ALL deaths from SMRA from 2006 onwards and then match SMRA deaths details with the death records in the NRS DRD file provided
 # by the drugs team.
 
 # SMRA login - If you don't already have it, you will need to request access to the smr gro deaths analysis view on SMRA
 # (email Clare.Campbell3@phs.scot for access).
+# Login using your network username and password
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       uid=.rs.askForPassword("SMRA Username:"), 
                                       pwd=.rs.askForPassword("SMRA Password:")))
@@ -70,7 +72,7 @@ drug_deaths_smr <- as_tibble(dbGetQuery(channel, statement=
   WHERE date_of_registration between '1 January 2006' and '31 December 2024' 
   AND age is not NULL 
   AND sex <> 9")) |>
-  clean_names() #variable names to lower case
+  clean_names() # Variable names to lower case
 
 # Create a key variable in SMR extract (rdno_entry_no_yr) so can join to NRS DRD file.
 
@@ -87,7 +89,7 @@ drug_deaths_smr <- drug_deaths_smr |>
 drug_deaths_smr <- drug_deaths_smr |>
   create_agegroups()
 
-# Using drug_deaths_NRS as base file, join to this variables from drug_deaths_smr matching on rdno_entry_no_yr as key
+# Using drug_deaths_NRS as base file, join to this variables from drug_deaths_smr matching on rdno_entry_no_yr as key variable
 drug_deaths <- left_join(drug_deaths_NRS, drug_deaths_smr, "rdno_entry_no_yr")
 
 # If postcode is NA (missing) then use place of death postcode (added to ensure HB/CA breakdown matches NRS publication).
@@ -97,3 +99,36 @@ drug_deaths <- drug_deaths |>
 
 # Checking totals match with NRS publication.
 drug_deaths |> group_by(year) |> count() |> View()
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Read in latest Scottish Postcode Directory (SPD) lookup file that maps postcodes to council areas, HBs, HSCPs, datazones etc.
+# SPD updated twice a year (Mar(v_1)/Sep(v_2)) with the most recent two versions available in the lookups SPD folder (older versions available in Archive sub-folder).
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') |>
+  clean_names() # Variable names to lower case.
+
+# Create drug-related deaths main basefiles for both sexes, males and females (to be fed into main_analysis() function) and save to 'Prepared Data' folder.
+# (Aggregate data by council area)
+drug_deaths_ca <- left_join(drug_deaths, postcode_lookup, "pc7") |> 
+  rename(ca = ca2019) |>
+  group_by(year, ca, sex_grp, age_grp) |>  
+  summarize(numerator = n()) |> ungroup()
+
+saveRDS(drug_deaths_ca, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw_NS.rds')) # Both sexes
+saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw_NS.rds')) # Males
+saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw_NS.rds')) # Females
+
+# Create drug-related deaths deprivation basefile (to be fed into deprivaion_analysis() function) and save to 'Prepared Data' folder.
+# (Aggregate data by datazone)
+drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") |> 
+  select(year, datazone2001, datazone2011, sex_grp, age_grp) |>
+  mutate(datazone = case_when(year<2014 ~ datazone2001,
+                              year>2013 ~ datazone2011)) |>
+  group_by(year, datazone, sex_grp, age_grp) |>
+  summarize(numerator = n()) |> ungroup()
+
+saveRDS(drug_deaths_depr, file=paste0(data_folder, 'Prepared Data/drug_deaths_depr_raw_NS.rds'))
+
