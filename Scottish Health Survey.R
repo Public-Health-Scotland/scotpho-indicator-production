@@ -15,6 +15,8 @@
 #   30013: Fruit & vegetable consumption (guidelines) *
 #   30003: General health questionnaire (GHQ-12) *
 #   30001: Mental wellbeing (WEMWBS)*
+### CYP mental health indicators:
+#   30111: Children meeting PA recommendations (>1 hour every day)
 ### Alcohol profile indicators:
 #   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
@@ -22,10 +24,11 @@
 ### Physical activity profile:
 #   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations"
 
-### And adding data for a further 14 indicators (12 adult mental health, 2 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
+### And adding data for a further 15 indicators (12 adult mental health, 3 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
 
+# Adult:
 # 30002 = life_sat	Mean score on the question "All things considered, how satisfied are you with your life as a whole nowadays?" (variable LifeSat).  N.B. This indicator is also available from the ScotPHO Online Profiles (national and council area level, but not by SIMD). Life satisfaction is measured by asking participants to rate, on a scale of 0 to 10, how satisfied they are with their life in general. On the scale, 0 represented 'extremely dissatisfied' and 10 'extremely satisfied' (the intervening scale points were numbered but not labelled). 
 # 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
 # 30004 = depsymp	Percentage of adults who had a symptom score of two or more on the depression section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was depsymp (or dvg11 in 2008). 
@@ -38,9 +41,11 @@
 # 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 # 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
 # 30026 = rg17a_new	Percentage of adults who provide 20 or more hours of care per week to a member of their household or to someone not living with them, excluding help provided in the course of employment. Participants were asked whether they look after, or give any regular help or support to, family members, friends, neighbours or others because of a long-term physical condition, mental ill-health or disability; or problems related to old age. Caring which is done as part of any paid employment is not asked about. From 2014 onwards, this question explicitly instructed respondents to exclude caring as part of paid employment. The variables used to construc this indicator were RG15aNew (Do you provide any regular help or care for any sick, disabled, or frail people?) and RG17aNew (How many hours do you spend each week providing help or unpaid care for him/her/them?). 
+
+# CYP:
 # 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
 # 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
-
+# 99117 = sdq Percentage of 4-12 year olds with abnormal/borderline Total Difficulties SDQ score
 
 
 # The published data are downloaded from statistics.gov.scot:
@@ -64,9 +69,9 @@ library(arrow) # for parquet files
 library(opendatascot) # for getting data from stats.gov.scot
 
 ### 0. Get new data ---- 
-# # Download each of the datasets 
-# # (N.B. only do this if reading in new data. Latest downloaded = 2023, published in Nov 2024)
-# # (persist if gives HTTP errors such as 302...)
+# # # Download each of the datasets 
+# # # (N.B. only do this if reading in new data. Latest downloaded = 2023, published in Nov 2024)
+# # # (persist if gives HTTP errors such as 302...)
 # SHeS_SCOTLAND <- opendatascot::ods_get_csv("scottish-health-survey-scotland-level-data")
 # SHeS_LA <- opendatascot::ods_get_csv("scottish-health-survey-local-area-level-data")
 # SHeS_SIMD <- opendatascot::ods_get_csv("scottish-health-survey-scotland-level-data-by-simd")
@@ -76,12 +81,12 @@ library(opendatascot) # for getting data from stats.gov.scot
 # 
 # 
 # #Write the datasets to the Received Data folder in .parquet format
-# write_parquet(SHeS_SCOTLAND, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_SCOTLAND.parquet"))
-# write_parquet(SHeS_LA, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_LA.parquet"))
-# write_parquet(SHeS_SIMD, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_SIMD.parquet"))
-# write_parquet(SHeS_AGE, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_AGE.parquet"))
-# write_parquet(SHeS_INCOME, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_INCOME.parquet"))
-# write_parquet(SHeS_CONDITIONS, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet"))
+# write_parquet(SHeS_SCOTLAND, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_SCOTLAND.parquet"))
+# write_parquet(SHeS_LA, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LA.parquet"))
+# write_parquet(SHeS_SIMD, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_SIMD.parquet"))
+# write_parquet(SHeS_AGE, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_AGE.parquet"))
+# write_parquet(SHeS_INCOME, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_INCOME.parquet"))
+# write_parquet(SHeS_CONDITIONS, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet"))
 
 ### 1. Read in the downloaded and saved data ----
 
