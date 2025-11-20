@@ -16,7 +16,7 @@
 #   30003: General health questionnaire (GHQ-12) *
 #   30001: Mental wellbeing (WEMWBS)*
 ### CYP mental health indicators:
-#   30111: Children meeting PA recommendations (>1 hour every day)
+#   30111: Children meeting PA recommendations (>1 hour every day) (NB. not in statistics.scot.gov data quite yet: try end 2025/early 2026?)
 ### Alcohol profile indicators:
 #   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
@@ -182,23 +182,10 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "General health questionnaire (GHQ-12): Score 4+", # 30003                                                                             
           "Long-term conditions: Limiting long-term conditions" # 99109 
           #   "Long-term illness: Limiting long-term illness",  # 99109                                                                           
-          #   "Involved in the local community: A fair amount", # 30021 (check: probably not possible to combine into 'a fair amount or a great deal')
-          #   "Involved in the local community: A great deal",  # 30021 (check: probably not possible to combine into 'a fair amount or a great deal')                                                                                              
           #   "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)", # 30002 (better definition than existing: mean score?)                                                             
           #   "Symptoms of anxiety: No anxiety symptoms", # 30005: would need the inverse... would this be valid?                                                                                    
           #   "Symptoms of depression: No depression symptoms", # 30004: would need the inverse... would this be valid?                                                                               
-          #   "How stressful you find your job: Extremely stressful", # 30051 (check: probably not possible to combine into 'very/extremely stressful')
-          #   "How stressful you find your job: Very stressful" # 30051 (check: probably not possible to combine into 'very/extremely stressful')         
 )                                                                    
-
-
-
-
-#[152] "Alcohol Use Disorders Identification Test (AUDIT): Harmful drinking (score 16-19)"                                            
-#[153] "Alcohol Use Disorders Identification Test (AUDIT): Hazardous drinking (score 8-15)"                                           
-#[154] "Alcohol Use Disorders Identification Test (AUDIT): Low risk drinking/abstinence (score 0-7)"                                  
-#[155] "Alcohol Use Disorders Identification Test (AUDIT): Possible alcohol dependence (score 20+)"   
-
 
 
 # keep the required indicators
