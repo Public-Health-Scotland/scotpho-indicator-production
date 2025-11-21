@@ -32,11 +32,8 @@
 # The current guidance states that “Pre-SIMD 2016 versions cannot be used with 2011 Data Zone” which is quoted in the commentary for the script calculating decile populations.
 # However, this was decided based on the 3.3 version of the guidance so we will be looking into this further for future updates."
 
-# No suppression applied: CHECK FINAL OUTPUT WITH SCOTT'S TEAM BEFORE PUBLISHING.
-# Scott's team added that the counts should be rounded to base 3 before publishing.
-# This has been noted in the metadata. 
-
-
+# statistical disclosure control applied to numerator after rate calculations : CHECK FINAL OUTPUT WITH ALCOHOL TEAM BEFORE PUBLISHING.
+# Method used in disclosure control should align with that used in total alcohol related admissions indicator & alcohol team publication not be published. 
 
 
 ##########################################################
@@ -45,8 +42,7 @@
 
 source("functions/main_analysis.R") # for packages and QA function 
 source("functions/deprivation_analysis.R") # for packages and QA
-library(poputils) # for randomly rounding to base 3, using the function rr3
-set.seed(12345) # for reproducibility of the random rounding
+source("//PHI_conf/ScotPHO/Profiles/Code/stat_disclosure_alcohol_stays.R") # statistical disclosure methodology - confidential - do not share
 
 ##########################################################
 ### Read in data -----
@@ -161,9 +157,8 @@ popgrp_f <- main_analysis_result %>%
 # Combine data
 stays <- rbind(popgrp_total,
                popgrp_f,
-               popgrp_m) %>%
-  # randomly round numerators to base 3
-  mutate(numerator = rr3(numerator)) %>%
+               popgrp_m) |>
+  apply_stats_disc_mandb() |> # statistical disclosure applied to final values
   # remove small geographies
   filter(!(substr(code, 1, 3) %in% c("S02", "S99"))) #IZs and localities, these have some counts < 5
 # now smallest numerator is 15
@@ -309,7 +304,7 @@ arhs_deprivation_analysis(filename="ARHS_MBD_SIMD",
                           yearstart=2002, 
                           yearend=2023,
                           pop_sex = "all", 
-                          epop_total = 165800)
+                          epop_total = 165800) # because starts at 16y
 
 arhs_simd_total <- deprivation_analysis_result %>%
   mutate(sex = "Total")
@@ -319,7 +314,7 @@ arhs_deprivation_analysis(filename="ARHS_MBD_SIMD_M",
                           yearstart=2002, 
                           yearend=2023,
                           pop_sex = "male", 
-                          epop_total = 82900)
+                          epop_total = 82900) # because starts at 16y
 
 arhs_simd_m <- deprivation_analysis_result %>%
   mutate(sex = "Male")
@@ -329,18 +324,17 @@ arhs_deprivation_analysis(filename="ARHS_MBD_SIMD_F",
                           yearstart=2002, 
                           yearend=2023,
                           pop_sex = "female", 
-                          epop_total = 82900)
+                          epop_total = 82900) # because starts at 16y
 
 arhs_simd_f <- deprivation_analysis_result %>%
   mutate(sex = "Female")
 
 
 # Combine data
-stays_simd <- rbind(arhs_simd_total,
+stays_simd<- rbind(arhs_simd_total,
                     arhs_simd_f,
-                    arhs_simd_m) %>%
-  # randomly round numerators to base 3
-  mutate(numerator = rr3(numerator)) 
+                    arhs_simd_m) |>
+  apply_stats_disc_mandb() # statistical disclosure applied to final values
 # Smallest numerator is 207 for deciles (468 for quintiles)
   
 
