@@ -38,7 +38,8 @@ mutate(code_name=paste0(code,": ",as.character(areaname))) #add field with geogr
 scot_quintiles <-  any(substr(data_indicator$code,1,3) =="S00")
 hb_quintiles  <- any(substr(data_indicator$code,1,3) == "S08")
 ca_quintiles <- any(substr(data_indicator$code,1,3) == "S12")
-
+hscp_quintiles <- any(substr(data_indicator$code,1,3) == "S37")
+pd_quintiles <- any(substr(data_indicator$code,1,3) == "S32")
 
 ## Are the deprivation data grouped by sex? If so this needs to be accounted for in the QA
 sex_column <- "sex" %in% names(data_indicator) # gives TRUE or FALSE
@@ -75,9 +76,11 @@ Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 ------------------------------------------------------------------------------------
 
 **Geographies present in indicator output file** <br>
+Scotland: `r scot_quintiles` <br>
 NHS board: `r hb_quintiles` <br>
 Council area: `r ca_quintiles` <br>
-Scotland: `r scot_quintiles` <br>
+Health and Social Care Partnership: `r hscp_quintiles` <br>
+Police division: `r pd_quintiles` <br>
 
 ------------------------------------------------------------------------------------
 
@@ -108,30 +111,49 @@ ft_sc_quin_check <- geo_checks %>%
   color(~ S00!=1, ~S00, color = "red") 
 
 if(hb_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S08!=14, ~S08, color = "red")} # Should be 14 NHS boards
-if(ca_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S12!=32, ~S08, color = "red")} # Should be 32 council areas
+if(ca_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S12!=32, ~S12, color = "red")} # Should be 32 council areas
+if(hscp_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S37!=31, ~S37, color = "red")} # Should be 31 HSCP
+if(pd_quintiles == TRUE) {ft_sc_quin_check<- ft_sc_quin_check %>%  color(~ S32!=13, ~S32, color = "red")} # Should be 13 police divisions
 
 ft_sc_quin_check<- ft_sc_quin_check %>%
   autofit()
 
 if(hb_quintiles == TRUE){
-# flextable on hb quintiles - summary table of years and geogrpahy types present
+# flextable on hb quintiles - summary table of years and geography types present
 ft_hb_quin_check <- geo_checks %>%
   subset(quint_type=="hb_quin") %>%
   flextable() %>%
   color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
   color(~ S08!=14, ~S08, color = "red") %>% # Expect 14 NHS boards for board quintiles
   color(~ !is.na(S12), ~S12, color = "red") %>% # Should be no records for council codes
+  color(~ !is.na(S37), ~S37, color = "red") %>% # Should be no records for HSCPs
+  color(~ !is.na(S32), ~S32, color = "red") %>% # Should be no records for PDs
   autofit()}
 
 if(ca_quintiles == TRUE){
-# flextable on hb quintiles - summary table of years and geogrpahy types present
+# flextable on ca quintiles - summary table of years and geography types present
 ft_ca_quin_check <- geo_checks %>%
   subset(quint_type=="ca_quin") %>%
   flextable() %>%
   color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
   color(~ S12!=32, ~S12, color = "red") %>% # Expect 32 council areas for CA quintiles
   color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for HB codes
+  color(~ !is.na(S37), ~S37, color = "red") %>% # Should be no records for HSCPs
+  color(~ !is.na(S32), ~S32, color = "red") %>% # Should be no records for PDs
   autofit()
+}
+
+if(hscp_quintiles == TRUE){
+# flextable on hscp quintiles - summary table of years and geography types present
+ft_hscp_quin_check <- geo_checks %>%
+  subset(quint_type=="hscp_quin") %>%
+  flextable() %>%
+  color(~ !is.na(S00), ~S00, color = "red") %>% # Should be no records for scotland code
+  color(~ !is.na(S12), ~S12, color = "red") %>% # Should be no records for council codes
+  color(~ !is.na(S08), ~S08, color = "red") %>% # Should be no records for HB codes
+  color(~ S37!=31, ~S37, color = "red") %>% # Should be 31 records for HSCP quintiles
+  color(~ !is.na(S32), ~S32, color = "red") %>% # Should be no records for PDs
+autofit()
 }
 
 ```
@@ -153,14 +175,20 @@ Conditional formatting will show up if distinct geography counts are not as expe
 if(hb_quintiles==TRUE){
 ft_hb_quin_check #print flextable
 } else {
-paste0("No health board quintile present")
+paste0("No health board quintiles present")
 }   
 
 if(ca_quintiles==TRUE){
 ft_ca_quin_check #print flextable
 } else {
-paste0("No within council quintile present")
-}   
+paste0("No within council quintiles present")
+} 
+
+if(hscp_quintiles==TRUE){
+ft_hscp_quin_check #print flextable
+} else {
+paste0("No within HSCP quintiles present")
+} 
 
 
 ```
@@ -192,6 +220,9 @@ prep_areatype_quintile_check <- function (areatype) {
   } else if (areatype=="CA") {
     qtype <- "ca_quin"
     warning <- ca_quintile_warning
+  } else if (areatype=="HSCP") {
+    qtype <- "hscp_quin"
+    warning <- hscp_quintile_warning
   }
   
   if (warning$quint_error_total != 0) { # if gaps found
@@ -241,9 +272,21 @@ if (ca_quintiles) {
   "STOP AND CHECK....looks like not all geographies have correct number of CA-level quintiles.")
 prep_areatype_quintile_check("CA")
 }
-# Message if no ca/hb quintiles are in the data:
-if(hb_quintiles==FALSE & ca_quintiles==FALSE) {
-  "There are no HB- or CA-level quintiles in the data."
+# Quintile checks if hscp_quin quintiles are in the data:
+if (hscp_quintiles) {
+  # if hscp quintile sum not equal to 6 there's an issue (since within geography deprivation should always have 5 quintiles plus a total)
+  hscp_quintile_warning <- quintile_checks %>%
+    subset(quint_type == "hscp_quin") %>%
+    mutate(q_count = ifelse(count_q!=6, TRUE, FALSE)) %>%
+    summarise(quint_error_total=sum(q_count,na.rm=TRUE))
+  #Text output when hscp quintiles not correct
+  ifelse(hscp_quintile_warning$quint_error_total == 0, "There are no gaps in the HSCP-level quintile data. :-)",
+  "STOP AND CHECK....looks like not all geographies have correct number of HSCP-level quintiles.")
+prep_areatype_quintile_check("HSCP")
+}
+# Message if no ca/hb/hscp quintiles are in the data:
+if(hb_quintiles==FALSE & ca_quintiles==FALSE & hscp_quintiles==FALSE) {
+  "There are no HB- or CA- or HSCP-level quintiles in the data."
 }
 
 
@@ -433,7 +476,7 @@ shinyApp(
     #reactive simd trend data
     simd_trend_data<- reactive({
     rate_data <- data_indicator %>% # reactive dataset for trend chart
-    select(code,code_name, year, sex, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii) %>%
+    select(code,code_name, year, sex, numerator, denominator, rate, quint_type, quintile, geo_type, par, rii, sii,trend_axis) %>%
     subset(quint_type==input$quint_selected & code_name==input$code_selected & sex == input$sex_selected) %>%
     arrange(quintile) %>% #this is needed to make palette assignments work well
     droplevels()
@@ -480,7 +523,7 @@ shinyApp(
     tooltiptext_trend <- c(paste0(simd_trend_data()$year, ": ", simd_trend_data()$rate))
     
     #Create trend plot
-    rate_trend <- plot_ly(data= simd_trend_data(), x=~year,hoverinfo="text") %>%
+    rate_trend <- plot_ly(data= simd_trend_data(), x=~trend_axis,hoverinfo="text") %>%
       add_lines(y = ~rate, name = ~quintile, type = 'scatter',text = tooltiptext_trend,
                 mode = 'lines', color = ~quintile,  colors = pal_simd_trend) %>%
               layout(yaxis = list(rangemode = "tozero")) # force yaxis to start at zero
