@@ -86,50 +86,79 @@ split_main_data <- function(df, indicator, aggregated = NULL) {
   df
 }
 
-split_depr_data <- function(df, indicator){
+# split_depr_data <- function(df, indicator){
+#   df <- df |> 
+#     filter(indicator == {{indicator}}, split_name == "Deprivation (SIMD)",
+#            str_detect(def_period, "Survey year "), sex == "Total") |> 
+#     rename(quintile = split_value) |> 
+#     mutate(quint_type = "sc_quin") |> 
+#     select(-split_name, -denominator, )
+#   
+#   #Add population data
+#   
+#   ind_id <- df$ind_id
+#   
+#    df <- df |> 
+#     add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, indicator)  
+#   
+#   #Calculate inequalities measures
+#     calculate_inequality_measures() #|> # call helper function that will calculate sii/rii/paf
+#     select(-c(indicator,overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+#   
+# }
+# 
+# df <- shes_adults 
+# indicator = "meeting_muscle_strengthening_recommendations"
+# 
+# dataset = df
+# 
+# mus_rec_depr <- split_depr_data(shes_adults, indicator = "meeting_muscle_strengthening_recommendations")
+# 
+# 
+# mus_rec_depr <- shes_adults |> 
+#   filter(indicator == "meeting_muscle_strengthening_recommendations", split_name == "Deprivation (SIMD)",
+#          str_detect(def_period, "Survey year ")) |> 
+#   rename(quintile = split_value) |> 
+#   mutate(quint_type = "sc_quin") |> 
+#   select(-split_name) 
+# 
+#   ind_id <- unique(mus_rec_depr$ind_id) # identify the indicator number   
+# 
+# mus_rec_depr <- mus_rec_depr |> 
+#   add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, ind_name = "meeting_muscle_strengthening_recommendations",) 
+# 
+
+split_popgrps_data <- function(df, indicator){
   df <- df |> 
-    filter(indicator == {{indicator}}, split_name == "Deprivation (SIMD)",
-           str_detect(def_period, "Survey year ")) |> 
-    rename(quintile = split_value) |> 
-    mutate(quint_type = "sc_quin") |> 
-    select(-split_name)
+    filter(indicator == {{indicator}}, split_name != "Deprivation")
   
-  #Add population data
-  df <- df |> 
-    add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |> #!!!!!!!!!!!!!!!!!! Next to fix
+  age_data <- df |> 
+    filter(split_name == "Age", !str_detect(def_period, "Aggregated"))
   
-  #Calculate inequalities measures
-    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
-    select(-c(indicator,overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
-  
+  sex_data <- df |> 
+    filter(split_name == "Sex", )
 }
 
-mus_rec_depr <- split_depr_data(shes_adults, indicator = "meeting_muscle_strengthening_recommendations")
 
 
-mus_rec_depr <- shes_adults |> 
-  filter(indicator == "meeting_muscle_strengthening_recommendations", split_name == "Deprivation (SIMD)",
-         str_detect(def_period, "Survey year ")) |> 
-  rename(quintile = split_value) |> 
-  mutate(quint_type = "sc_quin") |> 
-  select(-split_name)
+mus_rec_popgrps <- split_popgrps_data(shes_adults,  "meeting_muscle_strengthening_recommendations")
 
+mus_rec_popgrps_age <- mus_rec_popgrps |> 
+  filter(split_name == "Age", !str_detect(def_period, "Aggregated")) #do single years
 
-################################################################################
-#6. Adults meeting muscle strengthening recommendations (14001)
+ 
+# ################################################################################
+# #6. Adults meeting muscle strengthening recommendations (14001)
 
 #Main data file
 mus_rec <- split_main_data(shes_adults, indicator = "meeting_muscle_strengthening_recommendations", aggregated = FALSE)
 
 saveRDS(mus_rec, file.path(profiles_data_folder, "/Prepared Data/meets_mus_rec_raw.rds"))
 
-main_analysis("meets_mus_rec", measure = "percent", geography = "board", year_type = "survey", 
-              ind_id = 14001, time_agg = 1, yearstart = 2012, yearend = 2022, test_file = TRUE) 
+main_analysis("meets_mus_rec", measure = "percent", geography = "board", year_type = "survey",
+              ind_id = 14001, time_agg = 1, yearstart = 2012, yearend = 2022, test_file = TRUE)
 
 #Deprivation file
-
-
-
 
 ################################################################################
 #7. Adults with very low activity levels (14002)
