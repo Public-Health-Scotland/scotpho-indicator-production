@@ -46,7 +46,7 @@ data_deaths <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Open LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 data_deaths <- left_join(data_deaths, postcode_lookup, "pc7") %>% 
@@ -199,7 +199,7 @@ main_analysis(filename = "deaths_1to15",
 #call main analysis function 
 main_analysis(filename = "deaths_under1",  measure = "crude",
               geography = "council",  year_type = "calendar",  ind_id = 13026, 
-              time_agg = 5,  yearstart = 2002,   yearend = 2023, pop = "live_births", 
+              time_agg = 5,  yearstart = 2002,   yearend = 2024, pop = "live_births", 
               crude_rate = 1000, # rate is crude rate per 1000
               test_file = FALSE, QA = TRUE)
 
