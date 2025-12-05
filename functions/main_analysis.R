@@ -348,36 +348,32 @@ main_analysis <- function(filename,
     
     
     # Temporary step for indicators being updated to include 2024 data that we publish at IZ/Locality level
-    # 2024 data at IZ/HSC locality level cannot be used (incuding within any rolling averages) until the release of SAPE 2024 in Winter 2025
+    # 2024 data at IZ/HSC locality level cannot be used (incuding within any rolling averages) until the release of SAPE 2024 in Spring 2026
     # This step alerts analysts and removes any 2024 figures at IZ/locality level in step PRIOR to aggregating data by time periods to 
     # ensure these data not included in any rolling averages.
     # This code can be removed following release of SAPE 2023 and 2024 
     
-    # Note commented out until:
-    # re-based SAPE 2011-2022 released (Autumn 2025)
-    # and scotpho lookups refreshed (including adding MYE 2024 for higher geographies)
-    
-    # if(geography == "datazone11" & yearend == 2024){
-    # 
-    #   response <- utils::askYesNo(paste(
-    #     "\n2024 figures (including inclusion in any rolling averages) can only currently be calculated for council level and above.\n",
-    #     "IZ/Locality level data can only be calculated up to 2023. Figures for these geographies will be refreshed using 2011-2021 rebased population\n",
-    #     "estimates and 2022 small area population estimates (SAPE) for 2022 and (provisionally) for 2023.\n\n",
-    #     "Ensure the 'notes_caveats' column of the techdoc explains this for users. Also ensure the 'next_update' date of this indicator is Winter 2025,\n",
-    #     "following the release of SAPE 2023 and 2024. This will ensure ALL geography levels include data up to 2024.\n\n",
-    #     "Type 'Yes' to continue",
-    #     sep = ""
-    #   ))
-    #   
-    #   if (isTRUE(response)) {
-    #     cli::cli_alert_success("Removing 2024 data at IZ/Locality level.")
-    #     data <- data |>
-    #       filter(!(grepl("S02|S99", code) & year == 2024))
-    #   } else {
-    #     cli::cli_abort("Process aborted")
-    #   }
-    # 
-    # }
+    if(geography == "datazone11" & yearend == 2024){
+
+      response <- utils::askYesNo(paste(
+        "\n2024 figures (including inclusion in any rolling averages) can only currently be calculated for council level and above.\n",
+        "IZ/Locality level data can only be calculated up to 2023. Figures at IZ/locality level are NOT rebased\n",
+        "their 2023 figures are based on 2022 small area population estimates. Deprivation analysis can not be updated either. \n\n",
+        "Ensure the 'notes_caveats' column of the techdoc explains this for users. Also ensure the 'next_update' date of this \nindicator is Spring 2026,\n",
+        "(i.e. to be updated again following the release of SAPE 2023 and 2024)\n\n",
+        "Type 'Yes' to continue",
+        sep = ""
+      ))
+
+      if (isTRUE(response)) {
+        cli::cli_alert_success("Removing 2024 data at IZ/Locality level.")
+        data <- data |>
+          filter(!(grepl("S02|S99", code) & year == 2024))
+      } else {
+        cli::cli_abort("Process aborted")
+      }
+
+    }
     
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
