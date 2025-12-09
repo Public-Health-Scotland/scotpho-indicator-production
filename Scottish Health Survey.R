@@ -1,3 +1,7 @@
+# TO DO:
+# look at other indicators that could be sourced from SHeS bulk data in this script.
+# Once Phys Activity profile ready to be published the commented out lines about ind 88888 (meets MVPA recs) can be run to produce this indicator.
+
 #########################################################
 # Scottish Health Survey data import
 #########################################################
@@ -20,7 +24,7 @@
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
 #   4172: Alcohol consumption (mean weekly units)"
 ### Physical activity profile:
-#   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations"
+#   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" N.B. INDICATOR NOT PUBLISHED YET: PUT IN TECHDOC WHEN READY TO PUBLISH.
 
 ### And adding data for a further 14 indicators (12 adult mental health, 2 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
@@ -170,7 +174,7 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "Food insecurity (worried would run out of food): Yes",  # 99105                                                                        
           "Healthy weight: Healthy weight", #99106                                                                                              
           "Summary activity levels: Meets recommendations",  #99107 
-          "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #88888
+        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #88888 #NOT PUBLISHED YET
           "Self-assessed general health: Very good/Good",    # 99108                                                                             
           "Fruit & vegetable consumption: 5 portions or more",  #30013                                                                          
           "Mental wellbeing", # 30001 (mean score, as in the indicator definition)                                                                                                           
@@ -213,7 +217,7 @@ shes_df <- shes_df %>%
                                ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs", 
                                ind == "Mental wellbeing" ~ "mental_wellbeing", 
                                ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
-                               ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
+                           #    ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
                                ind == "Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" ~ "binge_drinking",
                                ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
                                ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units"),
@@ -226,7 +230,7 @@ shes_df <- shes_df %>%
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
                             indicator == "physical_activity" ~ 99107,
-                            indicator == "meets_mvpa_and_strength_recs" ~ 88888,
+                        #    indicator == "meets_mvpa_and_strength_recs" ~ 88888,
                             indicator == "binge_drinking" ~ 4170,
                             indicator == "problem_drinker" ~ 4171,
                             indicator == "weekly_alc_units" ~ 4172)) %>% 
@@ -386,7 +390,7 @@ prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-prepare_final_files(ind = "meets_mvpa_and_strength_recs")
+#prepare_final_files(ind = "meets_mvpa_and_strength_recs")
 prepare_final_files(ind = "binge_drinking")
 prepare_final_files(ind = "problem_drinker")
 prepare_final_files(ind = "weekly_alc_units")
@@ -417,7 +421,7 @@ run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
 run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
+#run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
 run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
@@ -446,7 +450,7 @@ run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "deprivation", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
+#run_qa(type = "deprivation", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
@@ -475,7 +479,7 @@ run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "popgrp", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
+#run_qa(type = "popgrp", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
