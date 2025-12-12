@@ -47,13 +47,8 @@ shes_adults_age <- shes_adults |>
   filter(split_name == "Age") |> 
   mutate(split_value = str_sub(split_value, end = -6), #remove " years" from end
          split_value = as.numeric(split_value), #convert age to numeric
-         agegp7 = case_when(between(split_value, 16, 24) ~ "16-24", 
-                            between(split_value, 25, 34) ~ "25-34",
-                            between(split_value, 35, 44) ~ "35-44",
-                            between(split_value, 45, 54) ~ "45-54",
-                            between(split_value, 55, 64) ~ "55-64",
-                            between(split_value, 65, 74) ~ "65-74",
-                            split_value >=75 ~ "75+",
+         agegp7 = case_when(between(split_value, 16, 64) ~ "16-64", 
+                            split_value >=65 ~ "65+",
                             TRUE ~ as.character(NA))) |> 
   group_by(indicator, ind_id, code, split_name, year, trend_axis, def_period, sex, agegp7) |> 
   summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop") |> #sum nums and denoms across age groups
@@ -130,13 +125,8 @@ split_main_data <- function(df, indicator, aggregated = NULL) {
 
 split_popgrps_data <- function(df, indicator){
   df <- df |> 
-    filter(indicator == {{indicator}}, split_name != "Deprivation")
-  
-  age_data <- df |> 
-    filter(split_name == "Age", !str_detect(def_period, "Aggregated"))
-  
-  sex_data <- df |> 
-    filter(split_name == "Sex", )
+    filter(indicator == {{indicator}}, split_name != "Deprivation (SIMD)"
+           )
 }
 
 
