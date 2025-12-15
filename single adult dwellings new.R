@@ -72,7 +72,7 @@ main_analysis("single_adult_dwellings_dz11", measure = "percent", geography = "d
 #For 2026 update, ideally change this section to resemble section 1c and run functions at datazone22 level
 
 dz22_sad <- sad_data_extract |> 
-  filter(year == 2022 &str_detect(datazone, "S12")) 
+  filter(year == 2024 &str_detect(datazone, "S12")) 
 
 saveRDS(dz22_sad, file.path(profiles_data_folder, "Prepared Data/single_adult_dwellings_dz22_raw.rds"))
 
@@ -104,7 +104,7 @@ dz22_sad <- readRDS(file.path(profiles_data_folder, "Test Shiny Data/single_adul
 single_adult_dwellings_final <- bind_rows(dz01_sad, dz11_sad, dz22_sad)
 
 write.csv(single_adult_dwellings_final, file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings.csv"), row.names = FALSE)
-saveRDS(single_adult_dwellings_final, file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings.csv"))
+saveRDS(single_adult_dwellings_final, file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings.rds"))
 
 ################################################################################
 #End
