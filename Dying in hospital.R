@@ -12,8 +12,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("functions/main_analysis.R") #Normal indicator functions
+source("functions/deprivation_analysis.R") # deprivation function
 
 
 ###########################################################################.
@@ -32,13 +32,13 @@ data_hosp_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                           THEN extract(year from discharge_date) 
                                           ELSE extract(year from discharge_date) -1 END as year
                                           FROM ANALYSIS.SMR01_PI z 
-                                          WHERE DISCHARGE_DATE between '1 April 2002' AND '31 March 2024' 
+                                          WHERE DISCHARGE_DATE between '1 April 2002' AND '31 March 2025'
                                           AND DISCHARGE_TYPE in (40,41,42,43) ")) %>%
   
   setNames(tolower(names(.)))
 
 # Bringing LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -76,7 +76,7 @@ all_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                     ELSE extract(year from DATE_OF_DEATH) -1 END as year
                                     FROM ANALYSIS.GRO_DEATHS_C
                                     WHERE sex <> 9
-                                    AND DATE_OF_DEATH between '1 April 2002' and '31 March 2024'")) %>% 
+                                    AND DATE_OF_DEATH between '1 April 2002' and '31 March 2025'")) %>% 
   
   setNames(tolower(names(.)))  #variables to lower case      
 
@@ -117,15 +117,12 @@ saveRDS(depr_deaths, file=paste0(data_folder, 'Prepared Data/dying_in_hosp_depr_
 ###############################################.
 
 #first analysis function  
-analyze_first(filename = "dying_in_hosp", geography = "datazone11",
-              measure = "percent", yearstart = 2002, yearend = 2024,
-              time_agg = 3)
 
-#second analysis function 
-analyze_second(filename = "dying_in_hosp", measure = "percent", 
-               time_agg = 3, ind_id = "6", year_type = "calendar")
+main_analysis(filename = "dying_in_hosp", geography = "datazone11",
+              measure = "percent", yearstart = 2002, yearend = 2024,
+              time_agg = 3, ind_id = "6", year_type = "calendar")
+  
 
 #Deprivation analysis function
-analyze_deprivation(filename="dying_in_hosp_depr", measure="percent", time_agg = 3, 
-                    yearstart= 2002, yearend=2024,   year_type = "calendar", 
-                    ind_id = 6)  
+deprivation_analysis(filename="dying_in_hosp_depr", measure="percent", time_agg = 3, 
+                    yearstart= 2002, yearend=2024,  year_type = "calendar",  ind_id = 6)  
