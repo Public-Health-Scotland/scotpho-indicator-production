@@ -25,6 +25,8 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
                                       pwd=.rs.askForPassword("SMRA Password:")))
 
 # Extract smr01 records where cases discharged type is 40,41,42,43 - all codes where patient discharged dead.
+# smr01 extracts typically run by fye (which might explain dates in extraction) but this indicator is focused on deaths which are typically published by calendar year
+# keep this as a calendar year indicator unless any particular requests made to switch to fye.
 data_hosp_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                             "SELECT  
                                           LINK_NO, DR_POSTCODE pc7, CIS_MARKER,
@@ -32,7 +34,7 @@ data_hosp_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                           THEN extract(year from discharge_date) 
                                           ELSE extract(year from discharge_date) -1 END as year
                                           FROM ANALYSIS.SMR01_PI z 
-                                          WHERE DISCHARGE_DATE between '1 April 2002' AND '31 March 2025'
+                                          WHERE DISCHARGE_DATE between '1 January 2002' AND '31 December 2024'
                                           AND DISCHARGE_TYPE in (40,41,42,43) ")) %>%
   
   setNames(tolower(names(.)))
@@ -78,7 +80,7 @@ all_deaths_raw <- as_tibble(dbGetQuery(channel, statement=
                                     ELSE extract(year from DATE_OF_DEATH) -1 END as year
                                     FROM ANALYSIS.GRO_DEATHS_C
                                     WHERE sex <> 9
-                                    AND DATE_OF_DEATH between '1 April 2002' and '31 March 2025'")) %>% 
+                                    AND DATE_OF_DEATH between '1 January 2002' and '31 December 2024'")) %>% 
   
   setNames(tolower(names(.)))  #variables to lower case      
 
