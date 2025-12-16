@@ -104,6 +104,31 @@ geo_checks <- quintile_checks %>%
   spread(geo_type, count) %>%
   ungroup()
 
+
+# step above creates a column for each quint type
+# need to create cols for quintiles not found in dataset
+# and populate with NA so that the checks below work properly
+if(hscp_quintiles == FALSE){
+  geo_checks$S37 <- NA
+}
+
+if(pd_quintiles == FALSE){
+  geo_checks$S32 <- NA
+}
+
+if(ca_quintiles == FALSE){
+  geo_checks$S12 <- NA
+}
+
+if(hb_quintiles == FALSE){
+  geo_checks$S08 <- NA
+}
+
+if(scot_quintiles == FALSE){
+  geo_checks$S00 <- NA
+}
+
+
 #flextable to check how many geogrpahy types are present each year for within scotland quintiles
 ft_sc_quin_check <- geo_checks %>%
   subset(quint_type=="sc_quin") %>%
