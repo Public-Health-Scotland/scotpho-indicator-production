@@ -67,7 +67,7 @@ final_agg <- second_result |>
 
 # Gender ratio female to male
 st_pop_sex <- final_agg %>% 
-  mutate(ratio = round_half_up(`male`/female, 2)) %>% 
+  mutate(ratio = round_half_up(male/female, 2)) %>% 
   mutate(ratio = paste0("1:", as.character(ratio))) %>% 
   select(trend_axis,numerator="male",ratio,lowci,upci,ind_id,code,year,def_period)
 
