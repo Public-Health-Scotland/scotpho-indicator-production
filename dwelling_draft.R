@@ -229,41 +229,41 @@ st_tax_band_fh <- tax_bands_final %>%
 ##save indicator outputs to workbooks
 
 #total number of households
-# create excel workbook 
-
-wb1 <- createWorkbook()
-
-# add full table to first sheet
-addWorksheet(wb1, sheetName = "total number of households")
-
-# Write the filtered table to the current sheet
-writeData(wb1, sheet = "total number of households", x =st_total_households)
-
-# add full table to second sheet
-addWorksheet(wb1, sheetName = "occupied households")
-
-# Write the filtered table to the current sheet
-writeData(wb1, sheet = "occupied households", x =st_occupied_dwellings)
-
-# add full table to third sheet
-addWorksheet(wb1, sheetName = "occupied exempt tax bands")
-
-# Write the filtered table to the current sheet
-writeData(wb1, sheet = "occupied exempt tax bands", x =st_tax_exempt)
-
-# add full table to fourth sheet
-addWorksheet(wb1, sheetName = "households tax bands A-C")
-
-# Write the filtered table to the current sheet
-writeData(wb1, sheet = "households tax bands A-C", x =st_tax_band_ac)
-
-# add full table to fifth sheet
-addWorksheet(wb1, sheetName = "households tax bands F-H")
-
-# Write the filtered table to the current sheet
-writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
-
-saveWorkbook(wb1, paste0(fp_cpp,"Outputs/South Lanarkshire", "/household_indicators.xlsx"), overwrite = TRUE)
+# # create excel workbook 
+# 
+# wb1 <- createWorkbook()
+# 
+# # add full table to first sheet
+# addWorksheet(wb1, sheetName = "total number of households")
+# 
+# # Write the filtered table to the current sheet
+# writeData(wb1, sheet = "total number of households", x =st_total_households)
+# 
+# # add full table to second sheet
+# addWorksheet(wb1, sheetName = "occupied households")
+# 
+# # Write the filtered table to the current sheet
+# writeData(wb1, sheet = "occupied households", x =st_occupied_dwellings)
+# 
+# # add full table to third sheet
+# addWorksheet(wb1, sheetName = "occupied exempt tax bands")
+# 
+# # Write the filtered table to the current sheet
+# writeData(wb1, sheet = "occupied exempt tax bands", x =st_tax_exempt)
+# 
+# # add full table to fourth sheet
+# addWorksheet(wb1, sheetName = "households tax bands A-C")
+# 
+# # Write the filtered table to the current sheet
+# writeData(wb1, sheet = "households tax bands A-C", x =st_tax_band_ac)
+# 
+# # add full table to fifth sheet
+# addWorksheet(wb1, sheetName = "households tax bands F-H")
+# 
+# # Write the filtered table to the current sheet
+# writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
+# 
+# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/household_indicators.xlsx"), overwrite = TRUE)
 
 
 
