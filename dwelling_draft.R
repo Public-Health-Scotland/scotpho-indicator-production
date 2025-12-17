@@ -69,7 +69,7 @@ summarise_regions <- function(df = dwelling_estimates, filter_col = NULL) {
 }
 
 join_tibbles <- function(df, col_name){
- # browser()
+  # browser()
   df |> 
     inner_join(select(long_lookup, datazone2011, {{col_name}}),
                by = c("datazone2011"))
@@ -92,9 +92,9 @@ household_header_row <- 3
 # read in data for years available
 household_estimates <-
   map(sheets, \(x) read_excel(household_path,
-                             sheet =x,
-                             skip = household_header_row) %>%
-           mutate(year = as.integer(x))) %>%
+                              sheet =x,
+                              skip = household_header_row) %>%
+        mutate(year = as.integer(x))) %>%
   bind_rows() |> 
   clean_names() |> 
   select(c(year, 
@@ -165,9 +165,9 @@ ctb_header_row <- 4
 # read in data for years available 
 council_tax_bands <- 
   map(sheet_names_council_tax, \(x) read_excel(ctb_path,
-                                              sheet =x,
-                                              skip = ctb_header_row) %>% 
-           mutate(year = as.integer(x)))  |>  
+                                               sheet =x,
+                                               skip = ctb_header_row) %>% 
+        mutate(year = as.integer(x)))  |>  
   bind_rows() |> 
   clean_names() |> 
   select(year,  
@@ -226,9 +226,9 @@ st_tax_band_fh <- tax_bands_final %>%
          rate = band_fh/total_dwellings*100) %>% 
   select(trend_axis, "numerator"= band_fh, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate)  
 
-##save indicator outputs to workbooks
-
-#total number of households
+# ##save indicator outputs to workbooks
+# 
+# #total number of households
 # # create excel workbook 
 # 
 # wb1 <- createWorkbook()
@@ -263,8 +263,4 @@ st_tax_band_fh <- tax_bands_final %>%
 # # Write the filtered table to the current sheet
 # writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
 # 
-# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/household_indicators.xlsx"), overwrite = TRUE)
-
-
-
-
+# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/South Lanarkshire", "/household_indicators.xlsx"), overwrite = TRUE)
