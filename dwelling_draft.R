@@ -43,39 +43,18 @@ options(scipen = 999)
 Sys.umask("006")
 
 #  ------------------------- Functions-----------------------------
-# use {{col}} as filter column then aggregate 
-# NULL causes all rows to be aggregate and area code given as Scotland code
-summarise_regions <- function(df = dwelling_estimates, filter_col = NULL) {
-  # browser()
-  arg <- enquo(filter_col)
-  
-  # if no region column then assign Scotland value
-  # otherwise group by region column
-  if(rlang::quo_is_null(arg)){
-    df <- 
-      df |> 
-      mutate(area_code = "S92000003")
-  } else {
-    df <- 
-      df |> 
-      rename(area_code = !!arg)
-  }
-  
-  df |> 
-    group_by(year,area_code) |> 
-    summarise(across(where(is.double), \(x) sum(x, na.rm = T))) |> 
-    ungroup() |> 
-    arrange(year, area_code)
+# aggregates datazones to the various region levels without deleting datazones
+aggregate_regions <- function(df){
+  df |>
+    left_join(long_lookup) |>
+    mutate(scotland = "S92000003") |>
+    pivot_longer(c(datazone2011, intzone2011, hscp_locality, ca2019, hscp2019, hb2019, scotland),
+                 names_to = "area_type", values_to = "area_code") |>
+    select(-area_type) |>
+    group_by(year, area_code) |>
+    summarise_all(sum) |>
+    ungroup()
 }
-
-join_tibbles <- function(df, col_name){
-  # browser()
-  df |> 
-    inner_join(select(long_lookup, datazone2011, {{col_name}}),
-               by = c("datazone2011"))
-}
-
-
 #################### Section 2: Data imports and cleaning ######################
 
 ## Dwelling estimates and occupants---------------------------------------------
@@ -89,7 +68,7 @@ sheets <- excel_sheets(household_path) %>%  str_subset(pattern = "^\\d+$")
 # header row 
 household_header_row <- 3
 
-# read in data for years available
+# read in data for years available and output tibble with aggregated regional values
 household_estimates <-
   map(sheets, \(x) read_excel(household_path,
                               sheet =x,
@@ -102,31 +81,13 @@ household_estimates <-
            ca2019 = council_area_code, 
            "total_dwellings" = total_number_of_dwellings,
            occupied_dwellings, 
-           occupied_dwellings_exempt_from_paying_council_tax))
+           occupied_dwellings_exempt_from_paying_council_tax)) |> 
+  aggregate_regions()
 
-#Get Scotland numbers
-household_estimates_scot <- 
-  summarise_regions(df = household_estimates)
-
-# join df with locality table and filter by region type
-aggregated_h_regions <- 
-  map(c("datazone2011",
-        "intzone2011",
-        "hscp_locality",
-        "intzone2011",
-        "hscp2019",
-        "hb2019"), 
-      \(x) household_estimates %>% 
-        join_tibbles(col_name = x) |> 
-        summarise_regions(filter_col = x)) |> 
-  bind_rows()
-
-agg_h_final <- 
-  bind_rows(household_estimates_scot, 
-            aggregated_h_regions)
 
 ##add other columns
-household_est_final <- agg_h_final |>  
+household_est_final <- 
+  household_estimates |>  
   mutate(ind_id = 30001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
@@ -175,40 +136,16 @@ council_tax_bands <-
          ca2019 = council_area_code, 
          "total_dwellings" = total_number_of_dwellings,
          council_tax_band_a:council_tax_band_h) |> 
-  na.omit()
-
-#Get Scotland numbers
-council_tax_bands_scot <- 
-  summarise_regions(df = council_tax_bands)
-
-# join df with locality table and filter by region type
-aggregated_ctb_regions <- 
-  map(c("datazone2011",
-        "intzone2011",
-        "hscp_locality",
-        "intzone2011",
-        "hscp2019",
-        "hb2019"), 
-      \(x) council_tax_bands %>% 
-        join_tibbles(col_name = x) |> 
-        summarise_regions(filter_col = x)) |> 
-  bind_rows()
-
-##final aggregation
-agg_final_tax_bands  <- 
-  bind_rows(council_tax_bands_scot,
-            aggregated_ctb_regions) |> 
-  arrange(year, area_code)
-
+  na.omit() |> 
+  aggregate_regions()
 
 ##add other columns
-tax_bands_final <- agg_final_tax_bands |>  
+tax_bands_final <- council_tax_bands |>  
   mutate(ind_id = 30001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
          lowci = NA, upci = NA, 
          rate = NA)   # blank variables are needed
-
 
 
 ## Household council tax bands
@@ -226,9 +163,9 @@ st_tax_band_fh <- tax_bands_final %>%
          rate = band_fh/total_dwellings*100) %>% 
   select(trend_axis, "numerator"= band_fh, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate)  
 
-# ##save indicator outputs to workbooks
-# 
-# #total number of households
+##save indicator outputs to workbooks
+
+#total number of households
 # # create excel workbook 
 # 
 # wb1 <- createWorkbook()
@@ -263,4 +200,5 @@ st_tax_band_fh <- tax_bands_final %>%
 # # Write the filtered table to the current sheet
 # writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
 # 
-# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/South Lanarkshire", "/household_indicators.xlsx"), overwrite = TRUE)
+# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/household_indicators.xlsx"), overwrite = TRUE)
+
