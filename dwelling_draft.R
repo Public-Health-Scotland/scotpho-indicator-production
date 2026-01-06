@@ -14,6 +14,7 @@ library(stringr)
 library(purrr)
 library(rlang)
 
+source("functions/helper functions/calculate_percent.R")
 ################################################################################-----------------------------------------------
 
 
@@ -29,13 +30,6 @@ long_lookup <- lookup %>%
   select(datazone2011,intzone2011, ca2019,hscp2019,hb2019,hscp_locality) 
 
 
-# Set rounding function
-rounding <- function(x){
-  case_when(x < 1 ~ round_half_up(x, 2),
-            between(x, 1, 1000) ~ round_half_up(x, 1),
-            x > 1000 ~ round_half_up(x, 0))
-}
-
 # Turn off scientific notation
 options(scipen = 999)
 
@@ -43,6 +37,14 @@ options(scipen = 999)
 Sys.umask("006")
 
 #  ------------------------- Functions-----------------------------
+
+# Set rounding function
+rounding <- function(x){
+  case_when(x < 1 ~ round_half_up(x, 2),
+            between(x, 1, 1000) ~ round_half_up(x, 1),
+            x > 1000 ~ round_half_up(x, 0))
+}
+
 # aggregates datazones to the various region levels without deleting datazones
 aggregate_regions <- function(df){
   df |>
@@ -55,6 +57,16 @@ aggregate_regions <- function(df){
     summarise_all(sum) |>
     ungroup()
 }
+
+# function calculates percent ci 
+calculate_percent_ci <- function(df){
+  df |> 
+    calculate_percent() |> 
+    relocate(lowci, upci, .after = rate)
+  
+}
+
+  
 #################### Section 2: Data imports and cleaning ######################
 
 ## Dwelling estimates and occupants---------------------------------------------
@@ -82,6 +94,7 @@ household_estimates <-
            "total_dwellings" = total_number_of_dwellings,
            occupied_dwellings, 
            occupied_dwellings_exempt_from_paying_council_tax)) |> 
+  na.omit() |>    # removes year datazone record with incomplete tax band entries
   aggregate_regions()
 
 
@@ -98,19 +111,35 @@ household_est_final <-
 
 # Total number of households
 st_total_households <- household_est_final  %>% 
-  select(trend_axis, "numerator"= total_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, "numerator"= total_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period)  
 
 
 # Occupied households
 st_occupied_dwellings <- household_est_final %>% 
   mutate(rate = occupied_dwellings/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= occupied_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= occupied_dwellings, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,def_period)  |> 
+  calculate_percent_ci()
 
 
 # Occupied households exempt from council tax
 st_tax_exempt <- household_est_final %>% 
   mutate(rate = occupied_dwellings_exempt_from_paying_council_tax/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= occupied_dwellings_exempt_from_paying_council_tax, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= occupied_dwellings_exempt_from_paying_council_tax, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period) |>   
+  calculate_percent_ci()
+  
 
 
 ## Household council tax bands--------------------------------------------------------
@@ -136,7 +165,7 @@ council_tax_bands <-
          ca2019 = council_area_code, 
          "total_dwellings" = total_number_of_dwellings,
          council_tax_band_a:council_tax_band_h) |> 
-  na.omit() |> 
+  na.omit() |>    # removes year datazone record with incomplete tax band entries
   aggregate_regions()
 
 ##add other columns
@@ -154,14 +183,29 @@ tax_bands_final <- council_tax_bands |>
 st_tax_band_ac <- tax_bands_final %>% 
   mutate(band_ac = council_tax_band_a + council_tax_band_b + council_tax_band_c,
          rate = band_ac/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= band_ac, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= band_ac, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period)  |> 
+  calculate_percent_ci()
 
 
 # Households in council tax bands F-H
 st_tax_band_fh <- tax_bands_final %>% 
   mutate(band_fh = council_tax_band_f + council_tax_band_g + council_tax_band_h,
          rate = band_fh/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= band_fh, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate)  
+  select(trend_axis, 
+         "numerator"= band_fh, 
+         "denominator" = total_dwellings, 
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period)  
 
 ##save indicator outputs to workbooks
 
