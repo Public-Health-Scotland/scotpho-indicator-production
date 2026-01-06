@@ -27,7 +27,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 #Looking to admissions with a main diagnosis of asthma, excluding unknown sex, by financial year. 
 #Creates one record per CIS and selects only one case per patient/year.
-data_asthma <- tbl_df(dbGetQuery(channel, statement=
+data_asthma <- as_tibble(dbGetQuery(channel, statement=
   "SELECT distinct link_no,
             MIN(age_in_years) OVER (PARTITION BY link_no) age,
             FIRST_VALUE(sex) OVER (PARTITION BY link_no
