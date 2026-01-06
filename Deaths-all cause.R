@@ -208,10 +208,10 @@ deaths_under1 <- main_analysis_result %>%
   filter(!(substr(code, 1, 3)=="S11"))
 
 # save the data as both an RDS and CSV file
-saveRDS(deaths_under1, paste0(output_folder, "/deaths_under1_shiny.rds"))
-write.csv(deaths_under1, paste0(output_folder, "/deaths_under1_shiny.csv"), row.names = FALSE)
+saveRDS(deaths_under1, paste0(profiles_data_folder, "/Data to be checked", "/deaths_under1_shiny.rds"))
+write.csv(deaths_under1, paste0(profiles_data_folder, "/Data to be checked", "/deaths_under1_shiny.csv"), row.names = FALSE)
 
-# run QA again
+# run QA again - check adp geographies removed
 run_qa(type = "main", filename="deaths_under1",test_file=FALSE)
 
 rm(postcode_lookup)
