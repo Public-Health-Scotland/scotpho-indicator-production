@@ -14,6 +14,7 @@ library(stringr)
 library(purrr)
 library(rlang)
 
+source("functions/helper functions/calculate_percent.R")
 ################################################################################-----------------------------------------------
 
 
@@ -29,13 +30,6 @@ long_lookup <- lookup %>%
   select(datazone2011,intzone2011, ca2019,hscp2019,hb2019,hscp_locality) 
 
 
-# Set rounding function
-rounding <- function(x){
-  case_when(x < 1 ~ round_half_up(x, 2),
-            between(x, 1, 1000) ~ round_half_up(x, 1),
-            x > 1000 ~ round_half_up(x, 0))
-}
-
 # Turn off scientific notation
 options(scipen = 999)
 
@@ -43,39 +37,36 @@ options(scipen = 999)
 Sys.umask("006")
 
 #  ------------------------- Functions-----------------------------
-# use {{col}} as filter column then aggregate 
-# NULL causes all rows to be aggregate and area code given as Scotland code
-summarise_regions <- function(df = dwelling_estimates, filter_col = NULL) {
-  # browser()
-  arg <- enquo(filter_col)
-  
-  # if no region column then assign Scotland value
-  # otherwise group by region column
-  if(rlang::quo_is_null(arg)){
-    df <- 
-      df |> 
-      mutate(area_code = "S92000003")
-  } else {
-    df <- 
-      df |> 
-      rename(area_code = !!arg)
-  }
-  
-  df |> 
-    group_by(year,area_code) |> 
-    summarise(across(where(is.double), \(x) sum(x, na.rm = T))) |> 
-    ungroup() |> 
-    arrange(year, area_code)
+
+# Set rounding function
+rounding <- function(x){
+  case_when(x < 1 ~ round_half_up(x, 2),
+            between(x, 1, 1000) ~ round_half_up(x, 1),
+            x > 1000 ~ round_half_up(x, 0))
 }
 
-join_tibbles <- function(df, col_name){
- # browser()
-  df |> 
-    inner_join(select(long_lookup, datazone2011, {{col_name}}),
-               by = c("datazone2011"))
+# aggregates datazones to the various region levels without deleting datazones
+aggregate_regions <- function(df){
+  df |>
+    left_join(long_lookup) |>
+    mutate(scotland = "S92000003") |>
+    pivot_longer(c(datazone2011, intzone2011, hscp_locality, ca2019, hscp2019, hb2019, scotland),
+                 names_to = "area_type", values_to = "area_code") |>
+    select(-area_type) |>
+    group_by(year, area_code) |>
+    summarise_all(sum) |>
+    ungroup()
 }
 
+# function calculates percent ci 
+calculate_percent_ci <- function(df){
+  df |> 
+    calculate_percent() |> 
+    relocate(lowci, upci, .after = rate)
+  
+}
 
+  
 #################### Section 2: Data imports and cleaning ######################
 
 ## Dwelling estimates and occupants---------------------------------------------
@@ -89,12 +80,12 @@ sheets <- excel_sheets(household_path) %>%  str_subset(pattern = "^\\d+$")
 # header row 
 household_header_row <- 3
 
-# read in data for years available
+# read in data for years available and output tibble with aggregated regional values
 household_estimates <-
   map(sheets, \(x) read_excel(household_path,
-                             sheet =x,
-                             skip = household_header_row) %>%
-           mutate(year = as.integer(x))) %>%
+                              sheet =x,
+                              skip = household_header_row) %>%
+        mutate(year = as.integer(x))) %>%
   bind_rows() |> 
   clean_names() |> 
   select(c(year, 
@@ -102,31 +93,14 @@ household_estimates <-
            ca2019 = council_area_code, 
            "total_dwellings" = total_number_of_dwellings,
            occupied_dwellings, 
-           occupied_dwellings_exempt_from_paying_council_tax))
+           occupied_dwellings_exempt_from_paying_council_tax)) |> 
+  na.omit() |>    # removes year datazone record with incomplete tax band entries
+  aggregate_regions()
 
-#Get Scotland numbers
-household_estimates_scot <- 
-  summarise_regions(df = household_estimates)
-
-# join df with locality table and filter by region type
-aggregated_h_regions <- 
-  map(c("datazone2011",
-        "intzone2011",
-        "hscp_locality",
-        "intzone2011",
-        "hscp2019",
-        "hb2019"), 
-      \(x) household_estimates %>% 
-        join_tibbles(col_name = x) |> 
-        summarise_regions(filter_col = x)) |> 
-  bind_rows()
-
-agg_h_final <- 
-  bind_rows(household_estimates_scot, 
-            aggregated_h_regions)
 
 ##add other columns
-household_est_final <- agg_h_final |>  
+household_est_final <- 
+  household_estimates |>  
   mutate(ind_id = 30001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
@@ -137,19 +111,35 @@ household_est_final <- agg_h_final |>
 
 # Total number of households
 st_total_households <- household_est_final  %>% 
-  select(trend_axis, "numerator"= total_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, "numerator"= total_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period)  
 
 
 # Occupied households
 st_occupied_dwellings <- household_est_final %>% 
   mutate(rate = occupied_dwellings/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= occupied_dwellings, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= occupied_dwellings, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,def_period)  |> 
+  calculate_percent_ci()
 
 
 # Occupied households exempt from council tax
 st_tax_exempt <- household_est_final %>% 
   mutate(rate = occupied_dwellings_exempt_from_paying_council_tax/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= occupied_dwellings_exempt_from_paying_council_tax, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= occupied_dwellings_exempt_from_paying_council_tax, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period) |>   
+  calculate_percent_ci()
+  
 
 
 ## Household council tax bands--------------------------------------------------------
@@ -165,9 +155,9 @@ ctb_header_row <- 4
 # read in data for years available 
 council_tax_bands <- 
   map(sheet_names_council_tax, \(x) read_excel(ctb_path,
-                                              sheet =x,
-                                              skip = ctb_header_row) %>% 
-           mutate(year = as.integer(x)))  |>  
+                                               sheet =x,
+                                               skip = ctb_header_row) %>% 
+        mutate(year = as.integer(x)))  |>  
   bind_rows() |> 
   clean_names() |> 
   select(year,  
@@ -175,40 +165,16 @@ council_tax_bands <-
          ca2019 = council_area_code, 
          "total_dwellings" = total_number_of_dwellings,
          council_tax_band_a:council_tax_band_h) |> 
-  na.omit()
-
-#Get Scotland numbers
-council_tax_bands_scot <- 
-  summarise_regions(df = council_tax_bands)
-
-# join df with locality table and filter by region type
-aggregated_ctb_regions <- 
-  map(c("datazone2011",
-        "intzone2011",
-        "hscp_locality",
-        "intzone2011",
-        "hscp2019",
-        "hb2019"), 
-      \(x) council_tax_bands %>% 
-        join_tibbles(col_name = x) |> 
-        summarise_regions(filter_col = x)) |> 
-  bind_rows()
-
-##final aggregation
-agg_final_tax_bands  <- 
-  bind_rows(council_tax_bands_scot,
-            aggregated_ctb_regions) |> 
-  arrange(year, area_code)
-
+  na.omit() |>    # removes year datazone record with incomplete tax band entries
+  aggregate_regions()
 
 ##add other columns
-tax_bands_final <- agg_final_tax_bands |>  
+tax_bands_final <- council_tax_bands |>  
   mutate(ind_id = 30001, #adding indicator code and chart labels
          trend_axis = year,
          def_period = paste0(year , " mid-year estimate"),
          lowci = NA, upci = NA, 
          rate = NA)   # blank variables are needed
-
 
 
 ## Household council tax bands
@@ -217,14 +183,29 @@ tax_bands_final <- agg_final_tax_bands |>
 st_tax_band_ac <- tax_bands_final %>% 
   mutate(band_ac = council_tax_band_a + council_tax_band_b + council_tax_band_c,
          rate = band_ac/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= band_ac, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate )  
+  select(trend_axis, 
+         "numerator"= band_ac, 
+         "denominator" = total_dwellings,
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period)  |> 
+  calculate_percent_ci()
 
 
 # Households in council tax bands F-H
 st_tax_band_fh <- tax_bands_final %>% 
   mutate(band_fh = council_tax_band_f + council_tax_band_g + council_tax_band_h,
          rate = band_fh/total_dwellings*100) %>% 
-  select(trend_axis, "numerator"= band_fh, rate, lowci,upci, ind_id, "code" = area_code, year,def_period,rate)  
+  select(trend_axis, 
+         "numerator"= band_fh, 
+         "denominator" = total_dwellings, 
+         rate, 
+         ind_id, 
+         "code" = area_code, 
+         year,
+         def_period)  
 
 ##save indicator outputs to workbooks
 
@@ -264,7 +245,4 @@ st_tax_band_fh <- tax_bands_final %>%
 # writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
 # 
 # saveWorkbook(wb1, paste0(fp_cpp,"Outputs/household_indicators.xlsx"), overwrite = TRUE)
-
-
-
 
