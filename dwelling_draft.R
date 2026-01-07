@@ -140,8 +140,17 @@ st_tax_exempt <- household_est_final %>%
          def_period) |>   
   calculate_percent_ci()
   
+###########################  save data to suggested .rds and .csv files ##################
+#Including both rds and csv file for now
+saveRDS(st_total_households, file = paste0(data_folder, "Data to be checked/st_total_households_shiny.rds"))
+write_csv(st_total_households, file = paste0(data_folder, "Data to be checked/st_total_households_shiny.csv"))
 
+saveRDS(st_occupied_dwellings, file = paste0(data_folder, "Data to be checked/st_occupied_dwellings_shiny.rds"))
+write_csv(st_occupied_dwellings, file = paste0(data_folder, "Data to be checked/st_occupied_dwellings_shiny.csv"))
 
+saveRDS(st_tax_exempt, file = paste0(data_folder, "Data to be checked/st_tax_exempt_shiny.rds"))
+write_csv(st_tax_exempt, file = paste0(data_folder, "Data to be checked/st_tax_exempt_shiny.csv"))
+#############################################################################################
 ## Household council tax bands--------------------------------------------------------
 
 ctb_path <- paste0(fp_cpp, "dz_pop_scotpho_scripts/dwelling_est.xlsx")
@@ -207,42 +216,10 @@ st_tax_band_fh <- tax_bands_final %>%
          year,
          def_period)  
 
-##save indicator outputs to workbooks
+###########################  save data to suggested .rds and .csv files ##################
+#Including both rds and csv file for now
+saveRDS(st_tax_band_ac, file = paste0(data_folder, "Data to be checked/st_tax_band_ac_shiny.rds"))
+write_csv(st_tax_band_ac, file = paste0(data_folder, "Data to be checked/st_tax_band_ac_shiny.csv"))
 
-#total number of households
-# # create excel workbook 
-# 
-# wb1 <- createWorkbook()
-# 
-# # add full table to first sheet
-# addWorksheet(wb1, sheetName = "total number of households")
-# 
-# # Write the filtered table to the current sheet
-# writeData(wb1, sheet = "total number of households", x =st_total_households)
-# 
-# # add full table to second sheet
-# addWorksheet(wb1, sheetName = "occupied households")
-# 
-# # Write the filtered table to the current sheet
-# writeData(wb1, sheet = "occupied households", x =st_occupied_dwellings)
-# 
-# # add full table to third sheet
-# addWorksheet(wb1, sheetName = "occupied exempt tax bands")
-# 
-# # Write the filtered table to the current sheet
-# writeData(wb1, sheet = "occupied exempt tax bands", x =st_tax_exempt)
-# 
-# # add full table to fourth sheet
-# addWorksheet(wb1, sheetName = "households tax bands A-C")
-# 
-# # Write the filtered table to the current sheet
-# writeData(wb1, sheet = "households tax bands A-C", x =st_tax_band_ac)
-# 
-# # add full table to fifth sheet
-# addWorksheet(wb1, sheetName = "households tax bands F-H")
-# 
-# # Write the filtered table to the current sheet
-# writeData(wb1, sheet = "households tax bands F-H", x =st_tax_band_fh)
-# 
-# saveWorkbook(wb1, paste0(fp_cpp,"Outputs/household_indicators.xlsx"), overwrite = TRUE)
-
+saveRDS(st_tax_band_fh, file = paste0(data_folder, "Data to be checked/st_tax_band_fh_shiny.rds"))
+write_csv(st_tax_band_fh, file = paste0(data_folder, "Data to be checked/st_tax_band_fh_shiny.csv"))
