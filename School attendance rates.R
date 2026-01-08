@@ -48,10 +48,6 @@ higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup
 # the folder where the data are saved
 attendance_folder <- paste0(profiles_data_folder, "/Received Data/School attendance/")
 
-# get list of files 
-files <- list.files(attendance_folder, pattern='*.xls*')
-# 13 files as of Sept 2025
-
 data_2006 <- "attendance-absence-2006-7.xls"                          
 data_2007 <- "attendance-absence-2007-08.xls"                        
 data_2008 <- "attendance-absence-2008-09.xls"                         
@@ -64,6 +60,7 @@ data_2018 <- "Attendance+and+Absence+201819+-+Excel+web+version.xlsx"
 data_2020 <- "Attendance+and+absence+statistics+202021+V4.xlsx"       
 data_2022 <- "Attendance+and+absence+statistics+202223+V3.xlsx"
 data_2023 <- "Attendance+and+absence+2023-24.xlsx"                   
+data_2024 <- "Attendance+and+absence+2024-25.xlsx"                   
 data_simd <- "AAE014_attendance_by_simd_final.xlsx" 
 
 
