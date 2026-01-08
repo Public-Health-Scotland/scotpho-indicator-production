@@ -154,6 +154,62 @@ import_scot_halfdays <- function(filename, sheetnum, rowrange, split_type, year)
   }
 }
 
+# Grouping these functions together to read in recent data with a similar format (from 2020)
+
+# Import recent Scottish data (since 2020)
+import_scot_recent_data <- function(filename, year, 
+                                    range_stages, range_F, range_M, range_rural, range_ethnic) {
+  
+  # Stage (P years, S years, 1ry, 2ry, Special, Total)
+  stages <- import_scot_halfdays(filename = filename, sheetnum = "1.2", rowrange = range_stages, 
+                                 split_type = "split_value", year = year) %>% mutate(split_name = "School stage")
+  
+  # Sex female
+  female <- import_scot_halfdays(filename = filename, sheetnum = "1.3", rowrange = range_F, 
+                                 split_type = "split_value", year = year) %>% 
+    filter(split_value == "Total") %>% mutate(split_value = "Female", split_name = "Sex")
+  
+  # Sex male
+  male <- import_scot_halfdays(filename = filename, sheetnum = "1.3", rowrange = range_M, 
+                               split_type = "split_value", year = year) %>% 
+    filter(split_value == "Total") %>% mutate(split_value = "Male", split_name = "Sex")
+  
+  # Urban/Rural (includes NK and Total)
+  rural <- import_scot_halfdays(filename = filename, sheetnum = "1.4", rowrange = range_rural, 
+                                split_type = "split_value", year = year) %>% mutate(split_name = "Urban/Rural classification")
+  
+  # Ethnicity (includes NK, Not disclosed, and Total)
+  ethnic <- import_scot_halfdays(filename = filename, sheetnum = "1.11", rowrange = range_ethnic, 
+                                 split_type = "split_value", year = year) %>% mutate(split_name = "Ethnicity")
+  
+  # Combine Scottish splits data
+  scot_splits <- rbind(stages, female, male, rural, ethnic)
+  
+}
+
+
+# Import recent LA data (since 2020)
+import_la_recent_data <- function(filename, year, 
+                                  range_1ry, range_2ry, range_stages, range_sex) {
+  
+  primary <- import_la_wide_data(filename = filename, sheetnum = "2.1", range = range_1ry, split_type = "NA", value_type = "rate", year = year) %>%  
+    mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
+  
+  secondary <- import_la_wide_data(filename = filename, sheetnum = "2.2", range = range_2ry, split_type = "NA", value_type = "rate", year = year) %>%  
+    mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
+  
+  stage <- import_la_wide_data(filename = filename, sheetnum = "2.9", range = range_stages, split_type = "split_value", value_type = "rate", year = year) %>% 
+    mutate(split_name = "School stage") 
+  
+  sex <- import_la_wide_data(filename = filename, sheetnum = "2.10", range = range_sex, split_type = "split_value", value_type = "rate", year = year) %>% 
+    mutate(split_name = "Sex") 
+  
+  # Combine LA splits data
+  la_splits <- rbind(primary, secondary, stage, sex) 
+  
+}
+
+
 
 # B. Importing and processing older format data (2009/10 to 2018/19) ----
 
@@ -367,134 +423,37 @@ run_qa(type = "deprivation", filename="school_attendance", test_file=FALSE)
 ##################################
 
 # Requires going through the spreadsheets to extract year-specific data.
-# 2023/24, 2022/23 and 2020/21 are similar format, although slight differences meant I haven't been able to make a global import function for these files. 
-# 2009/10 to 2018/19 use a different format, but it is more standard, so the functions above enable more automated data import.
+# Since 2020/21: similar format, so can use the global import functions defined above for these recent files. 
+# 2009/10 to 2018/19 use a different format, so these use different global import functions.
+# When adding new data: check what ranges need to be read in, and include these in the appropriate function argument.
 
-##############
-# 2023/24 data
-##############
-
-# Import Scottish data
-
-# Stage (P years, S years, 1ry, 2ry, Special, Total)
-scot_stages_2023_all <- import_scot_halfdays(filename = data_2023, sheetnum = "1.2", rowrange = c(5:10), 
-                                             split_type = "split_value", year = "2023/24") %>% mutate(split_name = "School stage")
-# Sex
-scot_2023_F <- 
-  import_scot_halfdays(filename = data_2023, sheetnum = "1.3", rowrange = c(5:10), split_type = "split_value", year = "2023/24") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Female", split_name = "Sex")
-scot_2023_M <- 
-  import_scot_halfdays(filename = data_2023, sheetnum = "1.3", rowrange = c(22:27), split_type = "split_value", year = "2023/24") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Male", split_name = "Sex")
-
-# Urban/Rural (includes NK and Total)
-scot_rural_2023 <- 
-  import_scot_halfdays(filename = data_2023, sheetnum = "1.4", rowrange = c(5:10), split_type = "split_value", year = "2023/24") %>% mutate(split_name = "Urban/Rural classification")
-
-# Ethnicity (includes NK, Not disclosed, and Total)
-scot_ethnic_2023 <- 
-  import_scot_halfdays(filename = data_2023, sheetnum = "1.11", rowrange = c(5:10), split_type = "split_value", year = "2023/24") %>% mutate(split_name = "Ethnicity")
-
-# Combine Scottish splits data
-scot_2023 <- rbind(scot_rural_2023, scot_ethnic_2023, scot_stages_2023_all, scot_2023_F, scot_2023_M) 
-
-# Import LA data 
-
-la_1ry_2023 <- import_la_wide_data(filename = data_2023, sheetnum = "2.1", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2023/24") %>%  mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
-la_2ry_2023 <- import_la_wide_data(filename = data_2023, sheetnum = "2.2", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2023/24") %>%  mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
-la_2023_stage <- import_la_wide_data(filename = data_2023, sheetnum = "2.9", range = c(2:37), split_type = "split_value", value_type = "rate", year = "2023/24") %>% mutate(split_name = "School stage") # Z NEEDS TO BE NA AS THERE ARE NO SPECIAL SCHOOLS IN SOME AREAS
-la_2023_sex_all <- import_la_wide_data(filename = data_2023, sheetnum = "2.10", range = c(4:39), split_type = "split_value", value_type = "rate", year = "2023/24") %>% mutate(split_name = "Sex") 
-
-# Combine LA splits data
-la_2023 <- rbind(la_2023_stage, la_2023_sex_all, la_1ry_2023, la_2ry_2023) 
-
-# Drop intermediate files
-rm(la_2023_stage, la_2023_sex_all, la_1ry_2023, la_2ry_2023)
-rm(scot_rural_2023, scot_ethnic_2023, scot_stages_2023_all,  scot_2023_F, scot_2023_M)
-
-
-
-##############
-# 2022/23 data
-##############
+##########################
+# 2020/21 to 2024/25 data
+##########################
 
 # Import Scottish data
 
-# Stage (P years, S years, 1ry, 2ry, Special, Total)
-scot_stages_2022_all <- import_scot_halfdays(filename = data_2022, sheetnum = "1.2", rowrange = c(5:10),split_type = "split_value", year = "2022/23") %>% mutate(split_name = "School stage")
-# Sex
-scot_2022_F <- 
-  import_scot_halfdays(filename = data_2022, sheetnum = "1.3", rowrange = c(5:10), split_type = "split_value", year = "2022/23") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Female", split_name = "Sex")
-scot_2022_M <- 
-  import_scot_halfdays(filename = data_2022, sheetnum = "1.3", rowrange = c(22:27), split_type = "split_value", year = "2022/23") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Male", split_name = "Sex")
-# Urban/Rural (includes NK and Total)
-scot_rural_2022 <- import_scot_halfdays(filename = data_2022, sheetnum = "1.4", rowrange = c(5:10), split_type = "split_value", year = "2022/23") %>% mutate(split_name = "Urban/Rural classification")
+scot_2024 <- import_scot_recent_data(data_2024, year="2024/25", 
+                                     range_stages=c(5:10), range_F=c(5:10), range_M=c(22:27), range_rural=c(5:10), range_ethnic=c(5:10))
+scot_2023 <- import_scot_recent_data(data_2023, year="2023/24", 
+                                     range_stages=c(5:10), range_F=c(5:10), range_M=c(22:27), range_rural=c(5:10), range_ethnic=c(5:10))
+scot_2022 <- import_scot_recent_data(data_2022, year="2022/23", 
+                                     range_stages=c(5:10), range_F=c(5:10), range_M=c(22:27), range_rural=c(5:10), range_ethnic=c(5:10))
+scot_2020 <- import_scot_recent_data(data_2020, year="2020/21", 
+                                     range_stages=c(7:15), range_F=c(7:15), range_M=c(31:39), range_rural=c(7:15), range_ethnic=c(7:15))
 
-# Ethnicity (includes NK, Not disclosed, and Total)
-scot_ethnic_2022 <- import_scot_halfdays(filename = data_2022, sheetnum = "1.11", rowrange = c(5:10), split_type = "split_value", year = "2022/23") %>% mutate(split_name = "Ethnicity")
 
-# Combine the counts for all splits
-scot_2022 <- rbind(scot_rural_2022, scot_ethnic_2022, scot_stages_2022_all, scot_2022_F, scot_2022_M) 
 
 # Import LA data 
 
-# 2022/23 LA data (percents from wide)
-la_1ry_2022 <- import_la_wide_data(filename = data_2022, sheetnum = "2.1", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2022/23") %>%  mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
-la_2ry_2022 <- import_la_wide_data(filename = data_2022, sheetnum = "2.2", range = "R2C1:R37C2", split_type = "NA", value_type = "rate", year = "2022/23") %>%  mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
-la_2022_stage <- import_la_wide_data(filename = data_2022, sheetnum = "2.9", range = c(2:36), split_type = "split_value", value_type = "rate", year = "2022/23") %>% mutate(split_name = "School stage") 
-la_2022_sex_all <- import_la_wide_data(filename = data_2022, sheetnum = "2.10", range = c(4:38), split_type = "split_value", value_type = "rate", year = "2022/23") %>% mutate(split_name = "Sex") 
-
-# combine the LA splits percent data
-la_2022 <- rbind(la_2022_stage, la_2022_sex_all, la_1ry_2022, la_2ry_2022) 
-
-# Drop intermediate dfs
-rm(la_2022_stage, la_2022_sex_all, la_1ry_2022, la_2ry_2022)
-rm(scot_rural_2022, scot_ethnic_2022, scot_stages_2022_all, scot_2022_F, scot_2022_M)
-
-
-
-##############
-# 2020/21 data
-##############
-
-# Import Scottish data
-
-# Stage (P years, S years, 1ry, 2ry, Special, Total)
-scot_stages_2020_all <- import_scot_halfdays(filename = data_2020, sheetnum = "1.2", rowrange = c(7:15), split_type = "split_value", year = "2020/21") %>% mutate(split_name = "School stage")
-# Sex
-scot_2020_F <- 
-  import_scot_halfdays(filename = data_2020, sheetnum = "1.3", rowrange = c(7:15), split_type = "split_value", year = "2020/21") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Female", split_name = "Sex")
-scot_2020_M <- 
-  import_scot_halfdays(filename = data_2020, sheetnum = "1.3", rowrange = c(31:39), split_type = "split_value", year = "2020/21") %>% 
-  filter(split_value == "Total") %>% mutate(split_value = "Male", split_name = "Sex")
-
-# Urban/Rural (includes NK and Total)
-scot_rural_2020 <- import_scot_halfdays(filename = data_2020, sheetnum = "1.4", rowrange = c(7:15), split_type = "split_value", year = "2020/21") %>% mutate(split_name = "Urban/Rural classification")
-
-# Ethnicity (includes NK, Not disclosed, and Total)
-scot_ethnic_2020 <- import_scot_halfdays(filename = data_2020, sheetnum = "1.11", rowrange = c(7:15), split_type = "split_value", year = "2020/21") %>% mutate(split_name = "Ethnicity")
-
-# Combine the counts for all splits
-scot_2020 <- rbind(scot_rural_2020, scot_ethnic_2020, scot_stages_2020_all, scot_2020_F, scot_2020_M) 
-
-# Import LA data 
-
-# 2020/21 LA data (percents from wide)
-la_1ry_2020 <- import_la_wide_data(filename = data_2020, sheetnum = "2.1", range = "R4C1:R37C2", split_type = "NA", value_type = "rate", year = "2020/21") %>%  mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
-la_2ry_2020 <- import_la_wide_data(filename = data_2020, sheetnum = "2.2", range = "R4C1:R37C2", split_type = "NA", value_type = "rate", year = "2020/21") %>%  mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
-la_2020_stage <- import_la_wide_data(filename = data_2020, sheetnum = "2.9", range = c(4:37), split_type = "split_value", value_type = "rate", year = "2020/21") %>% mutate(split_name = "School stage") 
-la_2020_sex_all <- import_la_wide_data(filename = data_2020, sheetnum = "2.10", range = c(4:37), split_type = "split_value", value_type = "rate", year = "2020/21") %>% mutate(split_name = "Sex") 
-
-# Combine the LA splits percent data
-la_2020 <- rbind(la_2020_stage, la_2020_sex_all, la_1ry_2020, la_2ry_2020) 
-
-# Drop intermediate dfs
-rm(scot_rural_2020, scot_ethnic_2020, scot_stages_2020_all, scot_2020_F, scot_2020_M)
-rm(la_2020_stage, la_2020_sex_all, la_1ry_2020, la_2ry_2020)
-
+la_2024 <- import_la_recent_data(filename = data_2024, year = "2024/25", 
+                                 range_1ry = "R2C1:R36C2", range_2ry = "R2C1:R36C2", range_stages = c(2:36), range_sex = c(4:38))
+la_2023 <- import_la_recent_data(filename = data_2023, year = "2023/24", 
+                                 range_1ry = "R2C1:R37C2", range_2ry = "R2C1:R37C2", range_stages = c(2:37), range_sex = c(4:39))
+la_2022 <- import_la_recent_data(filename = data_2022, year = "2022/23", 
+                                 range_1ry = "R2C1:R37C2", range_2ry = "R2C1:R37C2", range_stages = c(2:36), range_sex = c(4:38))
+la_2020 <- import_la_recent_data(filename = data_2020, year = "2020/21", 
+                                 range_1ry = "R4C1:R37C2", range_2ry = "R4C1:R37C2", range_stages = c(4:37), range_sex = c(4:37))
 
 
 #####################
