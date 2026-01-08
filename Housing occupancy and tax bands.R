@@ -62,7 +62,7 @@ Sys.umask("006")
 # Path to your Excel file (***need to change path***)
 household_path <- paste0(fp_cpp, "dz_pop_scotpho_scripts/household_estimates.xlsx")
 
-## identify sheet names 
+## identify sheet names that only contain numerics (years)
 sheets <- excel_sheets(household_path) %>%  str_subset(pattern = "^\\d+$")
 
 # header row (*** May need adjusting for every new version of file ***) 
@@ -144,7 +144,7 @@ write_csv(st_tax_exempt, file = paste0(data_folder, "Data to be checked/st_tax_e
 # Path to your Excel file (***need to change path***)
 ctb_path <- paste0(fp_cpp, "dz_pop_scotpho_scripts/dwelling_est.xlsx")
 
-# identify sheet names 
+## identify sheet names that only contain numerics (years) 
 sheet_names_council_tax <- excel_sheets(ctb_path) %>%
   str_subset(pattern = "^\\d+$")
 
