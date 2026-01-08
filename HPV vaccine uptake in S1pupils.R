@@ -42,10 +42,19 @@ library(rio) # for importing/exporting multiple files
 # ~~~~~~~~~~~~~~~~~~~~~~
 # Read data ----
 # ~~~~~~~~~~~~~~~~~~~~~~
-folder <- file.path(profiles_data_folder, "Received Data", "HPV Vaccine uptake in S1")
-filename <- "hpv_S1_2015_2024"
-data <- readRDS(file.path(folder, filename))
 
+# folder where rds data files saved
+folder <- file.path(profiles_data_folder, "Received Data", "HPV Vaccine uptake in S1")
+
+# data provided over the years
+# note 'hpv_s1_2015_2024.rds' file contains multiple years worth of data - this was the first data request for this indicator
+# all subsequent files contain 1 year of data
+files <- list.files(folder, full.names = TRUE)
+print(files)
+
+# read in all files and combine 
+# note setting trust = TRUE when reading RDS files avoids warning in rio package as of V2.0.0
+data <- rio::import_list(files, rbind = TRUE, trust = TRUE) 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,17 +78,17 @@ export_list(df_list, file.path(profiles_data_folder, "Prepared Data", paste0("%s
 
 # Uptake in females only 
 main_analysis(filename = "Female_hpv_uptake_s1", ind_id = 99145,  measure = "percent", 
-              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2014, yearend = 2023)
+              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2014, yearend = 2024)
 
 
 # Uptake in all pupils 
 main_analysis(filename = "Both_hpv_uptake_s1", ind_id = 99146,  measure = "percent", 
-              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2023)
+              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2024)
 
 
 # Uptake in males only (created only to be used in popgroups file to go alongside ind_id 99146)
 main_analysis(filename = "Male_hpv_uptake_s1", ind_id = 99146,  measure = "percent", 
-              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2023)
+              geography = "datazone11", year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2024)
 
 
 
@@ -89,12 +98,12 @@ main_analysis(filename = "Male_hpv_uptake_s1", ind_id = 99146,  measure = "perce
 
 # Uptake in females only 
 deprivation_analysis(filename = "Female_hpv_uptake_s1", ind_id = 99145,  measure = "percent", 
-                    year_type = "school", time_agg = 3, yearstart = 2014, yearend = 2023)
+                    year_type = "school", time_agg = 3, yearstart = 2014, yearend = 2024)
 
 
 # Uptake in all pupils 
 deprivation_analysis(filename = "Both_hpv_uptake_s1", ind_id = 99146,  measure = "percent", 
-                     year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2023)
+                     year_type = "school", time_agg = 3, yearstart = 2019, yearend = 2024)
 
 
 
