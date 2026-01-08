@@ -168,18 +168,20 @@ saveRDS(simd_all, paste0(profiles_data_folder, "/Data to be checked/school_exclu
 # Numerators:
 
 # exclusions by council area (time series from 2007/08)
-ca_exclusions <- read_xlsx(exclusions2022, sheet = "Table 2.1", skip = 3) |> 
+ca_exclusions <- read_xlsx(exclusions2024, sheet = "Table 2.1", skip = 3) |> 
   head(32) %>% #select first 32 rows (excludes all LA totals, as we get these for a longer time series from sheet Table 1.1)
-  mutate_at(c(2:11), as.numeric) %>% # some suppressed values converted to NA
-  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") 
+  mutate_at(-1, as.numeric) %>% # some suppressed values converted to NA
+  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") %>%
+  mutate(year = substr(year, 1, 7)) #remove the notes from some year headings
 
 # exclusions scotland level (time series from 2002/03)
-scotland_exclusions <- read_xlsx(exclusions2022, sheet = "Table 1.1", skip = 3) |> 
+scotland_exclusions <- read_xlsx(exclusions2024, sheet = "Table 1.1", skip = 3) |> 
   filter(`Exclusion type` == "All cases of exclusion") |> #excludes breakdown of exclusion types
-  mutate_at(c(2:16), as.numeric) %>% 
+  mutate_at(-1, as.numeric) %>% 
   select(-`Exclusion type`) |> 
   mutate("Local Authority" = "All local authorities") %>%
-  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") 
+  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") %>%
+  mutate(year = substr(year, 1, 7)) #remove the notes from some year headings
 
 
 # Denominators:
