@@ -78,6 +78,7 @@ exclusions_folder <- paste0(profiles_data_folder, "/Received Data/School Exclusi
 
 # counts of exclusions (numerators)
 exclusions2022 <- paste0(exclusions_folder, "Exclusions_202223.xlsx") # Numerators for Scotland and LAs
+exclusions2024 <- paste0(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx")
 
 # SIMD data 2010-2023 (counts and denominators): could be used for Scotland and CA aggregates too.
 exclusions_simd <- paste0(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") 
