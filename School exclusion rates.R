@@ -86,7 +86,7 @@ exclusions_simd <- paste0(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx")
 # pupil counts (denominators)
 census2022 <- paste0(exclusions_folder, "Pupils_Census_2022.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
 census2020 <- paste0(exclusions_folder, "Pupils_in_Scotland_2020.xlsx") # For SIMD denominators for 2020
-
+census2024 <- paste0(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx")
 
 #################################
 ## 2a. Import SIMD data 
