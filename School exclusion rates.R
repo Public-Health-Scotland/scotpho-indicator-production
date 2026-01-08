@@ -187,9 +187,9 @@ scotland_exclusions <- read_xlsx(exclusions2024, sheet = "Table 1.1", skip = 3) 
 # Denominators:
 
 # total pupils by council area 
-total_pupils <- read_xlsx(census2022, sheet = "Table 5.2", skip = 4) |>  
+total_pupils <- read_xlsx(census2024, sheet = "Table 5.2", skip = 3) |>  
   head(33) |> # we want 'All local authorities' rather than 'Scotland' here, as the Scotland figure includes Grant-aided schools that are not included in the exclusions stats.
-  mutate_at(c(2:23), as.numeric) %>% 
+  mutate_at(-1, as.numeric) %>% 
   pivot_longer(-c(`Local Authority`), names_to = "year", values_to = "denominator") %>%
   mutate(year = as.numeric(substr(year, 1, 4)))
 
@@ -211,7 +211,7 @@ exclusions_ca_scot <- rbind(ca_exclusions, scotland_exclusions) %>%
 
 # add higher geogs
 exclusions_higher <- exclusions_ca_scot %>%
-  filter(code!="S00000001") %>%
+  filter(code!="S00000001") %>% # keeps just CA data
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
 
