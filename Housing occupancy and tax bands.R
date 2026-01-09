@@ -4,6 +4,17 @@
 # zones from Scotland to datazones.
 # Percentage values of each indicator are relative to Total Households values
 
+# The data files
+# household_estimates.xlsx & dwelling_est.xlsx were downloaded from NRS (9/1/26) 
+# https://www.nrscotland.gov.uk/publications/small-area-statistics-on-households-and-dwellings/
+
+# Indicator tibbles generated in this script are 
+# * st_total_households # total household stats
+# * st_occupied_dwellings # occupied dwelling stats relative to total household data
+# * st_tax_exempt # council tax exempt properties relative to total household data
+# * st_tax_band_ac # council tax band a-c properties relative to total household data
+# * st_tax_band_fh # council tax band f-h properties relative to total household data
+
 ##### 2. Packages/Dependancies -----------------------------------------------
 # load 
 library(readr)
