@@ -61,24 +61,24 @@ sad_data_extract <- bind_rows(read_csv("https://statistics.gov.scot/slice/observ
 #If we use CA figures instead we can produce all geographies other than intermediate zones and localities
 
 dz01_sad <- sad_data_extract |> 
-  filter(year < 2014 & str_detect(datazone, "S12"))
+  filter(year <= 2014 & str_detect(datazone, "S12"))
 
 saveRDS(dz01_sad, file.path(profiles_data_folder, "Prepared Data/single_adult_dwellings_dz01_raw.rds"))
 
 main_analysis("single_adult_dwellings_dz01", measure = "percent", geography = "council",
-              year_type = "calendar", ind_id = 20504, time_agg = 1, yearstart = 2007, yearend = 2013,
+              year_type = "calendar", ind_id = 20504, time_agg = 1, yearstart = 2007, yearend = 2014,
               QA = FALSE)
 
 ################################.
 # 1c - Create DZ11 file ----
 ################################.
 dz11_sad <- sad_data_extract |> 
-  filter(year >= 2014 & year <= 2023 & str_detect(datazone, "S01")) #filter for relevant years and datazone only
+  filter(year >= 2015 & year <= 2023 & str_detect(datazone, "S01")) #filter for relevant years and datazone only
 
 saveRDS(dz11_sad, file.path(profiles_data_folder, "Prepared Data/single_adult_dwellings_dz11_raw.rds"))
 
-main_analysis("single_adult_dwellings_dz11", measure = "percent", geography = "datazone11",
-              year_type = "calendar", ind_id = 20504, time_agg = 1, yearstart = 2014, yearend = 2023,
+main_analysis(filename = "single_adult_dwellings_dz11", measure = "percent", geography = "datazone11",
+              year_type = "calendar", ind_id = 20504, time_agg = 1, yearstart = 2015, yearend = 2023,
               QA = FALSE)
 
 ################################.
