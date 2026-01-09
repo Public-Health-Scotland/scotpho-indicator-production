@@ -81,48 +81,25 @@ split_main_data <- function(df, indicator, aggregated = NULL) {
   df
 }
 
-# split_depr_data <- function(df, indicator){
-#   df <- df |> 
-#     filter(indicator == {{indicator}}, split_name == "Deprivation (SIMD)",
-#            str_detect(def_period, "Survey year "), sex == "Total") |> 
-#     rename(quintile = split_value) |> 
-#     mutate(quint_type = "sc_quin") |> 
-#     select(-split_name, -denominator, )
-#   
-#   #Add population data
-#   
-#   ind_id <- df$ind_id
-#   
-#    df <- df |> 
-#     add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, indicator)  
-#   
-#   #Calculate inequalities measures
-#     calculate_inequality_measures() #|> # call helper function that will calculate sii/rii/paf
-#     select(-c(indicator,overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
-#   
-# }
-# 
-# df <- shes_adults 
-# indicator = "meeting_muscle_strengthening_recommendations"
-# 
-# dataset = df
-# 
-# mus_rec_depr <- split_depr_data(shes_adults, indicator = "meeting_muscle_strengthening_recommendations")
-# 
-# 
-# mus_rec_depr <- shes_adults |> 
-#   filter(indicator == "meeting_muscle_strengthening_recommendations", split_name == "Deprivation (SIMD)",
-#          str_detect(def_period, "Survey year ")) |> 
-#   rename(quintile = split_value) |> 
-#   mutate(quint_type = "sc_quin") |> 
-#   select(-split_name) 
-# 
-#   ind_id <- unique(mus_rec_depr$ind_id) # identify the indicator number   
-# 
-# mus_rec_depr <- mus_rec_depr |> 
-#   add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, ind_name = "meeting_muscle_strengthening_recommendations",) 
-# 
+split_depr_data <- function(df, indicator, filename){
+  df <- df |>
+    filter(indicator == {{indicator}}, split_name == "Deprivation (SIMD)",
+           str_detect(def_period, "Survey year "), sex == "Total") |>
+    rename(quintile = split_value) |>
+    mutate(quint_type = "sc_quin") |>
+    select(-split_name)
 
+  ind_id <- df$ind_id #set indicator ID
+
+  #Calculate inequalities measures
+    df <- calculate_inequality_measures(df) # call helper function that will calculate sii/rii/paf
+    
+    saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_depr_ineq.rds")))
+    
+    return(df)
+}
+
+  
 split_popgrps_data <- function(df, indicator){
   df <- df |> 
     filter(indicator == {{indicator}}, split_name != "Deprivation (SIMD)"
@@ -130,6 +107,19 @@ split_popgrps_data <- function(df, indicator){
 }
 
 
+
+split_popgrps_data <- function(df, indicator, filename){
+  df <- df |> 
+    filter(indicator == {{indicator}}, split_name != "Deprivation") |> #filter on correct indicator and all splits
+    select(code, year, numerator, denominator, split_name, split_value, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
+    mutate(ind_id = {{ind_id}}) #add ind_id col
+  
+  saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny_popgrp.rds")))
+  write.csv(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny_popgrp.csv")), row.names = FALSE)
+  
+  return(df)
+  
+}
 
 mus_rec_popgrps <- split_popgrps_data(shes_adults,  "meeting_muscle_strengthening_recommendations")
 

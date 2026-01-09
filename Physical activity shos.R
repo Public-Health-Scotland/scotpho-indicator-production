@@ -68,7 +68,7 @@ split_depr_data <- function(df, indicator, ind_id, filename){
   #   filter(quint_type == "sc_quin") |> 
   #   filter(!(year %in% c("2020", "2021")))
   
- calculate_inequality_measures(df)
+ df <- calculate_inequality_measures(df)
  
  saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_depr_ineq.rds")))
  
@@ -90,6 +90,11 @@ split_popgrps_data <- function(df, indicator, ind_id, filename){
   return(df)
     
 }
+
+df = shos_pa
+indicator = "anysportnowalk"
+ind_id = "14005"
+filename = "sport_participation"
 
 ################################################################################
 #4. Adults participating in recreational walking (14004)
