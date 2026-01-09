@@ -28,8 +28,11 @@ library(tidyr) #for pivoting
 ################################################################################
 #2. Read in pre-processed data and tidy up
 
-shos_pa <- read.csv(file.path(profiles_data_folder, "/Received Data/Physical Activity/Scottish Household Survey/shs_pa.csv")) |> 
+shos_pa <- read.csv(file.path(profiles_data_folder, "/Received Data/Physical Activity/Scottish Household Survey/SHoS_PA.csv")) |> 
   rename(areaname = spatial.unit) |> #rename to match lookup
+  rename(split_name = split.name,
+         split_value = split.value) |> 
+  select(-X) |> 
   mutate(areaname = str_replace(areaname, "&", "and")) #replace ampersands w/ "and"
   
 #Read in lookup to get S-codes
@@ -52,7 +55,34 @@ split_main_data <- function(df, indicator, ind_id, filename) {
   
   saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny.rds")))
   write.csv(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny.csv")), row.names = FALSE)
+  
+  return(df)
 }
+
+#Deprivation split function
+
+split_depr_data <- function(df, indicator, ind_id, filename){
+  df <- df |> 
+    filter(indicator == {{indicator}}, split_name == "Deprivation") |> #filter on correct indicator and deprivation data only
+    rename(quintile = split_value) |> #rename quintiles 
+    mutate(quint_type = "sc_quin") |> #add quintile type col
+    select(-split_name, -denominator, -areaname, -spatial.scale) |> #drop unneeded cols
+    mutate(ind_id = {{ind_id}}) #add a new col with specified indicator ID
+  
+  df <- df |> #Add population figures
+    add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, indicator)
+  
+  calculate_inequality_measures(df)
+  
+}
+
+df <- shos_pa
+
+anysportnowalk <- split_depr_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
+
+#Issue is either with deciles which I don't have
+#Or possibly HB/CA quintiles which I also don't have
+
 
 ################################################################################
 #4. Adults participating in recreational walking (14004)
