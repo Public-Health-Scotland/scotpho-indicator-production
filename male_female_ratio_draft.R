@@ -1,5 +1,10 @@
+##### Section 1: Notes -----------------------------------------------------------------
+# This script extracts the total number of male and female of all ages from the population to calculate male:female ratio.
 
-##################### Section 1: Set up #########################
+#Indicator tibbles generated in this script are 
+# * st_pop_sex # male:female ratio
+
+##### 2. Packages/Dependancies -----------------------------------------------
 
 # load 
 library(readr)
@@ -14,18 +19,7 @@ library(tidylog)
 library(stringr)
 library(purrr)
 
-
-# Set file paths for folders
-fp_cpp <- "//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/"
-
-# All areas lookup
-lookup <- read_rds("//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/dz_pop_scotpho_scripts/DataZone11_All_Geographies_Lookup.rds")
-
-
-# Long lookup with all codes of interest
-long_lookup <- lookup %>% 
-  select(datazone2011,intzone2011, ca2019,hscp2019,hb2019,hscp_locality) 
-
+##### 3.  Functions ------------------------------------------------------------
 
 # Set rounding function
 rounding <- function(x){
@@ -34,16 +28,27 @@ rounding <- function(x){
             x > 1000 ~ round_half_up(x, 0))
 }
 
+##### Section 4 : Data imports and cleaning ######################
+
+# Set file paths for folders (***need to change path***)
+fp_cpp <- "//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/"
+
+# All areas lookup (***need to change path***)
+lookup <- read_rds("//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/dz_pop_scotpho_scripts/DataZone11_All_Geographies_Lookup.rds")
+
+# Long lookup with all codes of interest
+long_lookup <- lookup %>% 
+  select(datazone2011,intzone2011, ca2019,hscp2019,hb2019,hscp_locality) 
+
 # Turn off scientific notation
 options(scipen = 999)
 
 # System unmask function so files have read-write permissions
 Sys.umask("006")
 
+##### 5.  male:female indicator----------------------------------------
 
-#################### Section 2: Data imports and cleaning ######################
-
-# Read in populations data 
+# Read in populations data (***need to change path***)
 allages_pop <- readRDS(paste0("//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/dz_pop_scotpho_scripts/DZ11_pop_allages_SR.rds")) |>  
   rename(numerator = denominator) 
 
@@ -71,4 +76,8 @@ st_pop_sex <- final_agg %>%
   mutate(ratio = paste0("1:", as.character(ratio))) %>% 
   select(trend_axis,numerator="male",ratio,lowci,upci,ind_id,code,year,def_period)
 
+###########################  save data to suggested .rds and .csv files ##################
+#Including both rds and csv file for now
+saveRDS(st_pop_sex, file = paste0(data_folder, "Data to be checked/st_pop_sex_shiny.rds"))
+write_csv(st_pop_sex, file = paste0(data_folder, "Data to be checked/st_pop_sex_shiny.csv"))
 
