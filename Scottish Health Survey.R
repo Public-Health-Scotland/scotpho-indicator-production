@@ -16,7 +16,7 @@
 #   30003: General health questionnaire (GHQ-12) *
 #   30001: Mental wellbeing (WEMWBS)*
 ### CYP mental health indicators:
-#   30111: Children meeting PA recommendations (>1 hour every day) (NB. not in statistics.scot.gov data quite yet: try end 2025/early 2026?)
+#   30111: Children meeting PA recommendations (>1 hour every day) (NB. not in statistics.scot.gov data quite yet: try end 2025/early 2026? Used to come from HBSC, but changed to SHeS in 2026)
 ### Alcohol profile indicators:
 #   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
@@ -45,7 +45,6 @@
 # CYP:
 # 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
 # 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
-# 30111 % children meeting 1 hour PA per day
 # 99117	Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
 # 30170	Peer relationship problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the peer relationship problems scale of the Strengths and Difficulties Questionnaire (SDQ)
 # 30172	Emotional symptoms - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 4-10) on the emotional symptoms scale of the Strengths and Difficulties Questionnaire (SDQ)
@@ -134,6 +133,7 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
   mutate(split_value = ifelse(split_name=="Age" & split_value!="Total",
                               paste0(split_value, " y"), # add y for years to age groups
                               split_value)) %>%
+  mutate(split_name = ifelse(split_name=="Age", "Age group", split_name)) %>%
   
   # keep the required columns
   select(code, ind = `Scottish Health Survey Indicator`, trend_axis, split_name, split_value, stat, value = Value) %>%
