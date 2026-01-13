@@ -24,7 +24,7 @@
 ### Physical activity profile:
 #   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations"
 
-### And adding data for a further 15 indicators (12 adult mental health, 3 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
+### And adding data for a further 21 indicators (12 adult mental health, 9 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
 
@@ -106,6 +106,7 @@ SHeS_CONDITIONS <- read_parquet(paste0(profiles_data_folder, "/Received Data/Sco
 
 # Pre-processed UKDS data (UK data service)
 # The data read in below is prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
+# Last updated Jan 2026 (SHeS data up to 2022)
 shes_from_ukds <- readRDS(paste0(profiles_data_folder, "/Prepared Data/shes_raw.rds")) %>%
   mutate(code = as.character(code))
 
@@ -162,17 +163,17 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
 unique(shes_df$ind)
 # look through to check which ones we need to keep
 
-# check LLTI data: 
-# there are 2 similarly-named indicators for LLTI. 
-# they have overlapping temporal coverage, so need to look at the splits, geographies, and year-ranges involved
-llti <- shes_df %>% 
-  filter(ind %in% c("Long-term conditions: Limiting long-term conditions", 
-                    "Long-term illness: Limiting long-term illness")) %>%
-  mutate(geog = substr(code, 1, 3)) %>%
-  select(ind, split_name, geog, year_diff) %>%
-  unique() %>% 
-  pivot_wider(names_from = split_name, values_from = year_diff) 
-# Conclusion: "Long-term conditions" is the one to keep, "Long-term illness" just available for annual Scotland data, for fewer years than the LT conditions data.
+# # check LLTI data: 
+# # there are 2 similarly-named indicators for LLTI. 
+# # they have overlapping temporal coverage, so need to look at the splits, geographies, and year-ranges involved
+# llti <- shes_df %>% 
+#   filter(ind %in% c("Long-term conditions: Limiting long-term conditions", 
+#                     "Long-term illness: Limiting long-term illness")) %>%
+#   mutate(geog = substr(code, 1, 3)) %>%
+#   select(ind, split_name, geog, year_diff) %>%
+#   unique() %>% 
+#   pivot_wider(names_from = split_name, values_from = year_diff) 
+# # Conclusion: "Long-term conditions" is the one to keep, "Long-term illness" just available for annual Scotland data, for fewer years than the LT conditions data.
 
 # List all the indicators we want to keep:
 keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women",  # binge drinking: M/F/Total (ind_id 4166, 4167, 4168) (NB. original ScotPHO indicator excluded non-drinkers from denominator)                   
@@ -260,8 +261,8 @@ shes_df <- shes_df %>%
 shes_df <- shes_from_ukds %>%
   rbind(shes_df)
 
-table(shes_df$ind_id, useNA="always") # 27 in total, no NA
-table(shes_df$indicator, useNA="always") # 27 in total, no NA
+table(shes_df$ind_id, useNA="always") # 33 in total, no NA
+table(shes_df$indicator, useNA="always") # 33 in total, no NA
 table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
@@ -286,10 +287,10 @@ availability <- shes_df %>%
   select(ind_id, indicator, geog, years, split_name) %>%
   unique() %>%
   group_by(ind_id, indicator, geog, split_name) %>%
-  summarise(count = n()) %>%
+  summarise(count = n()) %>% # whether available for single/aggregated years only (count == 1), or both (count==2)
   ungroup()
 ftable(availability$indicator, availability$geog, availability$split_name, availability$count)
-# main_data needs to select data at the level of aggregation of any lower geographies, if present.
+# main_data needs to select data at the level of aggregation of any lower geographies, if present, so that trend charts use the same trend_axis labels
 
 # make a list of the indicators this affects:
 indicators_w_lower_geogs <- availability %>%
@@ -402,7 +403,13 @@ prepare_final_files(ind = "anxiety_symptoms")
 prepare_final_files(ind = "deliberate_selfharm")   
 prepare_final_files(ind = "attempted_suicide")
 prepare_final_files(ind = "work-life_balance")
+prepare_final_files(ind = "cyp_pa_over_1h_per_day")
 prepare_final_files(ind = "cyp_sdq_totaldiffs") #note SDQ = strengths and difficulties questionnaire, indicator name "Children's behavioural and emotional difficulties"
+prepare_final_files(ind = "cyp_sdq_peer")
+prepare_final_files(ind = "cyp_sdq_conduct")
+prepare_final_files(ind = "cyp_sdq_hyperactivity")
+prepare_final_files(ind = "cyp_sdq_emotional")
+prepare_final_files(ind = "cyp_sdq_prosocial")
 
 
 # Run QA reports 
@@ -421,9 +428,6 @@ run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
-run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
-run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
 run_qa(type = "main", filename = "support_network", test_file = FALSE)  
 run_qa(type = "main", filename = "stress_at_work", test_file = FALSE) 
@@ -434,6 +438,16 @@ run_qa(type = "main", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)    
 run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE) 
 run_qa(type = "main", filename = "work-life_balance", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_prosocial", test_file = FALSE)
+
 
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
@@ -450,9 +464,6 @@ run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PA
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "support_network", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "stress_at_work", test_file = FALSE)
@@ -463,6 +474,15 @@ run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
+run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
@@ -479,9 +499,6 @@ run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE)
 run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
 run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
 run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
 run_qa(type = "popgrp", filename = "support_network", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "stress_at_work", test_file = FALSE)
@@ -492,6 +509,15 @@ run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
+run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
 
 #END
