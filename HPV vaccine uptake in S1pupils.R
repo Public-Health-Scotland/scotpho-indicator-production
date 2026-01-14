@@ -64,8 +64,32 @@ data <- rio::import_list(files, rbind = TRUE, trust = TRUE)
 # create year column using starting year of school year
 data$year <- data$schoolyear_ending - 1
 
+
+# select required columns 
+data <- data |>
+  select(datazone2011, year, sex, numerator, denominator)
+
+
+# Data are derived based on school/class year, with other characteristics (such as data zone) 
+# appended subsequently. There are some earlier years where e.g. a school may not have yet offered the vaccine
+# and so some DZs may appear missing from the dataset i.e. entry/row entirely missing from recieved data file
+# (unless the child was offered the vaccine elsewhere - which may then result in small numbers for some DZs)
+
+# Need to add rows for those missing DZs/year combinations and fill with 0
+# to ensure rolling average calculation is done correctly.
+# This is required as for some years the missing datazones make up entire localities
+data <- data |>
+  group_by(sex) |> # group by sex as we only expect some 
+  complete(year, datazone2011, fill = list(numerator = 0, denominator = 0)) |>
+  ungroup()
+  
+
 # split data by sex column into a list of 3 dataframes (male/female/both)
 df_list <- split(data, data$sex)
+
+
+
+
 
 # save the 3 dfs
 export_list(df_list, file.path(profiles_data_folder, "Prepared Data", paste0("%s", "_hpv_uptake_s1_raw.rds")))
