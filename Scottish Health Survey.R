@@ -336,6 +336,15 @@ prepare_final_files <- function(ind){
     filter((geog=="S00" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
              (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
     select(-indicator, -sex, -geog) %>%
+    mutate(split_value = factor(split_value, 
+                                levels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
+                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
+                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
+                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"),
+                                labels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
+                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
+                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
+                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"))) %>%
     arrange(code, year, split_name, split_value)
   
   # Save
@@ -385,7 +394,7 @@ prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-prepare_final_files(ind = "meets_mvpa_and_strength_recs")
+#prepare_final_files(ind = "meets_mvpa_and_strength_recs")
 prepare_final_files(ind = "binge_drinking")
 prepare_final_files(ind = "problem_drinker")
 prepare_final_files(ind = "weekly_alc_units")
