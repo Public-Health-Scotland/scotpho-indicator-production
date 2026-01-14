@@ -22,7 +22,7 @@
 # NOTES:
 # Data for 2020 and 2021 are not included in the timeseries as they are not comparable 
 # with other years due to changes in the mode and delivery of the survey for those years because of the pandemic. 
-# Latest year available is 2023.
+# Latest year available is 2024.
 # Where the base is under 50, the associated figures have been left blank.
 # For the credit tables specifically, the percentages are very low as the actual 
 # numbers for the credit309 options are low. As such, they will likely not be useful for your 
@@ -49,7 +49,7 @@ area_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")
 
 ### 1 - Read in SHoS data from spreadsheet ----
 
-file <- "/Scottish Household Survey/Tables_2025.xlsx"
+file <- "/Scottish Household Survey/PHS Mental Health Indicator Tables 2026.xlsx"
 
 vars <- c("SERV1H", "HK2", "COMMBEL", "RB1", "SOCIAL32", 
           "GREENUSE13", "VOLUN", "SOCIAL2",
