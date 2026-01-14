@@ -5,7 +5,6 @@
 # * st_pop_sex # male:female ratio
 
 ##### 2. Packages/Dependancies -----------------------------------------------
-
 # load 
 library(readr)
 library(janitor)
