@@ -489,7 +489,7 @@ If indicator dataset contains numerators - run a check that summing the relevant
 
 ```{r, echo=FALSE}
 
-if(ca==FALSE | board == FALSE){
+if(ca==FALSE | board == FALSE | numerators_present == FALSE){
 "Either council and/or NHS board numerators are absent from dataset so can't check for agreement"
 } else if(ca==TRUE & numerators_present == TRUE & nrow(check_council)>0){ 
     flextable(check_council)
