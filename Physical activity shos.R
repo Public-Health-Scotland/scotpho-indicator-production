@@ -91,45 +91,65 @@ split_popgrps_data <- function(df, indicator, ind_id, filename){
     
 }
 
-df = shos_pa
-indicator = "anysportnowalk"
-ind_id = "14005"
-filename = "sport_participation"
-
 ################################################################################
 #4. Adults participating in recreational walking (14004)
 
 rec_walk <- split_main_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
+run_qa("recreational_walking", type = "main")
+
 rec_walk_depr <- split_depr_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
+run_qa("recreational_walking_depr", type = "deprivation")
+
 rec_walk_popgrps <- split_popgrps_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
+run_qa("recreational_walking", type = "popgrp")
+
 
 ################################################################################
 #5. Adults participating in sport (14005)
 
 anysportnowalk <- split_main_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
-anysportnowalk_depr <- split_depr_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
-anysportnowalk_popgrps <- split_popgrps_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
+run_qa("sport_participation", type = "main")
 
+anysportnowalk_depr <- split_depr_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
+run_qa("sport_participation_depr", type = "deprivation")
+
+anysportnowalk_popgrps <- split_popgrps_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
+run_qa("sport_participation", type = "popgrp")
 ################################################################################
 #6. Adults who visit the outdoors at least once per week (14008)]
 
 outdoors <- split_main_data(shos_pa, indicator = "outdoor", ind_id = "14008", filename = "weekly_outdoors_visits")
+run_qa("weekly_outdoors_visits", type = "main")
+
 outdoors_depr <- split_depr_data(shos_pa, indicator = "outdoor", ind_id = "14008", filename = "weekly_outdoors_visits")
+run_qa("weekly_outdoors_visits_depr", type = "deprivation")
+
 outdoors_popgrps <- split_popgrps_data(shos_pa, indicator = "outdoor", ind_id = "14008", filename = "weekly_outdoors_visits")
+run_qa("weekly_outdoors_visits", type = "popgrp")
 
 ################################################################################
 #7. Satisfaction with local sport and leisure facilities (14009)
 
-leisure_satisfaction <- split_main_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction_shiny")
-leisure_satisfaction_depr <- split_depr_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction_shiny")
-leisure_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction_shiny")
+leisure_satisfaction <- split_main_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction")
+run_qa("leisure_satisfaction", type = "main")
+
+leisure_satisfaction_depr <- split_depr_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction")
+run_qa("leisure_satisfaction_depr", type = "deprivation")
+
+leisure_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction")
+run_qa("leisure_satisfaction", type = "popgrp")
 
 ################################################################################
 #8. Satisfaction with local parks and open spaces (14010)
 
 parks_satisfaction <- split_main_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
+run_qa("parks_satisfaction", type = "main")
+
 parks_satisfaction_depr <- split_depr_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
+run_qa("parks_satisfaction_depr", type = "deprivation")
+
 parks_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
+run_qa("parks_satisfaction", type = "popgrp")
 
 ################################################################################
 #End
