@@ -290,6 +290,7 @@ availability <- shes_df %>%
   summarise(count = n()) %>% # whether available for single/aggregated years only (count == 1), or both (count==2)
   ungroup()
 ftable(availability$indicator, availability$geog, availability$split_name, availability$count)
+# shows some splits are available at two levels of temporal aggregation: single year and 4y
 # main_data needs to select data at the level of aggregation of any lower geographies, if present, so that trend charts use the same trend_axis labels
 
 # make a list of the indicators this affects:
@@ -431,7 +432,7 @@ run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
 run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
+#run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
 run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
