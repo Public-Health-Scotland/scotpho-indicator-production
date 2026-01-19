@@ -1,5 +1,14 @@
-#install.packages("PHEindicatormethods")
+##########################################################.
+## Reading in Scotland level only 3 year life expectancy data for deprivation quintile and decile
+## This series comes from NRS publication excel file which accompanied 2022-2024 release
+## uses abridged methodology so slightly different scotland total figures may be seen to headline scotland figures
+## https://www.nrscotland.gov.uk/publications/life-expectancy-in-scotland-2022-2024/
 
+## only the quintile level data loaded in to SG open data platform so this data is being read in from publication excel files
+
+## ScotPHO profile deprivation
+
+# Also only scotland data available and was read in to allow creation 
 
 ###############################################.
 ## Packages/Filepaths/Functions ----

@@ -1,3 +1,6 @@
+########################################################################################################################.
+## This script contains some packages, filepaths and functions required when calculating small are life expectancy.
+
 ###############################################.
 ## Packages and filepaths ----
 ###############################################.
