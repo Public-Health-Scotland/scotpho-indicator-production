@@ -29,7 +29,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 #Extracting data on deaths of Scottish residents with a diagnosis of road traffic accident (RTA)
 #and admissions with admission type of RTA(32), excluding records with unknown sex and age.
-road_accidents <- tbl_df(dbGetQuery(channel, statement=
+road_accidents <- as_tibble(dbGetQuery(channel, statement=
   "SELECT link_no, year_of_registration year, age, SEX sex_grp, POSTCODE pc7, null as cis_marker
   FROM ANALYSIS.GRO_DEATHS_C
   WHERE date_of_registration between '1 January 2002' and '31 December 2024'
