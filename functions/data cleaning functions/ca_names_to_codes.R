@@ -18,6 +18,7 @@ ca_names_to_codes <- function(df, council_area){
                                 {{council_area}} == "Eilean Siar" ~ "Na h-Eileanan Siar",
                                 {{council_area}} == "Western Isles" ~ "Na h-Eileanan Siar", 
                                 {{council_area}} == "Comhairle nan Eilean Siar" ~ "Na h-Eileanan Siar",
+                                {{council_area}} == "Na h - Eilanan Siar" ~ "Na h-Eileanan Siar",
                                 {{council_area}} == "Edinburgh City" ~ "City of Edinburgh", 
                                 {{council_area}} == "Edinburgh, City of" ~ "City of Edinburgh",
                                 {{council_area}} == "Orkney" ~ "Orkney Islands", 
