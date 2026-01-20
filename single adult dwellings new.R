@@ -126,9 +126,9 @@ deprivation_analysis(filename = "single_adult_dwellings", yearstart = 2007, year
 ##########################################################.
 
 # Read in results from main analysis 
-dz01_sad <- readRDS(file.path(profiles_data_folder, "Test Shiny Data/single_adult_dwellings_dz01_shiny.rds"))
-dz11_sad <- readRDS(file.path(profiles_data_folder, "Test Shiny Data/single_adult_dwellings_dz11_shiny.rds"))
-dz22_sad <- readRDS(file.path(profiles_data_folder, "Test Shiny Data/single_adult_dwellings_dz22_shiny.rds"))
+dz01_sad <- readRDS(file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings_dz01_shiny.rds"))
+dz11_sad <- readRDS(file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings_dz11_shiny.rds"))
+dz22_sad <- readRDS(file.path(profiles_data_folder, "Data to be checked/single_adult_dwellings_dz22_shiny.rds"))
 
 # combine into one single file 
 single_adult_dwellings_final <- bind_rows(dz01_sad, dz11_sad, dz22_sad)
