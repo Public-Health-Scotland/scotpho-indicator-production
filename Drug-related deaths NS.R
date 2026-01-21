@@ -19,6 +19,10 @@
 
 # PART 1 - Read in received data
 # PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions
+# PART 3 - Run both sexes drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Libraries, functions and filepaths ----
@@ -100,7 +104,6 @@ drug_deaths <- drug_deaths |>
 # Checking totals match with NRS publication.
 drug_deaths |> group_by(year) |> count() |> View()
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,11 +120,15 @@ drug_deaths_ca <- left_join(drug_deaths, postcode_lookup, "pc7") |>
   group_by(year, ca, sex_grp, age_grp) |>  
   summarize(numerator = n()) |> ungroup()
 
-saveRDS(drug_deaths_ca, file=paste0(data_folder, 'Prepared Data/drug_deaths_raw_NS.rds')) # Both sexes
-saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(data_folder, 'Prepared Data/drug_deaths_male_raw_NS.rds')) # Males
-saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(data_folder, 'Prepared Data/drug_deaths_female_raw_NS.rds')) # Females
+saveRDS(drug_deaths_ca, file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_raw_NS.rds')) # Both sexes
+saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_male_raw_NS.rds')) # Males
+saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_female_raw_NS.rds')) # Females
 
-# Create drug-related deaths deprivation basefile (to be fed into deprivaion_analysis() function) and save to 'Prepared Data' folder.
+# Create data frames of male / female basefiles so can view data
+drug_deaths_ca_male <- readRDS(paste0(profiles_data_folder, "/Prepared Data/DRD 2025 Test NS/drug_deaths_male_raw_NS.rds"))
+drug_deaths_ca_female <- readRDS(paste0(profiles_data_folder, "/Prepared Data/DRD 2025 Test NS/drug_deaths_female_raw_NS.rds"))
+
+# Create drug-related deaths deprivation basefile (to be fed into deprivation_analysis() function) and save to 'Prepared Data' folder.
 # (Aggregate data by datazone)
 drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") |> 
   select(year, datazone2001, datazone2011, sex_grp, age_grp) |>
@@ -130,5 +137,25 @@ drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") |>
   group_by(year, datazone, sex_grp, age_grp) |>
   summarize(numerator = n()) |> ungroup()
 
-saveRDS(drug_deaths_depr, file=paste0(data_folder, 'Prepared Data/drug_deaths_depr_raw_NS.rds'))
+saveRDS(drug_deaths_depr, file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_depr_raw_NS.rds'))
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 3 - Run both sexes drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Line 108 Drug-related mortality.R
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
