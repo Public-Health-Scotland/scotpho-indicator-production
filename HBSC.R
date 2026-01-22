@@ -68,7 +68,8 @@
 # 30163	Children experiencing discrimination from adults =	% of pupils who report often or very often being treated unfairly by adults because of their sex, ethnicity, or socioeconomic status. 
 # 30164	Children thinking their neighbourhood is a good place to live =	% of pupils who think that the area in which they live is a good place to live
 
-# now sourced from SHeS instead of HBSC:
+# now sourced from SHeS instead of HBSC (although percentages are quite different due to different info source and way in which questions answered):
+# SHeS deemed to be a more comprehensive (covered more ages) sample and perhaps more reliable question on which to base activity levels on
 # 30111	Children meeting physical activity guidelines =	% of pupils reporting doing 1 hour or more of physical activity every day
 
 
