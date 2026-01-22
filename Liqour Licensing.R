@@ -14,10 +14,10 @@
 # Popgroups: N
 
 #Update process:
-#- Check if this publication has been added to statistics.gov or opendatascot. 
+#Check if this publication has been added to statistics.gov or opendatascot. 
 #If not, download from https://www.gov.scot/publications/scottish-liquor-licensing-statistics/
-#Save as CSV file
-#Double check layout of file is same as last year
+#Save as CSV file with appropriate sheet - should have personal licences and premise licences with on and off splits for CAs
+#Double check layout of file is same as last year. If the index of the important rows has changed then lines 51, 52 and 60 may need changing slightly
 #Change list of years vector in Part 1 to include latest year
 #Change year end parameters in analysis functions
 
@@ -37,8 +37,7 @@ liquor_folder <- file.path(profiles_data_folder, "Received Data/Liquor Licences"
 
 files <- list.files(liquor_folder, pattern = "\\.csv$", full.names = TRUE)
 
-dfs <- map(files, read_csv)  # Reads in each year as a list. Takes a few seconds to run.
-
+dfs <- map(files, read_csv)  # Reads in each year as a list. Takes a few seconds to run
 years <- 2010:2022 #update this each year
 
 ################################################################################
@@ -65,7 +64,6 @@ df3 <- map(df2, ~ .x |>
              set_names(ca_col_names))|> #set the ca names to be the column names based on vector
   bind_rows() #join each year of data into a df
 
-
 ################################################################################
 #####  Part 3) Tidy up the data --------------------------------
 ################################################################################
@@ -84,7 +82,8 @@ df4 <- df3 |>
   select(-.pos) #If 2 identical measures in a year, prepend "Personal" to the second one
 
 df5 <- pivot_longer(df4, cols = -c(year, measure), names_to = "areaname", values_to = "numerator") |>  #pivoting council names longer. cols=-2 pivots everything except the first 2 cols year and measure
-  mutate(numerator = dplyr::na_if(numerator, "-"), #need to reference dplyr as it's being masked by another package
+  mutate(numerator = dplyr::na_if(numerator, "-"), #converting NAs
+         numerator = dplyr::na_if(numerator, "n/a"), #need to reference dplyr as it's being masked by another package
          numerator = str_replace(numerator, ",", ""), #remove commas from numbers
          numerator = as.numeric(numerator)) #convert numerator to numeric type
 
@@ -95,11 +94,7 @@ df6 <- pivot_wider(df5, id_cols = c(areaname, year), names_from = measure, value
          premise = `Licences in force`,
          on_premise = `(a) on sale`,
          off_premise = `(b) off sale`,
-         both = `(c) both`) |> 
-  mutate(on_premise = if_else(!is.na(both), on_premise + both, on_premise),
-         off_premise = if_else(!is.na(both), off_premise + both, off_premise)) |> 
-  select(-both) #add both - The totals in the original files are on + off + both for total. 
-#So I think both needs to be added to on and off, with the understanding that the sum of off and on will exceed the total
+         both = `(c) both`) 
 
 ################################################################################
 #####  Part 4) Personal licences in force (4140) --------------
@@ -111,10 +106,10 @@ saveRDS(personal_licences, file.path(profiles_data_folder, "Prepared Data/person
 
 main_analysis("personal_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4140", time_agg = 1, yearstart = 2010,
-              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
 ################################################################################
-#####  Part 4) Premise licences in force - total (4144) --------------
+#####  Part 5) Premise licences in force - total (4144) --------------
 ################################################################################ 
 premises_total <- df6 |> select(code, year, premise) |> 
   rename(numerator = premise)
@@ -126,7 +121,7 @@ main_analysis("premise_licences", measure = "crude", geography = "council",
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
 ################################################################################
-#####  Part 5) Premise licences in force - on trade (4114) --------------
+#####  Part 6) Premise licences in force - on trade (4114) --------------
 ################################################################################ 
 premises_on <- df6 |> select(code, year, on_premise) |> 
   rename(numerator = on_premise)
@@ -138,7 +133,7 @@ main_analysis("premise_licences_on_trade", measure = "crude", geography = "counc
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
 ################################################################################
-#####  Part 6) Premise licences in force - on trade (4139) --------------
+#####  Part 7) Premise licences in force - on trade (4139) --------------
 ################################################################################
 premises_off <- df6 |> select(code, year, off_premise) |> 
   rename(numerator = off_premise) |> 
@@ -150,6 +145,20 @@ main_analysis("premise_licences_off_trade", measure = "crude", geography = "coun
               year_type = "financial", ind_id = "4139", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
+################################################################################
+#####  Part 8) Premise licences in force - on trade (xxxx) --------------
+################################################################################
+#Currently only available for 2019 and 2022
 
+# premises_both <- df6 |> select(code, year, both) |> 
+#   rename(numerator = both) |> 
+#   filter(year == 2019 | year == 2022)
+# 
+# saveRDS(premises_both, file.path(profiles_data_folder, "Prepared Data/premise_licences_both_on_off_trade_raw.rds"))
+# 
+# main_analysis("premise_licences_both_on_off_trade", measure = "crude", geography = "council",
+#               year_type = "financial", ind_id = "xxxx", time_agg = 1, yearstart = 2019,
+#               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+# 
 
 ####End.
