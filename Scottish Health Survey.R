@@ -1,13 +1,13 @@
 # TO DO:
 # look at other indicators that could be sourced from SHeS bulk data in this script.
-# Once Phys Activity profile ready to be published the commented out lines about ind 88888 (meets MVPA recs) can be run to produce this indicator.
+# look at whether the data published for the mus_rec PA indicator  on the SHeS dashboard should be used where available
 
 #########################################################
 # Scottish Health Survey data import
 #########################################################
 
 
-### Update ScotPHO indicators that can be sourced from published Scottish Health Survey data: 
+### Update the 13 ScotPHO indicators that can be sourced from published Scottish Health Survey data: 
 
 ### Care and Wellbeing indicators: 
 #   99105: Food insecurity
@@ -26,11 +26,12 @@
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
 #   4172: Alcohol consumption (mean weekly units)"
 ### Physical activity profile:
-#   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" N.B. INDICATOR NOT PUBLISHED YET: PUT IN TECHDOC WHEN READY TO PUBLISH.
+#   14001:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" N.B. INDICATOR NOT PUBLISHED YET: PUT IN TECHDOC WHEN READY TO PUBLISH.
 
-### And adding data for a further 21 indicators (12 adult mental health, 9 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
+### And adding data for a further 24 indicators (13 adult, 11 CYP) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
+### (NB mus_rec (Adults meeting muscle strengthening guidelines) is also published in the open data: look at whether the published data should be used where available)
 
 # Adult:
 # 30002 = life_sat	Mean score on the question "All things considered, how satisfied are you with your life as a whole nowadays?" (variable LifeSat).  N.B. This indicator is also available from the ScotPHO Online Profiles (national and council area level, but not by SIMD). Life satisfaction is measured by asking participants to rate, on a scale of 0 to 10, how satisfied they are with their life in general. On the scale, 0 represented 'extremely dissatisfied' and 10 'extremely satisfied' (the intervening scale points were numbered but not labelled). 
@@ -45,6 +46,7 @@
 # 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 # 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
 # 30026 = rg17a_new	Percentage of adults who provide 20 or more hours of care per week to a member of their household or to someone not living with them, excluding help provided in the course of employment. Participants were asked whether they look after, or give any regular help or support to, family members, friends, neighbours or others because of a long-term physical condition, mental ill-health or disability; or problems related to old age. Caring which is done as part of any paid employment is not asked about. From 2014 onwards, this question explicitly instructed respondents to exclude caring as part of paid employment. The variables used to construc this indicator were RG15aNew (Do you provide any regular help or care for any sick, disabled, or frail people?) and RG17aNew (How many hours do you spend each week providing help or unpaid care for him/her/them?). 
+# 14002 - adt10gp_tw_LOW - Adults with very low activity levels. Also in CWB, AMH profiles. 2011 CMO guidelines recommend 150 mins/week MVPA.
 
 # CYP:
 # 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
@@ -55,7 +57,16 @@
 # 30173	Conduct problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the conduct problems scale of the Strengths and Difficulties Questionnaire (SDQ)
 # 30174	Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
 # 30175	Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
+# 14003 - c00sum7s - Children with very low activity levels
+# 14006 - spt1ch - Children participating in sport
+# 14007 - ch30plyg - Children engaging in active play
 
+# NB. These indicators won't be produced until the PA profile is ready to be published:
+# 14001 - mus_rec - Adults meeting muscle strengthening guidelines. 2011 CMO guidelines recommend 2x 30 minute muscle strengthening sessions per week
+# 14002 - adt10gp_tw_LOW - Adults with very low activity levels. Also in CWB, AMH profiles. 2011 CMO guidelines recommend 150 mins/week MVPA.
+# 14003 - c00sum7s - Children with very low activity levels
+# 14006 - spt1ch - Children participating in sport
+# 14007 - ch30plyg - Children engaging in active play
 
 # The published data are downloaded from statistics.gov.scot:
 # https://statistics.gov.scot/data/search?search=scottish+health+survey
@@ -109,7 +120,7 @@ SHeS_CONDITIONS <- read_parquet(paste0(profiles_data_folder, "/Received Data/Sco
 
 # Pre-processed UKDS data (UK data service)
 # The data read in below is prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
-# Last updated Jan 2026 (SHeS data up to 2022)
+# Last updated Jan 2026 (SHeS data up to 2023)
 shes_from_ukds <- readRDS(paste0(profiles_data_folder, "/Prepared Data/shes_raw.rds")) %>%
   mutate(code = as.character(code))
 
@@ -186,7 +197,7 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "Food insecurity (worried would run out of food): Yes",  # 99105                                                                        
           "Healthy weight: Healthy weight", #99106                                                                                              
           "Summary activity levels: Meets recommendations",  #99107 
-        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #88888 #NOT PUBLISHED YET
+        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #14001 #NOT PUBLISHED YET
           "Self-assessed general health: Very good/Good",    # 99108                                                                             
           "Fruit & vegetable consumption: 5 portions or more",  #30013                                                                          
           "Mental wellbeing", # 30001 (mean score, as in the indicator definition)                                                                                                           
@@ -229,7 +240,7 @@ shes_df <- shes_df %>%
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
                             indicator == "physical_activity" ~ 99107,
-                        #    indicator == "meets_mvpa_and_strength_recs" ~ 88888,
+                        #    indicator == "meets_mvpa_and_strength_recs" ~ 14001,
                             indicator == "binge_drinking" ~ 4170,
                             indicator == "problem_drinker" ~ 4171,
                             indicator == "weekly_alc_units" ~ 4172)) %>% 
@@ -262,18 +273,26 @@ shes_df <- shes_df %>%
 
 ###------------------------------------------------------------------------------------------------
 ### Now add the UKDS data:
+# (and standardise the split_names and split_values)
 shes_df <- shes_from_ukds %>%
-  rbind(shes_df)
+  rbind(shes_df) %>%
+  mutate(split_name=case_when(split_name=="Age" ~ "Age group",
+                              split_name=="Long-term Illness" ~ "Long-term illness",
+                              TRUE ~ split_name)) %>%
+  # published data refers to long term 'conditions' but the this is used interchangeably with 'illness' in the reporting. Here we standardise these:
+  mutate(split_value=case_when(split_value %in% c("No long-term conditions", "No Long-term Illness") ~ "No long-term illness",
+                               split_value %in% c("Non-limiting long-term conditions", "Limiting Long-term Illness") ~ "Limiting long-term illness",
+                               split_value %in% c("Limiting long-term conditions", "Non-limiting Long-term Illness") ~ "Non-limiting long-term illness",
+                               TRUE ~ split_value))
 
-table(shes_df$ind_id, useNA="always") # 33 in total, no NA
-table(shes_df$indicator, useNA="always") # 33 in total, no NA
+table(shes_df$ind_id, useNA="always") # 37 in total, no NA
+table(shes_df$indicator, useNA="always") # 37 in total, no NA
 table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$sex, useNA="always") # M/F/total, no NA
 table(shes_df$split_name, useNA="always") # 5 different splits, no NA
 table(shes_df$split_value, useNA="always") # correct, no NA
-
 
 
 
@@ -304,11 +323,17 @@ indicators_w_lower_geogs <- availability %>%
   unique()
 indicators_w_lower_geogs <- as.vector(indicators_w_lower_geogs$indicator)
 
-# which splits are available for single and aggregated years? Want to select single years for these...
-splits_w_single_and_aggd_years <- availability %>%
-  filter(count==2) %>%
-  select(indicator, geog, split_name) %>%
-  unique()
+
+### TEMPORARY STEP: drop the indicators we're not publishing yet: the PA profile
+
+# meeting_muscle_strengthening_recommendations  14001
+# adults_very_low_activity                      14002
+# children_very_low_activity                    14003
+# children_participating_sport                  14006
+# children_active_play                          14007
+
+shes_df <- shes_df %>%
+  filter(!(ind_id %in% c(14001, 14002, 14003, 14006, 14007)))
 
 
 ### 7. Prepare final files -----
@@ -399,7 +424,6 @@ prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-#prepare_final_files(ind = "meets_mvpa_and_strength_recs")
 prepare_final_files(ind = "binge_drinking")
 prepare_final_files(ind = "problem_drinker")
 prepare_final_files(ind = "weekly_alc_units")
@@ -425,6 +449,13 @@ prepare_final_files(ind = "cyp_sdq_hyperactivity")
 prepare_final_files(ind = "cyp_sdq_emotional")
 prepare_final_files(ind = "cyp_sdq_prosocial")
 
+# # run these when ready to publish PA profile
+# prepare_final_files(ind = "meeting_muscle_strengthening_recommendations")
+# prepare_final_files(ind = "adults_very_low_activity")
+# prepare_final_files(ind = "children_very_low_activity")
+# prepare_final_files(ind = "children_participating_sport")
+# prepare_final_files(ind = "children_active_play")
+
 
 # Run QA reports 
 # main data
@@ -436,7 +467,6 @@ run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
 run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-#run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
 run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
@@ -462,6 +492,13 @@ run_qa(type = "main", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
 run_qa(type = "main", filename = "cyp_sdq_emotional", test_file = FALSE)
 run_qa(type = "main", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
+# # run these when ready to publish PA profile
+# run_qa(type = "main", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
+
 
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
@@ -472,7 +509,6 @@ run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-#run_qa(type = "deprivation", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
@@ -498,6 +534,13 @@ run_qa(type = "deprivation", filename = "cyp_sdq_hyperactivity", test_file = FAL
 run_qa(type = "deprivation", filename = "cyp_sdq_emotional", test_file = FALSE)
 run_qa(type = "deprivation", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
+# # run these when ready to publish PA profile
+# run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
+
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
@@ -507,7 +550,6 @@ run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-#run_qa(type = "popgrp", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
@@ -532,6 +574,13 @@ run_qa(type = "popgrp", filename = "cyp_sdq_conduct", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_emotional", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_prosocial", test_file = FALSE)
+
+# # run these when ready to publish PA profile
+# run_qa(type = "popgrp", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
 
 
 #END
