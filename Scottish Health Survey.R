@@ -27,7 +27,7 @@
 ### And adding data for a further 26 indicators (14 adult, 12 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
-### (NB mus_rec is also published on the SHeS dashboard I think: look at whether the published data should be used where available)
+### (NB mus_rec (Adults meeting muscle strengthening guidelines) is also published in the open data: look at whether the published data should be used where available)
 
 # 30002 = life_sat	Mean score on the question "All things considered, how satisfied are you with your life as a whole nowadays?" (variable LifeSat).  N.B. This indicator is also available from the ScotPHO Online Profiles (national and council area level, but not by SIMD). Life satisfaction is measured by asking participants to rate, on a scale of 0 to 10, how satisfied they are with their life in general. On the scale, 0 represented 'extremely dissatisfied' and 10 'extremely satisfied' (the intervening scale points were numbered but not labelled). 
 # 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
@@ -208,15 +208,6 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
 )                                                                    
 
 
-
-
-#[152] "Alcohol Use Disorders Identification Test (AUDIT): Harmful drinking (score 16-19)"                                            
-#[153] "Alcohol Use Disorders Identification Test (AUDIT): Hazardous drinking (score 8-15)"                                           
-#[154] "Alcohol Use Disorders Identification Test (AUDIT): Low risk drinking/abstinence (score 0-7)"                                  
-#[155] "Alcohol Use Disorders Identification Test (AUDIT): Possible alcohol dependence (score 20+)"   
-
-
-
 # keep the required indicators
 shes_df <- shes_df %>%
   filter(ind %in% keep)
@@ -247,7 +238,7 @@ shes_df <- shes_df %>%
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
                             indicator == "physical_activity" ~ 99107,
-                        #    indicator == "meets_mvpa_and_strength_recs" ~ 14001, # not published yet
+                        #    indicator == "meeting_muscle_strengthening_recommendations" ~ 14001, # not published yet
                             indicator == "binge_drinking" ~ 4170,
                             indicator == "problem_drinker" ~ 4171,
                             indicator == "weekly_alc_units" ~ 4172)) %>% 
@@ -302,18 +293,6 @@ table(shes_df$split_value, useNA="always") # correct, no NA
 
 
 
-### TEMPORARY STEP: drop the indicators we're not publishing yet: the PA profile
-
-# meeting_muscle_strengthening_recommendations  14001
-# adults_very_low_activity                      14002
-# children_very_low_activity                    14003
-# children_participating_sport                  14006
-# children_active_play                          14007
-
-shes_df <- shes_df %>%
-  filter(!(ind_id %in% c(14001, 14002, 14003, 14006, 14007)))
-
-
 ### 6. Check geographical availability: ----
 
 # which Scotland-wide data to keep to match any lower geographies in the main_data (for trend chart and rank comparisons)?
@@ -337,6 +316,20 @@ indicators_w_lower_geogs <- availability %>%
   select(indicator) %>%
   unique()
 indicators_w_lower_geogs <- as.vector(indicators_w_lower_geogs$indicator)
+
+
+
+### TEMPORARY STEP: drop the indicators we're not publishing yet: the PA profile
+
+# meeting_muscle_strengthening_recommendations  14001
+# adults_very_low_activity                      14002
+# children_very_low_activity                    14003
+# children_participating_sport                  14006
+# children_active_play                          14007
+
+shes_df <- shes_df %>%
+  filter(!(ind_id %in% c(14001, 14002, 14003, 14006, 14007)))
+
 
 
 ### 7. Prepare final files -----
@@ -418,7 +411,6 @@ prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-#prepare_final_files(ind = "meets_mvpa_and_strength_recs")
 prepare_final_files(ind = "binge_drinking")
 prepare_final_files(ind = "problem_drinker")
 prepare_final_files(ind = "weekly_alc_units")
@@ -438,6 +430,13 @@ prepare_final_files(ind = "attempted_suicide")
 prepare_final_files(ind = "work-life_balance")
 prepare_final_files(ind = "cyp_sdq_totaldiffs") #note SDQ = strengths and difficulties questionnaire, indicator name "Children's behavioural and emotional difficulties"
 
+# # run these when ready to publish PA profile
+# prepare_final_files(ind = "meeting_muscle_strengthening_recommendations")
+# prepare_final_files(ind = "adults_very_low_activity")
+# prepare_final_files(ind = "children_very_low_activity")
+# prepare_final_files(ind = "children_participating_sport")
+# prepare_final_files(ind = "children_active_play")
+
 
 # Run QA reports 
 # main data
@@ -449,7 +448,6 @@ run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
 run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-#run_qa(type = "main", filename = "meets_mvpa_and_strength_recs", test_file = FALSE)  
 run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
@@ -469,6 +467,13 @@ run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)
 run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE) 
 run_qa(type = "main", filename = "work-life_balance", test_file = FALSE) 
 
+# # run these when ready to publish PA profile
+# run_qa(type = "main", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
+
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file=FALSE)
@@ -478,7 +483,6 @@ run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-#run_qa(type = "deprivation", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "deprivation", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
@@ -498,6 +502,13 @@ run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE
 run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE)
 
+# # run these when ready to publish PA profile
+# run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
+
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
@@ -507,7 +518,6 @@ run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-#run_qa(type = "popgrp", filename = "meets_mvpa_and_strength_recs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "binge_drinking", test_file=FALSE)
 run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
@@ -526,6 +536,13 @@ run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE)
+
+# # run these when ready to publish PA profile
+# run_qa(type = "popgrp", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "adults_very_low_activity", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_very_low_activity", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_participating_sport", test_file = FALSE)
+# run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
 
 
 #END
