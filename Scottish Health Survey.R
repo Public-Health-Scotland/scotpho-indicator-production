@@ -145,11 +145,8 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
                                  split_value=="4th quintile" ~ "4",
                                  split_value=="5th-Bottom quintile" ~ "5 - lowest income",
                                  TRUE ~ split_value)) %>%
-  mutate(split_value = ifelse(split_name=="Age" & split_value!="Total",
-                              paste0(split_value, " y"), # add y for years to age groups
-                              split_value)) %>%
-  mutate(split_name = ifelse(split_name=="Age", "Age group", split_name)) %>%
-  
+  filter(split_name!="Age") %>% # now will use coarser age groups (dichotomised at 65y) so that can present at HB level too
+
   # keep the required columns
   select(code, ind = `Scottish Health Survey Indicator`, trend_axis, split_name, split_value, stat, value = Value) %>%
   
@@ -276,8 +273,7 @@ shes_df <- shes_df %>%
 # (and standardise the split_names and split_values)
 shes_df <- shes_from_ukds %>%
   rbind(shes_df) %>%
-  mutate(split_name=case_when(split_name=="Age" ~ "Age group",
-                              split_name=="Long-term Illness" ~ "Long-term illness",
+  mutate(split_name=case_when(split_name=="Long-term Illness" ~ "Long-term illness",
                               TRUE ~ split_name)) %>%
   # published data refers to long term 'conditions' but the this is used interchangeably with 'illness' in the reporting. Here we standardise these:
   mutate(split_value=case_when(split_value %in% c("No long-term conditions", "No Long-term Illness") ~ "No long-term illness",
@@ -367,14 +363,14 @@ prepare_final_files <- function(ind){
              (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
     select(-indicator, -sex, -geog) %>%
     mutate(split_value = factor(split_value, 
-                                levels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
-                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
-                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
-                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"),
-                                labels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
-                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
-                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
-                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"))) %>%
+                                levels = c("Total", "0 to 4y","2-4y", "4 to 11y", "5 to 11y", "12 to 15y",  
+                                           "16 to 64y", "65y and over", 
+                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
+                                           "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"),
+                                labels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "5 to 11y", "12 to 15y",  
+                                           "16 to 64y", "65y and over", 
+                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",           
+                                           "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"))) %>%
     arrange(code, year, split_name, split_value)
   
   # Save
