@@ -1,5 +1,6 @@
 # TO DO:
 # look at other indicators that could be sourced from SHeS bulk data in this script.
+# look at whether the data published for the mus_rec PA indicator  on the SHeS dashboard should be used where available
 
 #########################################################
 # Scottish Health Survey data import
@@ -26,6 +27,7 @@
 ### And adding data for a further 26 indicators (14 adult, 12 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
+### (NB mus_rec is also published on the SHeS dashboard I think: look at whether the published data should be used where available)
 
 # 30002 = life_sat	Mean score on the question "All things considered, how satisfied are you with your life as a whole nowadays?" (variable LifeSat).  N.B. This indicator is also available from the ScotPHO Online Profiles (national and council area level, but not by SIMD). Life satisfaction is measured by asking participants to rate, on a scale of 0 to 10, how satisfied they are with their life in general. On the scale, 0 represented 'extremely dissatisfied' and 10 'extremely satisfied' (the intervening scale points were numbered but not labelled). 
 # 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
@@ -61,7 +63,6 @@
 # 14003 - c00sum7s - Children with very low activity levels
 # 14006 - spt1ch - Children participating in sport
 # 14007 - ch30plyg - Children engaging in active play
-
 
 # The published data are downloaded from statistics.gov.scot:
 # https://statistics.gov.scot/data/search?search=scottish+health+survey
@@ -190,7 +191,7 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "Food insecurity (worried would run out of food): Yes",  # 99105                                                                        
           "Healthy weight: Healthy weight", #99106                                                                                              
           "Summary activity levels: Meets recommendations",  #99107 
-        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #88888 #NOT PUBLISHED YET
+        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #14001 #NOT PUBLISHED YET
           "Self-assessed general health: Very good/Good",    # 99108                                                                             
           "Fruit & vegetable consumption: 5 portions or more",  #30013                                                                          
           "Mental wellbeing", # 30001 (mean score, as in the indicator definition)                                                                                                           
@@ -233,7 +234,7 @@ shes_df <- shes_df %>%
                                ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs", 
                                ind == "Mental wellbeing" ~ "mental_wellbeing", 
                                ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
-                           #    ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
+                           #    ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs", # not published yet
                                ind == "Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" ~ "binge_drinking",
                                ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
                                ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units"),
@@ -246,7 +247,7 @@ shes_df <- shes_df %>%
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
                             indicator == "physical_activity" ~ 99107,
-                        #    indicator == "meets_mvpa_and_strength_recs" ~ 88888,
+                        #    indicator == "meets_mvpa_and_strength_recs" ~ 14001, # not published yet
                             indicator == "binge_drinking" ~ 4170,
                             indicator == "problem_drinker" ~ 4171,
                             indicator == "weekly_alc_units" ~ 4172)) %>% 
@@ -274,16 +275,24 @@ totals_to_add <- shes_df %>%
   merge(y = splits_w_no_total, by=c("code", "indicator", "trend_axis"), all.y=TRUE)
 
 shes_df <- shes_df %>%
-  rbind(totals_to_add)
+  rbind(totals_to_add) 
 
 
 ###------------------------------------------------------------------------------------------------
 ### Now add the UKDS data:
 shes_df <- shes_from_ukds %>%
-  rbind(shes_df)
+  rbind(shes_df) %>%
+  mutate(split_name=case_when(split_name=="Age" ~ "Age group",
+                               split_name=="Long-term Illness" ~ "Long-term illness",
+                               TRUE ~ split_name)) %>%
+  # published data refers to long term 'conditions' but the this is used interchangeably with 'illness' in the reporting. Here we standardise these:
+  mutate(split_value=case_when(split_value %in% c("No long-term conditions", "No Long-term Illness") ~ "No long-term illness",
+                               split_value %in% c("Non-limiting long-term conditions", "Limiting Long-term Illness") ~ "Limiting long-term illness",
+                               split_value %in% c("Limiting long-term conditions", "Non-limiting Long-term Illness") ~ "Non-limiting long-term illness",
+                               TRUE ~ split_value))
 
-table(shes_df$ind_id, useNA="always") # 27 in total, no NA
-table(shes_df$indicator, useNA="always") # 27 in total, no NA
+table(shes_df$ind_id, useNA="always") # 37 in total, no NA
+table(shes_df$indicator, useNA="always") # 37 in total, no NA
 table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
@@ -293,7 +302,16 @@ table(shes_df$split_value, useNA="always") # correct, no NA
 
 
 
+### TEMPORARY STEP: drop the indicators we're not publishing yet: the PA profile
 
+# meeting_muscle_strengthening_recommendations  14001
+# adults_very_low_activity                      14002
+# children_very_low_activity                    14003
+# children_participating_sport                  14006
+# children_active_play                          14007
+
+shes_df <- shes_df %>%
+  filter(!(ind_id %in% c(14001, 14002, 14003, 14006, 14007)))
 
 
 ### 6. Check geographical availability: ----
@@ -319,12 +337,6 @@ indicators_w_lower_geogs <- availability %>%
   select(indicator) %>%
   unique()
 indicators_w_lower_geogs <- as.vector(indicators_w_lower_geogs$indicator)
-
-# which splits are available for single and aggregated years? Want to select single years for these...
-splits_w_single_and_aggd_years <- availability %>%
-  filter(count==2) %>%
-  select(indicator, geog, split_name) %>%
-  unique()
 
 
 ### 7. Prepare final files -----
