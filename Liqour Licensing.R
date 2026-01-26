@@ -35,10 +35,10 @@ library(tidyr) #For pivoting
 
 liquor_folder <- file.path(profiles_data_folder, "Received Data/Liquor Licences")
 
-files <- list.files(liquor_folder, pattern = "\\.csv$", full.names = TRUE)
+files <- list.files(liquor_folder, pattern = "\\.csv$", full.names = TRUE) #get all csv files in the folder
 
 dfs <- map(files, read_csv)  # Reads in each year as a list. Takes a few seconds to run
-years <- 2010:2022 #update this each year
+years <- 2010:2022 #update this each year. used later for adding a year col to the dfs
 
 ################################################################################
 #####  Part 2) Convert list into a dataframe  --------------------------------
@@ -51,17 +51,18 @@ df2 <- Map(\(e, i) if (i <= 9) e else e[-c(1:2), , drop = FALSE],
            dfs, seq_along(dfs)) 
 
 df2 <- imap(df2, ~ .x |>
-              select(1:34) |> #remove extra blank cols
-              row_to_names(1) |> #set ca names to headings
+              select(1:34) |> #remove extra blank cols. Cols are CAs so should be fixed number. 
+              row_to_names(1) |> #set CA names to headings
               rename(measure = 1) |>   #renaming the blank first row heading to measure - needed to prevent issues slicing
-              mutate(year = year[.y]) |>  #adding a year col to each element in list based on years vector created above
+              mutate(year = years[.y]) |>  #adding a year col to each element in list based on years vector created in Part 1
               select(year, everything()) |> #moving year to the beginning 
               slice(c(2:5, 19:22))) #keep only rows with relevant measures. Can't be precise with indexes because it varies from year to year.
 
-ca_col_names <- names(df2[[12]]) #creating a list of all the column names to apply to all dataframes. Choosing the 12th year of data because it had the least footnotes so less string manipulation needed
+ca_col_names <- names(df2[[12]]) #creating a list of all the column names to apply to all dataframes. 
+#Choosing the 12th year of data because it had the least footnotes so less string manipulation needed
 
 df3 <- map(df2, ~ .x |> 
-             set_names(ca_col_names))|> #set the ca names to be the column names based on vector
+             set_names(ca_col_names))|> #set the ca names as specified above
   bind_rows() #join each year of data into a df
 
 ################################################################################
@@ -74,16 +75,16 @@ df4 <- df3 |>
                                    c("force.*" ="force",
                                      "Force.*" = "force",
                                      "on sale.*" = "on sale",
-                                     "off sale.*" = "off sale"))) |> #cutting off any footnotes etc for each of the main 4 categories
-  group_by(year, measure) |> #in earlier years, licences measure names for personal and premise licences were identical.
+                                     "off sale.*" = "off sale"))) |> #cutting off any footnotes etc for each of the main categories
+  group_by(year, measure) |> 
   mutate(.pos = row_number()) |> 
   ungroup() |> 
   mutate(measure = if_else(.pos == 2, paste0("Personal ", measure), measure)) |> 
-  select(-.pos) #If 2 identical measures in a year, prepend "Personal" to the second one
+  select(-.pos) #If 2 identical measures in a year, prepend "Personal" to the second one. In early years of data Personal and Premise - total were labelled identically
 
-df5 <- pivot_longer(df4, cols = -c(year, measure), names_to = "areaname", values_to = "numerator") |>  #pivoting council names longer. cols=-2 pivots everything except the first 2 cols year and measure
+df5 <- pivot_longer(df4, cols = -c(year, measure), names_to = "areaname", values_to = "numerator") |>  #pivoting council names longer. cols=-2 pivots everything except the first 2 cols (year and measure)
   mutate(numerator = dplyr::na_if(numerator, "-"), #converting NAs
-         numerator = dplyr::na_if(numerator, "n/a"), #need to reference dplyr as it's being masked by another package
+         numerator = dplyr::na_if(numerator, "n/a"), #need to reference dplyr as it's being masked by hablar
          numerator = str_replace(numerator, ",", ""), #remove commas from numbers
          numerator = as.numeric(numerator)) #convert numerator to numeric type
 
