@@ -11,7 +11,6 @@
 # publication link: https://publichealthscotland.scot/publications/national-dental-inspection-programme/ 
 # (usually published in October)
 
-
 # The team usually sent on 1 year worth of data each year
 # files should then saved in the 'Child dental health' folder
 
@@ -20,11 +19,10 @@
 # no 2020/21 and 2021/22 data for Child Dental health P7, due to the pandemic
 # no 2021/22 P1 data for NHS Western Isles and NHS Highland
 
-
 # script changes required each year:
 # change file path to read in latest data extracts
 # update year in clean_data() function
-# update school year when saving temporry RDS files for analysis functions
+# update school year when saving temporary RDS files for analysis functions
 # update end_year parameter in analysis functions
 
 # script outline:
@@ -36,17 +34,14 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # functions ----
 # ~~~~~~~~~~~~~~~~~~~~~~~
-source("1.indicator_analysis.R") # Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
-
+source("./functions/main_analysis.R") # Normal indicator functions
+source("./functions/deprivation_analysis.R") # deprivation function
+library(readxl) #for reading in xlsx files
 
 # ~~~~~~~~~~~~~~~~~~~~~~
 # filepaths ----
 # ~~~~~~~~~~~~~~~~~~~~~~
-scotpho_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # scotpho folder 
-dental_health_subfolder <- "Received Data/Child dental health" # child dental health sub-folder
-data_path <- file.path(scotpho_folder, dental_health_subfolder) # full path to folder 
-
+data_path <- file.path(profiles_data_folder, "Received Data/Child dental health") # full path to folder 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Step 1 - Prepare latest data ----
@@ -55,8 +50,8 @@ data_path <- file.path(scotpho_folder, dental_health_subfolder) # full path to f
 ### read in latest recieved data ----
 # tweak filename to name of latest extract
 # note: the number of rows to skip may need tweaked each year - these are rows containing info about the IR
-p1_new <- read_excel(file.path(data_path, "NDIP_P1_2023-24.xlsx"), skip = 4)
-p7_new <- read_excel(file.path(data_path, "NDIP_P7_2023-24.xlsx"), skip = 4)
+p1_new <- read_excel(file.path(data_path, "NDIP_P1.xlsx"), skip = 4)
+p7_new <- read_excel(file.path(data_path, "NDIP_P7.xlsx"), skip = 4)
 
 
 ### clean data ----
@@ -84,14 +79,14 @@ clean_data <- function(data, starting_school_year){
 
 # apply function to both datasets
 # change year to match starting school year of latest data
-p1_new <- clean_data(data = p1, starting_school_year = 2023)
-p7_new <- clean_data(data = p7, starting_school_year = 2023)
+p1_new <- clean_data(p1_new, starting_school_year = 2024)
+p7_new <- clean_data(p7_new, starting_school_year = 2024)
 
 
 # save clean formatted files
 # change filename to match school year of latest data
-saveRDS(p1_new, file.path(data_path, "formatted", "P1_data_formatted_2023-24.rds"))
-saveRDS(p7_new, file.path(data_path, "formatted", "P7_data_formatted_2023-24.rds"))
+saveRDS(p1_new, file.path(data_path, "formatted", "P1_data_formatted_2024-25.rds"))
+saveRDS(p7_new, file.path(data_path, "formatted", "P7_data_formatted_2024-25.rds"))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Create trend data ----
@@ -112,8 +107,8 @@ p7_trend <- combine_files(files = list.files(path = file.path(data_path, "format
 
 
 ## save temp files for use in analysis functions 
-saveRDS(p1_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p1_raw.rds"))
-saveRDS(p7_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p7_raw.rds"))
+saveRDS(p1_trend, file.path(profiles_data_folder, "Prepared Data", "child_dental_p1_raw.rds"))
+saveRDS(p7_trend, file.path(profiles_data_folder, "Prepared Data", "child_dental_p7_raw.rds"))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -121,6 +116,10 @@ saveRDS(p7_trend, file.path(scotpho_folder, "Prepared Data", "child_dental_p7_ra
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Child dental health P1
+main_analysis(filename = "child_dental_p1", geography = "datazone11", measure = "percent",
+              yearstart = 2012, yearend = 2024, time_agg = 1, ind_id = 21005, 
+              year_type = "school",  pop="DZ11_pop_5")
+
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
               yearstart = 2012, yearend = 2023, time_agg = 1) 
 
@@ -129,8 +128,8 @@ analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1,
                ind_id = 21005, year_type = "school", pop="DZ11_pop_5")
 
 
-analyze_deprivation(filename="child_dental_p1", measure="perc_pcf",  
-                    yearstart= 2014, yearend = 2023, time_agg=1,
+deprivation_analysis(filename="child_dental_p1", measure="perc_pcf",  
+                    yearstart= 2014, yearend = 2024, time_agg=1,
                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 
