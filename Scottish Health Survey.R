@@ -146,7 +146,7 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
                                  split_value=="5th-Bottom quintile" ~ "5 - lowest income",
                                  TRUE ~ split_value)) %>%
   filter(split_name!="Age") %>% # now will use coarser age groups (dichotomised at 65y) so that can present at HB level too
-
+  
   # keep the required columns
   select(code, ind = `Scottish Health Survey Indicator`, trend_axis, split_name, split_value, stat, value = Value) %>%
   
@@ -194,7 +194,7 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "Food insecurity (worried would run out of food): Yes",  # 99105                                                                        
           "Healthy weight: Healthy weight", #99106                                                                                              
           "Summary activity levels: Meets recommendations",  #99107 
-        #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #14001 #NOT PUBLISHED YET
+          #  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations", #14001 #NOT PUBLISHED YET
           "Self-assessed general health: Very good/Good",    # 99108                                                                             
           "Fruit & vegetable consumption: 5 portions or more",  #30013                                                                          
           "Mental wellbeing", # 30001 (mean score, as in the indicator definition)                                                                                                           
@@ -224,7 +224,7 @@ shes_df <- shes_df %>%
                                ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs", 
                                ind == "Mental wellbeing" ~ "mental_wellbeing", 
                                ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
-                           #    ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
+                               #    ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
                                ind == "Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" ~ "binge_drinking",
                                ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
                                ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units"),
@@ -237,7 +237,7 @@ shes_df <- shes_df %>%
                             indicator == "common_mh_probs" ~ 30003, 
                             indicator == "mental_wellbeing" ~ 30001, 
                             indicator == "physical_activity" ~ 99107,
-                        #    indicator == "meets_mvpa_and_strength_recs" ~ 14001,
+                            #    indicator == "meets_mvpa_and_strength_recs" ~ 14001,
                             indicator == "binge_drinking" ~ 4170,
                             indicator == "problem_drinker" ~ 4171,
                             indicator == "weekly_alc_units" ~ 4172)) %>% 
@@ -363,13 +363,13 @@ prepare_final_files <- function(ind){
              (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
     select(-indicator, -sex, -geog) %>%
     mutate(split_value = factor(split_value, 
-                                levels = c("Total", "0 to 4y","2-4y", "4 to 11y", "5 to 11y", "12 to 15y",  
+                                levels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
                                            "16 to 64y", "65y and over", 
                                            "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
                                            "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"),
-                                labels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "5 to 11y", "12 to 15y",  
+                                labels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
                                            "16 to 64y", "65y and over", 
-                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",           
+                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
                                            "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"))) %>%
     arrange(code, year, split_name, split_value)
   
@@ -389,12 +389,21 @@ prepare_final_files <- function(ind){
   # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
   ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
   ind_id <- unique(simd_data$ind_id) # identify the indicator number 
+  
+  # get the right age groups for the inequalities calculation:
+  age_under16y <- c(30130, 30129) # all children included in "child with a parent with..." indicators
+  age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
+  age_2to15y <- c(30111, 14003, 14006, 14007) # all child PA questions pertain to 2-15y olds
 
+  agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
+                      ifelse(ind %in% age_4to12y, "depr_pop_4to12",
+                             ifelse(ind %in% age_2to15y, "depr_pop_2to15", "depr_pop_16+"))) # default is adult (16+)  
+  
   # add population data (quintile level) so that inequalities can be calculated
   simd_data <-  simd_data|>
     add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
     filter(!is.na(rate)) # some data biennial so not all years have data
-    
+  
   # calculate the inequality measures
   simd_data <- simd_data |>
     calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
@@ -402,7 +411,7 @@ prepare_final_files <- function(ind){
   
   # save the data as RDS file
   saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
-    
+  
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data_final
   pop_grp_data_result <<- pop_grp_data
