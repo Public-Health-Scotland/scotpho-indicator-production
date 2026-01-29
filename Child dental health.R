@@ -116,8 +116,8 @@ saveRDS(p7_trend, file.path(profiles_data_folder, "Prepared Data", "child_dental
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Child dental health P1
-main_analysis(filename = "child_dental_p1", geography = "datazone11", measure = "percent",
-              yearstart = 2012, yearend = 2024, time_agg = 1, ind_id = 21005, 
+main_analysis(filename = "child_dental_p1", geography = "datazone11", measure = "perc_pcf",
+              yearstart = 2012, yearend = 2023, time_agg = 1, ind_id = 21005, 
               year_type = "school",  pop="DZ11_pop_5")
 
 analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
