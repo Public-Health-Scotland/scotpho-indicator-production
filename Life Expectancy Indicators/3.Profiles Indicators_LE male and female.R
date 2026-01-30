@@ -142,7 +142,7 @@ run_qa(filename="life_expectancy_female", type="main",check_extras = "S12000005"
 popgrp_data_sex <- main_data |>
   mutate(split_name = "Sex",
          split_value = case_when(ind_id== "20101" ~ "Male", ind_id== "20102" ~ "Female", TRUE ~"other"))
-     
+
 popgrp_data_urban <- NRS_data_plus |>
   filter(code=="S00000001", year>2011) |> #urban rural split only available at scotland level and only from 2012 onward
   mutate(split_name= "Urban/Rural",
@@ -152,11 +152,14 @@ popgrp_data_urban <- NRS_data_plus |>
                            TRUE ~"x"),
          numerator="")|>
   select (-urban,-ref_period, -sex_grp)
-  
-popgrp_data <-rbind(popgrp_data_sex,popgrp_data_urban)
+
+male_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20101")
+female_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20102")
 
 ## Male life expectancy file
-popgrp_data_male <- popgrp_data %>% subset(ind_id=="20101") 
+popgrp_data_male <- rbind(popgrp_data_sex,male_data_urban)
 
 #save files to profiles indicator data to be checked folder on network
 write_csv(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny_popgrp.csv"))
@@ -166,7 +169,7 @@ write_rds(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data 
 run_qa(filename="life_expectancy_male", type="popgrp", test_file = FALSE)
 
 ### Female life expectancy file
-popgrp_data_female <- popgrp_data %>% subset(ind_id=="20102") 
+popgrp_data_female <-  rbind(popgrp_data_sex,female_data_urban) 
 
 write_csv(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.csv"))
 write_rds(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.rds"))
