@@ -13,9 +13,8 @@
 #14009 - Satisfaction with local sport and leisure facilities (serv3a)
 #14010 - Satisfaction with local parks and open spaces (serv3e)
 
-#Availability: CHECK THIS
-#all indicators available with sex, age and disability splits for Scotland and HB
-#all indicators available with deprivation splits (Scotland only)
+#Availability:
+#all indicators available with deprivation, sex, age and disability splits for Scotland, HB and CA
 
 ################################################################################
 #1. functions, filepaths and packages
@@ -102,7 +101,6 @@ run_qa("recreational_walking_depr", type = "deprivation")
 
 rec_walk_popgrps <- split_popgrps_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
 run_qa("recreational_walking", type = "popgrp")
-
 
 ################################################################################
 #5. Adults participating in sport (14005)
