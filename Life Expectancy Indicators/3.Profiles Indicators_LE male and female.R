@@ -158,8 +158,8 @@ male_data_urban <-popgrp_data_urban |>
 female_data_urban <-popgrp_data_urban |>
   filter(ind_id== "20102")
 
-## Male life expectancy file
-popgrp_data_male <- rbind(popgrp_data_sex,male_data_urban)
+## Male life expectancy popgrp file (add sex and urban/rural split) then ensure all indicator ID assinged to male
+popgrp_data_male <- rbind(popgrp_data_sex,male_data_urban)|> mutate(ind_id= "20101")
 
 #save files to profiles indicator data to be checked folder on network
 write_csv(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny_popgrp.csv"))
@@ -169,7 +169,8 @@ write_rds(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data 
 run_qa(filename="life_expectancy_male", type="popgrp", test_file = FALSE)
 
 ### Female life expectancy file
-popgrp_data_female <-  rbind(popgrp_data_sex,female_data_urban) 
+popgrp_data_female <-  rbind(popgrp_data_sex,female_data_urban)|> 
+  mutate(ind_id= "20102")
 
 write_csv(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.csv"))
 write_rds(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.rds"))
