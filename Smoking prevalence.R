@@ -27,6 +27,10 @@
 # Historically we used to use the Scottish Household Survey for smoking prevalence 
 # but in 2023 the SG recommended we switch to the health survey as a more reliable source of health data
 
+# Files produced:
+# main: Y
+# popgroups: Y (age/sex)
+# Deprivation: N
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Filepaths/ packages/ functions  ----
@@ -44,8 +48,7 @@ source("functions/main_analysis.R")
 
 
 # filepaths 
-data_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # data folder 
-data_received <- file.path(data_folder, "Received Data", "Smoking prevalence data") # smoking prevalence sub folder 
+data_received <- file.path(profiles_data_folder, "Received Data", "Smoking prevalence data") # smoking prevalence sub folder 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -54,7 +57,9 @@ data_received <- file.path(data_folder, "Received Data", "Smoking prevalence dat
 
 # get names of the data files containing data 
 # at board, council and Scotland level in 5 year aggregates
-files <- list.files(data_received, pattern = "HB_LA")
+# note: 'recursive = TRUE' searches sub-folders within the smoking prev folder
+files <- list.files(data_received, pattern = "HB_LA", recursive = TRUE) 
+
 
 
 # read in and combine data files, adding a filename column
@@ -171,15 +176,16 @@ prepare_indicator <- function(data, age_group, sex_group, ind_id){
   x <- data |>
     filter(age_grp == age_group & sex == sex_group) |>
     select(-c(age_grp, sex)) |>
-    mutate(ind_id = ind_id) # create indicator id column
+    mutate(ind_id = ind_id) |> # create indicator id column
+    arrange(year) # arrange by year
   
   # define filename 
   filename <- paste0(ind_id, "_smoking_prev_", age_group, "_", sex_group) 
   full_filename <- paste0(filename, "_shiny") # final filename must end in _shiny
   
   # save final files
-  saveRDS(x, paste0(data_folder, "/Data to be checked/", filename, ".rds"))
-  write.csv(x, paste0(data_folder, "/Data to be checked/", filename, ".csv"), row.names = FALSE)
+  saveRDS(x, paste0(profiles_data_folder, "/Data to be checked/", full_filename, ".rds"))
+  write.csv(x, paste0(profiles_data_folder, "/Data to be checked/", full_filename, ".csv"), row.names = FALSE)
   
   # run QA checks
   run_qa(filename, type = "main", test_file = FALSE)
