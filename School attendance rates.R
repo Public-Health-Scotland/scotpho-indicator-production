@@ -28,18 +28,20 @@
 ### 1. Packages and lookups -----
 #################################################################################
 
-source("functions/main_analysis.R") # needed for the QA
-source("functions/deprivation_analysis.R") # needed for the QA
 library(readxl) # handles xls and xlsx in same read function, which is needed here
 library(hablar) # sum_ function from hablar keeps NA when there should be NA
+library(here) # for filepaths
+
+source(here("functions", "main_analysis.R")) # needed for the QA
+source(here("functions", "deprivation_analysis.R")) # needed for the QA
 
 # Read in geography lookup
-geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
-geo_lookup <- readRDS(file.path(geography_lookups, "opt_geo_lookup.rds")) %>% 
+geography_lookups <- here(profiles_data_folder, "Lookups", "Geography")
+geo_lookup <- readRDS(here(geography_lookups, "opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 # create lookup for higher geogs: get simd lookup, and aggregate (lowest geog is CA)
-higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup.rds")) %>%
+higher_geog_lookup <- readRDS(here(geography_lookups, "simd_datazone_lookup.rds")) %>%
   select(year, code = ca, hb, hscp, pd, scotland) %>%
   unique()
 
@@ -49,7 +51,7 @@ higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup
 #################################################################################
 
 # the folder where the data are saved
-attendance_folder <- paste0(profiles_data_folder, "/Received Data/School attendance/")
+attendance_folder <- here(profiles_data_folder, "Received Data", "School attendance")
 
 data_2006 <- "attendance-absence-2006-7.xls"                          
 data_2007 <- "attendance-absence-2007-08.xls"                        
@@ -64,8 +66,8 @@ data_2020 <- "Attendance+and+absence+statistics+202021+V4.xlsx"
 data_2022 <- "Attendance+and+absence+statistics+202223+V3.xlsx"
 data_2023 <- "Attendance+and+absence+2023-24.xlsx"                   
 data_2024 <- "Attendance+and+absence+2024-25.xlsx"                   
-data_simd <- "AAE014_attendance_by_simd_final.xlsx" 
-
+data_simd2023 <- "AAE014_attendance_by_simd_final.xlsx" 
+data_simd2024 <- "AAE022_attendance_by_simd_for_phs_final.xlsx"
 
 
 #################################################################################
@@ -76,7 +78,7 @@ data_simd <- "AAE014_attendance_by_simd_final.xlsx"
 
 # Function to get Scotland data from a wide format tab
 import_scot_wide_data <- function(filename, sheetnum, rowrange, split_type, value_type) {
-  df <- read_excel(paste0(attendance_folder, filename),
+  df <- read_excel(here(attendance_folder, filename),
                   sheet = paste0("Table ", sheetnum),
                   range = cell_rows(rowrange)) %>%
     mutate(across(-1, ~str_replace(., "z", "NA"))) %>% # z = not applicable (changed this: used to be recoded to 0)
@@ -91,7 +93,7 @@ import_scot_wide_data <- function(filename, sheetnum, rowrange, split_type, valu
 import_la_wide_data <- function(filename, sheetnum, range, split_type, value_type, year) {
   
   if (is.character(range)) { # i.e., format "R4C1:R38C9"
-    df <- read_excel(paste0(attendance_folder, filename),
+    df <- read_excel(here(attendance_folder, filename),
                      sheet = paste0("Table ", sheetnum),
                      range = range
     )
@@ -292,11 +294,15 @@ get_old_file_attendance_data_la <- function(filename, trend_axis, range_la) {
 # C. Importing and processing the standalone SIMD data file, provided in Aug 2025: 
 
 # Function to import the SIMD data (Scotland and LA)
-get_simd_data <- function(tab_name) {
+get_simd_data <- function(tab_name, simd_file, colnames) {
   
-  df <- read_excel(paste0(attendance_folder, data_simd), sheet = tab_name) %>%
+  df <- read_excel(here(attendance_folder, simd_file), sheet = tab_name) %>%
     mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1) # years in the tab are the end of the sch year, not the start
-  names(df) <- c("areaname", "1", "2", "3", "4", "5", "NA", "year")
+  names(df) <- colnames
+  if(!"NA" %in% colnames) {
+    df <- df %>%
+      mutate("NA" = 0)
+  }
   df_name <- paste0("tab_", tab_name)
   assign(df_name, df, envir=.GlobalEnv)
   
@@ -315,13 +321,18 @@ get_simd_data <- function(tab_name) {
 # Counts from all stages combined and all school types combined (Primary, Secondary and Special)
 
 # run the function
-sheets <- readxl::excel_sheets(paste0(attendance_folder, data_simd))
-sheets <- sheets[2:length(sheets)] # drop the cover sheet, keep remaining tabs
-
-for (tab in sheets) {
-  get_simd_data(tab)
+sheets2023 <- readxl::excel_sheets(here(attendance_folder, data_simd2023))
+#sheets2023 <- sheets2023[2:length(sheets2023)] # drop the cover sheet, keep remaining tabs
+for (tab in sheets2023) {
+  get_simd_data(tab, simd_file = data_simd2023, colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "year"))
 }
 
+sheets2024 <- readxl::excel_sheets(here(attendance_folder, data_simd2024))
+for (tab in sheets2024) {
+  get_simd_data(tab, simd_file = data_simd2024, colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "year"))
+}
+
+# CAN'T COMBINE CURRENTLY: c USED IN MOST RECENT DATA
 # combine the numerator tabs and the denominator tabs
 numerator_data <- mget(ls(pattern = "tab_att_"), .GlobalEnv) %>% # gets the dataframes starting with tab_att_
   do.call(rbind.data.frame, .) %>% # rbinds them all together
@@ -395,7 +406,7 @@ simd_all <- simd_all |>
   select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
 
 # save the data as RDS file
-saveRDS(simd_all, paste0(profiles_data_folder, "/Data to be checked/school_attendance_ineq.rds"))
+saveRDS(simd_all, here(profiles_data_folder, "Data to be checked", "school_attendance_ineq.rds"))
 
 # Total counts (which include the pupils where SIMD is not known) match the published totals for Scotland and LAs,
 # so can be used for these instead of reading in other data: 
@@ -410,8 +421,8 @@ main_data <- simd_all %>%
   arrange(code, year)
 
 # Save
-write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/school_attendance_shiny.rds"))
-write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/school_attendance_shiny.csv"), row.names = FALSE) 
+write_rds(main_data, here(profiles_data_folder, "Data to be checked", "school_attendance_shiny.rds"))
+write.csv(main_data, here(profiles_data_folder, "Data to be checked", "school_attendance_shiny.csv"), row.names = FALSE) 
 
 
 # # Run QA reports 
