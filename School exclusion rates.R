@@ -6,8 +6,9 @@
 # numerator source (no. of exclusions): https://www.gov.scot/publications/school-exclusion-statistics/ INCLUDES: PUBLICLY-FUNDED LOCAL AUTHORITY SCHOOLS ONLY. NOT INCLUDING GRANT-AIDED SCHOOLS. 
 # denominator source (no. of pupils):   https://www.gov.scot/publications/pupil-census-supplementary-statistics/  (Table 5.1: Schools by local authority)
 # update file names and ranges below when new data from links above are saved in "data received" folder.
-# Latest data (2022/23) published March 2024
-# SIMD time trend data to 2022/23 provided in 2025: AAE0015_exclusions_by_simd.xlsx
+# Dec 2025: Latest data (to 2024/25) published
+# Feb 2026: received 2024/25 SIMD data from SG (info request): AAE023_exclusions_by_simd_for_phs_final.xlsx 
+# NB. years in the SIMD spreadsheets refer to the end of the school year (e.g., 2025 = 2024/25 school year)
 
 #################################################################################
 ### 1. Required packages/functions -----
@@ -17,24 +18,30 @@ source("functions/main_analysis.R") # needed for the QA
 source("functions/deprivation_analysis.R") # needed for the QA
 library(hablar) # for sums that ignore NA only if other values are present, otherwise it returns NA
 library(readxl) # for reading in excel files
+library(here) # for filepaths
 
 # Read in geography lookup
-geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
-geo_lookup <- readRDS(file.path(geography_lookups, "opt_geo_lookup.rds")) %>% 
+geography_lookups <- here(profiles_data_folder, "Lookups", "Geography")
+geo_lookup <- readRDS(here(geography_lookups, "opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 # create lookup for higher geogs: get simd lookup, and aggregate (lowest geog is CA)
-higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup.rds")) %>%
+higher_geog_lookup <- readRDS(here(geography_lookups, "simd_datazone_lookup.rds")) %>%
   select(year, code = ca, hb, hscp, pd, scotland) %>%
   unique()
 
-# Importing and processing the standalone SIMD data file, provided by SG in Aug 2025: 
+# Importing and processing the standalone SIMD data file, provided by SG in Aug 2025, and updated Feb 2026: 
 
-get_simd_data <- function(tab_name) {
+get_simd_data <- function(tab_name, simd_file, colnames) {
   
-  df <- read_excel(path = exclusions_simd, sheet = tab_name) %>%
+  df <- read_excel(simd_file, sheet = tab_name) %>%
     mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1) # years in the tab are the end of the sch year, not the start
-  names(df) <- c("areaname", "1", "2", "3", "4", "5", "NA", "Total", "year")
+  names(df) <- colnames
+  #Add NA column if it doesn't exist
+  if(!"NA" %in% colnames) {
+    df <- df %>%
+      mutate("NA" = 0)
+  }
   df_name <- paste0("tab_", tab_name)
   assign(df_name, df, envir=.GlobalEnv)
   
@@ -74,35 +81,46 @@ aggregate_higher <- function(df, geog) {
 # file paths:
 
 # the folder where the data are saved
-exclusions_folder <- paste0(profiles_data_folder, "/Received Data/School Exclusion Rates/")
+exclusions_folder <- here(profiles_data_folder, "Received Data", "School Exclusion Rates")
 
 # counts of exclusions (numerators)
-exclusions2022 <- paste0(exclusions_folder, "Exclusions_202223.xlsx") # Numerators for Scotland and LAs
-exclusions2024 <- paste0(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx")
+exclusions2022 <- here(exclusions_folder, "Exclusions_202223.xlsx") # Numerators for Scotland and LAs
+exclusions2024 <- here(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx")
 
-# SIMD data 2010-2023 (counts and denominators): could be used for Scotland and CA aggregates too.
-exclusions_simd <- paste0(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") 
+# SIMD data 2010/11-2023/24 (counts and denominators): 
+simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") 
+
+# SIMD data 2024/25 (counts and denominators): 
+simd2024 <- here(exclusions_folder, "AAE023_exclusions_by_simd_for_phs_final.xlsx") 
 
 # pupil counts (denominators)
-census2022 <- paste0(exclusions_folder, "Pupils_Census_2022.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
-census2020 <- paste0(exclusions_folder, "Pupils_in_Scotland_2020.xlsx") # For SIMD denominators for 2020
-census2024 <- paste0(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx")
+census2022 <- here(exclusions_folder, "Pupils_Census_2022.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
+census2020 <- here(exclusions_folder, "Pupils_in_Scotland_2020.xlsx") # For SIMD denominators for 2020
+census2024 <- here(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx")
 
 #################################
 ## 2a. Import SIMD data 
 #################################
 
-# Get the data from the SIMD file
-sheets <- readxl::excel_sheets(exclusions_simd)
-
-for (tab in sheets) {
-  get_simd_data(tab)
+# Get the data from the SIMD files
+sheets2023 <- readxl::excel_sheets(simd2023)
+for (tab in sheets2023) {
+  get_simd_data(tab, simd_file = simd2023, 
+                colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "Total", "year"))
 }
+
+sheets2024 <- readxl::excel_sheets(simd2024) 
+for (tab in sheets2024) {
+  get_simd_data(tab, simd_file = simd2024,
+                colnames = c("areaname", "1", "2", "3", "4", "5", "Total", "year"))
+}
+
 
 # combine the numerator tabs and the denominator tabs
 numerator_data <- mget(ls(pattern = "tab_cases_"), .GlobalEnv) %>% # gets the dataframes starting with tab_cases_
   do.call(rbind.data.frame, .) %>% # rbinds them all together
   pivot_longer(-c(areaname, year), names_to="quintile", values_to = "numerator")
+# DOESN'T WORK AS THERE ARE cs IN THE 2024/25 DATA CURRENTLY
 
 denominator_data <- mget(ls(pattern = "tab_denominators_"), .GlobalEnv) %>% # gets the dataframes starting with tab_denominators_
   do.call(rbind.data.frame, .) %>% # rbinds them all together
@@ -241,8 +259,8 @@ main_data <- exclusions_all %>%
   arrange(code, year)
 
 # Save
-write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_shiny.rds"))
-write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_shiny.csv"), row.names = FALSE) 
+write_rds(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.rds"))
+write.csv(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.csv"), row.names = FALSE) 
 
 
 ##########################################################
