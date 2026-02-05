@@ -120,13 +120,13 @@ drug_deaths_ca <- left_join(drug_deaths, postcode_lookup, "pc7") |>
   group_by(year, ca, sex_grp, age_grp) |>  
   summarize(numerator = n()) |> ungroup()
 
-saveRDS(drug_deaths_ca, file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_raw_NS.rds')) # Both sexes
-saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_male_raw_NS.rds')) # Males
-saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_female_raw_NS.rds')) # Females
+saveRDS(drug_deaths_ca, file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_bothsexes_NS_raw.rds')) # Both sexes
+saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_male_NS_raw.rds')) # Males
+saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_female_NS_raw.rds')) # Females
 
 # Create data frames of male / female basefiles so can view data
-drug_deaths_ca_male <- readRDS(paste0(profiles_data_folder, "/Prepared Data/DRD 2025 Test NS/drug_deaths_male_raw_NS.rds"))
-drug_deaths_ca_female <- readRDS(paste0(profiles_data_folder, "/Prepared Data/DRD 2025 Test NS/drug_deaths_female_raw_NS.rds"))
+drug_deaths_ca_male <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_male_NS_raw.rds"))
+drug_deaths_ca_female <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_female_NS_raw.rds"))
 
 # Create drug-related deaths deprivation basefile (to be fed into deprivation_analysis() function) and save to 'Prepared Data' folder.
 # (Aggregate data by datazone)
@@ -137,14 +137,32 @@ drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") |>
   group_by(year, datazone, sex_grp, age_grp) |>
   summarize(numerator = n()) |> ungroup()
 
-saveRDS(drug_deaths_depr, file=paste0(profiles_data_folder, '/Prepared Data/DRD 2025 Test NS/drug_deaths_depr_raw_NS.rds'))
+saveRDS(drug_deaths_depr, file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_depr_NS_raw.rds'))
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PART 3 - Run both sexes drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 3 - Run both sexes / all drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Line 108 Drug-related mortality.R
+# Call main_analysis() function for DRDs for both sexes (all ages), calendar year (single), calculating standardised rates and saving output
+# to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths_bothsexes_NS",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 1,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 4121,
+              test_file = FALSE,
+              QA = FALSE,
+              epop_age = "normal",
+              epop_total = 200000)
 
+# Update output files from main_analysis() function with DRD data for 2002 to 2005 (as drugs team only provide NRS data from 2006 onwards)
+drug_deaths_bothsexes <- rbind(main_analysis_result, drug_deaths_02_05)
+saveRDS(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_bothsexes_NS_shiny.rds'))
+write_csv(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_bothsexes_NS_shiny.csv'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
