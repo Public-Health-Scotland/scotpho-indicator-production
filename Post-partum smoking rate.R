@@ -39,16 +39,12 @@ postpartum <- postpartum |>
 
 saveRDS(postpartum, file.path(profiles_data_folder, '/Prepared Data/postpartum_smoking_raw.rds'))
 
-
-
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
 
 main_analysis(filename = "postpartum_smoking", geography = "datazone11", measure = "percent",
               yearstart = 2002, yearend = 2023, time_agg = 3, ind_id = 1552, year_type = "financial")
-
-
 
 deprivation_analysis(filename = "postpartum_smoking", yearstart = 2002, yearend = 2023,
                      time_agg = 5, year_type = "financial", measure = "percent", pop_sex = "all",
@@ -62,9 +58,15 @@ deprivation_analysis(filename = "postpartum_smoking", yearstart = 2002, yearend 
 # MAIN DATA (3 year rolling average)----
 # After inspecting output data consider robustness of estimates, especially areas where majority of counts are less than 5
 # decision: remove IZ level data and suppress counts (but leave %) when 3 year rolling average less than 5 
+
+#Additionally, remove Highland HB, CA, ADP, HSCP from the data up until 2008.
+#This is because Highland council had missing or incomplete data until this point.
+#In combination with data from NHS Highland's other constituent council, Argyll and Bute,
+#rates were artificially low. 
 main_data <- readRDS(file.path(profiles_data_folder, '/Data to be checked/postpartum_smoking_shiny.rds'))|>
   filter(substr(code,1,3) != "S02")|> # Remove the IZ level gepgraphy as numbers are not sufficient to release robust rates at this geography level
-  mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA), TRUE ~ numerator)) #suppress numerator where count less than 5 - rate is preserved
+  mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA), TRUE ~ numerator)) |>  #suppress numerator where count less than 5 - rate is preserved
+  filter(!(code %in% c("S08000022", "S12000017", "S11000016", "S37000016") & year <= 2007)) #exclude Highland for 2007 and earlier
 
 # write main data after suppression (should overwrite )
 write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/postpartum_smoking_shiny.csv"), row.names = FALSE)
