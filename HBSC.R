@@ -970,11 +970,11 @@ calc_indicator_data <- function (df, var, ind_id, type) {
       mutate(split_value = "Total",
            split_name = "Total")
   # Scotland by sex
-  results2 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "sex"), type) %>%
+  results2 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "sex"), type) %>%
     rename(split_value = sex) %>%
     mutate(split_name = "Sex")
   # Scotland by grade
-  results3 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "grade"), type) %>%
+  results3 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "grade"), type) %>%
     rename(split_value = grade) %>%
     mutate(split_name = "School stage")
   # Scotland by FAS
