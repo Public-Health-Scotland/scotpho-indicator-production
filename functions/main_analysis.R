@@ -340,8 +340,6 @@ main_analysis <- function(filename,
     # If there are NA in the numerator file that don't refer to true zeroes the denominators in pop_lookup need to be adjusted to reflect this
     if(subtract_denoms_if_nums_na == TRUE) {
       
-      na_pivot_vars <- c("year", "numerator", "denominator", if(measure == "stdrate") c("age_grp", "sex_grp"))
-      
       # extract the numerators that are NA (suppressed or otherwise missing)
       # (this chunk largely repeats the processing above, but just keeps the rows where is.na(numerator))
       na_numerators <- readRDS(file.path(input_folder, full_filename)) |> # read in the base data again, before it was aggregated
@@ -351,11 +349,11 @@ main_analysis <- function(filename,
         # select(-contains("datazone")) |> # remove datazone column if this was the base geography - we don't publish at this level
         left_join(y = pop_lookup, by = joining_vars) %>% # add in the denominators for these missing counts
         mutate(denominator = -1 * denominator) %>%   # the denominator population is to be subtracted from the base geography pop and any others that it is a part of
-        tidyr::pivot_longer(cols = -any_of(na_pivot_vars), values_to = "code", names_to = NULL) %>% # pivot the data into a 'longer' format so there is just one geography column called 'code'
+        tidyr::pivot_longer(cols = c(code, any_of(area_types)), values_to = "code", names_to = NULL) %>% # pivot the data into a 'longer' format so there is just one geography column called 'code'
         group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
         summarise_all(sum, na.rm = T) |> # calculate the total denominator count to be subtracted from the pop totals  
         ungroup() %>%
-        select(-numerator)
+        select(code, year, denominator)
       
       # subtract the denoms as required
       pop_lookup <- pop_lookup |>
