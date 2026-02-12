@@ -229,7 +229,7 @@ saveRDS(IRD_2023, file=paste0(profiles_data_folder, '/Prepared Data/IRD_2023_raw
 main_analysis(filename = "IRD_2023", ind_id = 30169, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2023, yearend = 2023,
               time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE, 
-              NA_means_suppressed = TRUE, subtract_denoms_if_nums_na = TRUE)
+              NA_means_suppressed = TRUE)
 # Correct: Ab'shire CA and the geogs that are coincident with it (ADP and HSCP) are NA, all others have data.
 # Figures for aggregated geogs including Ab'shire now exclude the denominator for Ab'shire, so the resulting rate relates to just the areas with numerator data.
 # E.g., Scotland's rate is calculated from the numerators and denominators for 31 rather than 32 CAs. 
@@ -340,7 +340,7 @@ saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_pro
 main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2007, yearend = 2024,
               time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE, 
-              NA_means_suppressed = TRUE, subtract_denoms_if_nums_na = TRUE)
+              NA_means_suppressed = TRUE)
 
 # Aggregated Scotland data match original Scotland data perfectly apart from 2015-2017, due to some suppression in smaller CAs. 
 # So replace the aggregated Scotland data with the original data:
@@ -436,7 +436,7 @@ prepare_main_data <- function(indicator, ind){
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
                 time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE,
-                NA_means_suppressed = TRUE, subtract_denoms_if_nums_na = TRUE)
+                NA_means_suppressed = TRUE)
 
   
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
