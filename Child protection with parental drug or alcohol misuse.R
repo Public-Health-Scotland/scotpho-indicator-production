@@ -311,6 +311,7 @@ run_qa(type = "popgrp", filename = "child_prot_register", test_file=FALSE)
 
 # Import and process main data
 # LA (2013-2024)
+# CONTAINS NAs THAT MEAN SUPPRESSED
 register_la_2013to2024 <- import_wide_data(filename = publication_2023, sheetnum = "1.2", range = "A40:Y72", non_num_cols = c(1)) %>%
   pivot_longer(-`Local authority`, names_to = c("year", "metric"), 
                names_pattern = "(\\d{4}) (\\w*).*?", # (\\d{4}) extracts a 4-digit number, and (\\w*) extracts a word (either 'Rate' or 'Number') after a space after the number
@@ -338,7 +339,8 @@ saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_pro
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2007, yearend = 2024,
-              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE, 
+              NA_means_suppressed = TRUE, subtract_denoms_if_nums_na = TRUE)
 
 # Aggregated Scotland data match original Scotland data perfectly apart from 2015-2017, due to some suppression in smaller CAs. 
 # So replace the aggregated Scotland data with the original data:
@@ -419,7 +421,7 @@ concerns_la <- do.call("bind_rows", mget(ls(pattern="^concerns_la_"))) %>%
   add_area_codes(.) %>%
   select(ind_id, code, year, numerator)
 # A fair number of zeroes in the data: these are true zeroes in small LAs
-# Suppressed counts remain suppressed.
+# Suppressed counts remain suppressed (i.e., NA).
 
 # Function to prepare main data file: 
 prepare_main_data <- function(indicator, ind){
@@ -433,7 +435,8 @@ prepare_main_data <- function(indicator, ind){
   # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
-                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE)
+                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE,
+                NA_means_suppressed = TRUE, subtract_denoms_if_nums_na = TRUE)
 
   
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
