@@ -124,7 +124,6 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
 #'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
 #'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data (or another reason why NA does not mean zero). Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
-#'@param subtract_denoms_if_nums_na optional parameter: Default is FALSE. Set to TRUE if there are NAs in the numerators that are not true zeroes (e.g., suppressed or missing data). If set to TRUE the population lookup containing the denominators will be adjusted (denominators for the missing areas will be subtracted, including from any affected higher geogs)
 
 main_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
@@ -132,7 +131,7 @@ main_analysis <- function(filename,
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
                           pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE,
-                          NA_means_suppressed = FALSE, subtract_denoms_if_nums_na = FALSE){
+                          NA_means_suppressed = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -338,7 +337,7 @@ main_analysis <- function(filename,
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
     
     # If there are NA in the numerator file that don't refer to true zeroes the denominators in pop_lookup need to be adjusted to reflect this
-    if(subtract_denoms_if_nums_na == TRUE) {
+    if(NA_means_suppressed == TRUE) {
       
       # extract the numerators that are NA (suppressed or otherwise missing)
       # (this chunk largely repeats the processing above, but just keeps the rows where is.na(numerator))
