@@ -600,7 +600,27 @@ sleepqual_responses
 # found out that 1 = "poor quality" and 6 = "high quality" so can recode these then convert to numeric
 
 
+# Binary support variables
+###################################
+famsupp_responses <- get_responses("d_family_support_binary") %>% unlist(use.names=FALSE) %>% unique()
+peersupp_responses <- get_responses("d_peer_support_binary") %>% unlist(use.names=FALSE) %>% unique()
+teachersupp_responses <- get_responses("d_teacher_support_binary") %>% unlist(use.names=FALSE) %>% unique()
 
+famsupp_responses
+#[1] NA                    "low family support"  "high family support"
+peersupp_responses
+#[1] NA                  "low peer support"  "high peer support"
+teachersupp_responses
+#[1] NA                     "low teacher support"  "high teacher support"
+
+lookup_support <- list(
+  "low family support"="no", 
+  "low peer support"="no", 
+  "low teacher support"="no",
+  "high family support"="yes",
+  "high peer support"="yes",
+  "high teacher support"="yes"
+)
 
 
 # Recode the variables
@@ -619,6 +639,9 @@ hbsc_data <- hbsc_data_list %>%
   mutate(schoolpressure = recode(schoolpressure, !!!lookup_schoolpressure, .default = as.character(NA))) %>%
   mutate(studaccept = recode(studaccept, !!!lookup_studaccept, .default = as.character(NA))) %>%
   mutate(trusted_adult = recode(trusted_adult, !!!lookup_trusted_adult, .default = as.character(NA))) %>%
+  mutate(family_support = recode(d_family_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
+  mutate(peer_support = recode(d_peer_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
+  mutate(teacher_support = recode(d_teacher_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
   
   # multiple vars that use the same lookup:
   mutate(across(c(beenbullied, cbeenbullied), ~recode(., !!!lookup_bullied, .default = as.character(NA)))) %>%
@@ -660,8 +683,7 @@ hbsc_data <- hbsc_data_list %>%
   # family_support and peer_support are already mean scores on the original scale of 1 to 7.
   # student and teacher support scales need some adjustment as these are sums:
   mutate(student_support = (d_student_support + 3 / 3)) %>% # the var in the data is a sum of responses to 3 items that have been recoded from 0 to 4. We want a mean score on the original scale (1 to 5), hence we add 1 for each item, and divide by the number of items.
-  mutate(teacher_support = (d_teacher_support + 3 / 3)) %>% # as above
-  
+
   # create indicators based on multiple vars:
   
   ## gender/sex:
@@ -685,6 +707,7 @@ hbsc_data <- hbsc_data_list %>%
                                 TRUE ~ as.character(NA))) %>% # leaves ~1500 with NA, all from 2022 (over a third of responses that year).
   # ER: My preference would be using the binary variable while there's only one year of non-binary data. 
   # Values not split by sex can use all the data. Revisit after the next data update (2026).  
+  # RETHINK FEB 2026: decided to use sex_all rather than sex_binary, because this gets results closest to the published HBSC results in 2022
   
   ## standardise grade variable 
   mutate(grade = coalesce(grade, class), # class was used in 2002
@@ -756,12 +779,12 @@ hbsc_data <- hbsc_data_list %>%
   mutate(id_strata = ifelse(is.na(id_strata), 1, id_strata)) %>% # prior to 2014: no weights, so replace missings with 1 (equal weighting)
   
   ## keep the vars we need
-  select(trend_axis, sex_all, sex = sex_binary, grade,
+  select(trend_axis, sex = sex_all, sex_binary, grade,
          area_safe, area_sat, d_emc_problem,
          health, lifesat, likeschool, lonely, schoolpressure, 
          studaccept, trusted_adult, beenbullied, cbeenbullied,
          physact60, schooldays_sleep_hrs, parent_comms, discrim, leisure, llti,
-         sleepqual_tot, d_family_support, d_peer_support, student_support, teacher_support, who5,
+         sleepqual_tot, family_support, peer_support, student_support, teacher_support, who5,
          fas_overall,
          dataset_weight, dataset_weight_equating_grade, 
          id_pupil, psu=id_school, strata=id_strata) %>%
@@ -770,31 +793,32 @@ hbsc_data <- hbsc_data_list %>%
 # Calculate the Family Affluence Scale (low, medium and high) using weights and ridit scoring (see guidance)
 fas_ridit <- hbsc_data %>%
   filter(!is.na(fas_overall)) %>%
-  filter(!is.na(sex_all)) %>%
+  filter(!is.na(sex)) %>%
   # the FAS is calculated relative to age and sex for each year. Includes sex==other from 2022.
-  group_by(sex_all, grade, trend_axis) %>%
+  group_by(sex, grade, trend_axis) %>%
   dplyr::arrange(fas_overall) %>%
   dplyr::mutate(cumulative_weight = cumsum(dataset_weight),
                 cumulative_weight_prop = cumulative_weight / sum(dataset_weight)) %>%
   ungroup() %>%
-  group_by(sex_all, grade, trend_axis, fas_overall) %>%
+  group_by(sex, grade, trend_axis, fas_overall) %>%
   mutate(cum_wt_mean = mean(cumulative_weight_prop, na.rm=T)) %>%
   ungroup() %>%
   mutate(fas_overall_3 = dplyr::case_when(cum_wt_mean < 0.20 ~ "Low affluence",
                                         cum_wt_mean >= 0.20 & cum_wt_mean < 0.80 ~ "Medium affluence",
                                         cum_wt_mean >= 0.80 ~ "High affluence")) %>%
-  select(id_pupil, psu, strata, sex_all, grade, trend_axis, fas_overall_3)
+  select(id_pupil, psu, strata, sex, grade, trend_axis, fas_overall_3)
 
 table(fas_ridit$trend_axis, fas_ridit$fas_overall_3, useNA="always")
-table(fas_ridit$sex_all, fas_ridit$fas_overall_3, useNA="always")
+table(fas_ridit$sex, fas_ridit$fas_overall_3, useNA="always")
 
 
 # Add FAS levels back in:
 hbsc_data <- hbsc_data %>%
-  merge(y = fas_ridit, by=c("id_pupil", "psu", "strata", "sex_all", "grade", "trend_axis"), all.x=TRUE)
+  merge(y = fas_ridit, by=c("id_pupil", "psu", "strata", "sex", "grade", "trend_axis"), all.x=TRUE)
 
 # save the data
 saveRDS(hbsc_data, here(hbsc_data_folder, "hbsc_data.rds"))
+hbsc_data <- readRDS(here(hbsc_data_folder, "hbsc_data.rds"))
 
 ##########################################################################################
 # Calculate the indicators
@@ -943,18 +967,18 @@ calc_indicator_data <- function (df, var, ind_id, type) {
   
   # Scotland 
   results1 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis"), type) %>%
-    mutate(split_value = "Total",
+      mutate(split_value = "Total",
            split_name = "Total")
   # Scotland by sex
-  results2 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "sex"), type) %>%
+  results2 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "sex"), type) %>%
     rename(split_value = sex) %>%
     mutate(split_name = "Sex")
   # Scotland by grade
-  results3 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "grade"), type) %>%
+  results3 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "grade"), type) %>%
     rename(split_value = grade) %>%
     mutate(split_name = "School stage")
   # Scotland by FAS
-  results4 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "fas_overall_3"), type) %>%
+  results4 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "fas_overall_3"), type) %>%
     rename(split_value = fas_overall_3) %>%
     mutate(split_name = "Family Affluence Scale")
   
@@ -993,12 +1017,12 @@ cyp_nhood_safe <- calc_indicator_data(df = hbsc_data, var = "area_safe", ind_id 
 cyp_discrimination <- calc_indicator_data(df = hbsc_data, var = "discrim", ind_id = 30163, type = "percent")
 cyp_nhood_good <- calc_indicator_data(df = hbsc_data, var = "area_sat", ind_id = 30164, type = "percent")
 cyp_who5 <- calc_indicator_data(df = hbsc_data, var = "who5", ind_id = 30100, type = "percent")
+cyp_fam_support <- calc_indicator_data(df = hbsc_data, var = "family_support", ind_id = 30126, type = "percent")
+cyp_peer_support <- calc_indicator_data(df = hbsc_data, var = "peer_support", ind_id = 30133, type = "percent")
+cyp_teacher_support <- calc_indicator_data(df = hbsc_data, var = "teacher_support", ind_id = 30142, type = "percent")
 
 # Derive mean scores:
 cyp_sleep_qual <- calc_indicator_data(df = hbsc_data, var = "sleepqual_tot", ind_id = 30113, type = "score")
-cyp_fam_support <- calc_indicator_data(df = hbsc_data, var = "d_family_support", ind_id = 30126, type = "score")
-cyp_peer_support <- calc_indicator_data(df = hbsc_data, var = "d_peer_support", ind_id = 30133, type = "score")
-cyp_teacher_support <- calc_indicator_data(df = hbsc_data, var = "teacher_support", ind_id = 30142, type = "score")
 
 
 
@@ -1012,11 +1036,11 @@ rownames(hbsc_results) <- NULL # drop the row names
 
 # data checks:
 table(hbsc_results$trend_axis, useNA = "always") # 1998 to 2022, na NA
-table(hbsc_results$indicator, useNA = "always") # 23 vars , no NA
+table(hbsc_results$indicator, useNA = "always") # 22 vars , no NA
 table(hbsc_results$year, useNA = "always") # 1998 to 2022, na NA
 table(hbsc_results$def_period, useNA = "always") # Survey year (), no NA
-table(hbsc_results$split_name, useNA = "always") # School stage, Sex, Total no NA
-table(hbsc_results$split_value, useNA = "always") # M/F/Total, P7, S2, S4, no NA
+table(hbsc_results$split_name, useNA = "always") # FAS, School stage, Sex, Total no NA
+table(hbsc_results$split_value, useNA = "always") # FAS, M/F/Total, P7, S2, S4, no NA
 # all good
 
 
@@ -1040,8 +1064,8 @@ hbsc_results <- hbsc_results %>%
                                 indicator == "discrim"             ~ "cyp_discrimination",                   
                                 indicator == "area_sat"            ~ "cyp_nhood_good",  
                                 indicator == "sleepqual_tot"       ~ "cyp_sleep_qual",                    
-                                indicator == "d_family_support"    ~ "cyp_fam_support",                       
-                                indicator == "d_peer_support"      ~ "cyp_peer_support",                   
+                                indicator == "family_support"    ~ "cyp_fam_support",                       
+                                indicator == "peer_support"      ~ "cyp_peer_support",                   
                                 indicator == "teacher_support"     ~ "cyp_teacher_support",  
                                 indicator == "who5"                ~ "cyp_who5_positive",  
                                 TRUE ~ as.character(NA) )) %>%
