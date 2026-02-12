@@ -123,7 +123,8 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 #'@param epop_total only applicable to standardised rates
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
 #'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
-#'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data. Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
+#'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data (or another reason why NA does not mean zero). Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
+#'@param subtract_denoms_if_nums_na optional parameter: Default is FALSE. Set to TRUE if there are NAs in the numerators that are not true zeroes (e.g., suppressed or missing data). If set to TRUE the population lookup containing the denominators will be adjusted (denominators for the missing areas will be subtracted, including from any affected higher geogs)
 
 main_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
@@ -131,7 +132,7 @@ main_analysis <- function(filename,
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
                           pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE,
-                          NA_means_suppressed = FALSE){
+                          NA_means_suppressed = FALSE, subtract_denoms_if_nums_na = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -335,6 +336,36 @@ main_analysis <- function(filename,
     # identify which variables to join data by - the population lookups used for
     # standardised rates also include age and sex splits
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
+    
+    # If there are NA in the numerator file that don't refer to true zeroes the denominators in pop_lookup need to be adjusted to reflect this
+    if(subtract_denoms_if_nums_na == TRUE) {
+      
+      na_pivot_vars <- c("year", "numerator", "denominator", if(measure == "stdrate") c("age_grp", "sex_grp"))
+      
+      # extract the numerators that are NA (suppressed or otherwise missing)
+      # (this chunk largely repeats the processing above, but just keeps the rows where is.na(numerator))
+      na_numerators <- readRDS(file.path(input_folder, full_filename)) |> # read in the base data again, before it was aggregated
+        janitor::clean_names() %>%
+        left_join(y = geography_lookup, join_by(code == !!sym(area_types[1]))) %>% # add in all the higher geogs
+        filter(is.na(numerator)) %>% # select just the NA numerators that were in the base file
+        # select(-contains("datazone")) |> # remove datazone column if this was the base geography - we don't publish at this level
+        left_join(y = pop_lookup, by = joining_vars) %>% # add in the denominators for these missing counts
+        mutate(denominator = -1 * denominator) %>%   # the denominator population is to be subtracted from the base geography pop and any others that it is a part of
+        tidyr::pivot_longer(cols = -any_of(na_pivot_vars), values_to = "code", names_to = NULL) %>% # pivot the data into a 'longer' format so there is just one geography column called 'code'
+        group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+        summarise_all(sum, na.rm = T) |> # calculate the total denominator count to be subtracted from the pop totals  
+        ungroup() %>%
+        select(-numerator)
+      
+      # subtract the denoms as required
+      pop_lookup <- pop_lookup |>
+        rbind(na_numerators) %>%
+        group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+        summarise_all(sum, na.rm = T) |> # subtracts the denom counts where the numerators are missing
+        ungroup() 
+      
+          }
+    
     
     # full_join keeps all groups in the pop_lookup file and indicator data file
     # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
