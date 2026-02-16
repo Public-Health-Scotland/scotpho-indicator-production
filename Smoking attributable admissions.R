@@ -12,14 +12,14 @@
 # Therefore we now need to use aggregated years to provide smoking status for areas, which is not ideal as the ScotPHO indicator is a rolling average.
 # However as smoking attributable admissions/deaths are modelled estimates use of the best available data should be acceptable. 
 
-# As of September 2025 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
-# who host their estimates on scotpho website under tobacco data pages) and ScotPHO team (who produce indicator data for scotpho profiles tool).
+# As of February 2026 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
+# who publish their estimates on the PHS website) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and are generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
 # totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
 
 # Although both teams now use SHeS as source of smoking prevalence our scotland totals will differ as ScotPHO indicator is a 2 year rolling figure
-# (tobacco team produce scotland only data for individual years)
+# (tobacco team produce Scotland only data for individual years)
 
 # Part 1 - Compile smoking prevalence data
 # Part 2 - Extract data from SMRA
@@ -42,16 +42,18 @@ library(readxl) #for reading in xlsx files
 ###############################################.
 
 #Requires two data series. Both are trends in the percentage of ex and current smokers aged 35+ split by sex.
-#Series 1 - prevalence across all age groups but split by CA/HB with overall Scotland values. 
-#Series 2 - prevalence at Scotland level in over 35s split by age groups
+#Series 1 - prevalence split by CA/HB with overall Scotland value for all ages 
+#Series 2 - prevalence split by age groups for Scotland only
 
 ###############################################.
 # Prevalence data series 1:  AREA PREVALENCE ----
 ###############################################.
 
+#These are the smoking prevalences for all ages across the CAs and HBs of Scotland (Series 1)
+
 #These data are stored in 3 data files which are read in, cleaned then combined
 #1 - SHoS data (2012-2018)
-#2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
+#2 - SHeS data file 1 (2019, 2019 used as a proxy for 2020 due to SHeS not taking place)
 #3 - SHeS data file 2 (2022-2023, 2022 used as a proxy for 2021 in line with tobacco team)
 
 #Note - ideally get a full time series from the SG for age 35+ with smoking prevalence data 2019 onwards for 2024 data update
@@ -71,7 +73,7 @@ area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Receive
   rename(smoking_status = smoking_categories)
 
 #3. SHeS Data (2022-2023)
-area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Smoking_HB_LA_35andover_sup.csv")) |> 
+area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Trend Data/Smoking_HB_LA_35andover_sup.csv")) |> 
   janitor::clean_names() |> #variables to snake case
   filter(sex != "All") |> #filter out both sexes combined
   rename(period = year,
@@ -84,7 +86,7 @@ area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Rec
        area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
        year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
   select(-lower_ci, -upper_ci, -health_board, -local_authority) |> #dropping unnecessary cols
-  filter(year > 2021)  #filtering for 2019 onwards, when ShoS series ends
+  filter(year > 2021)  #filtering for 2019 onwards, when SHoS series ends
 
 #Join both SHeS data frames
 area_prevalence_shes <- bind_rows(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
@@ -112,7 +114,7 @@ area_prevalence_shes_scot <- area_prevalence_shes |>
 area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot, by = c("sex","period","year"))
 
 #Duplicate 2019 prevalence figures for 2020 as no survey that year
-#And duplicate 2022 for 2021 as odd trend (in line with tobacco team)
+#And duplicate 2022 for 2021 as improbable trend was observed (in line with tobacco team)
 area_prevalence_shes_20_21 <- area_prevalence_shes |> 
   filter(year %in% c(2019, 2022)) |> 
   mutate(year = recode(year,`2019` = 2020, `2022` = 2021))
@@ -130,6 +132,8 @@ rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_
 ## Prevalence data series 2: AGE PREVALENCE ----
 ###############################################.
 
+#These are the Scotland-level smoking prevalences split by age groups
+
 #1 - SHoS data (2012-2018)
 #2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
 
@@ -145,7 +149,7 @@ age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/
                          "Current cigarette smoker" = "current_age"),
     sex = as.character(sex),
     year2020 = year2019, #To align with tobacco team using 2019 data for 2020 since no SHeS that year
-    year2021 = year2022) |>  #Using 2022 as proxy for 2021 as recommended by tobacco team
+    year2021 = year2022) |>  #On same basis using 2022 as proxy for 2021 - irregular trend. 
 tidyr::pivot_longer(cols = starts_with("year"), names_to = "year", values_to = "percent") |> 
   tidyr::pivot_wider(id_cols = c(age_grp, sex, year), names_from = status, values_from = percent) |> 
   filter(sex != "all", age_grp != "All") |> 
