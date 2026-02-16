@@ -6,12 +6,13 @@
 #Pre-processeing occurs in the ScotPHO Survey Data Repo
 #Then final prep occurs in this script
 
-#5 indicators
+#6 indicators
 #14004 - Adults participating in recreational walking (sprt3aa)
 #14005 - Adults participating in sport (anysportnowalk)
 #14008 - Adults who visit the outdoors at least once per week (outdoor)
 #14009 - Satisfaction with local sport and leisure facilities (serv3a)
 #14010 - Satisfaction with local parks and open spaces (serv3e)
+#14011 - Population living within 5 minutes' walk of nearest green/blue space (greenfar13)
 
 #Availability:
 #all indicators available with deprivation, sex, age and disability splits for Scotland, HB and CA
@@ -148,6 +149,17 @@ run_qa("parks_satisfaction_depr", type = "deprivation")
 
 parks_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
 run_qa("parks_satisfaction", type = "popgrp")
+
+################################################################################
+#8. Adults living within 5 minutes' walk of nearest green/blue space (14011)
+five_min <- split_main_data(shos_pa, indicator = "greenfar13", ind_id = "14011", filename = "five_min_greenspace")
+run_qa("five_min_greenspace", type = "main")
+
+five_min_depr <- split_depr_data(shos_pa, indicator = "greenfar13", ind_id = "14011", filename = "five_min_greenspace")
+run_qa("five_min_greenspace_depr", type = "deprivation")
+
+five_min_popgrps <- split_popgrps_data(shos_pa, indicator = "greenfar13", ind_id = "14011", filename = "five_min_greenspace")
+run_qa("five_min_greenspace", type = "popgrp")
 
 ################################################################################
 #End
