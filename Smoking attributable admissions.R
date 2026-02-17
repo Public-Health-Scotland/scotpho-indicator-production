@@ -143,7 +143,7 @@ age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/S
 #2 - SHeS age data (for period 2019 onwards). This file is obtained from the Tobacco Team
 age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
   clean_names() |> 
-  select(status, age_grp, sex, year2019, year2022, year2023) |> 
+  select(-c(year2003:year2018, year2021)) |>  #drop early years covered by SHoS and 2020
   mutate(status = recode(status,
                          "Ex-regular cigarette smoker" = "ex_age",         
                          "Current cigarette smoker" = "current_age"),
@@ -243,7 +243,9 @@ smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking A
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
-    mutate(sex_grp = as.character(sex_grp))
+    mutate(sex_grp = as.character(sex_grp),
+           current = ifelse(current == 0, 1, current),
+           ex      = ifelse(ex == 0, 1, ex))
 
 #ICD10 codes in relative risk lookup could be presented with 3, 4 or 5 digits. 
 #All SMR records have been extracted with the maximum granularity, but now may need to be truncated to match lookups
@@ -254,7 +256,7 @@ four_chr_codes <- smoking_risks |> filter(nchar(diag) == 4) |> distinct(diag) |>
 five_chr_codes <- smoking_risks |> filter(nchar(diag) == 5) |> distinct(diag) |> pull(diag)
 
 smoking_adm <- smoking_adm |> 
-  mutate(age_band = case_when(age > 34 & age < 55 ~ "35-54",
+  mutate(age_band_coarse = case_when(age > 34 & age < 55 ~ "35-54",
                                             age > 54 & age < 65 ~ "55-64", #create age group bracket columns for joining to smoking risks
                                             age > 64 & age < 75 ~ "65-74",
                                             age > 74 ~ "75+",
@@ -268,7 +270,6 @@ smoking_adm <- smoking_adm |>
   substr(diag, 1, 3) %in% three_chr_codes ~ substr(diag, 1, 3),
   TRUE ~ "Not in lookup"))
 
-
 #Split the smoking risks lookup into 3 based on age groups. Non-age specific, age groups aligning with ShoS prevalence, and 50+
 smoking_risks <- smoking_risks |> 
   rename(icd_trimmed = diag)
@@ -278,7 +279,7 @@ smoking_risks_non_spec <- smoking_risks |>
   select(-age_text)
 
 smoking_risks_age_band <- smoking_risks |>
-  filter(!is.na(age_text) & age_text != "50+") |> 
+  filter(!age_text %in% c("50+", "")) |> 
   rename(age_band = age_text)
 
 smoking_risks_fifty_plus <- smoking_risks |> 
@@ -287,7 +288,7 @@ smoking_risks_fifty_plus <- smoking_risks |>
 
 #Joining each group to the main SMR df
 joined_non_spec <- left_join(smoking_adm, smoking_risks_non_spec, by = c("icd_trimmed", "sex_grp"))
-joined_age_band <- left_join(smoking_adm, smoking_risks_age_band, by = c("icd_trimmed", "sex_grp", "age_band"))
+joined_age_band <- left_join(smoking_adm, smoking_risks_age_band, by = c("icd_trimmed", "sex_grp", "age_band_coarse" = "age_band"))
 joined_fifty_plus <- left_join(smoking_adm, smoking_risks_fifty_plus, by = c("icd_trimmed", "sex_grp", "fifty_plus")) 
 
 #Coalescing the 2 dfs together to overwrite the NAs
@@ -295,8 +296,7 @@ smoking_joined <- joined_age_band |>
   mutate(
     current = coalesce(current, joined_non_spec$current),
     ex = coalesce(ex, joined_non_spec$ex),
-    disease = coalesce(disease, joined_non_spec$disease),
-    group = coalesce(group, joined_non_spec$group)
+    disease = coalesce(disease, joined_non_spec$disease)
   ) 
 
 #Removing some records for combinations of sex, age and diagnosis that are not associated with risk
@@ -318,7 +318,7 @@ smoking_adm_2 <- smoking_adm |>
   # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
   filter(!(is.na(code)))
 
-saveRDS(smoking_adm_2, file.path(profiles_data_folder, '/Temporary/smoking_adm_part3.rds'))
+saveRDS(smoking_adm_2, file.path(profiles_data_folder, '/Temporary/smoking_adm_part4.rds'))
 
 ###############################################.
 # Merging prevalence with smoking adm basefile 
@@ -335,10 +335,7 @@ smoking_adm_2 <- left_join(smoking_adm_2, area_prevalence, by = c("code", "year"
            TRUE ~ NA_character_  ))
 
 #And now merging with the file with prevalence by age and sex 
-smoking_adm <- left_join(smoking_adm_2, age_prevalence, by = c("agegrp2", "year", "sex_grp", "source")) 
-
-#smoking_adm2 <- readRDS(file=paste0(data_folder, 'Temporary/smoking_adm_part3.rds'))
-
+smoking_adm <- left_join(smoking_adm_2, age_prevalence, by = c("agegrp2", "year", "sex_grp")) 
 
 ###############################################.
 ## Part 5 - Calculate smoking attributable fractions ----
