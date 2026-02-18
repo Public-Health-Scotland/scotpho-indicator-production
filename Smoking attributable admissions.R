@@ -5,14 +5,14 @@
 # Put simply calculation involves multiplying certain types of admissions/deaths by the attributable fractions that are 
 # associated with smoking and then also factoring percentage of the population that are current or ex smokers.
 
-# For 2019 onwards the indicator switched from using SHoS (Household Survey) as the source of smoking prevalence to using SHeS (Health Survey).
+# For 2019 data onwards the indicator switched from using SHoS (Household Survey) as the source of smoking prevalence to using SHeS (Health Survey).
 # This was because around this time SHoS stopped asking about ex-smoking status, which is essential to calculate attributable hospitalisations/deaths.
 # This change was recommended by the SG SHoS team as SHeS is deemed the best source of health data.
 # SHes was not previously used as the sample size did not allow for robust estimates at LA level.
 # Therefore we now need to use aggregated years to provide smoking status for areas, which is not ideal as the ScotPHO indicator is a rolling average.
 # However as smoking attributable admissions/deaths are modelled estimates use of the best available data should be acceptable. 
 
-# As of February 2026 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (lead by Scott Kilgariff,
+# As of February 2026 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (led by Scott Kilgariff,
 # who publish their estimates on the PHS website) and ScotPHO team (who produce indicator data for scotpho profiles tool).
 # The estimates produced by the two teams serve different purposes and are generated using different scripts - the outputs are 
 # therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
@@ -232,8 +232,8 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
   mutate(scotland = "S00000001")
 
 #Saving temporary file
-saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
-smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+# saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+# smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
 
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
@@ -315,12 +315,13 @@ smoking_adm_2 <- smoking_adm |>
   filter(!(is.na(code))) |> 
   filter(!code %in% c("S08200001", "S08200002", "S08200003", "S08200004")) #removing non-Scotland admissions (no admissions associated, but empty rows were in output)
 
-saveRDS(smoking_adm_2, file.path(profiles_data_folder, '/Temporary/smoking_adm_part4.rds'))
+saveRDS(smoking_adm_2, file.path(profiles_data_folder, 'Temporary/smoking_adm_part4.rds'))
 
 ###############################################.
 # Merging prevalence with smoking adm basefile 
 smoking_adm_2 <- left_join(smoking_adm_2, area_prevalence, by = c("code", "year", "sex_grp")) |> 
   #recode age groups to match prevalence by age file
+  #note that different age groupings used in SHeS and SHoS so different approach needed for 2019 on
   mutate(age_grp = as.numeric(age_grp),
          agegrp2 = case_when(
            year > 2018 & age_grp %in% c(8, 9) ~ "35-44",
