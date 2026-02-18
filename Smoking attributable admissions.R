@@ -191,7 +191,7 @@ sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
-smoking_adm_2 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
             FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
@@ -231,13 +231,9 @@ smoking_adm_2 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
   filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
   mutate(scotland = "S00000001")
 
-##########################
-#Temp code to output SMR file and re-read in to save running over and over again
-#saveRDS(smoking_adm_2, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds"))
-
-smoking_adm <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/smoking_attrib_hosp_test_030925.rds")) |> 
-  filter(!is.na(pc7)) |> 
-  mutate(scotland = "S00000001")   # creating variable for Scotland
+#Saving temporary file
+saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
 
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
@@ -316,7 +312,8 @@ smoking_adm_2 <- smoking_adm |>
   select(-c("geo_level")) |>  
   group_by(code, year, sex_grp, age_grp, current, ex)  |>  count() |>  ungroup() |>  
   # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
-  filter(!(is.na(code)))
+  filter(!(is.na(code))) |> 
+  filter(!code %in% c("S08200001", "S08200002", "S08200003", "S08200004")) #removing non-Scotland admissions (no admissions associated, but empty rows were in output)
 
 saveRDS(smoking_adm_2, file.path(profiles_data_folder, '/Temporary/smoking_adm_part4.rds'))
 
@@ -364,12 +361,12 @@ saveRDS(smoking_adm_test, file.path(profiles_data_folder, '/Prepared Data/smokin
 main_analysis(filename = "smoking_adm", measure = "stdrate", geography = "multiple",
              pop = "CA_pop_allages", yearstart = 2012, yearend = 2023,
              time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 1548, 
-             year_type = "calendar", test_file = T)
+             year_type = "calendar")
 
   
 # Rounding figures - they are estimates and rounding helps to understand that
 # they are not precise
-data_shiny <- readRDS(file.path(profiles_data_folder, "/Data to be checked/smoking_adm_shiny.rds")) |>  
+data_shiny <- readRDS(file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds")) |>  
   mutate(numerator = round(numerator, -1)) |>  #to nearest 10
   mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
 
