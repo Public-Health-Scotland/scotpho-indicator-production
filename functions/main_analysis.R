@@ -63,7 +63,7 @@ source("functions/helper functions/create_trend_axis_column.R") # for creating t
 source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
-
+source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
@@ -123,13 +123,15 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 #'@param epop_total only applicable to standardised rates
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
 #'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
+#'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data. Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
 
 main_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
                           geography = c("scotland", "board", "council", "intzone11", "datazone11", "multiple"),
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
-                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE){
+                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE,
+                          NA_means_suppressed = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -270,12 +272,23 @@ main_analysis <- function(filename,
 
 
   # and finally, aggregate the data by each geography code
-  data <- data |>
-    group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
-    summarise_all(sum, na.rm = T) |>
-    # revert to base sum function as hablar allows presence of NA that generate issues later on in script 
-    # summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
-    ungroup()
+  if (NA_means_suppressed==FALSE) {
+    
+    data <- data |>
+      group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+      summarise_all(sum, na.rm = T) |>
+      ungroup()
+  }
+  
+  if (NA_means_suppressed==TRUE) {
+   
+    data <- data |>
+      group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+      summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
+      # means that aggregated totals that include some suppressed data will be calculated. The metadata should note that suppression exists in the data.  
+      ungroup()
+    
+  }
 
   # step complete
   cli::cli_alert_success("'Aggregate by geography level' step complete.")
@@ -335,36 +348,32 @@ main_analysis <- function(filename,
     
     
     # Temporary step for indicators being updated to include 2024 data that we publish at IZ/Locality level
-    # 2024 data at IZ/HSC locality level cannot be used (incuding within any rolling averages) until the release of SAPE 2024 in Winter 2025
+    # 2024 data at IZ/HSC locality level cannot be used (incuding within any rolling averages) until the release of SAPE 2024 in Spring 2026
     # This step alerts analysts and removes any 2024 figures at IZ/locality level in step PRIOR to aggregating data by time periods to 
     # ensure these data not included in any rolling averages.
     # This code can be removed following release of SAPE 2023 and 2024 
     
-    # Note commented out until:
-    # re-based SAPE 2011-2022 released (Autumn 2025)
-    # and scotpho lookups refreshed (including adding MYE 2024 for higher geographies)
-    
-    # if(geography == "datazone11" & yearend == 2024){
-    # 
-    #   response <- utils::askYesNo(paste(
-    #     "\n2024 figures (including inclusion in any rolling averages) can only currently be calculated for council level and above.\n",
-    #     "IZ/Locality level data can only be calculated up to 2023. Figures for these geographies will be refreshed using 2011-2021 rebased population\n",
-    #     "estimates and 2022 small area population estimates (SAPE) for 2022 and (provisionally) for 2023.\n\n",
-    #     "Ensure the 'notes_caveats' column of the techdoc explains this for users. Also ensure the 'next_update' date of this indicator is Winter 2025,\n",
-    #     "following the release of SAPE 2023 and 2024. This will ensure ALL geography levels include data up to 2024.\n\n",
-    #     "Type 'Yes' to continue",
-    #     sep = ""
-    #   ))
-    #   
-    #   if (isTRUE(response)) {
-    #     cli::cli_alert_success("Removing 2024 data at IZ/Locality level.")
-    #     data <- data |>
-    #       filter(!(grepl("S02|S99", code) & year == 2024))
-    #   } else {
-    #     cli::cli_abort("Process aborted")
-    #   }
-    # 
-    # }
+    if(geography == "datazone11" & yearend == 2024){
+
+      response <- utils::askYesNo(paste(
+        "\n2024 figures (including inclusion in any rolling averages) can only currently be calculated for council level and above.\n",
+        "IZ/Locality level data can only be calculated up to 2023. Figures at IZ/locality level are NOT rebased\n",
+        "their 2023 figures are based on 2022 small area population estimates. Deprivation analysis can not be updated either. \n\n",
+        "Ensure the 'notes_caveats' column of the techdoc explains this for users. Also ensure the 'next_update' date of this \nindicator is Spring 2026,\n",
+        "(i.e. to be updated again following the release of SAPE 2023 and 2024)\n\n",
+        "Type 'Yes' to continue",
+        sep = ""
+      ))
+
+      if (isTRUE(response)) {
+        cli::cli_alert_success("Removing 2024 data at IZ/Locality level.")
+        data <- data |>
+          filter(!(grepl("S02|S99", code) & year == 2024))
+      } else {
+        cli::cli_abort("Process aborted")
+      }
+
+    }
     
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
@@ -378,32 +387,44 @@ main_analysis <- function(filename,
   # However, we often need to combine years in order to publish data if the figures are small or sensitive. This step
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
 
-  # replace NAs with 0 before aggregating data by time period
-  data <- data |>
-    tidyr::replace_na(list(numerator = 0,
-                           denominator = 0))
-  
-  
   # determine sort order or variables before aggregating
   var_order <- if(measure == "stdrate"){
     c("code", "sex_grp", "age_grp", "year")
   } else {
     c("code", "year")
   }
-
   
-  # aggregate by time period
-  data<- data |>
-    arrange(across(all_of(var_order))) |> # arrange data by var order
-    group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
-    # calculating rolling averages
-    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
-  # mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) # na.rm TRUE 
-    filter(!is.na(denominator)) |>
-    ungroup() |>
+  if (NA_means_suppressed==FALSE) {
+    
+    # replace NAs with 0 before aggregating data by time period
+    data <- data |>
+      tidyr::replace_na(list(numerator = 0, # should est_pop be included here too? I don't have indicators with this column in...
+                             denominator = 0))
+  
+    # aggregate by time period
+    data<- data |>
+      arrange(across(all_of(var_order))) |> # arrange data by var order
+      group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
+      # calculating rolling averages
+      mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
+      ungroup() 
+  }
+  
+  if (NA_means_suppressed==TRUE) { # additional na.rm=TRUE is the only difference here. Maybe possible to simplify?
+    
+    # aggregate by time period
+    data<- data |>
+      arrange(across(all_of(var_order))) |> # arrange data by var order
+      group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
+      # calculating rolling averages
+      mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
+      ungroup() 
+  }
+  
+  data <- data |>
+    filter(!is.na(denominator) | is.nan(denominator)) |> # want to keep NaN but drop NA
     mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
-  
-
+  #Want to keep suppressed data as NA so that these are available to show as empty cells on the dashboard, and are included in data downloads from there
   
   # step complete
   cli::cli_alert_success("'Aggregate by time period' step complete - aggregated by {time_agg} year{?s}")

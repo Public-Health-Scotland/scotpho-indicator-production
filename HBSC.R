@@ -27,7 +27,6 @@
 
 # 30100	Children's mental wellbeing =	% classed as having positive mood on the WHO-5 wellbeing index. Derived from responses to five statements about how the respondent has been feeling during the past two weeks. Items = have felt cheerful and in good spirits / I have felt calm and relaxed / I have felt active and vigorous / I woke up feeling fresh and rested / My daily life has been filled with things that interest me. A score of 50 or less is classified as low mood.  (2018 and 2022 only)
 # 30104	Children reporting high life satisfaction =	% of pupils reporting high life satisfaction (a score of 6 or more from 0 (worst possible life) to 10 (best possible life))
-# 30111	Children meeting physical activity guidelines =	% of pupils reporting doing 1 hour or more of physical activity every day
 # 30112	Children getting sufficient sleep =	% of pupils getting at least 8 hours sleep on a school night, on average. Calculated from their reported usual bedtime and waking time on a schoolday.
 # 30113	Children's sleep quality score =	Adolescent Sleep Wake Scale (ASWS) mean score. Derived from responses to 10 items covering bedtime behaviours, sleep efficiency, and morning wakefulness. 
 # 30114	Children assessing their general health as good or excellent =	% of pupils who perceive their health in general to be good or excellent (as opposed to fair or poor).
@@ -57,6 +56,9 @@
 # 30163	Children experiencing discrimination from adults =	% of pupils who report often or very often being treated unfairly by adults because of their sex, ethnicity, or socioeconomic status. 
 # 30164	Children thinking their neighbourhood is a good place to live =	% of pupils who think that the area in which they live is a good place to live
 
+# now sourced from SHeS instead of HBSC (although percentages are quite different due to different info source and way in which questions answered):
+# SHeS deemed to be a more comprehensive (covered more ages) sample and perhaps more reliable question on which to base activity levels on
+# 30111	Children meeting physical activity guidelines =	% of pupils reporting doing 1 hour or more of physical activity every day
 
 
 ### functions/packages -----
@@ -578,11 +580,10 @@ lookup_fas_dishwasher <- list(
 
 # Variables that can be from their numbers (either apply a cut-off value, or present as a mean):
 
-# Physical activity:
-###################################
-physact_responses <- get_responses("physact60") %>% unlist(use.names=FALSE) %>% unique()
-physact_responses
-# [1] NA        "7 days"  "4 days"  "3 days"  "5 days"  "0 days"  "1 day"   "6 days"  "2 days"  " 6 days" " 7 days" " 5 days" " 4 days" " 2 days" " 3 days"
+# # Physical activity: NOW SOURCED FROM SHES INSTEAD
+# ###################################
+# physact_responses <- get_responses("physact60") %>% unlist(use.names=FALSE) %>% unique()
+# # [1] NA        "7 days"  "4 days"  "3 days"  "5 days"  "0 days"  "1 day"   "6 days"  "2 days"  " 6 days" " 7 days" " 5 days" " 4 days" " 2 days" " 3 days"
 
 
 # Schoolday sleep hours:
@@ -658,10 +659,10 @@ hbsc_data <- hbsc_data_list %>%
   mutate(across(any_of(fas_dishwasher), ~recode(., !!!lookup_fas_dishwasher, .default = as.numeric(NA)))) %>%
   
   # variables with numeric recoding:
-  mutate(physact60 = parse_number(physact60)) %>% # extract the number (there are no responses with no number)
-  mutate(physact60 = case_when(physact60==7 ~ "yes", 
-                               physact60<7 ~ "no",
-                               TRUE ~ as.character(NA))) %>%
+  # mutate(physact60 = parse_number(physact60)) %>% # extract the number (there are no responses with no number)
+  # mutate(physact60 = case_when(physact60==7 ~ "yes", 
+  #                              physact60<7 ~ "no",
+  #                              TRUE ~ as.character(NA))) %>%
   mutate(schooldays_sleep_hrs = parse_number(schooldays_sleep_hrs)) %>% # extract the number (there are no responses with no number)
   mutate(schooldays_sleep_hrs = case_when(schooldays_sleep_hrs>=8 ~ "yes", 
                                           schooldays_sleep_hrs<8 ~ "no",

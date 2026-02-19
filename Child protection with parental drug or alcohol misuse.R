@@ -424,6 +424,7 @@ prepare_main_data <- function(indicator, ind){
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
                 time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE)
+
   
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
   new_data <- main_analysis_result %>%

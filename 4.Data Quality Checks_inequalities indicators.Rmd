@@ -104,6 +104,31 @@ geo_checks <- quintile_checks %>%
   spread(geo_type, count) %>%
   ungroup()
 
+
+# step above creates a column for each quint type
+# need to create cols for quintiles not found in dataset
+# and populate with NA so that the checks below work properly
+if(hscp_quintiles == FALSE){
+  geo_checks$S37 <- NA
+}
+
+if(pd_quintiles == FALSE){
+  geo_checks$S32 <- NA
+}
+
+if(ca_quintiles == FALSE){
+  geo_checks$S12 <- NA
+}
+
+if(hb_quintiles == FALSE){
+  geo_checks$S08 <- NA
+}
+
+if(scot_quintiles == FALSE){
+  geo_checks$S00 <- NA
+}
+
+
 #flextable to check how many geogrpahy types are present each year for within scotland quintiles
 ft_sc_quin_check <- geo_checks %>%
   subset(quint_type=="sc_quin") %>%
@@ -400,6 +425,13 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 Look at proportion of areas and quintiles where more than 10% of row include counts of less than 5 and therefore may not be robust. 
 
 ```{r}
+
+# check if the data has numerators:
+numerators_present <-ifelse(all(data_indicator$numerator == "", na.rm = TRUE)|
+                              all(is.na(data_indicator$numerator)),FALSE,TRUE)
+
+# check for small counts if numerators present
+if (numerators_present==TRUE) {
 small_count_data <- data_indicator  %>% 
   group_by(geo_type, quint_type, quintile, year,sex) %>%
   summarise(count=n(),u5=sum(numerator<5)) %>%
@@ -407,8 +439,10 @@ small_count_data <- data_indicator  %>%
          year =as.factor(year)) %>%
   ungroup() %>%
   subset(percent_U5>10)
-
 if(nrow(small_count_data)>0) {flextable(small_count_data)} else {"No counts less than 5."}
+} else {
+  "No numerators in the data"
+}
 
 
 ```

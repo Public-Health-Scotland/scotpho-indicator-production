@@ -45,7 +45,7 @@ le0_iz_profiles <- le0_data %>%
          trend_axis=paste0(as.character(year)," Midpoint")) %>%
   select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis) %>%
   rename(code=geography,
-         lex = LEx,
+         rate = LEx,
          lowci = lci,
          upci = uci)
 
@@ -56,27 +56,24 @@ rm(le0_data)
 ##########################################################################################.
 ## Part 2 - Read in Life Expectancy estimates from NRS at Scotland, NHS Board and LA level ----
 ## Note these estimates are the official national statistics and are 3 year rolling averages.
-## Figures orignally supplied by population & migration team at NRS but issues reported in July 2025 meant indicator rerun using
+## Figures originally supplied by population & migration team at NRS but issues reported in July 2025 meant indicator rerun using
 ## data sourced from Statistics.gov.scot which may contain rebased estimates calculated following 2022census
 ##########################################################################################. 
 
+# If data coming from csv file which has been manually constructed then use lines below
 # NRS_data <- read_csv(paste0(source_network,"NRS LE data with CI 2001 to 2023_corrected LA codes.csv")) %>%
 #   arrange(code, time_period, sex_grp)
 
-# open data from statistics.gov
-statsgov_data <- read_csv(paste0(source_network,"statistics_gov 2001 to 2023.csv")) |>
-  arrange(code, time, sex_grp) |>
-  mutate(time_period=paste0(substr(time,1,4)," to ",substr(time,6,9))) |>
-  select(-time)
+# Read in 3 year,abridged life expectancy estimates sourced from NRS (Via SG open data platform)
+# See script 'NRS Life Expectancy (3 year figures) from SG opendata platform.R' in this project
 
-#format fields
-NRS_data <- statsgov_data %>%
-  mutate(def_period=paste0(time_period," (3 year aggregate)"),
-         year=as.numeric(substr(time_period,1,4))+1,# year should be mid-point of time series - this formula assumes 3 year time period
-         trend_axis=paste0(as.character(year)," Midpoint"),
-         sex=as.character(sex_grp)) %>%
-  select(-sex_grp, -time_period) |> #-geography) %>%
-  rename(sex_grp=sex)
+NRS_statsgov <- readRDS(paste0("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS_statistics_gov 2001 to 2024.rds"))
+
+# format fields
+NRS_data <- NRS_statsgov |>
+  mutate(def_period=paste0(ref_period," (3 year aggregate)"),
+         year=as.numeric(substr(ref_period,1,4))+1,# year should be mid-point of time series - this formula assumes 3 year time period
+         trend_axis=paste0(as.character(year)," Midpoint"))
 
 ## Create HSCP geography data file from council figures 
 #  One HSCP (Stirling & Clacks) is formed of two council areas combined
@@ -97,38 +94,86 @@ hscp_data <- hscp_data |>
   filter(!is.na(hscp2019))
 
 #bind data so it will include Scotland, NHS board, Local Authority and HSCP level
-le_data <- bind_rows(NRS_data, hscp_data)
+NRS_data_plus <- bind_rows(NRS_data, hscp_data)|>
+  select(-hscp2019)
+
+rm(hscp_data,NRS_data,profiles_tool_geo_lookup)
 
 
 ##########################################################################################.
 ## Part3 - Generate data files for Shiny profile tool ----
 ##########################################################################################.
 
-all_le_data<- bind_rows(le0_iz_profiles, NRS_data) %>%
+## main data ----
+
+main_data<- bind_rows(le0_iz_profiles, NRS_data_plus) %>%
+  filter(urban=="all") |> #exclude urban split when preparing main indicator data
   mutate(ind_id= case_when(sex_grp=="1" ~ "20101", #male indicator number
                            sex_grp=="2" ~ "20102", #female indicator number
                            TRUE ~"x"),
          code = case_when(code=="S92000003"~"S00000001", TRUE~as.character(code))) %>%
   arrange(ind_id, year, code) %>% 
   mutate(numerator="") %>% #insert column where numerator would ordinarily be - there is no numerator for LE
-  select(code, ind_id, year, numerator, rate=lex,lowci,upci, def_period, trend_axis)
+  select(code, ind_id, year, numerator, rate,lowci,upci, def_period, trend_axis)
 
 ## Male life expectancy file
-profile_data_male_LE <- all_le_data %>% subset(ind_id=="20101") 
+main_male_LE <- main_data %>% subset(ind_id=="20101") 
 
 #save files to profiles indicator data to be checked folder on network
-write_csv(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.csv"))
-write_rds(profile_data_male_LE, file = paste0(shiny_network, "life_expectancy_male_shiny.rds"))
+write_csv(main_male_LE, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny.csv"))
+write_rds(main_male_LE, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny.rds"))
 
 # This indicator script doesn't use analysis functions but indicator checking report can still be called:
-run_qa(filename="life_expectancy_male", type="main",check_extras = "S12000005")
+run_qa(filename="life_expectancy_male", type="main",check_extras = "S12000005", test_file = FALSE)
 
+### Female life expectancy file
+main_female_LE <- main_data %>% subset(ind_id=="20102") 
 
-## Female life expectancy file
-profile_data_female_LE <- all_le_data %>% subset(ind_id=="20102") 
-
-write_csv(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.csv"))
-write_rds(profile_data_female_LE, file = paste0(shiny_network, "life_expectancy_female_shiny.rds"))
+write_csv(main_female_LE, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny.csv"))
+write_rds(main_female_LE, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny.rds"))
 
 # This indicator script doesn't use analysis functions but indicator checking report can still be called:
 run_qa(filename="life_expectancy_female", type="main",check_extras = "S12000005")
+
+
+## popgroups data ----
+## Pop groups for male/female and urban/rural classifications
+
+popgrp_data_sex <- main_data |>
+  mutate(split_name = "Sex",
+         split_value = case_when(ind_id== "20101" ~ "Male", ind_id== "20102" ~ "Female", TRUE ~"other"))
+
+popgrp_data_urban <- NRS_data_plus |>
+  filter(code=="S00000001", year>2011) |> #urban rural split only available at scotland level and only from 2012 onward
+  mutate(split_name= "Urban/Rural",
+         split_value = case_when(urban=="all" ~"All areas", TRUE ~ urban),
+         ind_id= case_when(sex_grp=="1" ~ "20101", #male indicator number
+                           sex_grp=="2" ~ "20102", #female indicator number
+                           TRUE ~"x"),
+         numerator="")|>
+  select (-urban,-ref_period, -sex_grp)
+
+male_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20101")
+female_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20102")
+
+## Male life expectancy popgrp file (add sex and urban/rural split) then ensure all indicator ID assinged to male
+popgrp_data_male <- rbind(popgrp_data_sex,male_data_urban)|> mutate(ind_id= "20101")
+
+#save files to profiles indicator data to be checked folder on network
+write_csv(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny_popgrp.csv"))
+write_rds(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny_popgrp.rds"))
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_male", type="popgrp", test_file = FALSE)
+
+### Female life expectancy file
+popgrp_data_female <-  rbind(popgrp_data_sex,female_data_urban)|> 
+  mutate(ind_id= "20102")
+
+write_csv(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.csv"))
+write_rds(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.rds"))
+
+# This indicator script doesn't use analysis functions but indicator checking report can still be called:
+run_qa(filename="life_expectancy_female", type="popgrp", test_file = FALSE)

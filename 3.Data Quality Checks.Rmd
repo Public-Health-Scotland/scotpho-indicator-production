@@ -14,15 +14,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, include=FALSE}
 library(reactable)
 
-
-data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
+# Path to files (switch file path to a different location if working on test indicators)
+#profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data" # this path will already exist when running this QA as part of indicator production
 
 #Read in geography code names dictionary
-code_dictionary <- readRDS(paste0(data_folder,"Lookups/Geography/codedictionary.rds")) 
+code_dictionary <- readRDS(paste0(profiles_data_folder,"/Lookups/Geography/codedictionary.rds")) 
 
-#Read in indicator file being checked (switch file path if working on test in
-profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
+#Running create_geo_parents() will run a function (in helper functions folder) that generates a dataframe that is available to 
+# the rest of this script which details what the parent areas for intermediate zone, council areas or HSCP localities are.
+# the dataframe will be called "master_parent_geos"
+create_geo_parents()
 
+#Read in indicator file being checked 
 output_folder <- if(test_file){
     file.path(profiles_data_folder, "Test Shiny Data") # for newly developed indicators that have never been in the profiles tool
     } else {
@@ -60,12 +63,13 @@ locality <- any(substr(data_indicator$code,1,3) == "S99")
 iz <- any(substr(data_indicator$code,1,3) == "S02")
 pd <- any(substr(data_indicator$code,1,3) == "S32")
 
+
 #Recode missing CI to zeros rather than NA to allow report to run
 data_indicator$lowci[is.na(data_indicator$lowci)] <- 0 # Converting NA's to 0s
 data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 
 #Read in old indicator data file from network /Shiny data folder - if one exists (new indicators won't have a historic file)
-old_indicator_filepath <- paste0(data_folder, "Shiny Data/", filename, "_shiny.rds") #create value which is file path to old file
+old_indicator_filepath <- paste0(profiles_data_folder, "/Shiny Data/", filename, "_shiny.rds") #create value which is file path to old file
 
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
 if(file.exists(old_indicator_filepath)) {
@@ -75,7 +79,7 @@ if(file.exists(old_indicator_filepath)) {
   old_indicator_filepath <-"life expectancy indicators hard to check against historic files" #if no historic file exists
   } else {
   skip_historic_file_checks <-"n" # if historic file found then instruct this report not to skip over thse checks
-  old_data_indicator <- readRDS(paste0(data_folder, "Shiny Data/", filename, "_shiny.rds"))
+  old_data_indicator <- readRDS(paste0(profiles_data_folder, "/Shiny Data/", filename, "_shiny.rds"))
   old_data_indicator$year <- as.numeric(old_data_indicator$year)#read in file if one exists
 }} else {
   skip_historic_file_checks <-"y" #if no historic file found then instruct this report to skip over some of the checks
@@ -289,7 +293,7 @@ ifelse(confidence_check$ci_error_total == 0, "No rates outwith confidence limits
 <br>
 ####Scotland & NHS boards
 Does Scotland rate seem like a sensible figure, how wide are the confidence intervals? <br>
-Does Scotland rate look about average of all NHS boards?<br>
+Does Scotland rate look about average of all NHS boards? (N.B. if indicator only available at national level then chart will only show a data point for Scotland). <br>
 Are there any outliers or strange looking confidence intervals (expect island boards to have wide CI)?
 
 ```{r, echo=FALSE}
@@ -317,11 +321,11 @@ scot_check
 
 ------------------------------------------------------------------------------------
 
-###**Data check 6:**
+###**Data check 6: Checking values for different geography types seem to agree**
 <br>
-#### Are geographies that ought to be the same matching?
-Most council areas are the same as HSC Partnerships.
-If these geographies are available, use the chart to look at whether the rates for council are and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle)
+Sometimes mistakes creep in when aggregating larger geographies from smaller ones. The following checks look at whether rates (& numerators if available) seem to make sense. Council areas can be aggregated & the totals should be equal to health boards (eg Borders council is the same as NHS borders, 5 councils make up NHS GGC), also in general HSCP partnerships should match councils. Numerators for HSCP locality should also sum up to the HSCP partnership total.
+<br>
+Use the chart to look at whether the rates for Edinburgh council and HSCP match. Also check if HSC locality rates seem consistent with partnership data (i.e partnership rate should be roughly in the middle). Edinburgh city chosen as one example, checking rates across all areas not currently done. Further tests below look at numerators across all geographies.
 
 ```{r, include=FALSE}
 
@@ -347,7 +351,6 @@ edinburgh_chart <- ggplot(data = data_indicator %>%
   labs(x = "", y =  "Measure")
 
 # Additional check of numerators (where present) to test if all numerators agree
-
 if(all(data_indicator$numerator != "", na.rm = TRUE)){    #if numerator column is not blank
 edinburgh_data <- data_indicator %>%        # create data frame filtered for edinburgh geographies
   filter(areaname =="City of Edinburgh" | areaname=="Edinburgh" | areaname=="Edinburgh North East"| 
@@ -386,17 +389,115 @@ if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data ava
 
 ```
 
-If dataset contains numerators check if for agreement between geography types. <br>
+If dataset contains numerators check for agreement between council, NHS board and partnership areas in Lothian/Edinburgh. <br>
 
 ```{r, echo=FALSE}
 if(ca==TRUE & hscp==TRUE){ #only include if ca and hscp data available
 ed_flex}
 
 if(ca==FALSE | hscp==FALSE){ #only include chart when either ca or hscp data available
-"No ca or hscp numerators to check"
+"No Council or HSCP numerators to check"
 }
 
 ```
+
+
+###**Additional comparisons for numerators across scotland**
+<br>
+
+Checking if the numerators for child geographies sum to parent areas (bear in mind some indicators don't have numerators so this check won't always run).
+If your source data also applies suppression then its possible that different geographies won't sum to same totals. Seek advice if you can't figure out why sums aren't agreeing
+
+```{r, include=FALSE}
+
+# calculate sum of numerators for locality data and compare to parent hscp total
+# these checks might flag if hscp localities are incorrectly labelled, for example when LIST datazone to HSCP locality lookup isn't updated 
+numerators_present <-ifelse(all(data_indicator$numerator == "", na.rm = TRUE),FALSE,TRUE)
+       
+
+# if locality data and numerators present check if numerator totals agree
+if(locality==TRUE & numerators_present == TRUE){ # 
+
+#filter indicator data to only HSCP locality data
+locality_sum <-data_indicator |>
+  filter(substr(code,1,3) == "S99") #filter indicator data to only HSCP locality data  
+
+#match on parent geographies
+locality_sum <- left_join(x=locality_sum, y=master_parent_geos , by="code") # join parent area lookup
+
+#sum HSCP localities data to give a total at the hsc partnership level 
+locality_sum  <- locality_sum |>
+  group_by(year,hscp2019) |>
+    summarise(locality_numerator_sum=sum(numerator))|>
+    ungroup()
+
+#filter the actual HSCP level indicator data so it can be compared to the summed totals from child areas
+data_hscp <- data_indicator |>
+  filter(substr(code,1,3) == "S37")
+
+check_locality <- left_join(x=data_hscp, y=locality_sum, by = c("code"="hscp2019","year"))|>
+  mutate(locality_match=round(numerator-locality_numerator_sum,2)) |>
+  filter(locality_match>0) |>
+  select(year,code,areaname,code_name, geo_type,numerator,locality_numerator_sum,locality_match)
+
+rm(data_hscp, locality_sum)
+}
+
+```
+If dataset contains numerators & locality data present - check that locality numerators sum is the same for their corresponding HSCP partnership.
+If there are large discrepancies consider if the HSCP locality lookup is correct.<br>
+```{r, echo=FALSE}
+if(locality==TRUE & numerators_present == TRUE){
+flextable(check_locality)}
+
+if(locality==FALSE | numerators_present == FALSE){ #only include table when hscp locality data available
+"No HSCP locality level data to run check on"
+}
+
+```
+
+```{r, include=FALSE}
+# if council data and numerators present check if numerator totals agree  
+if(ca==TRUE & numerators_present == TRUE){ # 
+
+#filter indicator data to only council data
+council_sum <-data_indicator |>
+  filter(substr(code,1,3) == "S12") #filter indicator data to only ca data  
+
+#match on parent geographies
+council_sum <- left_join(x=council_sum, y=master_parent_geos , by="code") # join parent area lookup
+
+#sum HSCP localities data to give a total at the hsc partnership level 
+council_sum  <- council_sum |>
+  group_by(year,hb2019) |>
+    summarise(council_numerator_sum=sum(numerator))|>
+    ungroup()
+
+#filter the actual nhs board level indicator data so it can be compared to the summed totals from child areas
+data_hb <- data_indicator |>
+  filter(substr(code,1,3) == "S08")
+
+check_council <- full_join(x=data_hb, y=council_sum, by = c("code"="hb2019","year"))|>
+  mutate(council_match=round(numerator-council_numerator_sum,2)) |>
+  filter(council_match>0) |>
+  select(year,code,areaname,code_name, geo_type,numerator,council_numerator_sum,council_match)
+
+rm(data_hb, council_sum)
+}
+```
+If indicator dataset contains numerators - run a check that summing the relevant council area matches the health board total .<br>
+
+```{r, echo=FALSE}
+
+if(ca==FALSE | board == FALSE | numerators_present == FALSE){
+"Either council and/or NHS board numerators are absent from dataset so can't check for agreement"
+} else if(ca==TRUE & numerators_present == TRUE & nrow(check_council)>0){ 
+    flextable(check_council)
+} else if(ca==TRUE & numerators_present == TRUE & nrow(check_council)==0){ 
+    "Summing council numerators agree with NHS board numerator totals in all areas"} 
+
+```
+
 
 ------------------------------------------------------------------------------------ 
 
