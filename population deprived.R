@@ -127,9 +127,10 @@ simd_data <- imap(simd_info, ~ {
         "access" = ends_with("_access_rank"),
         "income" = ends_with("_inc_rank"),
         "crime" = ends_with("_crime_rank"),
-        "employment" = ends_with("_emp_rank")# ,
-       # "education" = ends_with("educ_rank"), # not currently being used
-       # "housing" = ends_with("house_rank") # not currently being used
+        "employment" = ends_with("_emp_rank"), 
+        "education" = ends_with("educ_rank"), # not currently being used
+        "housing" = ends_with("house_rank"), # not currently being used
+        "health" = ends_with("hlth_rank")
       ))
     ) |>
     # add localities column 
@@ -209,7 +210,7 @@ simd_quintiles <- imap(simd_data, ~ {
   
   # take each domain column in turn and:
   reduce(
-    c("overall", "access", "income", "crime", "employment"
+    c("overall", "access", "income", "crime", "employment","health","education","housing"
       ),
     function(df, domain) {
       
