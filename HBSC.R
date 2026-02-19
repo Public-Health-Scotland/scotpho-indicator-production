@@ -784,7 +784,7 @@ hbsc_data <- hbsc_data_list %>%
          area_safe, area_sat, d_emc_problem,
          health, lifesat, likeschool, lonely, schoolpressure, 
          studaccept, trusted_adult, beenbullied, cbeenbullied,
-         physact60, schooldays_sleep_hrs, parent_comms, discrim, leisure, llti,
+         schooldays_sleep_hrs, parent_comms, discrim, leisure, llti,
          sleepqual_tot, family_support, peer_support, student_support, teacher_support, who5,
          fas_overall,
          dataset_weight, dataset_weight_equating_grade, 
