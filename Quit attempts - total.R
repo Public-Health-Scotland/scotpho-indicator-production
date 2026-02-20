@@ -49,10 +49,7 @@ library(arrow) # for reading parquet files
 filepath <- file.path(profiles_data_folder, "Received Data", "Smoking quit attempts", "scotpho_simd_data.parquet")
 
 # read in data 
-data <- read_parquet(filepath) |>
-  # temporary step May 2025: remove 2024/25 data as incomplete
-  # either replace with 2025/26 at next update if required or remove
-  filter(finyear != "2024/25")
+data <- read_parquet(filepath)
 
 # get totals for each year and geography
 data <- data |>
