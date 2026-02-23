@@ -53,8 +53,8 @@ library(readxl) #for reading in xlsx files
 
 #These data are stored in 3 data files which are read in, cleaned then combined
 #1 - SHoS data (2012-2018)
-#2 - SHeS data file 1 (2019, 2019 used as a proxy for 2020 due to SHeS not taking place)
-#3 - SHeS data file 2 (2022-2023, 2022 used as a proxy for 2021 in line with tobacco team)
+#2 - SHeS data - file 1 (historic, 2019 - most recent year published on profiles tool)
+#3 - SHeS data file 2 (most recent year being added)
 
 #Note - ideally get a full time series from the SG for age 35+ with smoking prevalence data 2019 onwards for 2024 data update
 #This would combine data files 2 and 3.
@@ -63,70 +63,52 @@ library(readxl) #for reading in xlsx files
 #1. SHos Data (2012-18)
 area_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHoS_area_prevalence_DO_NOT_DELETE.rds")) #read in historic data
 
-#2. SHeS Data (2019)
-area_prevalence_shes_2019 <- read_excel(file.path(profiles_data_folder, "Received Data/Smoking Attributable/shes smoking prevalence_for scottish areas.xlsx"),
-                                   sheet = "area_prev_shes")|> 
-  janitor::clean_names() |> #variables to snake case
-  select(-c("lci", "uci", "frequency")) |> 
-  filter(sex != 3, #drop sex = all
-         year == 2019) |>  #keep only 2019 figures
-  rename(smoking_status = smoking_categories)
+#2. SHeS Data (2019 - most recent year published on profiles tool)
+area_prevalence_shes <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds"))
 
-#3. SHeS Data (2022-2023)
-area_prevalence_shes_2022_2023 <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/Trend Data/Smoking_HB_LA_35andover_sup.csv")) |> 
+#3. SHeS Data (latest year)
+area_prevalence_shes_new <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/2024 Data/Smoking_HB_LA_35andover_sup.csv")) |> 
   janitor::clean_names() |> #variables to snake case
   filter(sex != "All") |> #filter out both sexes combined
   rename(period = year,
          type = geography) |>
   mutate(sex = recode(sex, "Male" = 1, "Female" = 2), #recoding sex to 1 and 2 
          type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
-                        type == "Local Authority" ~ "ca", #recoding to match SHoS data
-                        TRUE ~ type),
-       area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
-       area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
-       year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
-  select(-lower_ci, -upper_ci, -health_board, -local_authority) |> #dropping unnecessary cols
-  filter(year > 2021)  #filtering for 2019 onwards, when SHoS series ends
-
-#Join both SHeS data frames
-area_prevalence_shes <- bind_rows(area_prevalence_shes_2019, area_prevalence_shes_2022_2023) |> 
+                          type == "Local Authority" ~ "ca", #recoding to match SHoS data
+                          TRUE ~ type),
+         area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
+         area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
+         year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
+  select(-lower_ci, -upper_ci, -health_board, -local_authority) |>  #dropping unnecessary cols
   mutate(smoking_status = recode(smoking_status,
-                                    "Never smoked/Used to smoke occasionally" = "never", #recoding to match SHoS
-                                    "Used to smoke regularly" = "ex_area",
-                                    "Current smoker" = "current_area")) |> 
+                                 "Never smoked/Used to smoke occasionally" = "never", #recoding to match SHoS
+                                 "Used to smoke regularly" = "ex_area",
+                                 "Current smoker" = "current_area")) |> 
   tidyr::pivot_wider(id_cols = c(area, sex, period, type, year), #create cols for each smoking status
                      names_from = smoking_status, values_from = percent) |> 
   select(-never) #drop never-smokers
   
 #Use helper functions to convert CA and HB names to codes
-ca <- area_prevalence_shes |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
-hb <- area_prevalence_shes |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
+ca <- area_prevalence_shes_new |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
+hb <- area_prevalence_shes_new |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
   mutate(code = replace_na(code, "S00000001")) #Add Scotland code manually
 
-area_prevalence_shes <- bind_rows(ca, hb)  #recombine into 1 df
+area_prevalence_shes_new <- bind_rows(ca, hb)  #recombine into 1 df
 
 #Add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
-area_prevalence_shes_scot <- area_prevalence_shes |> 
+area_prevalence_shes_scot <- area_prevalence_shes_new |> 
   filter(code=="S00000001") |> 
   select(-type, -code) |> 
   rename(scot_current=current_area, scot_ex=ex_area)
 
-area_prevalence_shes <-left_join(area_prevalence_shes, area_prevalence_shes_scot, by = c("sex","period","year"))
+area_prevalence_shes_new <-left_join(area_prevalence_shes_new, area_prevalence_shes_scot, by = c("sex","period","year")) #join Scotland prevalence
 
-#Duplicate 2019 prevalence figures for 2020 as no survey that year
-#And duplicate 2022 for 2021 as improbable trend was observed (in line with tobacco team)
-area_prevalence_shes_20_21 <- area_prevalence_shes |> 
-  filter(year %in% c(2019, 2022)) |> 
-  mutate(year = recode(year,`2019` = 2020, `2022` = 2021))
+area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_new) #bind 2 dfs that use SHeS - this object will be saved at the end of the script
+#to be read in when the data is next run with a new year of prevalence. 
 
-area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_20_21)  #bind proxy years
+area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes)
 
-#bind shos and shes area prevalence
-area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes) |> 
-  mutate(sex_grp=as.character(sex)) |> 
-  select (-sex, -type) 
-
-rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_prevalence_shes_2019, area_prevalence_shes_2022_2023, ca, hb, area_prevalence_shes_scot)
+rm(area_prevalence_shos, area_prevalence_shes_new, ca, hb, area_prevalence_shes_scot)
 
 ###############################################.
 ## Prevalence data series 2: AGE PREVALENCE ----
@@ -135,32 +117,34 @@ rm(area_prevalence_shes, area_prevalence_shos, area_prevalence_shes_20_21, area_
 #These are the Scotland-level smoking prevalences split by age groups
 
 #1 - SHoS data (2012-2018)
-#2 - SHeS data file 1 (2019, used as a proxy for 2020 due to SHeS not taking place)
+#2 - SHeS data file 1 (2019 - most recent year published on profiles tool)
+#3 - SHeS data file 2 (latest year)
 
 #1 - SHoS age data (for period 2012-2018)
 age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds")) 
 
-#2 - SHeS age data (for period 2019 onwards). This file is obtained from the Tobacco Team
-age_prevalence_shes <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHES_prevalence_35plus.csv")) |> 
+#2 - SHeS age data (for period 2019 onwards). 
+age_prevalence_shes <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
+
+#3 - SHeS age data (latest year)
+age_prevalence_shes_new <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/2024 Data/Smoking_Scotland_35545564657475_2024_sup.csv")) |> 
   clean_names() |> 
-  select(-c(year2003:year2018, year2021)) |>  #drop early years covered by SHoS and 2020
-  mutate(status = recode(status,
-                         "Ex-regular cigarette smoker" = "ex_age",         
-                         "Current cigarette smoker" = "current_age"),
-    sex = as.character(sex),
-    year2020 = year2019, #To align with tobacco team using 2019 data for 2020 since no SHeS that year
-    year2021 = year2022) |>  #On same basis using 2022 as proxy for 2021 - irregular trend. 
-tidyr::pivot_longer(cols = starts_with("year"), names_to = "year", values_to = "percent") |> 
-  tidyr::pivot_wider(id_cols = c(age_grp, sex, year), names_from = status, values_from = percent) |> 
-  filter(sex != "all", age_grp != "All") |> 
-  rename(sex_grp = sex, agegrp = age_grp) |> 
-  mutate(year = as.numeric(substr(year, 5, 9)))
-  
+  select(-lower_ci, -upper_ci) |> 
+  mutate(smoking_status = recode(smoking_status,
+                         "Used to smoke regularly" = "ex_age",         
+                         "Current smoker" = "current_age"),
+         sex = recode(sex, "Male" = 1, "Female" = 2)) |> 
+  tidyr::pivot_wider(id_cols = c(age, sex, year), names_from = smoking_status, values_from = percent) |> 
+  filter(!(is.na(sex)), !(age %in% c("All", "<35"))) |> 
+  rename(sex_grp = sex, agegrp = age) |> 
+  mutate(sex_grp = as.character(sex_grp)) |> 
+  select(-`Never smoked/Used to smoke occasionally`)
+
 #bind shos and shes area prevalence
+age_prevalence_shes <- bind_rows(age_prevalence_shes, age_prevalence_shes_new) #this object is saved at the end of the script for next year
+
 age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
   rename(agegrp2 = agegrp)
-
-rm(age_prevalence_shos, age_prevalence_shes)  # remove df not needed
 
 ###############################################.
 ## Part 2 - Extract data from SMRA ----
@@ -215,13 +199,13 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
               AND regexp_like(main_condition, '", smoking_diag, "')
               AND age_in_years > 34
-              AND discharge_date between '1 January 2012' and '31 December 2023' 
+              AND discharge_date between '1 January 2012' and '31 December 2024' 
         )
     )
     SELECT admission_id, substr(diag, 1, 5) diag, sex_grp, age, year, 
            start_cis, end_cis, ca, hb, pc7
     FROM adm_table 
-    WHERE end_cis between '1 January 2012' and '31 December 2023' 
+    WHERE end_cis between '1 January 2012' and '31 December 2024' 
         AND age > 34 
         AND sex_grp in ('1', '2') 
         AND pc7 IS NOT NULL 
@@ -360,7 +344,7 @@ saveRDS(smoking_adm_test, file.path(profiles_data_folder, '/Prepared Data/smokin
 ###############################################.
 
 main_analysis(filename = "smoking_adm", measure = "stdrate", geography = "multiple",
-             pop = "CA_pop_allages", yearstart = 2012, yearend = 2023,
+             pop = "CA_pop_allages", yearstart = 2012, yearend = 2024,
              time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 1548, 
              year_type = "calendar")
 
@@ -373,5 +357,12 @@ data_shiny <- readRDS(file.path(profiles_data_folder, "Data to be checked/smokin
 
 saveRDS(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 write_csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+
+
+#Save appended SHeS area prevalence data for next year
+saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
+saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
+
+#End
 
 ##END
