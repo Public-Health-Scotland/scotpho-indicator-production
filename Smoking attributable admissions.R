@@ -360,7 +360,7 @@ saveRDS(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_
 write_csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
 
 
-#Save appended SHeS area prevalence data for next year
+#Save appended SHeS prevalence data for next year - only run when ready to deploy
 saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
 saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
 
