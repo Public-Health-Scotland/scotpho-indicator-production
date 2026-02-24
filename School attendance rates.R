@@ -449,7 +449,9 @@ run_qa(type = "deprivation", filename="school_attendance", test_file=FALSE)
 # Requires going through the spreadsheets to extract year-specific data.
 # Since 2020/21: similar format, so can use the global import functions defined above for these recent files. 
 # 2009/10 to 2018/19 use a different format, so these use different global import functions.
+# LA data don't have numerators and denominators, so can't aggregate to HB, HSCP or PD.
 # When adding new data: check what ranges need to be read in, and include these in the appropriate function argument.
+
 
 ##########################
 # 2020/21 to 2024/25 data
@@ -650,13 +652,12 @@ totals <- bind_rows(all_attendance, simd_all) %>%
   ungroup() %>% # correct: no duplicates 
   select(code, trend_axis, split_value, rate, lowci, upci, numerator, denominator)
 
-
 # merge in the totals to the code-trend_axis-split_name groups 
 splits_with_totals <- splits_needing_totals %>%
-  merge(y = totals, by = c("code", "trend_axis"))
+  merge(y = totals, by = c("code", "trend_axis")) # only keeps those code-trend_axis groups that are already in the data
 
 # add back into the attendance data
-all_attendance3 <- all_attendance2 %>%
+all_attendance <- all_attendance2 %>%
   rbind(splits_with_totals) %>%
   mutate(ind_id = 30140,
          trend_axis = gsub("-", "/", trend_axis), # standardise trend_axis labels
@@ -671,7 +672,7 @@ all_attendance3 <- all_attendance2 %>%
 
 # Population groups data (ie data behind population groups tab)
 
-pop_grp_data <- all_attendance3 %>% 
+pop_grp_data <- all_attendance %>% 
   filter(!split_name == "Total") %>% 
   mutate(upci = as.numeric(NA),
          lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
