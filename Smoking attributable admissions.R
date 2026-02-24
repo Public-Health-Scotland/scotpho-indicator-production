@@ -106,7 +106,8 @@ area_prevalence_shes_new <-left_join(area_prevalence_shes_new, area_prevalence_s
 area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_new) #bind 2 dfs that use SHeS - this object will be saved at the end of the script
 #to be read in when the data is next run with a new year of prevalence. 
 
-area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes)
+area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes) |> 
+  mutate(sex = as.character(sex))
 
 rm(area_prevalence_shos, area_prevalence_shes_new, ca, hb, area_prevalence_shes_scot)
 
@@ -124,7 +125,7 @@ rm(area_prevalence_shos, area_prevalence_shes_new, ca, hb, area_prevalence_shes_
 age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds")) 
 
 #2 - SHeS age data (for period 2019 onwards). 
-age_prevalence_shes <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
+age_prevalence_shes <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.RDS"))
 
 #3 - SHeS age data (latest year)
 age_prevalence_shes_new <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/2024 Data/Smoking_Scotland_35545564657475_2024_sup.csv")) |> 
@@ -216,8 +217,8 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
   mutate(scotland = "S00000001")
 
 #Saving temporary file
-# saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
-# smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+ saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+ smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
 
 ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
@@ -298,19 +299,19 @@ smoking_adm_2 <- smoking_adm |>
   # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
   filter(!(is.na(code))) |> 
   filter(!code %in% c("S08200001", "S08200002", "S08200003", "S08200004")) #removing non-Scotland admissions (no admissions associated, but empty rows were in output)
-
+  
 saveRDS(smoking_adm_2, file.path(profiles_data_folder, 'Temporary/smoking_adm_part4.rds'))
 
 ###############################################.
 # Merging prevalence with smoking adm basefile 
-smoking_adm_2 <- left_join(smoking_adm_2, area_prevalence, by = c("code", "year", "sex_grp")) |> 
+smoking_adm_2 <- left_join(smoking_adm_2, area_prevalence, by = c("code", "year", "sex_grp" = "sex")) |> 
   #recode age groups to match prevalence by age file
   #note that different age groupings used in SHeS and SHoS so different approach needed for 2019 on
   mutate(age_grp = as.numeric(age_grp),
          agegrp2 = case_when(
-           year > 2018 & age_grp %in% c(8, 9) ~ "35-44",
-           year > 2018 & age_grp %in% c(10, 11) ~ "45-54",
-           year <= 2018 & age_grp %in% c(8, 9, 10, 11) ~ "35-54",
+           year > 2018 & year < 2024 & age_grp %in% c(8, 9) ~ "35-44",
+           year > 2018 & year < 2024 & age_grp %in% c(10, 11) ~ "45-54",
+           (year <= 2018 | year >= 2024) & age_grp %in% c(8, 9, 10, 11) ~ "35-54",
            age_grp %in% c(12, 13) ~ "55-64",
            age_grp %in% c(14, 15) ~ "65-74",
            age_grp > 15 & age_grp < 20 ~ "75+",
@@ -362,7 +363,5 @@ write_csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smokin
 #Save appended SHeS area prevalence data for next year
 saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
 saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
-
-#End
 
 ##END
