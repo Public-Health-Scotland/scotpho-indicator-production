@@ -1,13 +1,3 @@
-# To do:
-
-# Get HBSC to provide more guidance on WHO5 mental wellbeing score, 2018 and 2022:
-# score given in 2022, but only positive/low/depression risk in 2018 (and who_3cat and who_low in 2018 seem counter-intuitively coded: pos mood =risk or dep and vice versa...) How to use these comparably?
-
-# Look into the Family Affluence Scale as possible split: not easily comparable across years as yet.
-
-
-
-
 
 ######################################################################
 # Health Behaviour in School-aged Children (HBSC) survey data import
@@ -27,7 +17,6 @@
 # Next survey = 2026
 
 # HBSC team advise:
-# start at 1998 as prior to that were not full national samples
 # no suppression needed
 # weights started to be used from 2010 (or 2014 for weights that equated the contribution of the 3 grades, so that the CIs for whole sample estimates could reflect this)
 # HBSC still present weighted and unweighted estimates together. I will check to see if this looks OK. Preliminary checks suggest it is OK. 
@@ -36,7 +25,7 @@
 
 ### CYP mental health indicators: 
 
-# 30100	Children's mental wellbeing =	Mean mental wellbeing score (WHO-5 wellbeing index). Derived from responses to five statements about how the respondent has been feeling during the past two weeks. Items = have felt cheerful and in good spirits / I have felt calm and relaxed / I have felt active and vigorous / I woke up feeling fresh and rested / My daily life has been filled with things that interest me. A score of 50 or less is classified as low mood.  (2018 and 2022 only)
+# 30100	Children's mental wellbeing =	% classed as having positive mood on the WHO-5 wellbeing index. Derived from responses to five statements about how the respondent has been feeling during the past two weeks. Items = have felt cheerful and in good spirits / I have felt calm and relaxed / I have felt active and vigorous / I woke up feeling fresh and rested / My daily life has been filled with things that interest me. A score of 50 or less is classified as low mood.  (2018 and 2022 only)
 # 30104	Children reporting high life satisfaction =	% of pupils reporting high life satisfaction (a score of 6 or more from 0 (worst possible life) to 10 (best possible life))
 # 30112	Children getting sufficient sleep =	% of pupils getting at least 8 hours sleep on a school night, on average. Calculated from their reported usual bedtime and waking time on a schoolday.
 # 30113	Children's sleep quality score =	Adolescent Sleep Wake Scale (ASWS) mean score. Derived from responses to 10 items covering bedtime behaviours, sleep efficiency, and morning wakefulness. 
@@ -50,7 +39,6 @@
 # with others because of your social media use? / ..regularly lied to your parents or friends about the amount of time you spend on social
 # media?/..often used social media to escape from negative feelings? /  ...had serious conflict with your parents, brother(s) or sister (s)
 # because of your social media use?
-# 30117	Children thinking they are overweight =	% of pupils that think their body is a bit overweight or very overweight. (NB. Pre-2022 the wording included 'fat' rather than 'overweight' so is not comparable.)
 # 30124	Children finding it easy to talk to parents =	% of pupils reporting it is easy/very easy to at least one of their parents about things that really bother them. (combination of variables including step parents)
 # 30126	Children reporting high level of family support =	% of pupils reporting having high level of family support. Based on the family subscale of the Multidimensional Scale of Perceived Social Support (MSPSS), and derived from 4 items (My family really tries to help me / I get the emotional help and support I need from my family / I can talk about my problems with my family / My family is willing to help me make decisions). A score of 5.5+ classified as high family support. (original MHI was 'enjoy living with family')
 # 30133	Children reporting high level of peer support =	% of pupils reporting having high level of peer support. Based on the peer subscale of the Multidimensional Scale of Perceived Social Support (MSPSS), and derived from 4 items (My friends really try to help me / I can count on my friends when things go wrong / I have friends with whom I can share my joys and sorrows / I can talk about my problems with my friends.). A score of 5.5+ classified as high peer support.
@@ -75,19 +63,20 @@
 
 ### functions/packages -----
 
-source("functions/main_analysis.R") # for packages and QA
-source("functions/deprivation_analysis.R") # for packages and QA
 library(haven) # for reading in .sav files
 library(survey) # analysing data from a clustered survey design
+library(here) # for filepaths
+source(here("functions", "main_analysis.R")) # for packages and QA
+source(here("functions", "deprivation_analysis.R")) # for packages and QA
 
 
 ### 1. Read in data ----
 
 # Identify data folder
-hbsc_data_folder <- paste0(profiles_data_folder, "/Received Data/Health Behaviour in School-Aged Children/data transfer Feb 2025/")
+hbsc_data_folder <- here(profiles_data_folder, "Received Data", "Health Behaviour in School-Aged Children", "data transfer Feb 2025")
 
 # Identify data files 
-hbsc_data_files <- paste0(hbsc_data_folder, list.files(path = hbsc_data_folder, pattern = "hbscscot"))
+hbsc_data_files <- here(hbsc_data_folder, list.files(path = hbsc_data_folder, pattern = "hbscscot"))
 
 # function to identify which vars are labelled (so we can use the labels as factor levels)
 is.havenlab <- function(x) "haven_labelled" %in% class(x)
@@ -97,11 +86,10 @@ hbsc_data_list <- lapply(hbsc_data_files, # read in each file in turn
                          function(x) read_sav(x, # read in the .sav file (function from haven package)
                                               encoding = "latin1") %>% # encoding needs setting or the import throws an error
                            mutate(across(where(is.havenlab), haven::as_factor)) %>% # if the var has labels convert it to a factor (using the labels) 
-                           mutate(trend_axis = str_extract(x, "([0-9]+)_phs_mh\\.sav$", group=1)) %>% # extracts the digits (the year) preceding the "_phs_mh.sav" suffix in the filename
+                           mutate(trend_axis = str_extract(x, "([0-9]+)_phs_mh", group=1)) %>% # extracts the digits (the year) preceding the "_phs_mh.sav" suffix in the filename
                            setNames(tolower(names(.))) %>% # make all var names lower case
                            mutate(across(everything(), ~tolower(.)))) %>% # make all data lower case
-  plyr::rbind.fill() %>%   # bind all the files together: copes with different columns (adds NA if that col not present): we can coalesce any cols that have same definition
-  filter(!trend_axis %in% c("1990", "1994")) # not using before 1998
+  plyr::rbind.fill()    # bind all the files together: copes with different columns (adds NA if that col not present): we can coalesce any cols that have same definition
 
 
 # cross tabulate years and variables, to see what's available when  
@@ -114,7 +102,7 @@ hbsc_vars_by_year <- hbsc_data_list %>%
   pivot_wider(names_from = trend_axis, values_from = value) %>%
   arrange(var)
 # save and open in excel to match with the indicator requirements, and work out which vars we need to keep
-write.csv(hbsc_vars_by_year, paste0(hbsc_data_folder, "hbsc_vars_by_year.csv"))
+write.csv(hbsc_vars_by_year, here(hbsc_data_folder, "hbsc_vars_by_year.csv"))
 
 
 
@@ -134,6 +122,7 @@ get_responses <- function(var) {
 ################################
 sex_cols <- c("sex", "sexbirth_s", "gender", "gender_p", "gender_binary_s", "genderid_s")
 sex_cats <- lapply(sex_cols, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+sex_cats
 # [1] "boy"                         "girl"                        NA                            "female"                      "male"                       
 # [6] "in another way"              "i identify myself as a girl" "i identify myself as a boy"  "other/s"                     "neither boy nor girl"      
 
@@ -155,16 +144,19 @@ lookup_sex <- list(
 ################################
 
 parental_comms <- c("talkfather", "talkmother", "talkstepfa", "talkstepmo", 
-                    "talkstpf", "talkstpm", "talktoma", "talktopa")
+                    "talkstpf", "talkstpm", "talktoma", "talktopa", "talkmoth", "talkfath")
 parental_responses <- lapply(parental_comms, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+parental_responses
 # [1] NA                                    "easy"                                "dont have\\see this person"          "very easy"                          
 # [5] "difficult"                           "very difficult"                      "don't have or don't see this person" "don't have or see this person"      
-# [9] "don't have or see"                   "dont have or see"                    "no such person"                      "dont have/see this person"          
+# [9] "don't have or see"                   "dont have or see"                    "no such person"                      "dont have/see this person"  
+# [13] "not easy"  
 
 # For recoding any var in parental_comms:
 lookup_parent_comms <- list(
   "difficult"="no",
   "very difficult"="no",
+  "not easy" = "no", 
   "easy"="yes",
   "very easy"="yes"
 )
@@ -180,6 +172,7 @@ adult_discrim <- c("discrborn_othad",
                    "discrses_othad",
                    "discrses_teacher")
 discrim_responses <- lapply(adult_discrim, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+discrim_responses
 # [1] NA                           "no discrimation"            "experienced descrimination"
 
 # For recoding any var in adult_discrim:
@@ -199,6 +192,7 @@ leisure_activities <- c("ls_arts",
                         "ls_youth")
 leisure_responses <- lapply(leisure_activities, get_responses) %>%
   unlist(use.names=FALSE) %>% unique()
+leisure_responses
 # [1] NA                                             "twice a week or more"                         "about once or twice a month"                 
 # [4] "once a week"                                  "i donâ\u0080\u0099t do this type of activity"
 
@@ -215,6 +209,7 @@ lookup_leisure <- list(
 ###################################
 
 lifesat_responses <- get_responses("lifesat") %>% unlist(use.names=FALSE) %>% unique()
+lifesat_responses
 # [1] NA                      "best possible life"    "6"                     "9"                     "7"                     "5"                    
 # [7] "1"                     "worst possible life"   "8"                     "4"                     "3"                     "2"                    
 # [13] "10 best possible life" "0 worst possible life"
@@ -242,6 +237,7 @@ lookup_lifesat <- list(
 ###################################
 
 health_responses <- get_responses("health") %>% unlist(use.names=FALSE) %>% unique()
+health_responses
 #  [1] NA          "excellent" "good"      "fair"      "poor"     
 
 # For recoding health:
@@ -257,6 +253,7 @@ lookup_health <- list(
 ###################################
 
 d_emc_problem_responses <- get_responses("d_emc_problem") %>% unlist(use.names=FALSE) %>% unique()
+d_emc_problem_responses
 #  [1] NA    "non-problematic social media user" "problematic social media user"         
 
 # For recoding "d_emc_problem":
@@ -265,26 +262,12 @@ lookup_d_emc_problem <- list(
   "non-problematic social media user"="no"     
 )
 
-# Body image:
-###################################
-
-thinkbody_1_responses <- get_responses("thinkbody_1") %>% unlist(use.names=FALSE) %>% unique()
-#  [1] NA    "neither underweight nor overweight" "a bit overweight"                   "a bit underweight"                 
-#  [5] "very overweight"                    "very underweight"     
-
-# For recoding thinkbody_1:
-lookup_thinkbody_1 <- list(
-  "very overweight"="yes",                    
-  "a bit overweight"="yes",                   
-  "a bit underweight"="no",                 
-  "neither underweight nor overweight"="no", 
-  "very underweight" ="no"     
-)
 
 # Lonely:
 ###################################
 
 lonely_responses <- get_responses("lonely") %>% unlist(use.names=FALSE) %>% unique()
+lonely_responses
 #  "never"            "sometimes"        "often"            NA                 "rarely"           "most of the time" "always"       
 
 # For recoding lonely:
@@ -302,6 +285,7 @@ lookup_lonely <- list(
 ###################################
 
 studaccept_responses <- get_responses("studaccept") %>% unlist(use.names=FALSE) %>% unique()
+studaccept_responses
 #  [1] NA                           "agree a lot"                "agree a bit"                "disagree a lot"             "neither agree nor disagree"
 #  [6] "disagree a bit"             "strongly agree"             "agree"                      "strongly disagree"          "disagree"             
 
@@ -323,6 +307,7 @@ lookup_studaccept <- list(
 ###################################
 
 bullied_responses <- lapply(c("beenbullied", "cbeenbullied"), get_responses) %>% unlist(use.names=FALSE) %>% unique()
+bullied_responses
 # [1] NA                                                               "several times/week"                                            
 # [3] "havent been bullied"                                            "once/twice"                                                    
 # [5] "about once/week"                                                "sometimes"                                                     
@@ -368,6 +353,7 @@ lookup_bullied <- list(
 ###################################
 
 likeschool_responses <- get_responses("likeschool") %>% unlist(use.names=FALSE) %>% unique()
+likeschool_responses
 # [1] "like it a bit"                         "like it a lot"                         "dont like it at all"                   "dont like it v. much"                 
 # [5] NA                                      "dont like it v.much"                   "i like it a lot"                       "i like it a bit"                      
 # [9] "i don't like it very much"             "i don't like it at all"                "like a bit"                            "not very much"                        
@@ -396,6 +382,7 @@ lookup_likeschool <- list(
 ###################################
 
 schoolpressure_responses <- get_responses("schoolpressure") %>% unlist(use.names=FALSE) %>% unique()
+schoolpressure_responses
 # [1] NA           "a little"   "some"       "not at all" "a lot"  
 
 # For recoding schoolpressure:
@@ -410,6 +397,7 @@ lookup_schoolpressure <- list(
 ###################################
 
 trusted_adult_responses <- get_responses("trusted_adult") %>% unlist(use.names=FALSE) %>% unique()
+trusted_adult_responses
 # [1] NA                        "yes, i always do"        "yes, i sometimes do"     "no, i don't"             "no, i donâ\u0080\u0099t"
 
 # For recoding trusted_adult:
@@ -424,6 +412,7 @@ lookup_trusted_adult <- list(
 ###################################
 
 area_safe <- get_responses("area_safe") %>% unlist(use.names=FALSE) %>% unique()
+area_safe
 # [1] NA                 "most of the time" "sometimes"        "all of the time"  "never"            "hardly ever"      "always"           "rarely or never" 
 
 # For recoding area_safe:
@@ -441,6 +430,7 @@ lookup_area_safe <- list(
 ###################################
 
 area_sat <- get_responses("area_sat") %>% unlist(use.names=FALSE) %>% unique()
+area_sat
 # [1] NA                         "yes, it's really good"    "it's ok"                  "it's not very good"       "yes, it's good"           "no, it's not good at all"
 # [7] "yes, really good"         "yes, good"                "not very good"            "ok"                       "not good at all"         
 
@@ -467,9 +457,11 @@ lookup_area_sat <- list(
 # denominator will therefore be ccsqlong==no + ccsqschool!=yes
 
 llti_responses <- get_responses("ccsqlong") %>% unlist(use.names=FALSE) %>% unique()
+llti_responses
 # [1] NA    "no"  "yes"
 
 llti_school_responses <- get_responses("ccsqschool") %>% unlist(use.names=FALSE) %>% unique()
+llti_school_responses
 # [1] NA                                                                  
 # [2] "do not have"                                                       
 # [3] "yes"                                                               
@@ -477,6 +469,113 @@ llti_school_responses <- get_responses("ccsqschool") %>% unlist(use.names=FALSE)
 # [5] "i do not have a long-term illness, disability or medical condition"
 
 # No lookup required here.
+
+
+# WHO5 wellbeing score:
+###################################
+# Original CYP indicator from HWBCensus = Mean score for S2-S6 pupils on the (14 item) WarwickEdinburgh Mental Well-being Scale (WEMWBS)
+# New indicator definition from HBSC: % classed as having positive mood on the WHO5 mental wellbeing scale. (=WHO5 score > 50 out of 100)
+unique(hbsc_data_list$d_who5) # 2022: 0 to 25 (multiply by 4 to get score out of 100)
+unique(hbsc_data_list$who5final) # 2018: 0 to 100
+unique(hbsc_data_list$who_3cat) # 2018: positive, low, risk of depression
+unique(hbsc_data_list$who_low) # 2018: positive, low/depression risk
+
+
+# Family Affluence Score:
+###################################
+
+# Technical report for use of FAS is in Received Data folder. 
+# The variables have changed over time and this provides the syntax to create a FAS score and quintiles from each of the FASi, FASii and FASiii measures.  
+# The international HBSC Social Inequalities group have done some work on comparability over time and have advised that use of FAS as a relative measure 
+# (which is what we do, relative to each age/gender/survey year group)is comparable across survey years. 
+# So while the distribution of absolute FAS may have changed over time, the relative measure is ok to use.
+# The 2022 dataset has some additional FAS variables which take account of non-binary gender cases 
+# (FAS is normally calculated for each age/gender group separately). So 2022 includes the following:
+# FASiii = FAS raw score
+# PFAS_iii = continuous measure of proportional FAS by age and gender (also calculated for those with non binary gender)
+# NFAS_iii = FAS quintiles
+
+fas_phone <- c("fas_phone", "fasphone")
+fas_bedroom <- c("fas_bedroom", "fasbedroom")
+fas_car <- c("fas_car", "fasfamcar")
+fas_computer <- c("fas_computer", "fascomputers")
+fas_holidays <- c("fas_holidays", "fasholiday", "fasholidays")
+fas_bathroom <- c("fasbathroom")
+fas_dishwasher <- c("fasdishwash")
+
+fas_phone_responses <- lapply(fas_phone, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_phone_responses
+# [1] NA                 "yes, two or more" "no"               "yes, one"       
+# For recoding fas_phone:
+lookup_fas_phone <- list(
+  "no" = 1,
+  "yes, one" = 2,
+  "yes, two or more" = 3
+)
+
+fas_bedroom_responses <- lapply(fas_bedroom, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_bedroom_responses
+# [1] NA    "yes" "no"  
+# For recoding fas_bedroom:
+lookup_fas_bedroom <- list(
+  "no" = 1,
+  "yes" = 2     
+)
+
+fas_car_responses <- lapply(fas_car, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_car_responses
+# [1] NA                 "yes, one"         "no"               "yes, two or more" "two or more"      "one"      
+# For recoding fas_car:
+lookup_fas_car <- list(
+  "no" = 1,
+  "yes, one" = 2,
+  "one" = 2,
+  "yes, two or more" = 3,
+  "two or more" = 3       
+)
+
+fas_computer_responses <- lapply(fas_computer, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_computer_responses
+# [1] NA              "more than two" "one"           "two"           "none"                      
+# For recoding fas_computer:
+lookup_fas_computer <- list(
+  "none" = 1,
+  "one" = 2,
+  "two" = 3,
+  "more than two" = 4
+)
+
+fas_holidays_responses <- lapply(fas_holidays, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_holidays_responses
+# [1] NA                "twice"           "once"            "more than twice" "not at all"                    
+# For recoding fas_holidays:
+lookup_fas_holidays <- list(
+  "not at all" = 1,
+  "once" = 2,
+  "twice" = 3,
+  "more than twice" = 4
+)
+
+fas_bathroom_responses <- lapply(fas_bathroom, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_bathroom_responses
+# [1] NA              "more than two" "one"           "two"           "none"         
+# For recoding fas_bathroom:
+lookup_fas_bathroom <- list(
+  "none" = 1,
+  "one" = 2,
+  "two" = 3,
+  "more than two" = 4      
+)
+
+fas_dishwasher_responses <- lapply(fas_dishwasher, get_responses) %>% unlist(use.names=FALSE) %>% unique()
+fas_dishwasher_responses
+# [1] NA    "yes" "no" 
+# For recoding fas_dishwasher:
+lookup_fas_dishwasher <- list(
+  "no" = 1,
+  "yes" = 2     
+)
+
 
 
 # Variables that can be from their numbers (either apply a cut-off value, or present as a mean):
@@ -490,17 +589,39 @@ llti_school_responses <- get_responses("ccsqschool") %>% unlist(use.names=FALSE)
 # Schoolday sleep hours:
 ###################################
 sleepdur_responses <- get_responses("schooldays_sleep_hrs") %>% unlist(use.names=FALSE) %>% unique()
+sleepdur_responses
 #  [1] NA     "6.5"  "9.5"  "7.5"  "8.5"  "10"   "8"    "6"    "7"    "4"    "5"    "9"    "4.5"  "5.5"  "10.5" "3.5"  "11"   "3"    "12"  
 
 
 # Sleep quality:
 ###################################
 sleepqual_responses <- get_responses("sleepqual_tot") %>% unlist(use.names=FALSE) %>% unique()
+sleepqual_responses
 # lots of numbers stored as strings plus "high quality" and "poor quality"
 # found out that 1 = "poor quality" and 6 = "high quality" so can recode these then convert to numeric
 
 
+# Binary support variables
+###################################
+famsupp_responses <- get_responses("d_family_support_binary") %>% unlist(use.names=FALSE) %>% unique()
+peersupp_responses <- get_responses("d_peer_support_binary") %>% unlist(use.names=FALSE) %>% unique()
+teachersupp_responses <- get_responses("d_teacher_support_binary") %>% unlist(use.names=FALSE) %>% unique()
 
+famsupp_responses
+#[1] NA                    "low family support"  "high family support"
+peersupp_responses
+#[1] NA                  "low peer support"  "high peer support"
+teachersupp_responses
+#[1] NA                     "low teacher support"  "high teacher support"
+
+lookup_support <- list(
+  "low family support"="no", 
+  "low peer support"="no", 
+  "low teacher support"="no",
+  "high family support"="yes",
+  "high peer support"="yes",
+  "high teacher support"="yes"
+)
 
 
 # Recode the variables
@@ -518,8 +639,10 @@ hbsc_data <- hbsc_data_list %>%
   mutate(lonely = recode(lonely, !!!lookup_lonely, .default = as.character(NA))) %>%
   mutate(schoolpressure = recode(schoolpressure, !!!lookup_schoolpressure, .default = as.character(NA))) %>%
   mutate(studaccept = recode(studaccept, !!!lookup_studaccept, .default = as.character(NA))) %>%
-  mutate(thinkbody_1 = recode(thinkbody_1, !!!lookup_thinkbody_1, .default = as.character(NA))) %>%
   mutate(trusted_adult = recode(trusted_adult, !!!lookup_trusted_adult, .default = as.character(NA))) %>%
+  mutate(family_support = recode(d_family_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
+  mutate(peer_support = recode(d_peer_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
+  mutate(teacher_support = recode(d_teacher_support_binary, !!!lookup_support, .default = as.character(NA))) %>%
   
   # multiple vars that use the same lookup:
   mutate(across(c(beenbullied, cbeenbullied), ~recode(., !!!lookup_bullied, .default = as.character(NA)))) %>%
@@ -527,6 +650,13 @@ hbsc_data <- hbsc_data_list %>%
   mutate(across(any_of(parental_comms), ~recode(., !!!lookup_parent_comms, .default = as.character(NA)))) %>%
   mutate(across(any_of(adult_discrim), ~recode(., !!!lookup_discrim, .default = as.character(NA)))) %>%
   mutate(across(any_of(leisure_activities), ~recode(., !!!lookup_leisure, .default = as.character(NA)))) %>%
+  mutate(across(any_of(fas_phone), ~recode(., !!!lookup_fas_phone, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_bedroom), ~recode(., !!!lookup_fas_bedroom, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_car), ~recode(., !!!lookup_fas_car, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_computer), ~recode(., !!!lookup_fas_computer, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_holidays), ~recode(., !!!lookup_fas_holidays, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_bathroom), ~recode(., !!!lookup_fas_bathroom, .default = as.numeric(NA)))) %>%
+  mutate(across(any_of(fas_dishwasher), ~recode(., !!!lookup_fas_dishwasher, .default = as.numeric(NA)))) %>%
   
   # variables with numeric recoding:
   # mutate(physact60 = parse_number(physact60)) %>% # extract the number (there are no responses with no number)
@@ -537,6 +667,13 @@ hbsc_data <- hbsc_data_list %>%
   mutate(schooldays_sleep_hrs = case_when(schooldays_sleep_hrs>=8 ~ "yes", 
                                           schooldays_sleep_hrs<8 ~ "no",
                                           TRUE ~ as.character(NA))) %>%
+  # mental wellbeing: positive mood 
+  mutate(d_who5 = 4 * parse_number(d_who5), # 2022 var = originally 0 to 25, so multiply by 4 to get score out of 100
+         who5final = parse_number(who5final), # 2018 var = out of 100 already
+         who5 = coalesce(d_who5, who5final),
+         who5 = case_when(who5>50 ~ "yes",
+                          who5<51 ~ "no",
+                          TRUE ~ as.character(NA))) %>%
   
   # variables used for mean scores:
   mutate(sleepqual_tot = case_when(sleepqual_tot == "poor quality" ~ 1, # recoding the extremes of this numeric scale 
@@ -547,8 +684,7 @@ hbsc_data <- hbsc_data_list %>%
   # family_support and peer_support are already mean scores on the original scale of 1 to 7.
   # student and teacher support scales need some adjustment as these are sums:
   mutate(student_support = (d_student_support + 3 / 3)) %>% # the var in the data is a sum of responses to 3 items that have been recoded from 0 to 4. We want a mean score on the original scale (1 to 5), hence we add 1 for each item, and divide by the number of items.
-  mutate(teacher_support = (d_teacher_support + 3 / 3)) %>% # as above
-  
+
   # create indicators based on multiple vars:
   
   ## gender/sex:
@@ -572,6 +708,7 @@ hbsc_data <- hbsc_data_list %>%
                                 TRUE ~ as.character(NA))) %>% # leaves ~1500 with NA, all from 2022 (over a third of responses that year).
   # ER: My preference would be using the binary variable while there's only one year of non-binary data. 
   # Values not split by sex can use all the data. Revisit after the next data update (2026).  
+  # RETHINK FEB 2026: decided to use sex_all rather than sex_binary, because this gets results closest to the published HBSC results in 2022
   
   ## standardise grade variable 
   mutate(grade = coalesce(grade, class), # class was used in 2002
@@ -601,6 +738,27 @@ hbsc_data <- hbsc_data_list %>%
                           ccsqlong == "no"  ~ "no",
                           TRUE ~ as.character(NA))) %>%
   
+  ## FAS variables:
+  mutate(
+    fas_phone_r = coalesce(fas_phone, fasphone),
+    fas_bedroom_r = coalesce(fas_bedroom, fasbedroom),
+    fas_car_r = coalesce(fas_car, fasfamcar),
+    fas_computer_r = coalesce(fas_computer, fascomputers),
+    fas_holidays_r = coalesce(fas_holidays, fasholiday, fasholidays),
+    fas_bathroom_r = coalesce(fasbathroom),
+    fas_dishwasher_r = coalesce(fasdishwash),
+  ) %>%
+  
+  mutate(fas0 = fas_bedroom_r + fas_phone_r + fas_car_r - 3,
+         fas1 = fas_bedroom_r + fas_holidays_r + fas_car_r - 3,
+         fas2 = fas_bedroom_r + fas_holidays_r + fas_car_r + fas_computer_r - 4,
+         fas3 = fas_bedroom_r + fas_holidays_r + fas_car_r + fas_computer_r + fas_bathroom_r + fas_dishwasher_r - 6) %>%
+  mutate(fas_overall = case_when(trend_axis %in% c("1990", "1994") ~ fas0,
+                                 trend_axis %in% c("1998", "2002") ~ fas1, # 2002 should have been fas2, but no computer variable
+                                 trend_axis %in% c("2006", "2010") ~ fas2,
+                                 trend_axis %in% c("2014", "2018", "2022") ~ fas3,
+                                 TRUE ~ as.numeric(NA))) %>%
+  
   ## get dataset_weights all called the same 
   mutate(dataset_weight = as.numeric(coalesce(dataset_weight, weighting)), # 'weighting' was used in 2010, HBSC team confirm this is same as 'dataset_weight'
          dataset_weight = ifelse(is.na(dataset_weight), 1, dataset_weight)) %>% # prior to 2010: no weights, so replace missings with 1 (equal weighting)
@@ -622,17 +780,46 @@ hbsc_data <- hbsc_data_list %>%
   mutate(id_strata = ifelse(is.na(id_strata), 1, id_strata)) %>% # prior to 2014: no weights, so replace missings with 1 (equal weighting)
   
   ## keep the vars we need
-  select(trend_axis, sex_all, sex = sex_binary, grade,
+  select(trend_axis, sex = sex_all, sex_binary, grade,
          area_safe, area_sat, d_emc_problem,
          health, lifesat, likeschool, lonely, schoolpressure, 
-         studaccept, thinkbody_1, trusted_adult, beenbullied, cbeenbullied,
-         #physact60, 
+         studaccept, trusted_adult, beenbullied, cbeenbullied,
          schooldays_sleep_hrs, parent_comms, discrim, leisure, llti,
-         sleepqual_tot, d_family_support, d_peer_support, student_support, teacher_support,
-         dataset_weight, dataset_weight_equating_grade,
-         id_pupil, psu=id_school, strata=id_strata)
+         sleepqual_tot, family_support, peer_support, student_support, teacher_support, who5,
+         fas_overall,
+         dataset_weight, dataset_weight_equating_grade, 
+         id_pupil, psu=id_school, strata=id_strata) %>%
+  unique() # there were 2 duplicates
+
+# Calculate the Family Affluence Scale (low, medium and high) using weights and ridit scoring (see guidance)
+fas_ridit <- hbsc_data %>%
+  filter(!is.na(fas_overall)) %>%
+  filter(!is.na(sex)) %>%
+  # the FAS is calculated relative to age and sex for each year. Includes sex==other from 2022.
+  group_by(sex, grade, trend_axis) %>%
+  dplyr::arrange(fas_overall) %>%
+  dplyr::mutate(cumulative_weight = cumsum(dataset_weight),
+                cumulative_weight_prop = cumulative_weight / sum(dataset_weight)) %>%
+  ungroup() %>%
+  group_by(sex, grade, trend_axis, fas_overall) %>%
+  mutate(cum_wt_mean = mean(cumulative_weight_prop, na.rm=T)) %>%
+  ungroup() %>%
+  mutate(fas_overall_3 = dplyr::case_when(cum_wt_mean < 0.20 ~ "Low affluence",
+                                        cum_wt_mean >= 0.20 & cum_wt_mean < 0.80 ~ "Medium affluence",
+                                        cum_wt_mean >= 0.80 ~ "High affluence")) %>%
+  select(id_pupil, psu, strata, sex, grade, trend_axis, fas_overall_3)
+
+table(fas_ridit$trend_axis, fas_ridit$fas_overall_3, useNA="always")
+table(fas_ridit$sex, fas_ridit$fas_overall_3, useNA="always")
 
 
+# Add FAS levels back in:
+hbsc_data <- hbsc_data %>%
+  merge(y = fas_ridit, by=c("id_pupil", "psu", "strata", "sex", "grade", "trend_axis"), all.x=TRUE)
+
+# save the data
+saveRDS(hbsc_data, here(hbsc_data_folder, "hbsc_data.rds"))
+hbsc_data <- readRDS(here(hbsc_data_folder, "hbsc_data.rds"))
 
 ##########################################################################################
 # Calculate the indicators
@@ -745,11 +932,6 @@ run_svy_calc <- function(df, variables, var, type) {
 
 add_more_required_cols <- function(df, var, svy_result, variables, type) {
   
-  # Options:
-  # variables <- c("trend_axis")
-  # variables <- c("trend_axis", "sex)
-  # variables <- c("trend_axis", "grade")
-  
   # add numerators and denominators (including zeroes if present)
   
   if (type == "percent") {
@@ -786,7 +968,7 @@ calc_indicator_data <- function (df, var, ind_id, type) {
   
   # Scotland 
   results1 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis"), type) %>%
-    mutate(split_value = "Total",
+      mutate(split_value = "Total",
            split_name = "Total")
   # Scotland by sex
   results2 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "sex"), type) %>%
@@ -796,9 +978,13 @@ calc_indicator_data <- function (df, var, ind_id, type) {
   results3 <- calc_single_breakdown(df, var, wt="dataset_weight", variables = c("trend_axis", "grade"), type) %>%
     rename(split_value = grade) %>%
     mutate(split_name = "School stage")
+  # Scotland by FAS
+  results4 <- calc_single_breakdown(df, var, wt="dataset_weight_equating_grade", variables = c("trend_axis", "fas_overall_3"), type) %>%
+    rename(split_value = fas_overall_3) %>%
+    mutate(split_name = "Family Affluence Scale")
   
   
-  results <- rbind(results1, results2, results3) %>%
+  results <- rbind(results1, results2, results3, results4) %>%
     mutate(ind_id = ind_id) %>%
     # add year in
     mutate(year = as.numeric(trend_axis)) %>% 
@@ -815,12 +1001,10 @@ calc_indicator_data <- function (df, var, ind_id, type) {
 
 # Derive percentages:
 cyp_lifesat <- calc_indicator_data(df = hbsc_data, var = "lifesat", ind_id = 30104, type = "percent")
-#cyp_pa_guidelines <- calc_indicator_data(df = hbsc_data, var = "physact60", ind_id = 30111, type = "percent")
 cyp_sufficient_sleep <- calc_indicator_data(df = hbsc_data, var = "schooldays_sleep_hrs", ind_id = 30112, type = "percent")
 cyp_gen_health <- calc_indicator_data(df = hbsc_data, var = "health", ind_id = 30114, type = "percent")
 cyp_llti <- calc_indicator_data(df = hbsc_data, var = "llti", ind_id = 30115, type = "percent")
 cyp_socmedproblem <- calc_indicator_data(df = hbsc_data, var = "d_emc_problem", ind_id = 30116, type = "percent")
-cyp_think_ovwt <- calc_indicator_data(df = hbsc_data, var = "thinkbody_1", ind_id = 30117, type = "percent")
 cyp_talk_parents <- calc_indicator_data(df = hbsc_data, var = "parent_comms", ind_id = 30124, type = "percent")
 cyp_lonely <- calc_indicator_data(df = hbsc_data, var = "lonely", ind_id = 30134, type = "percent")
 cyp_classmate_acceptance <- calc_indicator_data(df = hbsc_data, var = "studaccept", ind_id = 30137, type = "percent")
@@ -833,12 +1017,13 @@ cyp_trusted_adult <- calc_indicator_data(df = hbsc_data, var = "trusted_adult", 
 cyp_nhood_safe <- calc_indicator_data(df = hbsc_data, var = "area_safe", ind_id = 30150, type = "percent")
 cyp_discrimination <- calc_indicator_data(df = hbsc_data, var = "discrim", ind_id = 30163, type = "percent")
 cyp_nhood_good <- calc_indicator_data(df = hbsc_data, var = "area_sat", ind_id = 30164, type = "percent")
+cyp_who5 <- calc_indicator_data(df = hbsc_data, var = "who5", ind_id = 30100, type = "percent")
+cyp_fam_support <- calc_indicator_data(df = hbsc_data, var = "family_support", ind_id = 30126, type = "percent")
+cyp_peer_support <- calc_indicator_data(df = hbsc_data, var = "peer_support", ind_id = 30133, type = "percent")
+cyp_teacher_support <- calc_indicator_data(df = hbsc_data, var = "teacher_support", ind_id = 30142, type = "percent")
 
 # Derive mean scores:
 cyp_sleep_qual <- calc_indicator_data(df = hbsc_data, var = "sleepqual_tot", ind_id = 30113, type = "score")
-cyp_fam_support <- calc_indicator_data(df = hbsc_data, var = "d_family_support", ind_id = 30126, type = "score")
-cyp_peer_support <- calc_indicator_data(df = hbsc_data, var = "d_peer_support", ind_id = 30133, type = "score")
-cyp_teacher_support <- calc_indicator_data(df = hbsc_data, var = "teacher_support", ind_id = 30142, type = "score")
 
 
 
@@ -852,23 +1037,21 @@ rownames(hbsc_results) <- NULL # drop the row names
 
 # data checks:
 table(hbsc_results$trend_axis, useNA = "always") # 1998 to 2022, na NA
-table(hbsc_results$indicator, useNA = "always") # 23 vars , no NA
+table(hbsc_results$indicator, useNA = "always") # 22 vars , no NA
 table(hbsc_results$year, useNA = "always") # 1998 to 2022, na NA
 table(hbsc_results$def_period, useNA = "always") # Survey year (), no NA
-table(hbsc_results$split_name, useNA = "always") # School stage, Sex, Total no NA
-table(hbsc_results$split_value, useNA = "always") # M/F/Total, P7, S2, S4, no NA
+table(hbsc_results$split_name, useNA = "always") # FAS, School stage, Sex, Total no NA
+table(hbsc_results$split_value, useNA = "always") # FAS, M/F/Total, P7, S2, S4, no NA
 # all good
 
 
 # get indicator names into more informative names for using as filenames
 hbsc_results <- hbsc_results %>%
   mutate(indicator = case_when( indicator == "lifesat"             ~ "cyp_lifesat",                          
-                              #  indicator == "physact60"           ~ "cyp_pa_guidelines",                    
                                 indicator == "schooldays_sleep_hrs"~ "cyp_sufficient_sleep",                 
                                 indicator == "health"              ~ "cyp_gen_health",                       
                                 indicator == "llti"                ~ "cyp_llti",                             
                                 indicator == "d_emc_problem"       ~ "cyp_socmedproblem",                    
-                                indicator == "thinkbody_1"         ~ "cyp_think_ovwt",                       
                                 indicator == "parent_comms"        ~ "cyp_talk_parents",                     
                                 indicator == "lonely"              ~ "cyp_lonely",                           
                                 indicator == "studaccept"          ~ "cyp_classmate_acceptance",             
@@ -882,9 +1065,10 @@ hbsc_results <- hbsc_results %>%
                                 indicator == "discrim"             ~ "cyp_discrimination",                   
                                 indicator == "area_sat"            ~ "cyp_nhood_good",  
                                 indicator == "sleepqual_tot"       ~ "cyp_sleep_qual",                    
-                                indicator == "d_family_support"    ~ "cyp_fam_support",                       
-                                indicator == "d_peer_support"      ~ "cyp_peer_support",                   
+                                indicator == "family_support"    ~ "cyp_fam_support",                       
+                                indicator == "peer_support"      ~ "cyp_peer_support",                   
                                 indicator == "teacher_support"     ~ "cyp_teacher_support",  
+                                indicator == "who5"                ~ "cyp_who5_positive",  
                                 TRUE ~ as.character(NA) )) %>%
   select(-denominator) 
 
@@ -898,9 +1082,15 @@ stage_total <- hbsc_results %>%
   filter(split_name=="Total") %>%
   mutate(split_name="School stage")
 
+# Add FAS == Total 
+fas_total <- hbsc_results %>%
+  filter(split_name=="Total") %>%
+  mutate(split_name="Family Affluence Scale")
+
 all_data <- rbind(hbsc_results,
                   sex_total,
-                  stage_total)
+                  stage_total,
+                  fas_total)
 
 ##########################################################
 ### 3. Prepare final files -----
@@ -928,9 +1118,20 @@ prepare_final_files <- function(ind){
   
   pop_grp_data <- all_data %>% 
     filter(indicator == ind & !(split_name == "Total")) %>% 
+    mutate(split_value = factor(split_value, 
+                                levels = c("Female", "Male", 
+                                           "Low affluence", "Medium affluence", "High affluence", 
+                                           "Primary 7", "Secondary 2", "Secondary 4",
+                                           "Total"),
+                                labels = c("Female", "Male", 
+                                           "Low affluence", "Medium affluence", "High affluence", 
+                                           "Primary 7", "Secondary 2", "Secondary 4",
+                                           "Total"))) %>%
+    arrange(code, trend_axis, split_name, split_value) %>%
     select(code, ind_id, year, numerator, rate, upci, 
            lowci, def_period, trend_axis, split_name, split_value) 
   
+   
   # Save
   write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
   write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
@@ -939,19 +1140,17 @@ prepare_final_files <- function(ind){
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
   pop_grp_data_result <<- pop_grp_data
-
+  
   
 }
 
 
 # Run function to create final files
 prepare_final_files(ind = "cyp_lifesat")                          
-#prepare_final_files(ind = "cyp_pa_guidelines")                    
 prepare_final_files(ind = "cyp_sufficient_sleep")                 
 prepare_final_files(ind = "cyp_gen_health")                       
 prepare_final_files(ind = "cyp_llti")                             
 prepare_final_files(ind = "cyp_socmedproblem")                    
-prepare_final_files(ind = "cyp_think_ovwt")                       
 prepare_final_files(ind = "cyp_talk_parents")                     
 prepare_final_files(ind = "cyp_lonely")                           
 prepare_final_files(ind = "cyp_classmate_acceptance")             
@@ -968,17 +1167,16 @@ prepare_final_files(ind = "cyp_sleep_qual")
 prepare_final_files(ind = "cyp_fam_support")                       
 prepare_final_files(ind = "cyp_peer_support")                   
 prepare_final_files(ind = "cyp_teacher_support")  
+prepare_final_files(ind = "cyp_who5_positive")  
 
 # # Run QA reports 
 
 # # main data: 
 run_qa(type ="main",filename="cyp_lifesat", test_file=FALSE)                          
-#run_qa(type ="main",filename="cyp_pa_guidelines", test_file=FALSE)                    
 run_qa(type ="main",filename="cyp_sufficient_sleep", test_file=FALSE)                 
 run_qa(type ="main",filename="cyp_gen_health", test_file=FALSE)                       
 run_qa(type ="main",filename="cyp_llti", test_file=FALSE)                             
 run_qa(type ="main",filename="cyp_socmedproblem", test_file=FALSE)                    
-run_qa(type ="main",filename="cyp_think_ovwt", test_file=FALSE)                       
 run_qa(type ="main",filename="cyp_talk_parents", test_file=FALSE)                     
 run_qa(type ="main",filename="cyp_lonely", test_file=FALSE)                           
 run_qa(type ="main",filename="cyp_classmate_acceptance", test_file=FALSE)             
@@ -995,5 +1193,31 @@ run_qa(type ="main",filename="cyp_sleep_qual", test_file=FALSE)
 run_qa(type ="main",filename="cyp_fam_support", test_file=FALSE)                       
 run_qa(type ="main",filename="cyp_peer_support", test_file=FALSE)                   
 run_qa(type ="main",filename="cyp_teacher_support", test_file=FALSE)  
+run_qa(type ="main",filename="cyp_who5_positive", test_file=FALSE)  
+
+# # popgrp data: 
+run_qa(type ="popgrp",filename="cyp_lifesat", test_file=FALSE)                          
+run_qa(type ="popgrp",filename="cyp_sufficient_sleep", test_file=FALSE)                 
+run_qa(type ="popgrp",filename="cyp_gen_health", test_file=FALSE)                       
+run_qa(type ="popgrp",filename="cyp_llti", test_file=FALSE)                             
+run_qa(type ="popgrp",filename="cyp_socmedproblem", test_file=FALSE)                    
+run_qa(type ="popgrp",filename="cyp_talk_parents", test_file=FALSE)                     
+run_qa(type ="popgrp",filename="cyp_lonely", test_file=FALSE)                           
+run_qa(type ="popgrp",filename="cyp_classmate_acceptance", test_file=FALSE)             
+run_qa(type ="popgrp",filename="cyp_bullied", test_file=FALSE)                          
+run_qa(type ="popgrp",filename="cyp_cyberbullied", test_file=FALSE)                     
+run_qa(type ="popgrp",filename="cyp_like_school", test_file=FALSE)                      
+run_qa(type ="popgrp",filename="cyp_school_pressure", test_file=FALSE)                  
+run_qa(type ="popgrp",filename="cyp_leisure_participation", test_file=FALSE)            
+run_qa(type ="popgrp",filename="cyp_trusted_adult", test_file=FALSE)                    
+run_qa(type ="popgrp",filename="cyp_nhood_safe", test_file=FALSE)                       
+run_qa(type ="popgrp",filename="cyp_discrimination", test_file=FALSE)                   
+run_qa(type ="popgrp",filename="cyp_nhood_good", test_file=FALSE)  
+run_qa(type ="popgrp",filename="cyp_sleep_qual", test_file=FALSE)                    
+run_qa(type ="popgrp",filename="cyp_fam_support", test_file=FALSE)                       
+run_qa(type ="popgrp",filename="cyp_peer_support", test_file=FALSE)                   
+run_qa(type ="popgrp",filename="cyp_teacher_support", test_file=FALSE)  
+run_qa(type ="popgrp",filename="cyp_who5_positive", test_file=FALSE)  
+
 
 ## END
