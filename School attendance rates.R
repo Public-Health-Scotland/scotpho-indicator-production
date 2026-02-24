@@ -98,7 +98,7 @@ import_la_wide_data <- function(filename, sheetnum, range, split_type, value_typ
                      range = range
     )
   } else { # i.e., only rows specified like range = c(4, 37)
-    df <- read_excel(paste0(attendance_folder, filename),
+    df <- read_excel(here(attendance_folder, filename),
                      sheet = paste0("Table ", sheetnum),
                      range = cell_rows(range)
     ) 
@@ -197,16 +197,16 @@ import_scot_recent_data <- function(filename, year,
 import_la_recent_data <- function(filename, year, 
                                   range_1ry, range_2ry, range_stages, range_sex) {
   
-  primary <- import_la_wide_data(filename = filename, sheetnum = "2.1", range = range_1ry, split_type = "NA", value_type = "rate", year = year) %>%  
+  primary <- import_la_wide_data(filename, sheetnum = "2.1", range = range_1ry, split_type = "NA", value_type = "rate", year = year) %>%  
     mutate(split_value = "Primary", split_name = "School type") %>% select(-na) 
   
-  secondary <- import_la_wide_data(filename = filename, sheetnum = "2.2", range = range_2ry, split_type = "NA", value_type = "rate", year = year) %>%  
+  secondary <- import_la_wide_data(filename, sheetnum = "2.2", range = range_2ry, split_type = "NA", value_type = "rate", year = year) %>%  
     mutate(split_value = "Secondary", split_name = "School type") %>% select(-na) 
   
-  stage <- import_la_wide_data(filename = filename, sheetnum = "2.9", range = range_stages, split_type = "split_value", value_type = "rate", year = year) %>% 
+  stage <- import_la_wide_data(filename, sheetnum = "2.9", range = range_stages, split_type = "split_value", value_type = "rate", year = year) %>% 
     mutate(split_name = "School stage") 
   
-  sex <- import_la_wide_data(filename = filename, sheetnum = "2.10", range = range_sex, split_type = "split_value", value_type = "rate", year = year) %>% 
+  sex <- import_la_wide_data(filename, sheetnum = "2.10", range = range_sex, split_type = "split_value", value_type = "rate", year = year) %>% 
     mutate(split_name = "Sex") 
   
   # Combine LA splits data
@@ -222,7 +222,7 @@ import_la_recent_data <- function(filename, year,
 get_old_file_attendance_data_scotland <- function(filename, trend_axis, range_scot, range_rural, range_ethnic) {
   
   # Just one sheet with counts: Stage (1ry, 2ry, Special, Total) and Sex
-  scot_counts <- read_excel(paste0(attendance_folder, filename),
+  scot_counts <- read_excel(here(attendance_folder, filename),
                             sheet = "Table 1.4",
                             range = cell_rows(range_scot)) %>%
     mutate(code = "S00000001") %>%
@@ -241,7 +241,7 @@ get_old_file_attendance_data_scotland <- function(filename, trend_axis, range_sc
     select(-contains(c("attendance", "absence", "denominator")))
   
   # Urban/Rural (percents)
-  scot_rural <- read_excel(paste0(attendance_folder, filename), sheet = "Table 1.6", range = cell_rows(range_rural)) %>%
+  scot_rural <- read_excel(here(attendance_folder, filename), sheet = "Table 1.6", range = cell_rows(range_rural)) %>%
     rename(rate = Attendance, 
            split_value = ...1) %>%
     mutate(code = "S00000001",
@@ -250,7 +250,7 @@ get_old_file_attendance_data_scotland <- function(filename, trend_axis, range_sc
     select(-contains(c("Attendance", "Absence")))
   
   # Ethnicity (percents)
-  scot_ethnic <- read_excel(paste0(attendance_folder, filename), sheet = "Table 1.11", range = cell_rows(range_ethnic)) %>%
+  scot_ethnic <- read_excel(here(attendance_folder, filename), sheet = "Table 1.11", range = cell_rows(range_ethnic)) %>%
     rename(rate = Attendance, 
            split_value = ...1) %>%
     mutate(code = "S00000001",
@@ -297,9 +297,11 @@ get_old_file_attendance_data_la <- function(filename, trend_axis, range_la) {
 get_simd_data <- function(tab_name, simd_file, colnames) {
   
   df <- read_excel(here(attendance_folder, simd_file), sheet = tab_name) %>%
-    mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1) # years in the tab are the end of the sch year, not the start
+    mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # suppressed data replaced with NA
+    mutate(across(-1, ~as.numeric(.))) %>%
+    mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1)  # years in the tab_name are the end of the sch year, not the start
   names(df) <- colnames
-  if(!"NA" %in% colnames) {
+  if(!"NA" %in% colnames) { # add a NA (quintile not known) column if it doesn't exist (for later appending)
     df <- df %>%
       mutate("NA" = 0)
   }
@@ -331,9 +333,11 @@ sheets2024 <- readxl::excel_sheets(here(attendance_folder, data_simd2024))
 for (tab in sheets2024) {
   get_simd_data(tab, simd_file = data_simd2024, colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "year"))
 }
+# warnings = where NA string replaced with numeric NA
+# these are OK
 
-# CAN'T COMBINE CURRENTLY: c USED IN MOST RECENT DATA
 # combine the numerator tabs and the denominator tabs
+# these include Scotland and Grant Aided totals too
 numerator_data <- mget(ls(pattern = "tab_att_"), .GlobalEnv) %>% # gets the dataframes starting with tab_att_
   do.call(rbind.data.frame, .) %>% # rbinds them all together
   pivot_longer(-c(areaname, year), names_to="quintile", values_to = "numerator")
@@ -349,25 +353,26 @@ simd_scot_and_ca <- numerator_data %>%
   merge(y = denominator_data, by = c("areaname", "year", "quintile"), all = TRUE) %>% # checked: no extra rows added, perfect match
   mutate(areatype = ifelse(areaname=="Scotland", "Scotland", "Council area"),
          areaname = gsub(" and ", " & ", areaname)) %>%
-  filter(areaname != "Grant Aided") %>% # these are included in the Scotland totals (this is the default in the published data)
+  filter(areaname != "Grant Aided") %>% # these are included in the Scotland totals (this is the default in the published data). We don't want to (and can't) present them as a geography
   merge(y = geo_lookup, by = c("areaname", "areatype"), all.x=TRUE) %>%
   select(-areatype, -areaname) 
 
 # make totals 
 # N.B. Small boards without every SIMD quintile (e.g., Shetland, Orkney) still can have children attending school from quintiles not represented on the island: 
-# counts are sometimes 0 and sometimes not, so 0 is more appropriate than NA here
+# These boards can have num counts of 0 for these quintiles, and denom counts that are suppressed due to being between 1 and 4
 simd_scot_and_ca <- simd_scot_and_ca %>%
   group_by(year, code) %>%
-  summarise(numerator = sum(numerator, na.rm=T), # No NAs in the provided data, but could be in future? 
+  summarise(numerator = sum(numerator, na.rm=T), 
             denominator = sum(denominator, na.rm = T)) %>%
   ungroup() %>%
   mutate(quintile = "Total") %>% # includes pupils where quintile is not known (implications for inequalities calc?)
+  # add the individual quintile data back in, and drop if quintile not known
   rbind(simd_scot_and_ca) %>%
   filter(quintile != "NA") 
 
 # add higher geogs
 simd_higher <- simd_scot_and_ca %>%
-  filter(code!="S00000001") %>%
+  filter(code!="S00000001") %>% # just remove for this aggregating stage (will add back in below)
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
 
@@ -375,7 +380,7 @@ simd_higher <- simd_scot_and_ca %>%
 aggregate_higher <- function(df, geog) {
   
   df <- df %>%
-    select(year, quintile, code=geog, numerator, denominator) %>%
+    select(year, quintile, code=all_of(geog), numerator, denominator) %>%
     group_by(year, quintile, code) %>%
     summarise(numerator = sum(numerator, na.rm=TRUE),
               denominator = sum(denominator, na.rm=TRUE)) %>%
@@ -402,6 +407,9 @@ simd_all <- rbind(simd_scot_and_ca,
 
 # calculate the inequality measures
 simd_all <- simd_all |>
+  filter(!(denominator==0 | is.na(denominator))) %>% # correction: so that inequals aren't calculated for splits with data for fewer than 5 quintiles
+  mutate(upci = as.numeric(NA),
+         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
   calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
   select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
 
@@ -414,11 +422,13 @@ saveRDS(simd_all, here(profiles_data_folder, "Data to be checked", "school_atten
 # Prepare main data (ie data behind summary/trend/rank tab)
 main_data <- simd_all %>% 
   filter(quintile=="Total") %>%
-  mutate(def_period = paste0("School year (", trend_axis, ")")) %>%
+  mutate(def_period = paste0("School year (", trend_axis, ")"),
+         upci = as.numeric(NA),
+         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
   select(code, ind_id, year, 
          numerator, rate, upci, lowci, 
          def_period, trend_axis) %>%
-  arrange(code, year)
+  arrange(code, year) 
 
 # Save
 write_rds(main_data, here(profiles_data_folder, "Data to be checked", "school_attendance_shiny.rds"))
@@ -499,17 +509,17 @@ la_2009 <- get_old_file_attendance_data_la("attendance-absence-2009-10.xls", "20
 
 # Provided at school level, so can produce LA and Scotland rates, by school type, but no other splits 
 
-la_1ry_2008 <- read_excel(paste0(attendance_folder, data_2008), sheet = "Primary", skip=1) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2008/09")
-la_2ry_2008 <- read_excel(paste0(attendance_folder, data_2008), sheet = "Secondary", skip=1) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2008/09")
-la_special_2008 <- read_excel(paste0(attendance_folder, data_2008), sheet = "Special", skip=1) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2008/09")
+la_1ry_2008 <- read_excel(here(attendance_folder, data_2008), sheet = "Primary", skip=1) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2008/09")
+la_2ry_2008 <- read_excel(here(attendance_folder, data_2008), sheet = "Secondary", skip=1) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2008/09")
+la_special_2008 <- read_excel(here(attendance_folder, data_2008), sheet = "Special", skip=1) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2008/09")
 
-la_1ry_2007 <- read_excel(paste0(attendance_folder, data_2007), sheet = "Primary", skip=3) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2007/08")
-la_2ry_2007 <- read_excel(paste0(attendance_folder, data_2007), sheet = "Secondary", skip=3) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2007/08")
-la_special_2007 <- read_excel(paste0(attendance_folder, data_2007), sheet = "Special", skip=3) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2007/08")
+la_1ry_2007 <- read_excel(here(attendance_folder, data_2007), sheet = "Primary", skip=3) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2007/08")
+la_2ry_2007 <- read_excel(here(attendance_folder, data_2007), sheet = "Secondary", skip=3) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2007/08")
+la_special_2007 <- read_excel(here(attendance_folder, data_2007), sheet = "Special", skip=3) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2007/08")
 
-la_1ry_2006 <- read_excel(paste0(attendance_folder, data_2006), sheet = "Primary", skip=2) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2006/07")
-la_2ry_2006 <- read_excel(paste0(attendance_folder, data_2006), sheet = "Secondary", skip=2) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2006/07")
-la_special_2006 <- read_excel(paste0(attendance_folder, data_2006), sheet = "Special", skip=2) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2006/07")
+la_1ry_2006 <- read_excel(here(attendance_folder, data_2006), sheet = "Primary", skip=2) %>% mutate(split_name = "School type", split_value = "Primary", trend_axis = "2006/07")
+la_2ry_2006 <- read_excel(here(attendance_folder, data_2006), sheet = "Secondary", skip=2) %>% mutate(split_name = "School type", split_value = "Secondary", trend_axis = "2006/07")
+la_special_2006 <- read_excel(here(attendance_folder, data_2006), sheet = "Special", skip=2) %>% mutate(split_name = "School type", split_value = "Special", trend_axis = "2006/07")
 
 # Combine the school data and aggregate to LAs
 la_2006to2008 <- bind_rows(la_1ry_2006, la_1ry_2007, la_1ry_2008, 
@@ -662,14 +672,16 @@ all_attendance3 <- all_attendance2 %>%
 # Population groups data (ie data behind population groups tab)
 
 pop_grp_data <- all_attendance3 %>% 
-  filter(!split_name == "Total") %>%
+  filter(!split_name == "Total") %>% 
+  mutate(upci = as.numeric(NA),
+         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
   select(code, ind_id, year, numerator, rate, upci, 
          lowci, def_period, trend_axis, split_name, split_value) %>%
   arrange(code, year)
 
 # Save
-write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/school_attendance_shiny_popgrp.rds"))
-write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/school_attendance_shiny_popgrp.csv"), row.names = FALSE)
+write_rds(pop_grp_data, here(profiles_data_folder, "Data to be checked/school_attendance_shiny_popgrp.rds"))
+write.csv(pop_grp_data, here(profiles_data_folder, "Data to be checked/school_attendance_shiny_popgrp.csv"), row.names = FALSE)
 
 ## Run QA report 
 
