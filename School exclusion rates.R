@@ -6,8 +6,11 @@
 # numerator source (no. of exclusions): https://www.gov.scot/publications/school-exclusion-statistics/ INCLUDES: PUBLICLY-FUNDED LOCAL AUTHORITY SCHOOLS ONLY. NOT INCLUDING GRANT-AIDED SCHOOLS. 
 # denominator source (no. of pupils):   https://www.gov.scot/publications/pupil-census-supplementary-statistics/  (Table 5.1: Schools by local authority)
 # update file names and ranges below when new data from links above are saved in "data received" folder.
-# Latest data (2022/23) published March 2024
-# SIMD time trend data to 2022/23 provided in 2025: AAE0015_exclusions_by_simd.xlsx
+# Dec 2025: Latest data (to 2024/25) published
+# Feb 2026: received 2024/25 SIMD data from SG (info request): AAE023_exclusions_by_simd_for_phs_final.xlsx 
+# NB. years in the SIMD spreadsheets refer to the end of the school year (e.g., 2025 = 2024/25 school year)
+# NB. There are true zeroes and suppressed counts in the data. And in Clackmannanshire they have reduced exclusions to zero in 2024/25: the inequalities calc couldn't handle this, so needed slight tweaking.
+# Zero counts in Q1 and Q5 return NaN for some inequalities measures, e.g., relative_range. Need to think about how these are presented in the app...
 
 #################################################################################
 ### 1. Required packages/functions -----
@@ -17,24 +20,35 @@ source("functions/main_analysis.R") # needed for the QA
 source("functions/deprivation_analysis.R") # needed for the QA
 library(hablar) # for sums that ignore NA only if other values are present, otherwise it returns NA
 library(readxl) # for reading in excel files
+library(here) # for filepaths
 
 # Read in geography lookup
-geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
-geo_lookup <- readRDS(file.path(geography_lookups, "opt_geo_lookup.rds")) %>% 
+geography_lookups <- here(profiles_data_folder, "Lookups", "Geography")
+geo_lookup <- readRDS(here(geography_lookups, "opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 # create lookup for higher geogs: get simd lookup, and aggregate (lowest geog is CA)
-higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup.rds")) %>%
+higher_geog_lookup <- readRDS(here(geography_lookups, "simd_datazone_lookup.rds")) %>%
   select(year, code = ca, hb, hscp, pd, scotland) %>%
   unique()
 
-# Importing and processing the standalone SIMD data file, provided by SG in Aug 2025: 
+# Importing and processing the SIMD data files (provided by SG): 
 
-get_simd_data <- function(tab_name) {
+get_simd_data <- function(tab_name, simd_file, colnames) {
   
-  df <- read_excel(path = exclusions_simd, sheet = tab_name) %>%
+  df <- read_excel(simd_file, sheet = tab_name) %>%
+    mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # suppressed data replaced with NA
+    mutate(across(-1, ~as.numeric(.))) %>%
     mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1) # years in the tab are the end of the sch year, not the start
-  names(df) <- c("areaname", "1", "2", "3", "4", "5", "NA", "Total", "year")
+  
+  names(df) <- colnames
+  
+  # Drop NA column if it exists
+  if("NA" %in% colnames) {
+    df <- df %>%
+      select(-"NA")
+  }
+  
   df_name <- paste0("tab_", tab_name)
   assign(df_name, df, envir=.GlobalEnv)
   
@@ -46,7 +60,7 @@ get_simd_data <- function(tab_name) {
 aggregate_higher_simd <- function(df, geog) {
   
   df <- df %>%
-    select(year, quintile, code=geog, numerator, denominator) %>%
+    select(year, quintile, code=all_of(geog), numerator, denominator) %>%
     group_by(year, quintile, code) %>%
     summarise(numerator = sum(numerator, na.rm=TRUE),
               denominator = sum(denominator, na.rm=TRUE)) %>%
@@ -58,7 +72,7 @@ aggregate_higher_simd <- function(df, geog) {
 aggregate_higher <- function(df, geog) {
   
   df <- df %>%
-    select(year, code=geog, numerator, denominator) %>%
+    select(year, code=all_of(geog), numerator, denominator) %>%
     group_by(year, code) %>%
     summarise(numerator = sum(numerator, na.rm=TRUE),
               denominator = sum(denominator, na.rm=TRUE)) %>%
@@ -74,29 +88,38 @@ aggregate_higher <- function(df, geog) {
 # file paths:
 
 # the folder where the data are saved
-exclusions_folder <- paste0(profiles_data_folder, "/Received Data/School Exclusion Rates/")
+exclusions_folder <- here(profiles_data_folder, "Received Data", "School Exclusion Rates")
 
 # counts of exclusions (numerators)
-exclusions2022 <- paste0(exclusions_folder, "Exclusions_202223.xlsx") # Numerators for Scotland and LAs
+exclusions2024 <- here(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx") # Numerators for Scotland and LAs
 
-# SIMD data 2010-2023 (counts and denominators): could be used for Scotland and CA aggregates too.
-exclusions_simd <- paste0(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") 
+# SIMD data 2010/11-2023/24 (counts and denominators): 
+#simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") # SG provided the following file with suppression, to replace this unsuppressed one. 
+simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd_final.xlsx") 
 
-# pupil counts (denominators)
-census2022 <- paste0(exclusions_folder, "Pupils_Census_2022.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
-census2020 <- paste0(exclusions_folder, "Pupils_in_Scotland_2020.xlsx") # For SIMD denominators for 2020
+# SIMD data 2024/25 (counts and denominators): 
+simd2024 <- here(exclusions_folder, "AAE023_exclusions_by_simd_for_phs_final.xlsx") 
 
+# pupil counts (denominators): snapshot from September of the year in question
+census2024 <- here(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
 
 #################################
 ## 2a. Import SIMD data 
 #################################
 
-# Get the data from the SIMD file
-sheets <- readxl::excel_sheets(exclusions_simd)
-
-for (tab in sheets) {
-  get_simd_data(tab)
+# Get the data from the SIMD files
+sheets2023 <- readxl::excel_sheets(simd2023)
+for (tab in sheets2023[-1]) { # read in all tabs apart from 1st (Notes)
+  get_simd_data(tab, simd_file = simd2023, 
+                colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "Total", "year"))
 }
+
+sheets2024 <- readxl::excel_sheets(simd2024) 
+for (tab in sheets2024[-1]) { # read in all tabs apart from 1st (Notes)
+  get_simd_data(tab, simd_file = simd2024,
+                colnames = c("areaname", "1", "2", "3", "4", "5", "Total", "year")) # no 'SIMD quintile not available provided'
+}
+
 
 # combine the numerator tabs and the denominator tabs
 numerator_data <- mget(ls(pattern = "tab_cases_"), .GlobalEnv) %>% # gets the dataframes starting with tab_cases_
@@ -112,19 +135,30 @@ rm(list=ls(pattern="tab_"))
 
 simd_scot_and_ca <- numerator_data %>%
   merge(y = denominator_data, by = c("areaname", "year", "quintile"), all = TRUE) %>% # checked: no extra rows added, perfect match
-  mutate(areaname = ifelse(areaname=="All local authorities", "Scotland", areaname),
-         areatype = ifelse(areaname=="Scotland", "Scotland", "Council area"),
+  mutate(areatype = ifelse(areaname %in% c("All local authorities", "Scotland"), "Scotland", "Council area"),
+         areaname = ifelse(areatype =="Scotland", "Scotland", areaname),
          areaname = gsub(" and ", " & ", areaname)) %>%
   # remove data where denominator == 0
   filter(denominator>0) %>%
+  filter(quintile!="Total") %>% # drop because pupils without a known SIMD quintile are included
   merge(y = geo_lookup, by = c("areaname", "areatype"), all.x=TRUE) %>%
-  select(-areatype, -areaname) %>%
-  filter(quintile != "NA") 
+  select(-areatype, -areaname) 
 
+# make totals 
+# N.B. Small boards without every SIMD quintile (e.g., Shetland, Orkney) still can have children attending school from quintiles not represented on the island: 
+# These boards can have num counts of 0 for these quintiles, and denom counts that are suppressed due to being between 1 and 4
+simd_scot_and_ca <- simd_scot_and_ca %>%
+  group_by(year, code) %>%
+  summarise(numerator = sum(numerator, na.rm=T), 
+            denominator = sum(denominator, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(quintile = "Total") %>% # excludes pupils where quintile is not known 
+  # add the individual quintile data back in
+  rbind(simd_scot_and_ca) 
 
 # add higher geogs
 simd_higher <- simd_scot_and_ca %>%
-  filter(code!="S00000001") %>%
+  filter(code!="S00000001") %>% # to be added back in later, after aggregation
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
 
@@ -142,19 +176,24 @@ simd_all <- rbind(simd_scot_and_ca,
          trend_axis = paste0(year, "/", as.character(substr(year+1, 3, 4))),
          def_period = paste0("School year (", trend_axis, ")"),
          ind_id = 13016) %>%
-  calculate_crude_rate(., 1000)
+  calculate_crude_rate(., 1000) %>% # lowci = NaN if numerator is 0. Should be 0?
+  mutate(lowci = ifelse(is.nan(lowci), 0, lowci))
+
 
 # calculate the inequality measures
 simd_all <- simd_all |>
+  filter(!(denominator==0 | is.na(denominator))) %>% # correction: so that inequals aren't calculated for splits with data for fewer than 5 quintiles
+  filter(!(is.na(numerator))) %>% # correction: so that inequals aren't calculated for splits with data for fewer than 5 quintiles
+  # mutate(upci = as.numeric(NA),
+ #        lowci = as.numeric(NA)) %>% # SG advise CIs are not needed here. 
   calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+  # check: inequals not calculated if fewer than 5 quintiles represented - yep (all are NA)
+  # When there are 0 rates for Q1 or Q5 this means that rel_range will be NaN or Inf (correct): should it be recoded for presenting?
+  # When Q5 has 0 rate this means that PAR will be NaN (correct): should it be recoded for presenting?
   select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
 
 # save the data as RDS file
 saveRDS(simd_all, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_ineq.rds"))
-
-# Total counts (which include the pupils where SIMD is not known) compared with the published totals for Scotland and LAs.
-# Differences of 1 to 3 exclusions out of >20,000 (0.01%), which would make little difference to percentages, 
-# but also the published data have a longer time series, so still need to read that data in. 
 
 
 #################################################################################
@@ -167,26 +206,28 @@ saveRDS(simd_all, paste0(profiles_data_folder, "/Data to be checked/school_exclu
 # Numerators:
 
 # exclusions by council area (time series from 2007/08)
-ca_exclusions <- read_xlsx(exclusions2022, sheet = "Table 2.1", skip = 3) |> 
+ca_exclusions <- read_xlsx(exclusions2024, sheet = "Table 2.1", skip = 3) |> 
   head(32) %>% #select first 32 rows (excludes all LA totals, as we get these for a longer time series from sheet Table 1.1)
-  mutate_at(c(2:11), as.numeric) %>% # some suppressed values converted to NA
-  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") 
+  mutate_at(-1, as.numeric) %>% # some suppressed values converted to NA
+  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") %>%
+  mutate(year = substr(year, 1, 7)) #remove the notes from some year headings
 
 # exclusions scotland level (time series from 2002/03)
-scotland_exclusions <- read_xlsx(exclusions2022, sheet = "Table 1.1", skip = 3) |> 
+scotland_exclusions <- read_xlsx(exclusions2024, sheet = "Table 1.1", skip = 3) |> 
   filter(`Exclusion type` == "All cases of exclusion") |> #excludes breakdown of exclusion types
-  mutate_at(c(2:16), as.numeric) %>% 
+  mutate_at(-1, as.numeric) %>% 
   select(-`Exclusion type`) |> 
   mutate("Local Authority" = "All local authorities") %>%
-  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") 
+  pivot_longer(-c("Local Authority"), names_to = "year", values_to = "numerator") %>%
+  mutate(year = substr(year, 1, 7)) #remove the notes from some year headings
 
 
 # Denominators:
 
 # total pupils by council area 
-total_pupils <- read_xlsx(census2022, sheet = "Table 5.2", skip = 4) |>  
+total_pupils <- read_xlsx(census2024, sheet = "Table 5.2", skip = 3) |>  
   head(33) |> # we want 'All local authorities' rather than 'Scotland' here, as the Scotland figure includes Grant-aided schools that are not included in the exclusions stats.
-  mutate_at(c(2:23), as.numeric) %>% 
+  mutate_at(-1, as.numeric) %>% 
   pivot_longer(-c(`Local Authority`), names_to = "year", values_to = "denominator") %>%
   mutate(year = as.numeric(substr(year, 1, 4)))
 
@@ -208,7 +249,7 @@ exclusions_ca_scot <- rbind(ca_exclusions, scotland_exclusions) %>%
 
 # add higher geogs
 exclusions_higher <- exclusions_ca_scot %>%
-  filter(code!="S00000001") %>%
+  filter(code!="S00000001") %>% # keeps just CA data for aggregating (Scotland data added back in below)
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
 
@@ -225,7 +266,8 @@ exclusions_all <- rbind(exclusions_ca_scot,
   mutate(trend_axis = paste0(year, "/", as.character(substr(year+1, 3, 4))),
          ind_id = 13016,
          def_period = paste0("School year (", trend_axis, ")")) %>%
-  calculate_crude_rate(., 1000)
+  calculate_crude_rate(., 1000) %>% # lowci = NaN if numerator is 0. Should be 0?
+  mutate(lowci = ifelse(is.nan(lowci), 0, lowci))
 
 
 ### Prepare main data file -----
@@ -238,8 +280,8 @@ main_data <- exclusions_all %>%
   arrange(code, year)
 
 # Save
-write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_shiny.rds"))
-write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_shiny.csv"), row.names = FALSE) 
+write_rds(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.rds"))
+write.csv(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.csv"), row.names = FALSE) 
 
 
 ##########################################################
