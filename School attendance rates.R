@@ -215,11 +215,9 @@ get_simd_data <- function(tab_name, simd_file, colnames) {
     mutate(across(-1, ~str_replace(., "c", "NA"))) %>% # suppressed data replaced with NA
     mutate(across(-1, ~as.numeric(.))) %>%
     mutate(year = as.numeric(substr(tab_name, nchar(tab_name)-3, nchar(tab_name))) - 1)  # years in the tab_name are the end of the sch year, not the start
+  
   names(df) <- colnames
-  if(!"NA" %in% colnames) { # add a NA (quintile not known) column if it doesn't exist (for later appending)
-    df <- df %>%
-      mutate("NA" = 0)
-  }
+  
   df_name <- paste0("tab_", tab_name)
   assign(df_name, df, envir=.GlobalEnv)
   
@@ -240,12 +238,12 @@ get_simd_data <- function(tab_name, simd_file, colnames) {
 # run the function
 sheets2023 <- readxl::excel_sheets(here(attendance_folder, data_simd2023))
 #sheets2023 <- sheets2023[2:length(sheets2023)] # drop the cover sheet, keep remaining tabs
-for (tab in sheets2023) {
+for (tab in sheets2023[-1]) { # read in all but the first (Notes) tab
   get_simd_data(tab, simd_file = data_simd2023, colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "year"))
 }
 
 sheets2024 <- readxl::excel_sheets(here(attendance_folder, data_simd2024))
-for (tab in sheets2024) {
+for (tab in sheets2024[-1]) { # read in all but the first (Notes) tab
   get_simd_data(tab, simd_file = data_simd2024, colnames = c("areaname", "1", "2", "3", "4", "5", "NA", "year"))
 }
 # warnings = where NA string replaced with numeric NA
@@ -275,18 +273,28 @@ simd_scot_and_ca <- numerator_data %>%
 # make totals 
 # N.B. Small boards without every SIMD quintile (e.g., Shetland, Orkney) still can have children attending school from quintiles not represented on the island: 
 # These boards can have num counts of 0 for these quintiles, and denom counts that are suppressed due to being between 1 and 4
-simd_scot_and_ca <- simd_scot_and_ca %>%
+totals_scot_and_ca_incl_NA <- simd_scot_and_ca %>%
   group_by(year, code) %>%
   summarise(numerator = sum(numerator, na.rm=T), 
             denominator = sum(denominator, na.rm = T)) %>%
   ungroup() %>%
-  mutate(quintile = "Total") %>% # includes pupils where quintile is not known (implications for inequalities calc?)
-  # add the individual quintile data back in, and drop if quintile not known
-  rbind(simd_scot_and_ca) %>%
-  filter(quintile != "NA") 
+  mutate(quintile = "Total (incl NA)")  # includes pupils where quintile is not known 
 
+totals_scot_and_ca_excl_NA <- simd_scot_and_ca %>%
+  filter(quintile != "NA") %>% # Drop the counts where quintile not known, to calculate totals for the quintile-level data (used in inequality calcs)
+  group_by(year, code) %>%
+  summarise(numerator = sum(numerator, na.rm=T), 
+            denominator = sum(denominator, na.rm = T)) %>%
+  ungroup() %>%
+  mutate(quintile = "Total") # excludes pupils where quintile is not known 
+  
+# combine quintile data with the two types of totals
+all_simd_scot_and_ca <- simd_scot_and_ca %>%
+  filter(quintile != "NA") %>% # Drop the counts where quintile not known
+  rbind(totals_scot_and_ca_incl_NA, totals_scot_and_ca_excl_NA) 
+  
 # add higher geogs
-simd_higher <- simd_scot_and_ca %>%
+simd_higher <- all_simd_scot_and_ca %>%
   filter(code!="S00000001") %>% # just remove for this aggregating stage (will add back in below)
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
@@ -309,7 +317,7 @@ simd_hscp <- aggregate_higher(simd_higher, "hscp")
 simd_pd <- aggregate_higher(simd_higher, "pd")
 
 # combine all simd data
-simd_all <- rbind(simd_scot_and_ca,
+simd_all <- rbind(all_simd_scot_and_ca,
                   simd_hb,
                   simd_pd,
                   simd_hscp) %>%
@@ -320,29 +328,28 @@ simd_all <- rbind(simd_scot_and_ca,
   calculate_percent() %>%
   mutate(across(everything(), ~replace(., is.nan(.), NA))) #replace rate and CIs with NA for cases with 0 denominator
 
-# calculate the inequality measures
-simd_all <- simd_all |>
+# calculate the inequality measures (after removing quintile = "Total (incl NA)")
+school_attendance_ineq <- simd_all |>
+  filter(quintile != "Total (incl NA)") %>%
   filter(!(denominator==0 | is.na(denominator))) %>% # correction: so that inequals aren't calculated for splits with data for fewer than 5 quintiles
-  mutate(upci = as.numeric(NA),
-         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
+  #mutate(upci = as.numeric(NA),
+  #       lowci = as.numeric(NA)) %>% # CIs very small here: due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG advise CIs are not needed here. But took advice from VE and will keep, as useful for comparing % with different sample sizes.
   calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
   select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
 
 # save the data as RDS file
-saveRDS(simd_all, here(profiles_data_folder, "Data to be checked", "school_attendance_ineq.rds"))
+saveRDS(school_attendance_ineq, here(profiles_data_folder, "Data to be checked", "school_attendance_ineq.rds"))
 
 # Total counts (which include the pupils where SIMD is not known) match the published totals for Scotland and LAs,
 # so can be used for these instead of reading in other data: 
 
 # Prepare main data (ie data behind summary/trend/rank tab)
 main_data <- simd_all %>% 
-  filter(quintile=="Total") %>%
-  mutate(def_period = paste0("School year (", trend_axis, ")"),
-         upci = as.numeric(NA),
-         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
-  select(code, ind_id, year, 
-         numerator, rate, upci, lowci, 
-         def_period, trend_axis) %>%
+  filter(quintile == "Total (incl NA)") %>%
+  mutate(def_period = paste0("School year (", trend_axis, ")")) %>%
+ #mutate(upci = as.numeric(NA),
+ #       lowci = as.numeric(NA)) %>% # CIs very small here: due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG advise CIs are not needed here. But took advice from VE and will keep, as useful for comparing % with different sample sizes.
+  select(code, ind_id, year, numerator, rate, upci, lowci, def_period, trend_axis) %>%
   arrange(code, year) 
 
 # Save
@@ -502,8 +509,8 @@ all_attendance <- all_attendance2 %>%
 
 pop_grp_data <- all_attendance %>% 
   filter(!split_name == "Total") %>% 
-  mutate(upci = as.numeric(NA),
-         lowci = as.numeric(NA)) %>% # NAs deemed meaningless here: very very small due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG also advise CIs are not needed here. 
+  #mutate(upci = as.numeric(NA),
+  #       lowci = as.numeric(NA)) %>% # CIs very small here: due to very large denominators (e.g., >200 million for Scotland, as are counts of half-days x pupils). SG advise CIs are not needed here. But took advice from VE and will keep, as useful for comparing % with different sample sizes.
   select(code, ind_id, year, numerator, rate, upci, 
          lowci, def_period, trend_axis, split_name, split_value) %>%
   arrange(code, year)
