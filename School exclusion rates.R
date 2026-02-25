@@ -9,6 +9,8 @@
 # Dec 2025: Latest data (to 2024/25) published
 # Feb 2026: received 2024/25 SIMD data from SG (info request): AAE023_exclusions_by_simd_for_phs_final.xlsx 
 # NB. years in the SIMD spreadsheets refer to the end of the school year (e.g., 2025 = 2024/25 school year)
+# NB. There are true zeroes and suppressed counts in the data. And in Clackmannanshire they have reduced exclusions to zero in 2024/25: the inequalities calc couldn't handle this, so needed slight tweaking.
+# Zero counts in Q1 and Q5 return NaN for some inequalities measures, e.g., relative_range. Need to think about how these are presented in the app...
 
 #################################################################################
 ### 1. Required packages/functions -----
@@ -89,8 +91,7 @@ aggregate_higher <- function(df, geog) {
 exclusions_folder <- here(profiles_data_folder, "Received Data", "School Exclusion Rates")
 
 # counts of exclusions (numerators)
-exclusions2022 <- here(exclusions_folder, "Exclusions_202223.xlsx") # Numerators for Scotland and LAs
-exclusions2024 <- here(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx")
+exclusions2024 <- here(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx") # Numerators for Scotland and LAs
 
 # SIMD data 2010/11-2023/24 (counts and denominators): 
 #simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") # SG provided the following file with suppression, to replace this unsuppressed one. 
@@ -100,9 +101,7 @@ simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd_final.xlsx")
 simd2024 <- here(exclusions_folder, "AAE023_exclusions_by_simd_for_phs_final.xlsx") 
 
 # pupil counts (denominators): snapshot from September of the year in question
-census2022 <- here(exclusions_folder, "Pupils_Census_2022.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
-census2020 <- here(exclusions_folder, "Pupils_in_Scotland_2020.xlsx") # For SIMD denominators for 2020
-census2024 <- here(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx")
+census2024 <- here(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
 
 #################################
 ## 2a. Import SIMD data 
@@ -250,7 +249,7 @@ exclusions_ca_scot <- rbind(ca_exclusions, scotland_exclusions) %>%
 
 # add higher geogs
 exclusions_higher <- exclusions_ca_scot %>%
-  filter(code!="S00000001") %>% # keeps just CA data
+  filter(code!="S00000001") %>% # keeps just CA data for aggregating (Scotland data added back in below)
   # join data with lookup
   left_join(higher_geog_lookup, by = c("code", "year"))
 
@@ -267,7 +266,8 @@ exclusions_all <- rbind(exclusions_ca_scot,
   mutate(trend_axis = paste0(year, "/", as.character(substr(year+1, 3, 4))),
          ind_id = 13016,
          def_period = paste0("School year (", trend_axis, ")")) %>%
-  calculate_crude_rate(., 1000)
+  calculate_crude_rate(., 1000) %>% # lowci = NaN if numerator is 0. Should be 0?
+  mutate(lowci = ifelse(is.nan(lowci), 0, lowci))
 
 
 ### Prepare main data file -----
