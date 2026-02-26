@@ -40,6 +40,7 @@
 # Figures are published for Scotland and local authorities only. (ScotPHO derive NHS board and ADP figures by aggregating council area figures)
 
 # Each year (around March) the SG publish an additional year of data.
+# Last update: data published March 2025 (2023-24 data)
 
 ###############################################################################.
 
@@ -207,12 +208,18 @@ add_area_codes <- function(df) {
 # Import the data: 
 # (ONLY ONE DATA POINT AT PRESENT)
 # (only main data file is possible, no popgroups)
+# Ab'shire didn't submit data, so are included as zero: not strictly 'suppressed' but not a true zero either. 
+    # From SG report "In the first year of data collection, data were provided by 31 local authority areas but were unavailable in 
+    # Aberdeenshire. This means that total figures do not account for the inter-agency referrals conducted within Aberdeenshire 
+    # during the year."
+# Need to keep in the data so that aggregated totals can be calculated: these will be artificially deflated unless the denominator population here can also be set to 0.  
+# The main analysis function has been amended to do such a denominator subtraction when needed. This is its first test, and it seems to work
 
 # LA (2023/24) 
 IRD_2023 <- import_wide_data(filename = publication_2023, sheetnum = "1.3a", range = "A5:B37", non_num_cols = 1) %>%
   mutate(year = 2023) %>%
   select(year, numerator = "IRD Number", areaname = "Local Authority") %>% 
-  mutate(numerator = ifelse(areaname=="Aberdeenshire", NA, numerator)) %>% # Ab'shire didn't submit data, but are included as zero
+  mutate(numerator = ifelse(areaname=="Aberdeenshire", NA, numerator)) %>% # 
   add_area_codes(.) 
 
 # Save ready for the main analysis function
@@ -221,8 +228,11 @@ saveRDS(IRD_2023, file=paste0(profiles_data_folder, '/Prepared Data/IRD_2023_raw
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "IRD_2023", ind_id = 30169, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2023, yearend = 2023,
-              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE)
-# Correct: Ab'shre CA and the geogs that are coincident with it (HB and HSCP) are NA, all others have data.
+              time_agg = 1, crude_rate = 1000, year_type = "financial", police_div = TRUE, 
+              NA_means_suppressed = TRUE)
+# Correct: Ab'shire CA and the geogs that are coincident with it (ADP and HSCP) are NA, all others have data.
+# Figures for aggregated geogs including Ab'shire now exclude the denominator for Ab'shire, so the resulting rate relates to just the areas with numerator data.
+# E.g., Scotland's rate is calculated from the numerators and denominators for 31 rather than 32 CAs. 
 
 
 
@@ -301,6 +311,7 @@ run_qa(type = "popgrp", filename = "child_prot_register", test_file=FALSE)
 
 # Import and process main data
 # LA (2013-2024)
+# CONTAINS NAs THAT MEAN SUPPRESSED
 register_la_2013to2024 <- import_wide_data(filename = publication_2023, sheetnum = "1.2", range = "A40:Y72", non_num_cols = c(1)) %>%
   pivot_longer(-`Local authority`, names_to = c("year", "metric"), 
                names_pattern = "(\\d{4}) (\\w*).*?", # (\\d{4}) extracts a 4-digit number, and (\\w*) extracts a word (either 'Rate' or 'Number') after a space after the number
@@ -328,7 +339,8 @@ saveRDS(register_la, file=paste0(profiles_data_folder, '/Prepared Data/child_pro
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "child_prot_register", ind_id = 13035, geography = "council", measure = "crude",
               pop = "CA_pop_under18", yearstart = 2007, yearend = 2024,
-              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
+              time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE, 
+              NA_means_suppressed = TRUE)
 
 # Aggregated Scotland data match original Scotland data perfectly apart from 2015-2017, due to some suppression in smaller CAs. 
 # So replace the aggregated Scotland data with the original data:
@@ -409,7 +421,7 @@ concerns_la <- do.call("bind_rows", mget(ls(pattern="^concerns_la_"))) %>%
   add_area_codes(.) %>%
   select(ind_id, code, year, numerator)
 # A fair number of zeroes in the data: these are true zeroes in small LAs
-# Suppressed counts remain suppressed.
+# Suppressed counts remain suppressed (i.e., NA).
 
 # Function to prepare main data file: 
 prepare_main_data <- function(indicator, ind){
@@ -423,7 +435,8 @@ prepare_main_data <- function(indicator, ind){
   # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
   main_analysis(filename = indicator, ind_id = ind, geography = "council", measure = "crude",
                 pop = "CA_pop_under18", yearstart = 2015, yearend = 2024,
-                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE)
+                time_agg = 1, crude_rate = 10000, year_type = "snapshot", QA = FALSE, police_div = TRUE,
+                NA_means_suppressed = TRUE)
 
   
   # Remove the aggregated Scotland data and replace with the original (because aggregated included some suppressed values)
