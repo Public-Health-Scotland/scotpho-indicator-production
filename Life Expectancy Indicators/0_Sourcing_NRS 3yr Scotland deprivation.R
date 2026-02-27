@@ -89,19 +89,13 @@ population_lookup  <-population_lookup |>
 
 le_data <-left_join(le_data_depr, population_lookup, by = c("year","quintile","sex","quint_type")) |>
   select(code,year,quint_type,quintile,sex,rate,lowci,upci, denominator) |>
+  #arrange(sex, code, year, quint_type,quintile) |>
   calculate_inequality_measures()
-
 
 
 ###############################################.
 ## Finalise file for Profiles tool app & QA report ----
 ###############################################.
-
-# Note this step is technically not required and has no impact on the calculation of rolling averages or rates
-# but is being kept in due to having been used in legacy analysis functions
-# It will ensure that any automatated QA's that compares old data file (prepared via old functions) and new data file
-# (prepared by this new function) are comparing the correct years against eachother.
-
 
 
 # select final columns
@@ -111,15 +105,37 @@ le_data <- le_data |>
     trend_axis = year, #simple description of years covered for use in chart labels
     def_period = paste0(year," (3 year rolling average)"), #full time period description for metadata
     year = as.numeric(substr(year,1,4)) + 1)|> # adjusts year column needs to be a single year value which represents midpoint of 3 year average
-  select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
-            least_rate, par_rr, count))
-
-# IF THIS GOES INTO SHINY APP THEN MIGHT NEED TO SPLIT INTO MALE/FEMALE INDICATOR SEPARATE FILES?
+  select(-c(overall_rate, total_pop, proportion_pop, most_rate, least_rate, par_rr, count))
 
 
-# save the data as both an RDS and CSV file
-saveRDS(le_data, paste0(profiles_data_folder, "/Data to be checked/LTMHI_LE_by_depr_scot3yr_ineq.rds"))
-write.csv(le_data, paste0(profiles_data_folder, "/Data to be checked/LTMHI_LE_by_depr_scot3yr_ineq.csv"), row.names = FALSE)
+le_data_male <- le_data |>
+  filter(sex==1)|>
+  select(-sex)|>
+  mutate(ind_id=99142)
+
+le_data_female <- le_data |>
+  filter(sex==2)|>
+  select(-sex)|>
+  mutate(ind_id=99143)
 
 
-run_qa(type = "deprivation", filename="LTMHI_LE_by_depr_scot3yr",test_file=FALSE)
+
+# Save Shiny data files
+
+# male indicator
+write_rds(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI)_ineq.rds"))
+write.csv(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI)_ineq.csv"), row.names = FALSE)
+
+# female indicator
+write_rds(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/healthy_life_expectancy_female(LTMHI)_ineq.rds"))
+write.csv(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/healthy_life_expectancy_female(LTMHI)_ineq.csv"), row.names = FALSE)
+
+
+# # save the data as both an RDS and CSV file
+# saveRDS(le_data, paste0(profiles_data_folder, "/Data to be checked/LTMHI_LE_by_depr_scot3yr_ineq.rds"))
+# write.csv(le_data, paste0(profiles_data_folder, "/Data to be checked/LTMHI_LE_by_depr_scot3yr_ineq.csv"), row.names = FALSE)
+
+
+run_qa(type = "deprivation", filename="life_expectancy_male(LTMHI)",test_file=FALSE)
+run_qa(type = "deprivation", filename="life_expectancy_female(LTMHI)",test_file=FALSE)
+

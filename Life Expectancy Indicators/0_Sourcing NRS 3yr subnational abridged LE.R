@@ -59,6 +59,7 @@ date_range_le <- c("2001-2003", "2002-2004", "2003-2005", "2004-2006", "2005-200
 
 
 # extract data for Scotland, NHS board and Local Authority separately to avoid issues with row limits
+# run extractions one by one to avoid script failure
 le_scot=ods_dataset("Life-Expectancy", geography= "sc", age=age_select, simdQuintiles=simd_select,refPeriod = date_range_le) #scotland data includes rural urban split which can go in pop group
 le_hb=ods_dataset("Life-Expectancy", geography= "hb", age=age_select, simdQuintiles=simd_select,urbanRuralClassification=urban_rural_select,refPeriod = date_range_le)
 le_la=ods_dataset("Life-Expectancy", geography= "la", age=age_select, simdQuintiles=simd_select,urbanRuralClassification=urban_rural_select,refPeriod = date_range_le)
@@ -81,10 +82,11 @@ clean_names() |> #converts column names to lowercase
 
 rm(le_scot,le_hb,le_la)
 
-#Save out life expectancy at birth data into network area ata folder
-#note le figures are rounded to 1 decimal place but ideally we would want 2 decimal places
+#Save out life expectancy at birth data into network area folder
+#note le figures are rounded to 1 decimal place as these are from abridged life tables
 saveRDS(le_statsgov, file=paste0("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS_statistics_gov 2001 to 2024.rds"))      
 
-#write_csv(le_statsgov, file=paste0(paste0(source_network,"statistics_gov 2001 to 2024.csv")))
+
+
 
 
