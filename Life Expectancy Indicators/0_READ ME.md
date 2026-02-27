@@ -7,8 +7,10 @@
 # Comparisons (including comparisons of trends) between different geography types (e.g. Scotland and NHS board/councils) should be done with caution,
 # ensuring that the methodologies used to generate the series are equivalent/comparable.
 
-# Headline life expectancy estimates are produced annually and will be 3 year period estimates compiled using unabrdiged (single-age) lifetables, these estimates are only produced for the UK nations (ie Scotland) level  
-# These headline life expectancy figures should be considered the official estimates for Scotland. Estimates are typically published to 2 decimal places.
+# Headline life expectancy estimates are produced annually and will be 3 year period estimates compiled using unabrdiged (single-age) lifetables, 
+# these estimates are only produced for the UK nations (ie Scotland) level.   
+# These headline life expectancy figures should be considered the official estimates for Scotland. 
+# Headline LE estimates are typically published to 2 decimal places (this is a quick and dirty way to check if you are looking at headline or abridged LE).
 
 # Sub-national (ie NHS board/Council) 3-year period life expectancy estimates are released but these are produced using abridged (5 year ageband) life tables. To ensure fair comparison another set of 3-year LE estimates 
 # are also published for Scotland using abridged life tables. These are typically published to 1 decimal place.
@@ -73,3 +75,32 @@ Skip straight to  "4.Profiles Indicators_LE deprivation.R"
 
 #To update inequalities HLE indicator for Scotland, NHS board, Councils:
 Skip straight to  " 5.Profiles Indicators_HLE.R"
+
+
+
+
+## LIFE EXPECTANCY INDICATORS (separate indicators for males/females):
+
+# Ind_ID (20101/20102)
+#  3 year rolling averages at Scotland, NHS Board, Council, HSCP (council data re-applied as proxy for HSCP)
+#  5 year rolling averages for intermediate zone and HSCP locality 
+# note that for life expectacy trends data we combine 3 year & 5 year rolling averages even though strictly speaking methodology is not the same 
+# so comparing between geography types should be done with caution.
+
+# we also prepare a pop_grp and simd dataset for these indicators:
+#  5 year rolling averages for inequalities (ie SIMD split) at Scotland, NHS Board & Council level
+
+# Ind_ID
+
+#  3 year rolling averages for inequalities (ie SIMD split) at Scotland - only visible if Scotland LTMHI report selected
+
+## HEALTHY LIFE EXPECTANCY INDICATORS:
+
+#  3 year rolling averages at Scotland, NHS Board, Council, HSCP 
+#  3 year rolling averages for inequalities (ie SIMD split) at Scotland level only
+
+
+
+# Scotland 3 year rolling average by deprivation 
+
+# Scotland, NHS board, Council : 5 year rolling average by deprivation quintile/decile
