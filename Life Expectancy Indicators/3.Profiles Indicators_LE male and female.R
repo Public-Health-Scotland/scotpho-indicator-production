@@ -31,7 +31,7 @@ source("functions/main_analysis.R") #doesn't use the functions, but quick way of
 
 # Set run name - this will dictate which iteration of IZ level life expectancy source data to use
 # if no IZ/Hscp locality update is available then reuse last run.
-run_name="2001to2023 IZ&Locality LE(85+)_20241127"
+run_name="2001to2024 IZ&Locality LE(85+)_20260302"
 
 le0_data<- readRDS(paste0(output_network,"4_Intermediate Zone LE (annual)/",run_name,"_life expectancy at birth.rds"))
 
@@ -42,8 +42,9 @@ le0_iz_profiles <- le0_data %>%
   subset(pop>=5000 & deaths>=40 & is.finite(LEx)) %>% #Including only cases where pop >=5000 and total deaths >= 40 or where LEx can't be calulated (likely do to deaths>pop in some age groups eg 85+)
   mutate(def_period=time_period,
          year=as.numeric(substr(time_period,1,4))+2, # year should be mid-point - this forumla assumes 5 year time period
-         trend_axis=paste0(as.character(year)," Midpoint")) %>%
-  select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis) %>%
+         trend_axis=paste0(as.character(year)," Midpoint"),
+         urban="all") %>% #create urban column which is present in NRS data required in processing later on
+  select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis,urban) %>%
   rename(code=geography,
          rate = LEx,
          lowci = lci,
@@ -84,18 +85,20 @@ profiles_tool_geo_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geo
   unique() |>
   filter(hscp2019 != "S37000005") # exclude Clackmannanshire & Stirling HSCP since we can't combine LE estimates from two distinct councils (2 councils but only 1 HSCP)
 
-# duplicate the LA adata and call it HSCP data 
+# duplicate the LA data and call it HSCP data  (we are going to use LA values as proxy for LE at HSCP level since these are often the same areas)
 hscp_data <- NRS_data %>%
   subset(substr(NRS_data$code, 1, 3) =="S12") 
 
-#match to HSCP lookup so we can convert LA life expectancy as if it was for HSCP (note clacks & stirling will be missing)
+#match to HSCP lookup so we can convert LA life expectancy as if it was for HSCP (note clacks & stirling will be missing since this is 2 councils but 1 HSCP - we can't infer LE for this area)
 hscp_data <- left_join(hscp_data, profiles_tool_geo_lookup ,by=c('code' = 'ca2019'))
 hscp_data <- hscp_data |>
-  filter(!is.na(hscp2019))
+  filter(!is.na(hscp2019))|>
+  mutate(code=hscp2019)
 
 #bind data so it will include Scotland, NHS board, Local Authority and HSCP level
 NRS_data_plus <- bind_rows(NRS_data, hscp_data)|>
-  select(-hscp2019)
+  select(-hscp2019) 
+
 
 rm(hscp_data,NRS_data,profiles_tool_geo_lookup)
 
