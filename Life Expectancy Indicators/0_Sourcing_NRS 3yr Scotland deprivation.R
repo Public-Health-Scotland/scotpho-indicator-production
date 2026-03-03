@@ -111,24 +111,24 @@ le_data <- le_data |>
 le_data_male <- le_data |>
   filter(sex==1)|>
   select(-sex)|>
-  mutate(ind_id=99142)
+  mutate(ind_id=99148)
 
 le_data_female <- le_data |>
   filter(sex==2)|>
   select(-sex)|>
-  mutate(ind_id=99143)
+  mutate(ind_id=99149)
 
 
 
 # Save Shiny data files
 
 # male indicator
-write_rds(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI)_ineq.rds"))
-write.csv(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI)_ineq.csv"), row.names = FALSE)
+write_rds(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI_99148)_ineq.rds"))
+write.csv(le_data_male, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_male(LTMHI_99148)_ineq.csv"), row.names = FALSE)
 
 # female indicator
-write_rds(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/healthy_life_expectancy_female(LTMHI)_ineq.rds"))
-write.csv(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/healthy_life_expectancy_female(LTMHI)_ineq.csv"), row.names = FALSE)
+write_rds(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_female(LTMHI_99149)_ineq.rds"))
+write.csv(le_data_female, file = paste0(profiles_data_folder, "/Data to be checked/life_expectancy_female(LTMHI_99149)_ineq.csv"), row.names = FALSE)
 
 
 # # save the data as both an RDS and CSV file
@@ -136,6 +136,6 @@ write.csv(le_data_female, file = paste0(profiles_data_folder, "/Data to be check
 # write.csv(le_data, paste0(profiles_data_folder, "/Data to be checked/LTMHI_LE_by_depr_scot3yr_ineq.csv"), row.names = FALSE)
 
 
-run_qa(type = "deprivation", filename="life_expectancy_male(LTMHI)",test_file=FALSE)
-run_qa(type = "deprivation", filename="life_expectancy_female(LTMHI)",test_file=FALSE)
+run_qa(type = "deprivation", filename="life_expectancy_male(LTMHI_99148)",test_file=FALSE)
+run_qa(type = "deprivation", filename="life_expectancy_female(LTMHI_99149)",test_file=FALSE)
 
