@@ -3,7 +3,7 @@
 #########################################################
 
 #Update ScotPHO indicators sourced from SHoS microdata
-#Pre-processeing occurs in the ScotPHO Survey Data Repo
+#Pre-processing occurs in the ScotPHO Survey Data Repo
 #Then final prep occurs in this script
 
 #6 indicators
@@ -35,7 +35,8 @@ codedictionary <- readRDS(file.path(profiles_data_folder, "/Lookups/Geography/co
   filter(str_detect(code, "S12|S08|S00")) #keep only HB, CA and Scotland 
 
 #Join to main df
-shos_pa <- left_join(shos_pa, codedictionary, by = "areaname")
+shos_pa <- left_join(shos_pa, codedictionary, by = "areaname") |> 
+  filter(denominator >= 50) #suppressing any rows where the denominator is less than 50 in line with SHoS team to prevent misinterpretation of wide CIs.
 
 ################################################################################
 #3. Create functions to split data into individual data files (main, depr, pop groups)
@@ -61,16 +62,12 @@ split_depr_data <- function(df, indicator, ind_id, filename){
     mutate(quint_type = "sc_quin") |> #add quintile type col
     select(-split_name, -areaname, -spatial.scale) |> #drop unneeded cols
     mutate(ind_id = {{ind_id}}) #add a new col with specified indicator ID
-  
-  #Tentatively removing adding of population figures - not sure why they're needed?
-  # df <- df |> #Add population figures
-  #   add_population_to_quintile_level_data(pop="depr_pop_16+", ind_id, indicator) |> 
-  #   filter(quint_type == "sc_quin") |> 
-  #   filter(!(year %in% c("2020", "2021")))
-  
+
  df <- calculate_inequality_measures(df)
  
- saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_depr_ineq.rds")))
+ df <- filter(df, code == "S00000001") #currently only going to produce deprivation splits for Scotland. Too many denominators below SHoS-advised threshold of 50 to publish now. 
+ 
+ saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_ineq.rds")))
  
  return(df)
   
@@ -83,6 +80,11 @@ split_popgrps_data <- function(df, indicator, ind_id, filename){
     filter(indicator == {{indicator}}, split_name != "Deprivation") |> #filter on correct indicator and all splits
     select(code, year, numerator, denominator, split_name, split_value, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
     mutate(ind_id = {{ind_id}}) #add ind_id col
+  
+  df <- df |> 
+    filter(!(split_name == "Long-term Illness (LTI)" & year == 2012)) #remove disability splits for 2012 as sample population was much lower
+  #due to disability status being based on medical diagnosis or benefits qualification rather than self-identification of limitation to activities, which was used from 2013 onwards
+  #Therefore more people considered disabled from 2013 onwards with fewer
   
   saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny_popgrp.rds")))
   write.csv(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny_popgrp.csv")), row.names = FALSE)
@@ -98,7 +100,7 @@ rec_walk <- split_main_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", fi
 run_qa("recreational_walking", type = "main")
 
 rec_walk_depr <- split_depr_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
-run_qa("recreational_walking_depr", type = "deprivation")
+run_qa("recreational_walking", type = "deprivation")
 
 rec_walk_popgrps <- split_popgrps_data(shos_pa, indicator = "sprt3aa", ind_id = "14004", filename = "recreational_walking")
 run_qa("recreational_walking", type = "popgrp")
@@ -110,7 +112,7 @@ anysportnowalk <- split_main_data(shos_pa, indicator = "anysportnowalk", ind_id 
 run_qa("sport_participation", type = "main")
 
 anysportnowalk_depr <- split_depr_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
-run_qa("sport_participation_depr", type = "deprivation")
+run_qa("sport_participation", type = "deprivation")
 
 anysportnowalk_popgrps <- split_popgrps_data(shos_pa, indicator = "anysportnowalk", ind_id = "14005", filename = "sport_participation")
 run_qa("sport_participation", type = "popgrp")
@@ -121,7 +123,7 @@ outdoors <- split_main_data(shos_pa, indicator = "outdoor", ind_id = "14008", fi
 run_qa("weekly_outdoors_visits", type = "main")
 
 outdoors_depr <- split_depr_data(shos_pa, indicator = "outdoor", ind_id = "14008", filename = "weekly_outdoors_visits")
-run_qa("weekly_outdoors_visits_depr", type = "deprivation")
+run_qa("weekly_outdoors_visits", type = "deprivation")
 
 outdoors_popgrps <- split_popgrps_data(shos_pa, indicator = "outdoor", ind_id = "14008", filename = "weekly_outdoors_visits")
 run_qa("weekly_outdoors_visits", type = "popgrp")
@@ -133,7 +135,7 @@ leisure_satisfaction <- split_main_data(shos_pa, indicator = "serv3a", ind_id = 
 run_qa("leisure_satisfaction", type = "main")
 
 leisure_satisfaction_depr <- split_depr_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction")
-run_qa("leisure_satisfaction_depr", type = "deprivation")
+run_qa("leisure_satisfaction", type = "deprivation")
 
 leisure_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3a", ind_id = "14009", filename = "leisure_satisfaction")
 run_qa("leisure_satisfaction", type = "popgrp")
@@ -145,7 +147,7 @@ parks_satisfaction <- split_main_data(shos_pa, indicator = "serv3e", ind_id = "1
 run_qa("parks_satisfaction", type = "main")
 
 parks_satisfaction_depr <- split_depr_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
-run_qa("parks_satisfaction_depr", type = "deprivation")
+run_qa("parks_satisfaction", type = "deprivation")
 
 parks_satisfaction_popgrps <- split_popgrps_data(shos_pa, indicator = "serv3e", ind_id = "14010", filename = "parks_satisfaction")
 run_qa("parks_satisfaction", type = "popgrp")
@@ -156,7 +158,7 @@ five_min <- split_main_data(shos_pa, indicator = "greenfar13", ind_id = "14011",
 run_qa("five_min_greenspace", type = "main")
 
 five_min_depr <- split_depr_data(shos_pa, indicator = "greenfar13", ind_id = "14011", filename = "five_min_greenspace")
-run_qa("five_min_greenspace_depr", type = "deprivation")
+run_qa("five_min_greenspace", type = "deprivation")
 
 five_min_popgrps <- split_popgrps_data(shos_pa, indicator = "greenfar13", ind_id = "14011", filename = "five_min_greenspace")
 run_qa("five_min_greenspace", type = "popgrp")
