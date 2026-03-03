@@ -5,13 +5,12 @@
 # Depending on if new SAPE files are available you may wish tp update  the profiles indicator for only larger geographies - this will result
 # in longer time trend for indicators for the larger geographies than the IZ/HSCP locality data.
 
-# ScotPHO health and wellbeing profile includes 2 Life Expectancy indicators (Male and Female)
 # ScotPHO calculate life expectancy for IZ level geographies which are 5 year aggregates, using 85+ as max age band.
 # We use NRS life expectancy estimates for Scotland, NHS Board and LA level which are 3 year aggregates and use 90+ as max age band.
 
 # Using NRS LE estimates avoids confusion caused by having different LE to those that many users expect (ie the national statistic)
 # New annual NRS life expectancy figures are sourced from NRS website or by request to NRS and manually formatted then added to previous years data file.
-# Smaller geographies cannot use the exact same methodology because 3 years of data insufficient to produce robust LE estimates for small geogrpahies.
+# Smaller geographies cannot use the exact same methodology because 3 years of data insufficient to produce robust LE estimates for small geographies.
 
 
 ## Part 1 - Read in LE at IZ & HSCP locality level data file (data prepared using LE for small areas.R)

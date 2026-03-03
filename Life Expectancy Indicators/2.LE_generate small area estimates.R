@@ -212,7 +212,7 @@ LE_function(max_agegrp=85,run_name="2001to2024 IZ&Locality LE(85+)_20260302",fp_
 # Function generates 3 output RDS files than can be used for checking or analysis
 # Once function runs these should appear in local environment
 # all_data: all_data should be raw population and deaths data files added priort to calculations
-# final_lifetable : lifetable contains invidual age groups plus all stages of calculation
+# final_lifetable : lifetable contains individual age groups plus all stages of calculation
 # final_le0_data : le0 just a summary of life expectancy at birth data.
 
 
