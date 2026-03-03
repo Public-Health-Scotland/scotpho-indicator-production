@@ -125,7 +125,7 @@ data <- left_join(data, la_index, by = c("areatype", "areaname" = "number")) |>
 
 
 # get geography code lookup 
-geo_lookup <- readRDS(file.path(data_folder, "Lookups", "Geography", "codedictionary.rds")) |>
+geo_lookup <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "codedictionary.rds")) |>
   filter(grepl("^S00|^S12|^S08", code)) # only include CA, HB and Scotland codes
 
 
@@ -231,8 +231,8 @@ pop_groups_data <- bind_rows(pop_groups_age,pop_groups_sex) |>
   
 
 # save final files
-saveRDS(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.rds"))
-write.csv(pop_groups_data, paste0(data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.csv"), row.names = FALSE)
+saveRDS(pop_groups_data, paste0(profiles_data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.rds"))
+write.csv(pop_groups_data, paste0(profiles_data_folder, "/Data to be checked/1570_smoking_prev_16+_shiny_popgrp.csv"), row.names = FALSE)
 
 #run QA report
 run_qa(filename="1570_smoking_prev_16+", type="popgrp", test_file = FALSE)
