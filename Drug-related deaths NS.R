@@ -155,11 +155,11 @@ main_analysis(filename = "drug_deaths_bothsexes_NS",
               yearend = 2024,
               ind_id = 4121,
               test_file = FALSE,
-              QA = FALSE,
+              QA = TRUE,
               epop_age = "normal",
               epop_total = 200000)
 
-# Update output files from main_analysis() function with DRD data for 2002 to 2005 (as drugs team only provide NRS data from 2006 onwards)
+# Update both sexes output files from main_analysis() function with DRD data for 2002 to 2005 as drugs team only provide NRS data from 2006 onwards
 drug_deaths_bothsexes <- rbind(main_analysis_result, drug_deaths_02_05)
 saveRDS(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_bothsexes_NS_shiny.rds'))
 write_csv(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_bothsexes_NS_shiny.csv'))
@@ -173,6 +173,27 @@ write_csv(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be 
 # PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Call main_analysis() function for DRDs for females (all ages), calendar year (5-year aggregates), calculating standardised rates and saving
+# output to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths_female_NS",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 5,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 12535,
+              test_file = FALSE,
+              QA = TRUE,
+              epop_age = "normal",
+              epop_total = 100000)
+
+# Update female output files from main_analysis() function with DRD data for 2002-2006 to 2005-2009 (5-year aggregates) as drugs team only
+# provide NRS data from 2006-2010 onwards
+drug_deaths_female <- rbind(main_analysis_result, drug_deaths_female_02_05)
+saveRDS(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_female_NS_shiny.rds'))
+write_csv(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_female_NS_shiny.csv'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder ----
