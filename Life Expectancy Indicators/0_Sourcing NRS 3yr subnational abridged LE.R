@@ -20,7 +20,6 @@
 ## Packages/Filepaths ----
 ###############################################.
 
-source("Life Expectancy Indicators/1.Functions_life_expectancy.R")
 source("functions/main_analysis.R") #doesn't use the functions, but quick way of getting packages and folders
 
 # Data queried directly from statistics.gov
