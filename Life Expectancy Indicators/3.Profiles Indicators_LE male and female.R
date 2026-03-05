@@ -65,7 +65,7 @@ rm(le0_data)
 #   arrange(code, time_period, sex_grp)
 
 # Read in 3 year,abridged life expectancy estimates sourced from NRS (Via SG open data platform)
-# See script 'NRS Life Expectancy (3 year figures) from SG opendata platform.R' in this project
+# See script '00_Sourcing NRS 3yr subnational abridged LE.R' in this project (i.e. R script where the rds file below is created)
 
 NRS_statsgov <- readRDS(paste0("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS_statistics_gov 2001 to 2024.rds"))
 
