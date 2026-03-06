@@ -22,7 +22,7 @@
 # (tobacco team produce Scotland only data for individual years)
 
 # Part 1 - Compile smoking prevalence data
-# Part 2 - Extract data from SMRA
+# Part 2 - Extract data from SMR01 and SMR04
 # Part 3 - Add in relative risks of each disease as a result of smoking
 # Part 4 - Aggregate geographic areas
 # Part 5 - Calculate smoking attributable fraction
@@ -148,7 +148,7 @@ age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |>
   rename(agegrp2 = agegrp)
 
 ###############################################.
-## Part 2 - Extract data from SMRA ----
+## Part 2 - Extract data from SMR01 and SMR04 ----
 ###############################################.
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
@@ -176,7 +176,7 @@ sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
 # diagnosis as their first main diagnosis (to follow PHE methodology); with an
 # age on admission of 35+, valid sex group, Scottish resident, and with a final
 # discharge date in the period of interest
-smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+smoking_adm_smr01 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
     "WITH adm_table AS (
         SELECT distinct link_no || '-' || cis_marker admission_id, 
             FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
@@ -216,11 +216,58 @@ smoking_adm <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
   filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
   mutate(scotland = "S00000001")
 
-#Saving temporary file
- saveRDS(smoking_adm, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
- smoking_adm <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract.rds"))
+smoking_adm_smr04 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+  "WITH adm_table AS (
+        SELECT distinct link_no || '-' || cis_marker admission_id, 
+            FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") ca,
+            FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") hb,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") sex_grp,
+            FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") diag,
+                FIRST_VALUE(POSTCODE) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") pc7,
+            MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
+            MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
+            MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
+            MAX(discharge_date) OVER (PARTITION BY link_no, cis_marker) end_cis
+        FROM ANALYSIS.SMR01_PI  z
+        WHERE exists(
+          SELECT * 
+          FROM ANALYSIS.SMR04_PI  
+          WHERE link_no=z.link_no and cis_marker=z.cis_marker
+              AND regexp_like(main_condition, '", smoking_diag, "')
+              AND age_in_years > 34
+              AND discharge_date between '1 January 2012' and '31 December 2024' 
+        )
+    )
+    SELECT admission_id, substr(diag, 1, 5) diag, sex_grp, age, year, 
+           start_cis, end_cis, ca, hb, pc7
+    FROM adm_table 
+    WHERE end_cis between '1 January 2012' and '31 December 2024' 
+        AND age > 34 
+        AND sex_grp in ('1', '2') 
+        AND pc7 IS NOT NULL 
+        AND regexp_like(diag, '", smoking_diag, "')"))) |>  
+  clean_names() |> 
+  create_agegroups() |>  # Creating age groups for standardization.
+  filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
+  mutate(scotland = "S00000001")
 
-###############################################.
+#Saving temporary files
+ saveRDS(smoking_adm_smr01, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr01.rds"))
+ saveRDS(smoking_adm_smr04, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr04.rds"))
+ 
+ smoking_adm_smr01 <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr01.rds")) |> 
+   mutate(source = "SMR01")
+ smoking_adm_smr04 <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr04.rds")) |> 
+   mutate(source = "SMR04")
+
+smoking_adm <- bind_rows(smoking_adm_smr01, smoking_adm_smr04) #join SMR01 and 04 data
+ 
+ ###############################################.
 ## Part 3 - add in relative risks of each disease as a result of smoking ----
 ###############################################.
 smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
