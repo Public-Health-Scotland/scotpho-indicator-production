@@ -168,8 +168,8 @@ scqf_4_main <- scqf_4 |>
   filter(quintile == "Total")
 
 # save temp files to use in analysis functions
-saveRDS(scqf_4, file.path(profiles_data_folder, "Prepared Data", "13009_scqf_4_plus_raw.rds"))
-saveRDS(scqf_6, file.path(profiles_data_folder, "Prepared Data", "13006_scqf_6_plus_raw.rds"))
+saveRDS(scqf_4_main, file.path(profiles_data_folder, "Prepared Data", "13009_scqf_4_plus_raw.rds"))
+saveRDS(scqf_6_main, file.path(profiles_data_folder, "Prepared Data", "13006_scqf_6_plus_raw.rds"))
 
 
 
