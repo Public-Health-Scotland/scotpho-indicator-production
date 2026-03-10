@@ -1,5 +1,9 @@
 ########################################################################################################################.
 ## This script contains some packages, filepaths and functions required when calculating small are life expectancy.
+## ScotPHO only generate life expectancy estimates for IZ and HSC locality areas (we use official NRS figures for higher geographies)
+
+# There are also functions for generating HLE but these are no longer used as required Self-assessed health data is not
+# robust enough to give reliable figures for smaller geographies.
 
 ###############################################.
 ## Packages and filepaths ----
