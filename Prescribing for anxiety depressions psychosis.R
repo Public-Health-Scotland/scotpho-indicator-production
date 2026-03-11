@@ -18,32 +18,36 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/deprivation_analysis.R") # deprivation function
+source("./functions/data cleaning functions/exclude_small_geogs.R") #helper function which allows post-hoc removal of small geographies
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
 ###############################################.
 #Data comes from prescribing team (Rx team provide a new FYE of data, rows can be copy pasted onto the bottom of the previous years data)
-presc_anx <- read_csv(file=paste0(data_folder, 'Received Data/Population prescribed drugs for anxiety depression psychosis/prescrib_anx_depression_ScotPHO Indicator by Datazone 2010 to 2023.csv')) %>% 
+presc_anx <- read_csv(file.path(profiles_data_folder, '/Received Data/Population prescribed drugs for anxiety depression psychosis/prescrib_anx_depression_ScotPHO Indicator by Datazone 2010 to 2024.csv')) %>% 
   group_by(datazone2011, year) %>% summarise(numerator = sum(patients)) %>% 
   ungroup() %>% rename(datazone = datazone2011)
 
-saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety_raw.rds'))
+saveRDS(presc_anx, file.path(profiles_data_folder, 'Prepared Data/prescriptions_anxiety_raw.rds'))
 saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety_depr_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "prescriptions_anxiety", geography = "datazone11", pop= "DZ11_pop_allages",
-              measure = "percent", yearstart = 2010, yearend = 2023, time_agg = 1)
-
-analyze_second(filename = "prescriptions_anxiety", measure = "percent", time_agg = 1, 
-               ind_id = 20401, year_type = "financial")
+main_analysis(filename = "prescriptions_anxiety", measure = "crude", geography = "datazone11",
+              year_type = "financial", ind_id = 20401, time_agg = 1, yearstart = 2010, 
+              yearend = 2024, crude_rate = 100, pop= "DZ11_pop_allages")
 
 #Deprivation analysis function
-analyze_deprivation(filename="prescriptions_anxiety_depr", measure="percent", time_agg=1, 
-                    yearstart= 2014, yearend=2023,   year_type = "financial", 
-                    pop= "depr_pop_allages", ind_id = 20401)
+deprivation_analysis(filename ="prescriptions_anxiety", measure = "crude", time_agg = 1, 
+                    yearstart = 2014, yearend = 2024, year_type = "financial", crude_rate = 100,
+                    pop_sex = "all", pop = "depr_pop_allages", ind_id = 20401)
+
+
+#Remove intermediate zones
+exclude_small_geogs(filename = "prescriptions_anxiety", iz = TRUE)
+
 
 ##END
