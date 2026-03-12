@@ -31,7 +31,6 @@ presc_anx <- read_csv(file.path(profiles_data_folder, '/Received Data/Population
   ungroup() %>% rename(datazone = datazone2011)
 
 saveRDS(presc_anx, file.path(profiles_data_folder, 'Prepared Data/prescriptions_anxiety_raw.rds'))
-saveRDS(presc_anx, file=paste0(data_folder, 'Prepared Data/prescriptions_anxiety_depr_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
