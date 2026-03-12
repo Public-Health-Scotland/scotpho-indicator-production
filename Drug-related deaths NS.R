@@ -143,7 +143,7 @@ saveRDS(drug_deaths_depr, file=paste0(profiles_data_folder, '/Prepared Data/drug
 # PART 3 - Run both sexes / all drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Call main_analysis() function for DRDs for both sexes (all ages), calendar year (single), calculating standardised rates and saving output
+# Call main_analysis() function for DRDs for both sexes (all ages), calendar years (single), calculating standardised rates and saving output
 # to the 'Data to be checked' folder.
 main_analysis(filename = "drug_deaths_bothsexes_NS",
               measure = "stdrate",
@@ -168,12 +168,33 @@ write_csv(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be 
 # PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Call main_analysis() function for DRDs for males (all ages), calendar years (5-year aggregates), calculating standardised rates and saving
+# output to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths_male_NS",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 5,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 12534,
+              test_file = FALSE,
+              QA = TRUE,
+              epop_age = "normal",
+              epop_total = 100000)
+
+# Update male output files from main_analysis() function with DRD data for 2002-2006 to 2005-2009 (5-year aggregates) as drugs team only provide
+# NRS data from 2006-2010 onwards
+drug_deaths_male <- rbind(main_analysis_result, drug_deaths_male_02_05)
+saveRDS(drug_deaths_male, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_male_NS_shiny.rds'))
+write_csv(drug_deaths_male, file=paste0(profiles_data_folder, '/Data to be checked/drug_deaths_male_NS_shiny.csv'))
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Call main_analysis() function for DRDs for females (all ages), calendar year (5-year aggregates), calculating standardised rates and saving
+# Call main_analysis() function for DRDs for females (all ages), calendar years (5-year aggregates), calculating standardised rates and saving
 # output to the 'Data to be checked' folder.
 main_analysis(filename = "drug_deaths_female_NS",
               measure = "stdrate",
