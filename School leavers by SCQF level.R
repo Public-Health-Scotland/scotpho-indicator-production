@@ -168,7 +168,7 @@ scqf_4_main <- scqf_4 |>
   filter(quintile == "Total")
 
 # save temp files to use in analysis functions
-saveRDS(scqf_4_main, file.path(profiles_data_folder, "Prepared Data", "13009_scqf_4_plus_raw.rds"))
+saveRDS(scqf_4_main, file.path(profiles_data_folder, "Prepared Data", "13006_scqf_4_plus_raw.rds"))
 saveRDS(scqf_6_main, file.path(profiles_data_folder, "Prepared Data", "20601_scqf_6_plus_raw.rds"))
 
 
@@ -177,9 +177,9 @@ saveRDS(scqf_6_main, file.path(profiles_data_folder, "Prepared Data", "20601_scq
 # Create main indicator datasets -----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-main_analysis(filename = "13009_scqf_4_plus", measure = "percent", 
+main_analysis(filename = "13006_scqf_4_plus", measure = "percent", 
               yearstart = "2012", yearend = "2023", time_agg = 1, 
-              geography = "multiple", ind_id = 13009, year_type = "school")
+              geography = "multiple", ind_id = 13006, year_type = "school")
 
 main_analysis(filename = "20601_scqf_6_plus", measure = "percent", 
               yearstart = "2012", yearend = "2023", time_agg = 1, 
@@ -216,16 +216,16 @@ scqf_4_depr <- scqf_4 |>
   mutate(year = as.numeric(year)) |>
   create_def_period_column(year_type = "financial", agg = 1) |>
   create_trend_axis_column(year_type = "financial", agg = 1) |>
-  mutate(ind_id = 13009) |>
+  mutate(ind_id = 13006) |>
   select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
             least_rate, par_rr, count))
 
 
 # save final depr file in data to be checked folder
 saveRDS(scqf_6_depr, file.path(profiles_data_folder, "Data to be checked", "20601_scqf_6_plus_ineq.rds"))
-saveRDS(scqf_4_depr, file.path(profiles_data_folder, "Data to be checked", "13009_scqf_4_plus_ineq.rds"))
+saveRDS(scqf_4_depr, file.path(profiles_data_folder, "Data to be checked", "13006_scqf_4_plus_ineq.rds"))
 
 run_qa(filename = "20601_scqf_6_plus", type = "deprivation")
-run_qa(filename = "13009_scqf_4_plus", type = "deprivation")
+run_qa(filename = "13006_scqf_4_plus", type = "deprivation")
 
 ## END
