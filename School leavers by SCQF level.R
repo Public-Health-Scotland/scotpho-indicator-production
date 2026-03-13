@@ -99,7 +99,7 @@ all_suppress <- geo_lookup |>
 # flag exactly what geographies need suppressed for what quintiles and time periods.
 suppress <- ca_suppress |>
   left_join(all_suppress, by = c("code" = "ca2019")) |>
-  pivot_longer(code:hb2019, values_to = "code", names_to = NULL) |>
+  pivot_longer(c("code", "hb2019", "hscp2019"), values_to = "code", names_to = NULL) |>
   group_by(year, code, quintile) |>
   summarise_all(sum) |>
   ungroup()
@@ -225,7 +225,6 @@ scqf_4_depr <- scqf_4 |>
 saveRDS(scqf_6_depr, file.path(profiles_data_folder, "Data to be checked", "13006_scqf_6_plus_ineq.rds"))
 saveRDS(scqf_4_depr, file.path(profiles_data_folder, "Data to be checked", "13009_scqf_4_plus_ineq.rds"))
 
-# QA file
 run_qa(filename = "13006_scqf_6_plus", type = "deprivation")
 run_qa(filename = "13009_scqf_4_plus", type = "deprivation")
 
