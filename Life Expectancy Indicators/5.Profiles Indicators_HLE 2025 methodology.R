@@ -58,8 +58,8 @@ nrs_hle <-nrs_hle|>
          code = case_when(area_code == "S92000003" ~ "S00000001", TRUE ~ area_code),
          split_value=sex, # required for pop group file
          numerator = NA,
-         ind_id = case_when(sex == "Females" ~ 99101,
-                            sex == "Males" ~ 99102)) |>  #required by shiny app but is null for HLE
+         ind_id = case_when(sex == "Females" ~ 99102,
+                            sex == "Males" ~ 99101)) |>  #required by shiny app but is null for HLE
   rename("rate" = "healthy_life_expectancy",
          "lowci" = "lower_95_percent_confidence_interval",
          "upci" = "upper_95_percent_confidence_interval")
@@ -129,11 +129,13 @@ hle_pop_file <- function(data, indicator, sex, ind_id ){
     
     if (sex=="Female"){
     hle_popgrp <- hle_popgrp |> #save sex specific dataframe as this will be overwritten by next function call
-      mutate(ind_id = 99101) 
+      mutate(ind_id = 99102) 
+    hle_popgrp_file_female <<- hle_popgrp  #saving sex specific dataframe to posit environment so it can be visually checked
     
     } else if (sex=="Male") {
     hle_popgrp <- hle_popgrp |> #save sex specific dataframe as this will be overwritten by next function call
-    mutate(ind_id = 99102) 
+    mutate(ind_id = 99101) 
+    hle_popgrp_file_male <<- hle_popgrp  #saving sex specific dataframe to posit environment so it can be visually checked
     }
   
   write_csv(hle_popgrp, file = paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny_popgrp.csv"))
@@ -142,8 +144,9 @@ hle_pop_file <- function(data, indicator, sex, ind_id ){
 }
 
 # run the function for each of the sexes:
-hle_pop_file(data = nrs_hle, indicator="healthy_life_expectancy_female", sex ="Female", ind_id=99101)
-hle_pop_file(data = nrs_hle,  indicator="healthy_life_expectancy_male", sex ="Male", ind_id=99102)
+hle_pop_file(data = nrs_hle,  indicator="healthy_life_expectancy_male", sex ="Male", ind_id=99101)
+hle_pop_file(data = nrs_hle, indicator="healthy_life_expectancy_female", sex ="Female", ind_id=99102)
+
 
 
 #run QA reports for main data
