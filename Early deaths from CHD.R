@@ -7,8 +7,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("functions/main_analysis.R") #Normal indicator functions
+source("functions/deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -27,13 +27,13 @@ deaths_CHD <- tbl_df(dbGetQuery(channel, statement=
      WHERE sex <> 9
       AND country_of_residence = 'XS'
       AND age < 75
-      AND date_of_registration between '1 January 2002' and '31 December 2023'
+      AND date_of_registration between '1 January 2002' and '31 December 2024'
       AND regexp_like(underlying_cause_of_death, '^I2[0-5]')" )) %>% 
   setNames(tolower(names(.))) %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011)
 
@@ -49,7 +49,7 @@ deaths_CHD <- left_join(deaths_CHD, postcode_lookup, "pc7") %>%
 deaths_CHD_dz11 <- deaths_CHD %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
-saveRDS(deaths_CHD_dz11, file=paste0(data_folder, 'Prepared Data/deaths_CHD_dz11_raw.rds'))
+saveRDS(deaths_CHD_dz11, file=file.path(profiles_data_folder, 'Prepared Data/deaths_CHD_dz11_raw.rds'))
 
 #Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
@@ -59,21 +59,20 @@ deaths_CHD_dz01 <- deaths_CHD %>% group_by(year, datazone2001, sex_grp, age_grp)
 
 dep_file <- rbind(deaths_CHD_dz01, deaths_CHD_dz11 %>% subset(year>=2014)) #join dz01 and dz11
 
-saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/deaths_CHD_depr_raw.rds'))
+saveRDS(dep_file, file=file.path(profiles_data_folder, 'Prepared Data/deaths_CHD_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 #All patients asthma
-analyze_first(filename = "deaths_CHD_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_under75", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
+main_analysis(filename = "deaths_CHD_dz11", geography = "datazone11", measure = "stdrate", 
+              pop = "DZ11_pop_under75", yearstart = 2002, yearend = 2024,
+              time_agg = 3, epop_age = "normal",epop_total = 182000, ind_id = 20105, year_type = "calendar")
 
-analyze_second(filename = "deaths_CHD_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 182000, ind_id = 20105, year_type = "calendar")
 
-#Deprivation analysis function
-analyze_deprivation(filename="deaths_CHD_depr", measure="stdrate", time_agg = 3, 
-                    yearstart= 2002, yearend=2023,   year_type = "calendar", 
-                    pop = "depr_pop_under75", epop_age= "normal",
+
+# Deprivation analysis function
+deprivation_analysis(filename="deaths_CHD_depr", measure="stdrate", time_agg = 3, 
+                    yearstart= 2002, yearend=2023, year_type = "calendar", 
+                    pop_age = c(0,75), epop_age= "normal",
                     epop_total = 182000, ind_id = 20105)
