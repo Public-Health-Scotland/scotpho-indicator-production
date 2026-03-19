@@ -219,3 +219,29 @@ write_csv(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be che
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Call deprivation_analysis() function for DRDs for both sexes (all ages), calendar years (5-year aggregates), calculating standardised rates
+# and saving output to 'Data to be checked' folder.
+
+deprivation_analysis(filename = "drug_deaths_depr_NS",
+                     measure = "stdrate",
+                     time_agg = 5,
+                     year_type = "calendar",
+                     pop_age = NULL,
+                     pop_sex = "all",
+                     yearstart = 2006,
+                     yearend = 2023,
+                     ind_id = 4121,
+                     test_file = FALSE,
+                     QA = FALSE,
+                     epop_age = "normal",
+                     epop_total = 200000)
+
+
+# Read in deprivation output file into a data table for checking purposes
+drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Data to be checked/drug_deaths_depr_NS_ineq.rds"))
+OLD_drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Shiny Data/drug_deaths_depr_ineq.rds"))
+
+# Read in deprivation basefile into a data table for checking purposes
+basefile_deprivation_OLD <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_depr_raw.rds"))
+basefile_deprivation_NEW <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_depr_NS_raw.rds"))
