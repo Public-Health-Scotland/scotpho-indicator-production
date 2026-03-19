@@ -37,8 +37,8 @@ library(phsopendata) # for extracting published opendata to identify areas to su
 folder <- file.path(profiles_data_folder, "Received Data", "Child Healthy Weight")
 
 # read in data files (update each year to reflect new IR number)
-dz_01 <- readRDS(file.path(folder, "IR2024-00930_DZ2001.rds")) # 2001 datazones 
-dz_11 <- readRDS(file.path(folder, "IR2024-00930_DZ2011.rds")) # 2011 datazones
+dz_01 <- readRDS(file.path(folder, "IR2026-00049_DZ2001.rds")) # 2001 datazones 
+dz_11 <- readRDS(file.path(folder, "IR2026-00049_DZ2011.rds")) # 2011 datazones
 
 
 # create numeric year cols using starting year of school year
@@ -82,7 +82,7 @@ saveRDS(main_temp, file.path(profiles_data_folder, "Prepared Data", "child_healt
 # will be made the same as the rate on assumption that the whole population has been reviewed
 
 main_analysis(filename = "child_healthyweight", geography = "datazone11", ind_id = 21106,
-              yearstart = 2002, yearend = 2023, time_agg = 1, year_type = "school",
+              yearstart = 2002, yearend = 2024, time_agg = 1, year_type = "school",
               measure = "perc_pcf", pop="DZ11_pop_5", QA = FALSE, test_file = FALSE)
 
 # remove objects from global env
@@ -131,12 +131,12 @@ saveRDS(popgroups_temp$`F`, file.path(profiles_data_folder, "Prepared Data", "ch
 
 # calculate rates for males
 main_analysis(filename = "child_healthyweight_males", geography = "datazone11", ind_id = 21106,
-              yearstart = 2002, yearend = 2023, time_agg = 1, year_type = "school",
+              yearstart = 2002, yearend = 2024, time_agg = 1, year_type = "school",
               measure = "perc_pcf", pop="DZ11_pop_5_male", QA = FALSE)
 
 # calculate rates for females
 main_analysis(filename = "child_healthyweight_females", geography = "datazone11", ind_id = 21106,
-              yearstart = 2002, yearend = 2023, time_agg = 1, year_type = "school",
+              yearstart = 2002, yearend = 2024, time_agg = 1, year_type = "school",
               measure = "perc_pcf", pop="DZ11_pop_5_female", QA = FALSE)
 
 # read males results back in 
@@ -331,6 +331,11 @@ suppress_data(file = "popgrp")
 # note these checks will flag that there are some geographies missing for some years
 # mostly earliers years (due to not being part of the (CHSP) School System)
 # and covid years (2019/20 and 2020/21)
+
+# It will also flag that the sum of some council area numerators don't match their health board total
+# e.g. 2019: the sum of the 3 councils of ayrshire combined doesn't match the NHS Ayrshire & Arran total
+# this is to be expected due to suppression - in this example Easy Ayrshire council was suppressed (numerator: 341)
+# but North and South Ayrshire were not 
 run_qa(filename = "child_healthyweight", type = "main", test_file = FALSE)
 run_qa(filename = "child_healthyweight_depr", type = "deprivation", test_file = FALSE)
 run_qa(filename = "child_healthyweight", type = "popgrp", test_file = FALSE)
