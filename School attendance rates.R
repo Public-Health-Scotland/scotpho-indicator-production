@@ -14,12 +14,11 @@
 # data source: https://www.gov.scot/publications/school-attendance-and-absence-statistics/
 # The files for individual years are downloaded to "data received" folder. 
 # Update file names and ranges below when new data are saved in "data received" folder.
-# Latest data (2023/24) published March 2025
 # Time series data by SIMD (for LAs) last provided by SG in FEB 2026
 
-# The data spreadsheets are in various formats, so importing the data is convoluted...
-# Older data in different formats are now processed and saved in the script OLD-sch-attendance-processing.R
-# The end products from that script (scot_attendance_2006to2018.rds and la_attendance_2006to2018.rds) are read in here to complete the update.
+# The data spreadsheets are in various formats, so importing the data is convoluted and scripts getting long...
+# Older historic data (which does not change) is in different formats are now processed and saved in the script 'School attendance(processing historic data).R'
+# The end products from that script (scot_attendance_2006to2018.rds and la_attendance_2006to2018.rds) are read in during this script to complete the indicator update.
 
 
 #################################################################################
