@@ -1,6 +1,6 @@
 ## SCHOOL ATTENDANCE (processing historic data): 
-## THIS SCRIPT READS IN OLD DATA AND SAVES IT, SO CAN BE READ BACK IN WHEN UPDATING. NO NEED TO RUN AGAIN.
-## Saves going through the convoluted processing each time.
+## THIS SCRIPT READS IN HISTORIC DATA AND SAVES IT, SO CAN BE READ BACK IN WHEN UPDATING. NO NEED TO RUN AGAIN.
+## Saves going through the convoluted processing each time when the data is not going to change.
 
 # data source: https://www.gov.scot/publications/school-attendance-and-absence-statistics/
 # The files for individual years are downloaded to "data received" folder. 

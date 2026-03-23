@@ -9,7 +9,7 @@
 
 # this script updates the following indicator: 30140 - School attendance rate: Percentage school attendance by primary and secondary pupils in the past year
 # NB. Primary and secondary school attendance were 2 separate indicators previously (ind_id 11201 and 20603 respectively) 
-# but these haven't been updated since 2018.
+# but these haven't been updated since 2018 and are now archived.
 
 # data source: https://www.gov.scot/publications/school-attendance-and-absence-statistics/
 # The files for individual years are downloaded to "data received" folder. 
