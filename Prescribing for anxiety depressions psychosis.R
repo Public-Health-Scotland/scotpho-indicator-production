@@ -20,7 +20,7 @@
 ###############################################.
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/deprivation_analysis.R") # deprivation function
-source("./functions/data cleaning functions/exclude_small_geogs.R") #helper function which allows post-hoc removal of small geographies
+source("./functions/data cleaning functions/exclude_geog_codes.R") #helper function which allows post-hoc removal of small geographies
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
@@ -41,7 +41,7 @@ main_analysis(filename = "prescriptions_anxiety", measure = "crude", geography =
 
 #Deprivation analysis function
 deprivation_analysis(filename ="prescriptions_anxiety", measure = "crude", time_agg = 1, 
-                    yearstart = 2014, yearend = 2024, year_type = "financial", crude_rate = 100,
+                    yearstart = 2014, yearend = 2023, year_type = "financial", crude_rate = 100,
                     pop_sex = "all", pop = "depr_pop_allages", ind_id = 20401)
 
 

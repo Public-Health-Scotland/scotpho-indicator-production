@@ -56,15 +56,15 @@ for(i in rows_to_filter){
   } #close for loop
 
   #Re-export the data
-  if(test == FALSE){
-    saveRDS(df, paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
-    write.csv(df, paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"))
-  }else{
+  if(test == TRUE){
     saveRDS(df, paste0(profiles_data_folder, "/Test Shiny Data/", filename, "_shiny.rds"))
-    write.csv(df, paste0(profiles_data_folder, "/Test Shiny Data/", filename, "_shiny.csv"))
+    write.csv(df, paste0(profiles_data_folder, "/Test Shiny Data/", filename, "_shiny.csv"), row.names = F)
+  }else{
+    saveRDS(df, paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
+    write.csv(df, paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = F)
   }
 
-df #save to environment
+df #allow data to be saved to environment
   
 }
   
