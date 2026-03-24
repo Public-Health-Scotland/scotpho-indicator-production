@@ -156,7 +156,7 @@ all <- readRDS(file.path(profiles_data_folder, "Data to be checked", "child_heal
 # dont want to report IZ/HSC locality level sex splits as too granular
 popgroups_data <- rbind(males, females, all) |>
   mutate(split_name = "Sex") |>
-  filter(grepl("S00|S12|S18|S11", code))
+  filter(grepl("S00|S12|S08|S11", code))
 
 # save final file 
 saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "child_healthyweight_shiny_popgrp.rds"))
