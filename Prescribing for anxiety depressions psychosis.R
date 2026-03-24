@@ -46,7 +46,7 @@ deprivation_analysis(filename ="prescriptions_anxiety", measure = "crude", time_
 
 
 #Remove intermediate zones
-exclude_small_geogs(filename = "prescriptions_anxiety", iz = TRUE)
+exclude_geog_codes(filename = "prescriptions_anxiety", iz = TRUE)
 
 
 ##END
