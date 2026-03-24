@@ -71,7 +71,7 @@ ORDER BY link_no, cis_marker"))) %>%
 
 ### Calculate time taken in minutes
 end <- Sys.time()
-end - start # 14minutes to extract 2002 to 2022 data (~4.5 million rows)
+end - start # 13 minutes to extract 2002 to 2025 data (~5.5 million rows)
 
 emergency_cis <- emergency_cis %>%
   create_agegroups() %>% # needed for standardisation
@@ -124,16 +124,6 @@ dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce
   summarise(pop=sum(pop)) %>%
   ungroup() %>%
   rename(datazone2011=datazone)
-
-# temporary solution for delays in release of 2022 SAPE - reapply 2021 population to the 2022 data
-dz11_pop_2023 <-dz11_populations %>%
-  filter (year==2022) %>%
-  mutate (year=2023)
-
-dz11_pop_2024 <- dz11_pop_2023 |>
-  mutate (year=2024)
-  
-dz11_populations <- rbind(dz11_populations,dz11_pop_2023, dz11_pop_2024)
 
 
 # open ScotPHO geography look-up that enables matching datazones to all parent geographies
@@ -219,7 +209,7 @@ main_analysis(filename = "emergency_stays65_dz11",
               ind_id = 99103, 
               time_agg = 3,  
               yearstart = 2002,   
-              yearend = 2023, 
+              yearend = 2024, 
               pop = "DZ11_pop_65+",
               epop_total = 39000,
               epop_age = "normal",
