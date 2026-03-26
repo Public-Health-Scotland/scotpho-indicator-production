@@ -2,11 +2,6 @@
 # Analyst notes -----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-## MM note 09/01/2026:
-# Partial update done only for CA level and above for 2024 (main analysis only) due to SAPE delays
-# Main analysis function to be re-run Spring 2026 (no changes to parameters needed)
-# Deprivation analysis to be run Spring 2026 (change yearend parameter to 2024)
-
 # ScotPHO indicators: Road traffic accident casualties #
 
 #   Part 1 - Extract data from SMRA.
@@ -52,8 +47,7 @@ road_accidents <- as_tibble(dbGetQuery(channel, statement=
 # Aggregating to select only one case per admission and year
 road_accidents <- road_accidents %>%
   group_by(link_no, cis_marker, year) %>%
-  summarise_at(c("age", "sex_grp", "pc7"), funs(first)) %>%
-  ungroup() %>%
+  summarise(across(c("age", "sex_grp", "pc7"), ~ first(.)), .groups = "drop") %>%
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazone info.
