@@ -25,7 +25,7 @@ source("./functions/deprivation_analysis.R") #Deprivation function
 ###############################################.
 
 #Data comes from child health team
-postpartum <- read.csv(file.path(profiles_data_folder, '/Received Data/Post-partum Smoking/IR2025-00008.csv')) |>  
+postpartum <- read.csv(file.path(profiles_data_folder, '/Received Data/Post-partum Smoking/IR2026-00222.csv')) |>  
   janitor::clean_names() |> 
   mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
                         TRUE ~ paste0("20",substr(fin_year,1,2)))) #format year to display financial year
@@ -44,13 +44,13 @@ saveRDS(postpartum, file.path(profiles_data_folder, '/Prepared Data/postpartum_s
 ###############################################.
 
 #Feb 2026: trialling limiting time series to 2010/11 onwards due to incomplete data submissions
-# missing upt to 4 health boards prior to this data 
+# missing up to 4 health boards prior to this data 
 main_analysis(filename = "postpartum_smoking", geography = "datazone11", measure = "percent",
-              yearstart = 2010, yearend = 2023, time_agg = 3, ind_id = 1552, year_type = "financial")
+              yearstart = 2010, yearend = 2024, time_agg = 3, ind_id = 1552, year_type = "financial")
 
 #data supplied only contains 2011 datazones therefore deprivation trends can only start from 2014 onwards
 #there is no applicable simd lookup that maps 2011 datazones to SIMD scores prior to 2014
-deprivation_analysis(filename = "postpartum_smoking", yearstart = 2014, yearend = 2023,
+deprivation_analysis(filename = "postpartum_smoking", yearstart = 2014, yearend = 2024,
                      time_agg = 5, year_type = "financial", measure = "percent", pop_sex = "all",
                      ind_id = 1552)
 
@@ -70,7 +70,6 @@ deprivation_analysis(filename = "postpartum_smoking", yearstart = 2014, yearend 
 main_data <- readRDS(file.path(profiles_data_folder, '/Data to be checked/postpartum_smoking_shiny.rds'))|>
   filter(substr(code,1,3) != "S02")|> # Remove the IZ level gepgraphy as numbers are not sufficient to release robust rates at this geography level
   mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA), TRUE ~ numerator))  #suppress numerator where count less than 5 - rate is preserved
-  #filter(!(code %in% c("S08000022", "S12000017", "S11000016", "S37000016") & year <= 2007)) #exclude Highland for 2007 and earlier (not required if time trend limited to 2010/11 onwards)
 
 # write main data after suppression (should overwrite )
 write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/postpartum_smoking_shiny.csv"), row.names = FALSE)
@@ -78,11 +77,10 @@ write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/postpartu
 
 run_qa(filename="postpartum_smoking",type="main",test=FALSE)
 
-
 #DEPRIVATION DATA (5 year rolling average)----
 # After inspecting output data consider robustness of estimates,
 # decision: suppress numerators where average counts over 5 years less than 5
-# leaving in HB and CA deprivation splits even though some island/higland boards not all quintiles present - this might be revisited at some point
+# leaving in HB and CA deprivation splits even though some island/highland boards not all quintiles present - this might be revisited at some point
 # additional suppression for NHS highland not needed since deprivation indicator from 2014 data onwards so all years complete 
 depr_data <- readRDS(file.path(profiles_data_folder, '/Data to be checked/postpartum_smoking_ineq.rds'))|>
   mutate(numerator = case_when(numerator > 0 & numerator < 5 ~ as.numeric(NA),TRUE ~ numerator))
