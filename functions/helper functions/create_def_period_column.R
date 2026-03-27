@@ -8,7 +8,7 @@ create_def_period_column <- function(data, year_type = c("calendar", "financial"
     
     data |>
       mutate(
-        def_period = case_when(agg == 1 ~  as.character(year), 
+        def_period = case_when(agg == 1 ~  paste0(as.character(year)," ", year_type, " year"), 
                                TRUE ~ paste0(year - (agg - 1), " - ", year, "; ", agg, " year rolling average"))
         )
     
@@ -17,7 +17,7 @@ create_def_period_column <- function(data, year_type = c("calendar", "financial"
     data |>
       mutate(
         def_period = case_when(
-          agg == 1 ~ paste0(year, "/", substr(year + 1, 3, 4)),
+          agg == 1 ~ paste0(year, "/", substr(year + 1, 3, 4), " ",year_type, " year"),
           TRUE ~ paste0(year - (agg - 1), "/", substr(year - (agg - 2), 3, 4), 
                         " to ", year,"/",substr((year + 1), 3, 4), "; ", agg, " year rolling average"))
       )
