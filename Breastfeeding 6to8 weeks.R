@@ -56,29 +56,30 @@ main_analysis(filename = "total_breastfed", geography = "datazone11", measure = 
 excl_breastfed <- readRDS(file.path(profiles_data_folder, "/Data to be checked/excl_breastfed_shiny.rds"))
 total_breastfed <- readRDS(file.path(profiles_data_folder, "/Data to be checked/total_breastfed_shiny.rds"))
 
-#Exclude any rows where denominator <= 5 for an area
-excl_breastfed <- filter(excl_breastfed, denominator > 5)
-total_breastfed <- filter(total_breastfed, denominator > 5)
+#Exclude any rows where denominator 5 or under for an area
+#Previously this was done between first and second analysis functions but because these are now combined
+#There is no intermediate file where datazones have been aggregated to higher geographies but the denominator column is still present
+#The code below
+# - recalculates the denominator using rate and numerator
+# - excludes denominators of 5 or under
+# - drops the denominator column and resaves
 
+excl_breastfed <- excl_breastfed |> 
+  mutate(denominator = numerator/(rate/100)) |> #calculates the denominator from the numerator and rate. rate is divided by 100 to get proportion e.g. 33% -> 0.33
+  filter(denominator >= 6) |> #exclude all denominators 5 or under
+  select(-denominator)
 
-## Exclusions at this point for geographies where denominator <=5 for an area  
-data_indicator <- readRDS(file=paste0(data_folder, "Temporary/breastfed_formatted.rds"))  |> 
-  subset(denominator>5)
-
-saveRDS(data_indicator, file=paste0(data_folder, "Temporary/breastfed_formatted.rds"))
-
-analyze_second(filename = "breastfed", measure = "percent", time_agg = 3, 
-               ind_id = 21004, year_type = "financial")
-
-#These exclusions need to be applied to exlcude areas with incomplete data submissions.
-#If NHS boards & council have incomplete data then all sub geographies should also be excluded.
-
+total_breastfed <- total_breastfed |> 
+  mutate(denominator = numerator/(rate/100)) |> 
+  filter(denominator >= 6) |> 
+  select(-denominator)
 
 # Resave both rds and csv files with exclusions
-saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/breastfed_shiny.rds"))
-write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/breastfed_shiny.csv"))
+saveRDS(excl_breastfed , file.path(profiles_data_folder, "Data to be checked/excl_breastfed_shiny.rds"))
+write_csv(excl_breastfed , file.path(profiles_data_folder, "Data to be checked/excl_breastfed_shiny.csv"))
 
-#qa_function(filename = "breastfed", iz=TRUE)
+saveRDS(total_breastfed , file.path(profiles_data_folder, "Data to be checked/total_breastfed_shiny.rds"))
+write_csv(total_breastfed , file.path(profiles_data_folder, "Data to be checked/total_breastfed_shiny.csv"))
 
 ##END
 
