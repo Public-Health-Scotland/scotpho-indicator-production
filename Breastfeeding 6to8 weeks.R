@@ -1,10 +1,13 @@
-
 # ScotPHO indicators: 
 #Babies exclusively breastfed at 6-8 weeks (21004)
 #Babies exclusively or partially breastfed at 6-8 weeks (21007)
 
-## Part 1 - Format raw data ready for analysis functions 
-## Part 2 - calling the analysis functions 
+#Data are requested from phs.childhealthstats@phs.scot
+
+## Part 1 - Formatting raw data ready for analysis functions 
+## Part 2 - Calling the analysis functions 
+## Part 3 - Applying suppression
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -17,12 +20,13 @@ source("./functions/deprivation_analysis.R") # deprivation function
 breastfed <- read_csv(paste0(profiles_data_folder, "/Received Data/Babies exclusively breastfed/IR2026-00223.csv")) |> 
   clean_names() |> 
   mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
-                        TRUE ~ paste0("20",substr(fin_year,1,2)))) |>   #convert financial year to correct format
-  pivot_longer(cols = c("excbf_6to8wk", "overall_6to8wk"), names_to = "indicator", values_to = "numerator") |> 
-  group_by(datazone2011, year, indicator) |> 
+                        TRUE ~ paste0("20",substr(fin_year,1,2)))) #|>   #convert financial year to correct format
+  pivot_longer(cols = c("excbf_6to8wk", "overall_6to8wk"), names_to = "indicator", values_to = "numerator") |> #pivoting both indicators into 1 col to avoid repeating code
+  group_by(datazone2011, year, indicator) |> #aggregate up males and females into 1 count per dz per year
   summarise(numerator = sum(numerator), denominator = sum(tot_6to8wk), .groups = "drop") |> 
-  filter(year >= 2010) #starting time series at 2010 when data are complete - data are partial for earlier years
+  filter(year >= 2010) #starting time series at 2010 when data are complete
 
+#split the data into 2 indicators
 excl_breastfed <- breastfed |> 
   filter(indicator == "excbf_6to8wk") |> 
   select(-indicator)
@@ -58,14 +62,14 @@ total_breastfed <- readRDS(file.path(profiles_data_folder, "/Data to be checked/
 
 #Exclude any rows where denominator 5 or under for an area
 #Previously this was done between first and second analysis functions but because these are now combined
-#There is no intermediate file where datazones have been aggregated to higher geographies but the denominator column is still present
+#there is no intermediate file where datazones have been aggregated to higher geographies but the denominator column is still present
 #The code below
 # - recalculates the denominator using rate and numerator
 # - excludes denominators of 5 or under
-# - drops the denominator column and resaves
+# - drops the denominator column and re-saves
 
 excl_breastfed <- excl_breastfed |> 
-  mutate(denominator = numerator/(rate/100)) |> #calculates the denominator from the numerator and rate. rate is divided by 100 to get proportion e.g. 33% -> 0.33
+  mutate(denominator = numerator/(rate/100)) |> #calc denom. rate is divided by 100 to get proportion e.g. 33% -> 0.33
   filter(denominator >= 6) |> #exclude all denominators 5 or under
   select(-denominator)
 
