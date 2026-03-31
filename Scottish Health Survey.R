@@ -293,7 +293,7 @@ shes_df <- shes_from_ukds %>%
 
 table(shes_df$ind_id, useNA="always") # 37 in total, no NA
 table(shes_df$indicator, useNA="always") # 37 in total, no NA
-table(shes_df$code, useNA="always") # Scot, HB, no LA, no NA
+table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2024, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2024, single year and 4-y aggregates, no NA
 table(shes_df$sex, useNA="always") # M/F/total, no NA
@@ -329,6 +329,15 @@ indicators_w_lower_geogs <- availability %>%
   unique()
 indicators_w_lower_geogs <- as.vector(indicators_w_lower_geogs$indicator)
 
+# identify indicators where only sex==Total is available for HBs (so can exclude from popgroup file)
+inds_w_only_total_sex_hb <- shes_df %>%
+  filter(substr(code, 1, 3)=="S08") %>%
+  filter(split_name=="Sex") %>% 
+  group_by(indicator) %>%
+  summarise(female = sum(sex=="Female")) %>%
+  ungroup() %>%
+  filter(female==0)
+inds_w_only_total_sex_hb <- as.vector(inds_w_only_total_sex_hb$indicator)
 
 
 ### 7. Prepare final files -----
@@ -360,6 +369,8 @@ prepare_final_files <- function(ind){
     mutate(geog = substr(code, 1, 3)) %>%
     filter((geog=="S00" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
              (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
+    {if (ind %in% inds_w_only_total_sex_hb) filter(., !(split_name=="Sex" & geog!="S00")) #drop the HB*Sex split if only has 'total'
+      else .} %>% # keep all data
     select(-indicator, -sex, -geog) %>%
     mutate(split_value = factor(split_value, 
                                 levels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
@@ -373,6 +384,9 @@ prepare_final_files <- function(ind){
                                            "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
                                            "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"))) %>%
     arrange(code, year, split_name, split_value)
+  
+  # drop if sex only == total (no M/F)
+  
   
   # Save
   write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
@@ -394,11 +408,13 @@ prepare_final_files <- function(ind){
   # get the right age groups for the inequalities calculation:
   age_under16y <- c(30130, 30129) # all children included in "child with a parent with..." indicators
   age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
-  age_2to15y <- c(30111, 14003, 14006, 14007) # all child PA questions pertain to 2-15y olds
+  age_5to15y <- c(14003, 14006, 14007) # these child PA indicators restricted to 5-15y olds
+  age_2to15y <- c(30111) # child PA >1hr pertains to 2-15y olds
   
   agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
                       ifelse(ind %in% age_4to12y, "depr_pop_4to12",
-                             ifelse(ind %in% age_2to15y, "depr_pop_2to15", "depr_pop_16+"))) # default is adult (16+)  
+                             ifelse(ind %in% age_2to15y, "depr_pop_2to15", 
+                                    ifelse(ind %in% age_5to15y, "depr_pop_5to15", "depr_pop_16+")))) # default is adult (16+)  
   
   # add population data (quintile level) so that inequalities can be calculated
   simd_data <-  simd_data|>
