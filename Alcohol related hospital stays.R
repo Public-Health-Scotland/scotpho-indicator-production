@@ -57,6 +57,8 @@ alc_diag <- "E244|E512|F10|G312|G621|G721|I426|K292|K70[0-4]|K709|K852|K860|O354
 ##  Also set the end point to the year after you want data (so if you need data for 2022/23 then the date between filter should end '31 March 2024' ) - I know that this is odd and the FYE won't be complete yet but this indicator is a bit unusual as its based on FYE of discharge.
 ## theres a filter later in the script that restricts the data you end up with
 
+#Make sure to use a large session size as this query takes a long time to run!
+
 data_alcohol_episodes <- as_tibble(dbGetQuery(channel, statement= paste0(
   "SELECT link_no linkno, cis_marker cis, AGE_IN_YEARS age, admission_date, 
       discharge_date, DR_POSTCODE pc7, SEX sex_grp, ADMISSION, DISCHARGE, URI
