@@ -20,15 +20,14 @@ source("functions/main_analysis.R") # needed for the QA
 source("functions/deprivation_analysis.R") # needed for the QA
 library(hablar) # for sums that ignore NA only if other values are present, otherwise it returns NA
 library(readxl) # for reading in excel files
-library(here) # for filepaths
 
 # Read in geography lookup
-geography_lookups <- here(profiles_data_folder, "Lookups", "Geography")
-geo_lookup <- readRDS(here(geography_lookups, "opt_geo_lookup.rds")) %>% 
+geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
+geo_lookup <- readRDS(file.path(geography_lookups, "opt_geo_lookup.rds")) %>% 
   select(!c(parent_area, areaname_full))
 
 # create lookup for higher geogs: get simd lookup, and aggregate (lowest geog is CA)
-higher_geog_lookup <- readRDS(here(geography_lookups, "simd_datazone_lookup.rds")) %>%
+higher_geog_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup.rds")) %>%
   select(year, code = ca, hb, hscp, pd, scotland) %>%
   unique()
 
@@ -88,20 +87,20 @@ aggregate_higher <- function(df, geog) {
 # file paths:
 
 # the folder where the data are saved
-exclusions_folder <- here(profiles_data_folder, "Received Data", "School Exclusion Rates")
+exclusions_folder <- file.path(profiles_data_folder, "Received Data", "School Exclusion Rates")
 
 # counts of exclusions (numerators)
-exclusions2024 <- here(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx") # Numerators for Scotland and LAs
+exclusions2024 <- file.path(exclusions_folder, "School+exclusions+2024-25+Corrected+December+2025.xlsx") # Numerators for Scotland and LAs
 
 # SIMD data 2010/11-2023/24 (counts and denominators): 
-#simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") # SG provided the following file with suppression, to replace this unsuppressed one. 
-simd2023 <- here(exclusions_folder, "AAE0015_exclusions_by_simd_final.xlsx") 
+#simd2023 <- file.path(exclusions_folder, "AAE0015_exclusions_by_simd.xlsx") # SG provided the following file with suppression, to replace this unsuppressed one. 
+simd2023 <- file.path(exclusions_folder, "AAE0015_exclusions_by_simd_final.xlsx") 
 
 # SIMD data 2024/25 (counts and denominators): 
-simd2024 <- here(exclusions_folder, "AAE023_exclusions_by_simd_for_phs_final.xlsx") 
+simd2024 <- file.path(exclusions_folder, "AAE023_exclusions_by_simd_for_phs_final.xlsx") 
 
 # pupil counts (denominators): snapshot from September of the year in question
-census2024 <- here(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
+census2024 <- file.path(exclusions_folder, "Pupil+census+supplementary+statistics+2024+-+March.xlsx") # Denominators for Scotland, LAs, and SIMD 2022 
 
 #################################
 ## 2a. Import SIMD data 
@@ -193,7 +192,7 @@ simd_all <- simd_all |>
   select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
 
 # save the data as RDS file
-saveRDS(simd_all, paste0(profiles_data_folder, "/Data to be checked/school_exclusions_ineq.rds"))
+saveRDS(simd_all, file.path(profiles_data_folder, "Data to be checked", "school_exclusions_ineq.rds"))
 
 
 #################################################################################
@@ -280,8 +279,8 @@ main_data <- exclusions_all %>%
   arrange(code, year)
 
 # Save
-write_rds(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.rds"))
-write.csv(main_data, here(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.csv"), row.names = FALSE) 
+write_rds(main_data, file.path(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.rds"))
+write.csv(main_data, file.path(profiles_data_folder, "Data to be checked", "school_exclusions_shiny.csv"), row.names = FALSE) 
 
 
 ##########################################################
