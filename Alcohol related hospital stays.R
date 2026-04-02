@@ -9,7 +9,8 @@
 #   Part 2 - Create the different geographies basefiles
 #        2a - Aggregate admissions up to datazones
 #        2b - Combine dz01 and dz11 data to assign each datazone to correct SIMD quintile
-#        2c - Create council-level data file for 11-25 year olds
+#        2c - Create population groups file
+#        2d - Create council-level data file for 11-25 year olds
 #   Part 3 - Run analysis functions 
 
 ###############################################.
@@ -110,6 +111,10 @@ data_alcoholstays <- data_alcoholstays %>%
   subset(!(is.na(datazone2011))) %>%  #select out non-scottish
   mutate_if(is.character, factor) # converting variables into factors
 
+#Saving data so can be re-read in if running over multiple sessions due to long search duration
+saveRDS(data_alcoholstays, file.path(profiles_data_folder, "Prepared Data/alcohol_stays_raw_extract.rds"))
+data_alcoholstays <- readRDS(file.path(profiles_data_folder, "Prepared Data/alcohol_stays_raw_extract.rds"))
+
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
@@ -137,7 +142,27 @@ dep_file <- rbind(dz01_dep, dz11 %>% subset(year>=2014)) #joining dz01 and dz11
 saveRDS(dep_file, file.path(profiles_data_folder, 'Prepared Data/alcohol_stays_depr_raw.rds'))
 
 ###############################################.
-# 2c - CA (council area) file for 11-25 year old indicator
+# 2c - create pop groups files
+
+#Create two files split by sex then run through analysis functions. To do dz or council?
+alcoholstays_males <- data_alcoholstays |> 
+  filter(sex_grp == 1) |> 
+  group_by(year, ca2019, age_grp, sex_grp) |> 
+  summarise(numerator = n(), .groups = "drop") |> 
+  rename(ca = ca2019)
+
+saveRDS(alcoholstays_males, file.path(profiles_data_folder, 'Prepared Data/alcohol_stays_males_raw.rds'))
+
+alcoholstays_females <- data_alcoholstays |> 
+  filter(sex_grp == 2) |> 
+  group_by(year, ca2019, age_grp, sex_grp) |> 
+  summarise(numerator = n(), .groups = "drop") |> 
+  rename(ca = ca2019)
+
+saveRDS(alcoholstays_females, file.path(profiles_data_folder, 'Prepared Data/alcohol_stays_females_raw.rds'))
+
+###############################################.
+# 2d - CA (council area) file for 11-25 year old indicator
 
 alcoholstays_11to25 <- data_alcoholstays %>%
   subset(age>=11 & age<=25) %>% 
@@ -168,6 +193,49 @@ analyze_deprivation(filename="alcohol_stays_depr", measure="stdrate", time_agg=1
                     epop_total =200000, ind_id = 20203)
 
 apply_stats_disc("alcohol_stays_depr_ineq") # statistical disclosure applied to final values to ensure consistency with other profile indicators
+
+
+#Alcohol stays in males and females
+main_analysis(filename = "alcohol_stays_males", geography = "council", measure = "stdrate",
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
+              time_agg = 1, epop_age = "normal", epop_total = 100000, ind_id = 20203,
+              year_type = "financial")
+
+apply_stats_disc("alcohol_stays_males_shiny")
+
+main_analysis(filename = "alcohol_stays_females", geography = "council", measure = "stdrate",
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
+              time_agg = 1, epop_age = "normal", epop_total = 100000, ind_id = 20203,
+              year_type = "financial")
+
+apply_stats_disc("alcohol_stays_females_shiny")
+
+#read male and female results back in and combine with main analysis results (i.e. totals)
+males <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.rds")) |> 
+  mutate(split_value = "Males")
+
+females <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.rds")) |> 
+  mutate(split_value = "Females")
+
+all <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_dz11_shiny.rds")) |>
+  mutate(split_value = "All")
+
+# combine into one dataset
+# filter on Scotland, council, board and HSCP only
+# dont want to report IZ/HSC locality level sex splits as too granular
+popgroups_data <- rbind(males, females, all) |>
+  mutate(split_name = "Sex") |>
+  filter(grepl("S00|S12|S08|S11", code))
+
+# save final file 
+saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_shiny_popgrp.rds"))
+write.csv(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_shiny_popgrp.csv"), row.names = FALSE)
+
+# delete individual male/female files from the data to be checked folder
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.csv"))
 
 # Alcohol related stays in 11 to 25 year olds
 main_analysis(filename = "alcohol_stays_11to25", geography = "council", measure = "stdrate",
