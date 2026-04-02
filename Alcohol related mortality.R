@@ -96,41 +96,33 @@ saveRDS(dep_file, file.path(profiles_data_folder, 'Prepared Data/alcohol_deaths_
 
 # CA file for gender specific indicators in Alcohol profile
 # Female alcohol mortality
+#Create two files split by sex then run through analysis functions
+alcohol_deaths_males <- data_deaths |> 
+  filter(sex_grp == 1) |> 
+  group_by(year, ca2019, age_grp, sex_grp) |> 
+  summarise(numerator = n(), .groups = "drop") |> 
+  rename(ca = ca2019)
 
+saveRDS(alcohol_deaths_males, file.path(profiles_data_folder, 'Prepared Data/alcohol_deaths_males_raw.rds'))
 
-alcohol_deaths_female <- data_deaths %>%
-  subset(sex_grp==2) %>% 
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(datazone = datazone2011)
+alcohol_deaths_females <- data_deaths |> 
+  filter(sex_grp == 2) |> 
+  group_by(year, ca2019, age_grp, sex_grp) |> 
+  summarise(numerator = n(), .groups = "drop") |> 
+  rename(ca = ca2019)
 
-saveRDS(alcohol_deaths_female, file=paste0(data_folder, 'Prepared Data/alcohol_deaths_female_raw.rds'))
-
-###############################################.
-# CA (council area) file for gender specific indicators in Alcohol profile
-# Male alcohol mortality
-
-alcohol_deaths_male <- data_deaths %>%
-  subset(sex_grp==1) %>% 
-  group_by(year, datazone2011, sex_grp, age_grp) %>%  
-  summarize(numerator = n()) %>% 
-  ungroup() %>%   
-  rename(datazone = datazone2011)
-
-saveRDS(alcohol_deaths_male, file=paste0(data_folder, 'Prepared Data/alcohol_deaths_male_raw.rds'))
+saveRDS(alcohol_deaths_females, file.path(profiles_data_folder, 'Prepared Data/alcohol_deaths_females_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 
 #Alcohol mortality indicator functions
-analyze_first(filename = "alcohol_deaths_dz11", geography = "datazone11", adp=TRUE, measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
-              time_agg = 5, epop_age = "normal")
+main_analysis(filename = "alcohol_deaths_dz11", geography = "datazone11", measure = "stdrate",
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2024, time_agg = 5, 
+              epop_age = "normal", epop_total = 200000, ind_id = 20204, year_type = "calendar")
 
-analyze_second(filename = "alcohol_deaths_dz11", measure = "stdrate", time_agg = 5, 
-               epop_total = 200000, ind_id = 20204, year_type = "calendar")
+
 
 ###############################################.
 #Alcohol mortality by deprivation indicator functions
@@ -140,39 +132,47 @@ analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=
                     epop_age="normal", epop_total =200000, ind_id = 20204)
 
 ###############################################.
-#FEMALE Alcohol mortality indicator functions
-#Set to produce IZ level data to allow production of ADP, HSCP and council data but IZ and locality data excluded from final dataset
-analyze_first(filename = "alcohol_deaths_female", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
-              adp=TRUE, time_agg = 5, epop_age = "normal")
 
-#open output of analyze first and exclude IZ and locality data
-data_indicator <- readRDS(file=paste0(data_folder, "Temporary/alcohol_deaths_female_formatted.rds"))
-data_indicator <- data_indicator %>%
-  subset(substr(code, 1, 3)!="S02" & substr(code,1,3)!="S99") 
+#Alcohol deaths in males and females
+main_analysis(filename = "alcohol_deaths_males", geography = "council", measure = "stdrate",
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
+              time_agg = 5, epop_age = "normal", epop_total = 100000, ind_id = 20204,
+              year_type = "calendar")
 
-saveRDS(data_indicator, file=paste0(data_folder, "Temporary/alcohol_deaths_female_formatted.rds"))
+apply_stats_disc("alcohol_deaths_males_shiny")
 
+main_analysis(filename = "alcohol_deaths_females", geography = "council", measure = "stdrate",
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
+              time_agg = 5, epop_age = "normal", epop_total = 100000, ind_id = 20204,
+              year_type = "calendar")
 
-#epop is only 100000 as only female half population
-analyze_second(filename = "alcohol_deaths_female", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12537, year_type = "calendar")
+apply_stats_disc("alcohol_deaths_females_shiny")
 
-###############################################.
-#MALE Alcohol mortality indicator functions
-analyze_first(filename = "alcohol_deaths_male", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
-              adp=TRUE, time_agg = 5, epop_age = "normal")
+#read male and female results back in and combine with main analysis results (i.e. totals)
+males <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_males_shiny.rds")) |> 
+  mutate(split_value = "Males")
 
-#open output of analyze first and exclude IZ and locality data
-data_indicator <- readRDS(file=paste0(data_folder, "Temporary/alcohol_deaths_male_formatted.rds"))
-data_indicator <- data_indicator %>%
-  subset(substr(code, 1, 3)!="S02" & substr(code,1,3)!="S99") 
+females <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_females_shiny.rds")) |> 
+  mutate(split_value = "Females")
 
-saveRDS(data_indicator, file=paste0(data_folder, "Temporary/alcohol_deaths_male_formatted.rds"))
+all <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_dz11_shiny.rds")) |>
+  mutate(split_value = "All")
 
-#epop is only 100000 as only male half population
-analyze_second(filename = "alcohol_deaths_male", measure = "stdrate", time_agg = 5, 
-               epop_total = 100000, ind_id = 12536, year_type = "calendar")
+# combine into one dataset
+# filter on Scotland, council, board and HSCP only
+# dont want to report IZ/HSC locality level sex splits as too granular
+popgroups_data <- rbind(males, females, all) |>
+  mutate(split_name = "Sex") |>
+  filter(grepl("S00|S12|S08|S11", code))
+
+# save final file 
+saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.rds"))
+write.csv(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.csv"), row.names = FALSE)
+
+# delete individual male/female files from the data to be checked folder
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.csv"))
 
 #END

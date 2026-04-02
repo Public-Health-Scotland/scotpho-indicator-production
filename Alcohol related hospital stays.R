@@ -144,7 +144,7 @@ saveRDS(dep_file, file.path(profiles_data_folder, 'Prepared Data/alcohol_stays_d
 ###############################################.
 # 2c - create pop groups files
 
-#Create two files split by sex then run through analysis functions. To do dz or council?
+#Create two files split by sex then run through analysis functions
 alcoholstays_males <- data_alcoholstays |> 
   filter(sex_grp == 1) |> 
   group_by(year, ca2019, age_grp, sex_grp) |> 
