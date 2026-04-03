@@ -1,87 +1,89 @@
-#Incomplete script - still work in progress 
+# ScotPHO indicators: 
+#Babies exclusively breastfed at 6-8 weeks (21004)
+#Babies exclusively or partially breastfed at 6-8 weeks (21007)
 
-# ScotPHO indicators: Breastfeeding at 6to8 weeks
+#Data are requested from phs.childhealthstats@phs.scot
 
-## Part 1 - Format raw data ready for analysis functions 
-## Part 2 - calling the analysis functions 
-## Part 3 - Editing shiny data file to exclude data for regions where data is known to be incomplete
+## Part 1 - Formatting raw data ready for analysis functions 
+## Part 2 - Calling the analysis functions 
+## Part 3 - Applying suppression
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/deprivation_analysis.R") # deprivation function
 
 ###############################################.
-## Part 1 - Prepare basefile ----
+## Part 1 - Prepare basefiles ----
 ###############################################.
-breastfed <- read_csv(paste0(data_folder, "Received Data/Babies exclusively breastfed/IR2025-00009.csv")) 
+breastfed <- read_csv(paste0(profiles_data_folder, "/Received Data/Babies exclusively breastfed/IR2026-00223.csv")) |> 
+  clean_names() |> 
+  mutate(year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
+                        TRUE ~ paste0("20",substr(fin_year,1,2)))) #|>   #convert financial year to correct format
+  pivot_longer(cols = c("excbf_6to8wk", "overall_6to8wk"), names_to = "indicator", values_to = "numerator") |> #pivoting both indicators into 1 col to avoid repeating code
+  group_by(datazone2011, year, indicator) |> #aggregate up males and females into 1 count per dz per year
+  summarise(numerator = sum(numerator), denominator = sum(tot_6to8wk), .groups = "drop") |> 
+  filter(year >= 2010) #starting time series at 2010 when data are complete
 
-breastfed <- breastfed |> 
-  setNames(tolower(names(breastfed))) |> 
-  mutate(datazone = as.factor(datazone2011),
-         year=case_when(nchar(fin_year)==3 ~ paste0("200",substr(fin_year,1,1)), 
-                               TRUE ~ paste0("20",substr(fin_year,1,2)))) |>  #format year to display financial year
-  group_by(year, datazone) |> 
-  summarise(numerator = sum(excbf_6to8wk), denominator = sum(tot_6to8wk))
+#split the data into 2 indicators
+excl_breastfed <- breastfed |> 
+  filter(indicator == "excbf_6to8wk") |> 
+  select(-indicator)
 
-saveRDS(breastfed, file=paste0(data_folder, 'Prepared Data/breastfed_raw.rds')) 
+total_breastfed <- breastfed |> 
+  filter(indicator == "overall_6to8wk") |> 
+  select(-indicator)
+
+saveRDS(excl_breastfed, file.path(profiles_data_folder, '/Prepared Data/excl_breastfed_raw.rds')) 
+saveRDS(total_breastfed, file.path(profiles_data_folder, "/Prepared Data/total_breastfed_raw.rds"))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "breastfed", geography = "datazone11", measure = "percent", 
-              yearstart = 2002, yearend = 2023, time_agg = 3 )
+#Babies exclusively breastfed
+main_analysis(filename = "excl_breastfed", geography = "datazone11", measure = "percent", 
+              yearstart = 2010, yearend = 2024, time_agg = 3, ind_id = 21004, 
+              year_type = "financial")
 
-## Exclusions at this point for geographies where denominator <=5 for an area  
-data_indicator <- readRDS(file=paste0(data_folder, "Temporary/breastfed_formatted.rds"))  |> 
-  subset(denominator>5)
+#Babies totally or partially breastfed
+main_analysis(filename = "total_breastfed", geography = "datazone11", measure = "percent",
+              yearstart = 2010, yearend = 2024, time_agg = 3, ind_id = 21007,
+              year_type = "financial")
 
-saveRDS(data_indicator, file=paste0(data_folder, "Temporary/breastfed_formatted.rds"))
 
-analyze_second(filename = "breastfed", measure = "percent", time_agg = 3, 
-               ind_id = 21004, year_type = "financial")
+###############################################.
+## Part 3 - Suppressions and Exclusions ----
+###############################################.
 
-#These exclusions need to be applied to exlcude areas with incomplete data submissions.
-#If NHS boards & council have incomplete data then all sub geographies should also be excluded.
+#Read the data back in
+excl_breastfed <- readRDS(file.path(profiles_data_folder, "/Data to be checked/excl_breastfed_shiny.rds"))
+total_breastfed <- readRDS(file.path(profiles_data_folder, "/Data to be checked/total_breastfed_shiny.rds"))
 
-#   *Excluding years/areas where the data is incomplete during 3 year average (year before through to year after).
-#   *Western Isles (S08000028, S12000013) data available from 2006/07
-#   *Highland (S08000022, S12000017) data available from 2008/09. Pre May 2008 data is only for Argyll & Bute LA from 2001/02
-#   *Shetland (S08000026, S12000027) data available from 2008/09
-#   *Grampian (S08000020, S12000020, S12000033, S12000034) & Orkney (S08000025, S12000023) data available  from 2010/11.
+#Exclude any rows where denominator 5 or under for an area
+#Previously this was done between first and second analysis functions but because these are now combined
+#there is no intermediate file where datazones have been aggregated to higher geographies but the denominator column is still present
+#The code below
+# - recalculates the denominator using rate and numerator
+# - excludes denominators of 5 or under
+# - drops the denominator column and re-saves
 
-# Excluding data for boards, hscps, las, localities and izs with incomplete data
-# Merging final data with parent geographies lookup and then filtering
-geo_parents <- readRDS(paste0(lookups, "Geography/IZtoPartnership_parent_lookup.rds"))  |>  
-  #TEMPORARY FIX. dealing with change in ca, hb and hscp codes
-  mutate(hscp_partnership = recode(hscp_partnership, "S37000014"='S37000032', 
-                                   "S37000023"='S37000033')) |>  
-  gather(geotype, code, c(intzone2011, hscp_locality)) |>  distinct() |> 
-  select(-geotype) |>  rename(parent_area = hscp_partnership)
+excl_breastfed <- excl_breastfed |> 
+  mutate(denominator = numerator/(rate/100)) |> #calc denom. rate is divided by 100 to get proportion e.g. 33% -> 0.33
+  filter(denominator >= 6) |> #exclude all denominators 5 or under
+  select(-denominator)
 
-data_shiny <- left_join(readRDS(file = paste0(data_folder, "Data to be checked/breastfed_shiny.rds")),                         
-                        geo_parents, by = "code") |> 
-  mutate(parent_area=coalesce(as.character(parent_area),"x")) #assign value to an 'NA' values to allow filtering to work correctly.
-
-data_shiny <- data_shiny |> 
-  filter(!((code %in% c('S08000028','S12000013', 'S37000031') | parent_area == 'S37000031') &
-             year %in% c(2005, 2006))) %>% #filter for Western Isle and associated sub geographies
-  filter(!((code %in% c('S08000022','S12000017', 'S37000016') | parent_area == 'S37000016') &
-             year <= 2008)) %>%  # filter for Highland and associated sub geographies
-  filter(!((code %in% c('S08000026','S12000027', 'S37000026') | parent_area == 'S37000026') &
-             year %in% c(2007, 2008))) %>% #filter for Shetland
-  filter(!((code %in% c('S08000020', 'S08000025', 'S12000020', 'S12000023', 'S12000033', 
-                        'S12000034', 'S37000019', 'S37000022', 'S37000001', 'S37000002') |
-              parent_area %in% c('S37000019', 'S37000022', 'S37000001', 'S37000002')) & 
-             year %in% c(2009, 2010))) %>% #filter for Grampian and Orkney + associated geographies.
-  select(-parent_area)
+total_breastfed <- total_breastfed |> 
+  mutate(denominator = numerator/(rate/100)) |> 
+  filter(denominator >= 6) |> 
+  select(-denominator)
 
 # Resave both rds and csv files with exclusions
-saveRDS(data_shiny, file = paste0(data_folder, "Data to be checked/breastfed_shiny.rds"))
-write_csv(data_shiny, path = paste0(data_folder, "Data to be checked/breastfed_shiny.csv"))
+saveRDS(excl_breastfed , file.path(profiles_data_folder, "Data to be checked/excl_breastfed_shiny.rds"))
+write_csv(excl_breastfed , file.path(profiles_data_folder, "Data to be checked/excl_breastfed_shiny.csv"))
 
-#qa_function(filename = "breastfed", iz=TRUE)
+saveRDS(total_breastfed , file.path(profiles_data_folder, "Data to be checked/total_breastfed_shiny.rds"))
+write_csv(total_breastfed , file.path(profiles_data_folder, "Data to be checked/total_breastfed_shiny.csv"))
 
 ##END
 
