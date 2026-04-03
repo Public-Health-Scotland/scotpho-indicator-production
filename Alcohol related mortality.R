@@ -18,6 +18,7 @@
 ###############################################.
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/deprivation_analysis.R") # deprivation function
+source("//PHI_conf/ScotPHO/Profiles/Code/stat_disclosure_alcohol_stays.R") # statistical disclosure methodology - confidential - do not share
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -123,7 +124,6 @@ main_analysis(filename = "alcohol_deaths_dz11", geography = "datazone11", measur
               epop_age = "normal", epop_total = 200000, ind_id = 20204, year_type = "calendar")
 
 
-
 ###############################################.
 #Alcohol mortality by deprivation indicator functions
 analyze_deprivation(filename="alcohol_deaths_depr", measure="stdrate", time_agg=5, 
@@ -139,14 +139,11 @@ main_analysis(filename = "alcohol_deaths_males", geography = "council", measure 
               time_agg = 5, epop_age = "normal", epop_total = 100000, ind_id = 20204,
               year_type = "calendar")
 
-apply_stats_disc("alcohol_deaths_males_shiny")
-
 main_analysis(filename = "alcohol_deaths_females", geography = "council", measure = "stdrate",
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
               time_agg = 5, epop_age = "normal", epop_total = 100000, ind_id = 20204,
               year_type = "calendar")
 
-apply_stats_disc("alcohol_deaths_females_shiny")
 
 #read male and female results back in and combine with main analysis results (i.e. totals)
 males <- readRDS(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_males_shiny.rds")) |> 
@@ -165,14 +162,11 @@ popgroups_data <- rbind(males, females, all) |>
   mutate(split_name = "Sex") |>
   filter(grepl("S00|S12|S08|S11", code))
 
-# save final file 
+# save file 
 saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.rds"))
 write.csv(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.csv"), row.names = FALSE)
 
-# delete individual male/female files from the data to be checked folder
-file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.rds"))
-file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.csv"))
-file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.rds"))
-file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_males_shiny.csv"))
+#finally apply disclosure
+apply_stats_disc("alcohol_deaths_shiny_popgrp")
 
 #END
