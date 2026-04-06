@@ -42,11 +42,16 @@ main_analysis(filename = "prescriptions_anxiety", measure = "crude", geography =
 #Deprivation analysis function
 deprivation_analysis(filename ="prescriptions_anxiety", measure = "crude", time_agg = 1, 
                     yearstart = 2014, yearend = 2023, year_type = "financial", crude_rate = 100,
-                    pop_sex = "all", pop = "depr_pop_allages", ind_id = 20401)
-
+                    pop_sex = "all", pop = "depr_pop_allages", ind_id = 20401, pop_age = NULL)
 
 #Remove intermediate zones
 exclude_geog_codes(filename = "prescriptions_anxiety", iz = TRUE)
 
+#Remove police divisions from deprivation file
+deprivation <- readRDS(file.path(profiles_data_folder, "Data to be checked/prescriptions_anxiety_ineq.rds")) |> 
+  filter(!str_detect(code, "S32")) 
+
+#Re-save
+saveRDS(deprivation, file.path(profiles_data_folder, "Data to be checked/prescriptions_anxiety_ineq.rds"))
 
 ##END
