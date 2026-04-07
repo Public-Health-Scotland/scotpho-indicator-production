@@ -2,6 +2,7 @@
 ### 1. notes -----
 
 # this script updates the following indicator: 13016 - School exclusion rate
+# script was saved under different name to resolve merge conflict during march 2026 update - filename can have '2' suffix removed at next update
 
 # numerator source (no. of exclusions): https://www.gov.scot/publications/school-exclusion-statistics/ INCLUDES: PUBLICLY-FUNDED LOCAL AUTHORITY SCHOOLS ONLY. NOT INCLUDING GRANT-AIDED SCHOOLS. 
 # denominator source (no. of pupils):   https://www.gov.scot/publications/pupil-census-supplementary-statistics/  (Table 5.1: Schools by local authority)
