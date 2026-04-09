@@ -143,7 +143,6 @@ saveRDS(dep_under75_file, file=paste0(profiles_data_folder, '/Prepared Data/deat
 ## Part 3 - Run analysis functions ----
 ###############################################.
 
-# N.B. Any indicator using the DZ or SIMD population files limited to 2023 as at Oct 2025, until 2024 population data are available.
 
 ###############################################.
 #Deaths all ages
@@ -156,7 +155,7 @@ main_analysis(filename = "deaths_allages_dz11", #max year 2023
               ind_id = 20103, 
               time_agg = 3,  
               yearstart = 2002,   
-              yearend = 2023, 
+              yearend = 2024, 
               pop = "DZ11_pop_allages",
               epop_total = 200000,
               epop_age = "normal",
@@ -228,7 +227,7 @@ main_analysis(filename = "deaths_15to44_dz11", #max year 2023
               ind_id = 20104, 
               time_agg = 3,  
               yearstart = 2002,   
-              yearend = 2023, 
+              yearend = 2024, 
               pop = "DZ11_pop_15to44",
               epop_total = 76000,
               epop_age = "normal",
@@ -260,7 +259,7 @@ main_analysis(filename = "deaths_under75_dz11", #max year 2023
               ind_id = 8, 
               time_agg = 3,  
               yearstart = 2002,   
-              yearend = 2023, 
+              yearend = 2024, 
               pop = "DZ11_pop_under75",
               epop_total = 182000,
               epop_age = "normal",

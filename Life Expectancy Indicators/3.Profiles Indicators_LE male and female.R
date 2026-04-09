@@ -5,13 +5,12 @@
 # Depending on if new SAPE files are available you may wish tp update  the profiles indicator for only larger geographies - this will result
 # in longer time trend for indicators for the larger geographies than the IZ/HSCP locality data.
 
-# ScotPHO health and wellbeing profile includes 2 Life Expectancy indicators (Male and Female)
 # ScotPHO calculate life expectancy for IZ level geographies which are 5 year aggregates, using 85+ as max age band.
 # We use NRS life expectancy estimates for Scotland, NHS Board and LA level which are 3 year aggregates and use 90+ as max age band.
 
 # Using NRS LE estimates avoids confusion caused by having different LE to those that many users expect (ie the national statistic)
 # New annual NRS life expectancy figures are sourced from NRS website or by request to NRS and manually formatted then added to previous years data file.
-# Smaller geographies cannot use the exact same methodology because 3 years of data insufficient to produce robust LE estimates for small geogrpahies.
+# Smaller geographies cannot use the exact same methodology because 3 years of data insufficient to produce robust LE estimates for small geographies.
 
 
 ## Part 1 - Read in LE at IZ & HSCP locality level data file (data prepared using LE for small areas.R)
@@ -31,7 +30,7 @@ source("functions/main_analysis.R") #doesn't use the functions, but quick way of
 
 # Set run name - this will dictate which iteration of IZ level life expectancy source data to use
 # if no IZ/Hscp locality update is available then reuse last run.
-run_name="2001to2023 IZ&Locality LE(85+)_20241127"
+run_name="2001to2024 IZ&Locality LE(85+)_20260302"
 
 le0_data<- readRDS(paste0(output_network,"4_Intermediate Zone LE (annual)/",run_name,"_life expectancy at birth.rds"))
 
@@ -42,8 +41,9 @@ le0_iz_profiles <- le0_data %>%
   subset(pop>=5000 & deaths>=40 & is.finite(LEx)) %>% #Including only cases where pop >=5000 and total deaths >= 40 or where LEx can't be calulated (likely do to deaths>pop in some age groups eg 85+)
   mutate(def_period=time_period,
          year=as.numeric(substr(time_period,1,4))+2, # year should be mid-point - this forumla assumes 5 year time period
-         trend_axis=paste0(as.character(year)," Midpoint")) %>%
-  select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis) %>%
+         trend_axis=paste0(as.character(year)," Midpoint"),
+         urban="all") %>% #create urban column which is present in NRS data required in processing later on
+  select (geography,sex_grp, year, LEx,lci,uci,def_period,trend_axis,urban) %>%
   rename(code=geography,
          rate = LEx,
          lowci = lci,
@@ -65,7 +65,7 @@ rm(le0_data)
 #   arrange(code, time_period, sex_grp)
 
 # Read in 3 year,abridged life expectancy estimates sourced from NRS (Via SG open data platform)
-# See script 'NRS Life Expectancy (3 year figures) from SG opendata platform.R' in this project
+# See script '00_Sourcing NRS 3yr subnational abridged LE.R' in this project (i.e. R script where the rds file below is created)
 
 NRS_statsgov <- readRDS(paste0("/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS_statistics_gov 2001 to 2024.rds"))
 
@@ -84,18 +84,20 @@ profiles_tool_geo_lookup <- readRDS("/PHI_conf/ScotPHO/Profiles/Data/Lookups/Geo
   unique() |>
   filter(hscp2019 != "S37000005") # exclude Clackmannanshire & Stirling HSCP since we can't combine LE estimates from two distinct councils (2 councils but only 1 HSCP)
 
-# duplicate the LA adata and call it HSCP data 
+# duplicate the LA data and call it HSCP data  (we are going to use LA values as proxy for LE at HSCP level since these are often the same areas)
 hscp_data <- NRS_data %>%
   subset(substr(NRS_data$code, 1, 3) =="S12") 
 
-#match to HSCP lookup so we can convert LA life expectancy as if it was for HSCP (note clacks & stirling will be missing)
+#match to HSCP lookup so we can convert LA life expectancy as if it was for HSCP (note clacks & stirling will be missing since this is 2 councils but 1 HSCP - we can't infer LE for this area)
 hscp_data <- left_join(hscp_data, profiles_tool_geo_lookup ,by=c('code' = 'ca2019'))
 hscp_data <- hscp_data |>
-  filter(!is.na(hscp2019))
+  filter(!is.na(hscp2019))|>
+  mutate(code=hscp2019)
 
 #bind data so it will include Scotland, NHS board, Local Authority and HSCP level
 NRS_data_plus <- bind_rows(NRS_data, hscp_data)|>
-  select(-hscp2019)
+  select(-hscp2019) 
+
 
 rm(hscp_data,NRS_data,profiles_tool_geo_lookup)
 
@@ -142,7 +144,7 @@ run_qa(filename="life_expectancy_female", type="main",check_extras = "S12000005"
 popgrp_data_sex <- main_data |>
   mutate(split_name = "Sex",
          split_value = case_when(ind_id== "20101" ~ "Male", ind_id== "20102" ~ "Female", TRUE ~"other"))
-     
+
 popgrp_data_urban <- NRS_data_plus |>
   filter(code=="S00000001", year>2011) |> #urban rural split only available at scotland level and only from 2012 onward
   mutate(split_name= "Urban/Rural",
@@ -152,11 +154,14 @@ popgrp_data_urban <- NRS_data_plus |>
                            TRUE ~"x"),
          numerator="")|>
   select (-urban,-ref_period, -sex_grp)
-  
-popgrp_data <-rbind(popgrp_data_sex,popgrp_data_urban)
 
-## Male life expectancy file
-popgrp_data_male <- popgrp_data %>% subset(ind_id=="20101") 
+male_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20101")
+female_data_urban <-popgrp_data_urban |>
+  filter(ind_id== "20102")
+
+## Male life expectancy popgrp file (add sex and urban/rural split) then ensure all indicator ID assinged to male
+popgrp_data_male <- rbind(popgrp_data_sex,male_data_urban)|> mutate(ind_id= "20101")
 
 #save files to profiles indicator data to be checked folder on network
 write_csv(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_male_shiny_popgrp.csv"))
@@ -166,7 +171,8 @@ write_rds(popgrp_data_male, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data 
 run_qa(filename="life_expectancy_male", type="popgrp", test_file = FALSE)
 
 ### Female life expectancy file
-popgrp_data_female <- popgrp_data %>% subset(ind_id=="20102") 
+popgrp_data_female <-  rbind(popgrp_data_sex,female_data_urban)|> 
+  mutate(ind_id= "20102")
 
 write_csv(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.csv"))
 write_rds(popgrp_data_female, file = paste0("/PHI_conf/ScotPHO/Profiles/Data/Data to be checked/life_expectancy_female_shiny_popgrp.rds"))
