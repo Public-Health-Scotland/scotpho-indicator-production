@@ -99,10 +99,12 @@ basefile_long <- data.table::melt(
 # (faster method than dplyr group_by() with summarise())
 # https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html
 basefile_agg <- basefile_long[, .(
-  admissions = .N, # data.table equivalent to n()
-  age_grp = data.table::first(age_grp), 
+  # anything inside this first .( ) is same as dplyr summarise()
+  admissions = .N, # .N is the data.table equivalent of of dplyr::n()
+  age_grp = data.table::first(age_grp), # using data.table first() instead of dplyr first()
   sex_grp = data.table::first(sex_grp)
 ), 
+# i.e. group_by()
 by = .(link_no, year, code)
 ]
 
@@ -123,15 +125,33 @@ saveRDS(data_ma, file.path(profiles_data_folder, 'Prepared Data/ma_raw.rds'))
 ## Part 3 - Run analysis functions ----
 ###############################################.
 
-# Note geography arg is set to 'multiple' as each geo level already created in Part 2
+# Note geography arg is set to 'multiple' as each geo level already created in Part 2.
 
-# emergency admissions 
+
+# Emergency admissions 
+
+# Note on QA:
+# When checking QA report it will flag that the sum of locality numerators don't match
+# their parent HSCP/CA numerator (i.e. sum of localities is HIGHER). This is to be expected.
+# E.g. A patient may have multiple emergency admissions within same year, but the locality 
+# they reside in has changed (within the same council/hscp).
+# This means they'll be counted once at the HSCP/CA level, and once for EACH locality they've resided in.
+
+
 main_analysis(filename = "ea", ind_id = 20305, geography = "multiple", measure = "stdrate", 
               year_type = "calendar", yearstart = 2002, yearend = 2024, time_agg = 3,
               pop = "DZ11_pop_allages", epop_age = "normal", epop_total = 200000)
 
 
-# multiple emergency admissions 65+
+# Multiple emergency admissions >65
+
+# Note on QA:
+# When checking QA report you will see similar situation to above, where locality numerators
+# don't match parent HSCP/CA numerator but in this instance the sum of localities is likely to be LOWER.
+# E.g. patient has 2 emergency admissions within same year, but has lived in 2 diff localities (in same council/HSCP)
+# They'd therefore be classed as a patient with multiple emergency admissions at the HSCP/CA level
+# but wouldn't be counted as having multiple emergency admissions at locality level
+
 main_analysis(filename = "ma", ind_id = 20306, geography = "multiple", measure = "stdrate", 
               year_type = "calendar", yearstart = 2002, yearend = 2024, time_agg = 3,
               pop = "DZ11_pop_65+", epop_age = "normal", epop_total = 39000)
