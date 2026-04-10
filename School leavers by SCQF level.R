@@ -8,7 +8,7 @@
 
 
 ## data sourced from ----
-# https://www.gov.scot/publications/summary-statistics-for-attainment-and-initial-leaver-destinations-no-7-2025-edition/documents/
+# https://www.gov.scot/publications/summary-statistics-for-attainment-and-initial-leaver-destinations-no-8-2026-edition/documents/
 
 
 ## files created ----
@@ -29,7 +29,7 @@ library(openxlsx)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 folder <- file.path(profiles_data_folder, "Received Data", "School leaver positive destinations")
-file <- "SSAILD+2025+supplementary+tables+L1.6+correction.xlsx"
+file <- "SSAILD+2026+supplementary+tables.xlsx"
 
 data <- read.xlsx(
   file.path(folder, file), 
@@ -178,11 +178,11 @@ saveRDS(scqf_6_main, file.path(profiles_data_folder, "Prepared Data", "20601_scq
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 main_analysis(filename = "13006_scqf_4_plus", measure = "percent", 
-              yearstart = "2012", yearend = "2023", time_agg = 1, 
+              yearstart = "2012", yearend = "2024", time_agg = 1, 
               geography = "multiple", ind_id = 13006, year_type = "school")
 
 main_analysis(filename = "20601_scqf_6_plus", measure = "percent", 
-              yearstart = "2012", yearend = "2023", time_agg = 1, 
+              yearstart = "2012", yearend = "2024", time_agg = 1, 
               geography = "multiple", ind_id = 20601, year_type = "school")
 
 
