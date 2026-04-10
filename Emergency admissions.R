@@ -1,5 +1,6 @@
 # ScotPHO indicators: emergency admissions and multiple emergency admissions(+65). 
 # Part 1 takes about ~20 minutes to run
+# Ensure your session has enough memory as some files are large (estimate ~15MB)
 
 #   Part 1 - Extract data from SMRA
 #   Part 2 - Create the different geographies basefiles
