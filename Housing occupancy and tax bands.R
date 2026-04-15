@@ -9,11 +9,12 @@
 # https://www.nrscotland.gov.uk/publications/small-area-statistics-on-households-and-dwellings/
 
 # Indicator tibbles generated in this script are 
-# * st_total_households # total household stats
-# * st_occupied_dwellings # occupied dwelling stats relative to total household data
-# * st_tax_exempt # council tax exempt properties relative to total household data
-# * st_tax_band_ac # council tax band a-c properties relative to total household data
-# * st_tax_band_fh # council tax band f-h properties relative to total household data
+# * total_households # total household stats
+# * occupied_dwellings # occupied dwelling stats relative to total household data
+# * tax_exempt # occupied council tax exempt properties relative to total household data
+# * tax_band_ac # council tax band a-c properties relative to total household data
+# * tax_band_fh # council tax band f-h properties relative to total household data
+
 
 ##### 2. Packages/Dependancies -----------------------------------------------
 # load 
@@ -29,49 +30,20 @@ library(tidylog)
 #library(stringr)
 #library(purrr)
 
-
-source("functions/helper functions/calculate_percent.R")
-
-#### 3.  Functions ------------------------------------------------------------
-
-# aggregates datazones to the various region levels without deleting datazones
-aggregate_regions <- function(df){
-  df |>
-    left_join(long_lookup) |>
-    mutate(scotland = "S92000003") |>
-    pivot_longer(c(datazone2011, intzone2011, hscp_locality, ca2019, hscp2019, hb2019, scotland),
-                 names_to = "area_type", values_to = "area_code") |>
-    select(-area_type) |>
-    group_by(year, area_code) |>
-    summarise_all(sum) |>
-    ungroup()
-}
-
-#### 4. Data Cleaning  -------------------------------------------------------
-
-# Set file paths for folders (***need to change path***)
-fp_cpp <- "//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/"
-
-# All areas lookup (***need to change path***)
-lookup <- read_rds("//conf/LIST_analytics/West Hub/02 - Scaled Up Work/CPP Community Profiles/Data Extracts/dz_pop_scotpho_scripts/DataZone11_All_Geographies_Lookup.rds")
-
-
-# Long lookup with all codes of interest
-long_lookup <- lookup |> 
-  select(datazone2011,intzone2011, ca2019,hscp2019,hb2019,hscp_locality) 
-
-
 # Turn off scientific notation
 options(scipen = 999)
 
 # System unmask function so files have read-write permissions
 Sys.umask("006")
 
+#### 3.  Functions ------------------------------------------------------------
 
-## 5.  Dwelling estimates and occupants----------------------------------------
+source("functions/main_analysis.R")
 
-# Path to your Excel file (***need to change path***)
-household_path <- paste0(fp_cpp, "dz_pop_scotpho_scripts/household_estimates.xlsx")
+## 4.  Dwelling estimates and occupants----------------------------------------
+
+# Path to your Excel file
+household_path <- paste0(profiles_data_folder, "/Received Data/household_estimates.xlsx")
 
 ## identify sheet names that only contain numerics (years)
 sheets <- excel_sheets(household_path) |>  str_subset(pattern = "^\\d+$")
@@ -79,7 +51,7 @@ sheets <- excel_sheets(household_path) |>  str_subset(pattern = "^\\d+$")
 # header row (*** May need adjusting for every new version of file ***) 
 household_header_row <- 3
 
-# read in data for years available and output tibble with aggregated regional values
+# read in data for years available and rename columns
 household_estimates <-
   map(sheets, \(x) read_excel(household_path,
                               sheet =x,
@@ -88,82 +60,50 @@ household_estimates <-
   bind_rows() |> 
   clean_names() |> 
   select(c(year, 
-           datazone2011 = data_zone_code, 
-           ca2019 = council_area_code, 
+           "code" = data_zone_code,
            "total_dwellings" = total_number_of_dwellings,
            occupied_dwellings, 
            occupied_dwellings_exempt_from_paying_council_tax)) |> 
-  na.omit() |>    # removes year datazone record with incomplete tax band entries
-  aggregate_regions()
+  na.omit()    # removes year datazone record with incomplete tax band entries
 
+# save prepared raw data file per indicator
+# total dwellings 
+household_estimates |>
+  select(year, code, "numerator" = total_dwellings) |> 
+  saveRDS(file=paste0(profiles_data_folder, '/Prepared Data/total_dwellings_raw.rds'))
+# occupied dwellings
+household_estimates |>
+  select(year, code, "numerator" = occupied_dwellings, "denominator" = total_dwellings) |>
+  saveRDS(file=paste0(profiles_data_folder, '/Prepared Data/occupied_dwellings_raw.rds'))
+# occupied exempt dwellings
+household_estimates |>
+  select(year, code, "numerator" = occupied_dwellings_exempt_from_paying_council_tax, 
+         "denominator" = total_dwellings) |>
+  saveRDS(file=paste0(profiles_data_folder, '/Prepared Data/occupied_exempt_dwellings_raw.rds'))
 
-## add other columns
-household_est_final <- 
-  household_estimates |>  
-  mutate(ind_id = 30001, #adding indicator code and chart labels
-         trend_axis = year,
-         def_period = paste0(year , " mid-year estimate"),
-         lowci = as.numeric(NA), 
-         upci = as.numeric(NA), 
-         rate = as.numeric(NA)
-         )# blank variables are needed
+#call main analysis function - total dwellings
+main_analysis(filename = "total_dwellings",  measure = "crude",
+              geography = "datazone11",  year_type = "calendar",  ind_id = 40001, 
+              time_agg = 1,  yearstart = 2014,   yearend = 2024, pop = 'DZ11_pop_allages',
+              crude_rate = 1000, # rate is crude rate per 1000
+              test_file = TRUE, QA = TRUE)
 
-## Household Dwelling estimates and occupants
+#call main analysis function - occupied dwellings
+main_analysis(filename = "occupied_dwellings",  measure = "percent",
+              geography = "datazone11",  year_type = "calendar",  ind_id = 40002, 
+              time_agg = 1,  yearstart = 2014,   yearend = 2024,
+              test_file = TRUE, QA = TRUE)
 
-# Total number of households
-st_total_households <- household_est_final  |> 
-  select(trend_axis, 
-         "numerator"= total_dwellings, 
-         rate, 
-         lowci,
-         upci, 
-         ind_id, 
-         "code" = area_code, 
-         year,
-         def_period) |> 
-  mutate(denominator = as.numeric(NA), .after = numerator) 
+#call main analysis function - occupied exempt dwellings
+main_analysis(filename = "occupied_exempt_dwellings",  measure = "percent",
+              geography = "datazone11",  year_type = "calendar",  ind_id = 40003, 
+              time_agg = 1,  yearstart = 2014,   yearend = 2024,
+              test_file = TRUE, QA = TRUE)
 
-# Occupied households
-st_occupied_dwellings <- household_est_final |> 
-  mutate(rate = occupied_dwellings/total_dwellings*100) |> 
-  select(trend_axis, 
-         "numerator"= occupied_dwellings, 
-         "denominator" = total_dwellings,
-         rate, 
-         ind_id, 
-         "code" = area_code, 
-         year,
-         def_period) 
+## 5.  Household council tax bands---------------------------------------------
 
-
-# Occupied households exempt from council tax
-st_tax_exempt <- household_est_final |> 
-  mutate(rate = occupied_dwellings_exempt_from_paying_council_tax/total_dwellings*100) |> 
-  select(trend_axis, 
-         "numerator"= occupied_dwellings_exempt_from_paying_council_tax, 
-         "denominator" = total_dwellings,
-         rate, 
-         ind_id, 
-         "code" = area_code, 
-         year,
-         def_period) 
-
-###########################  save data to suggested .rds and .csv files ##################
-#Including both rds and csv file for now
-# (**data_folder needs to be defined**)
-saveRDS(st_total_households, file = paste0(data_folder, "Data to be checked/st_total_households_shiny.rds"))
-write_csv(st_total_households, file = paste0(data_folder, "Data to be checked/st_total_households_shiny.csv"))
-
-saveRDS(st_occupied_dwellings, file = paste0(data_folder, "Data to be checked/st_occupied_dwellings_shiny.rds"))
-write_csv(st_occupied_dwellings, file = paste0(data_folder, "Data to be checked/st_occupied_dwellings_shiny.csv"))
-
-saveRDS(st_tax_exempt, file = paste0(data_folder, "Data to be checked/st_tax_exempt_shiny.rds"))
-write_csv(st_tax_exempt, file = paste0(data_folder, "Data to be checked/st_tax_exempt_shiny.csv"))
-
-## 6.  Household council tax bands---------------------------------------------
-
-# Path to your Excel file (***need to change path***)
-ctb_path <- paste0(fp_cpp, "dz_pop_scotpho_scripts/dwelling_est.xlsx")
+# Path to your Excel file
+ctb_path <- paste0(profiles_data_folder, "/Received Data/dwelling_est.xlsx")
 
 ## identify sheet names that only contain numerics (years) 
 sheet_names_council_tax <- excel_sheets(ctb_path) |>
@@ -181,57 +121,35 @@ council_tax_bands <-
   bind_rows() |> 
   clean_names() |> 
   select(year,  
-         datazone2011 = data_zone_code, 
-         ca2019 = council_area_code, 
+         code = data_zone_code, 
          "total_dwellings" = total_number_of_dwellings,
          council_tax_band_a:council_tax_band_h) |> 
-  na.omit() |>    # removes year datazone record with incomplete tax band entries
-  aggregate_regions()
-
-## add other columns
-tax_bands_final <- council_tax_bands |>  
-  mutate(ind_id = 30001, #adding indicator code and chart labels
-         trend_axis = year,
-         def_period = paste0(year , " mid-year estimate"),
-         lowci = NA, upci = NA, 
-         rate = NA)   # blank variables are needed
-
+  na.omit()    # removes year datazone record with incomplete tax band entries
 
 ## Aggregated council tax bands
+# save prepared raw data file per indicator
 
 # Households in council tax bands A-C
-st_tax_band_ac <- tax_bands_final |> 
-  mutate(band_ac = council_tax_band_a + council_tax_band_b + council_tax_band_c,
-         rate = band_ac/total_dwellings*100) |> 
-  select(trend_axis, 
-         "numerator"= band_ac, 
-         "denominator" = total_dwellings,
-         rate, 
-         ind_id, 
-         "code" = area_code, 
-         year,
-         def_period)  
-
-
+council_tax_bands |> 
+  mutate(band_ac = council_tax_band_a + council_tax_band_b + council_tax_band_c) |> 
+  select(year, code, "numerator"= band_ac, "denominator" = total_dwellings) |> 
+  saveRDS(file=paste0(profiles_data_folder, '/Prepared Data/tax_band_ac_raw.rds')) 
 
 # Households in council tax bands F-H
-st_tax_band_fh <- tax_bands_final |> 
-  mutate(band_fh = council_tax_band_f + council_tax_band_g + council_tax_band_h,
-         rate = band_fh/total_dwellings*100) |> 
-  select(trend_axis, 
-         "numerator"= band_fh, 
-         "denominator" = total_dwellings, 
-         rate, 
-         ind_id, 
-         "code" = area_code, 
-         year,
-         def_period)  
+council_tax_bands |> 
+  mutate(band_fh = council_tax_band_f + council_tax_band_g + council_tax_band_h) |> 
+  select(year, code, "numerator"= band_fh, "denominator" = total_dwellings) |> 
+  saveRDS(file=paste0(profiles_data_folder, '/Prepared Data/tax_band_fh_raw.rds'))  
 
-###########################  save data to suggested .rds and .csv files ##################
-#Including both rds and csv file for now
-# (**data_folder needs to be defined**)
-saveRDS(st_tax_band_ac, file = paste0(data_folder, "Data to be checked/st_tax_band_ac_shiny.rds"))
-write_csv(st_tax_band_ac, file = paste0(data_folder, "Data to be checked/st_tax_band_ac_shiny.csv"))
+#call main analysis function - tax band A-C
+main_analysis(filename = "tax_band_ac",  measure = "percent",
+              geography = "datazone11",  year_type = "calendar",  ind_id = 40004, 
+              time_agg = 1,  yearstart = 2014,   yearend = 2024,
+              test_file = TRUE, QA = TRUE)
 
-saveRDS(st_tax_band_fh, file = paste0(data_folder, "Data to be checked/st_tax_band_fh_shiny.rds"))
-write_csv(st_tax_band_fh, file = paste0(data_folder, "Data to be checked/st_tax_band_fh_shiny.csv"))
+#call main analysis function - occupied dwellings
+main_analysis(filename = "tax_band_fh",  measure = "percent",
+              geography = "datazone11",  year_type = "calendar",  ind_id = 40005, 
+              time_agg = 1,  yearstart = 2014,   yearend = 2024,
+              test_file = TRUE, QA = TRUE)
+
