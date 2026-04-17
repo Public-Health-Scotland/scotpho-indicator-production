@@ -3,7 +3,7 @@
 #   Alcohol-related hospital stays (ages 11 to 25 years) (13024)
 
 # Not to be confused with mental health indicator Hospital stays for mental or behavioural disorders due to alcohol (30006)
-# in R script Alc-related hosp stays - mental and behav.R
+# in R script Alc-related hosp stays - mental and behav.R (the mental health indicator sources data from SMR04 psychiatric hospital admissions)
 
 #   Part 1 - Extract data from SMRA and tidy up
 #   Part 2 - Create the different geographies basefiles
