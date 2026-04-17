@@ -231,6 +231,8 @@ popgroups_data <- rbind(males, females, all) |>
 saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_shiny_popgrp.rds"))
 write.csv(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_shiny_popgrp.csv"), row.names = FALSE)
 
+run_qa(filename="alcohol_stays", type="popgrp")
+
 # delete individual male/female files from the data to be checked folder
 file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.rds"))
 file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_stays_females_shiny.csv"))
