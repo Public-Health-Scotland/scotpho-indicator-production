@@ -166,7 +166,8 @@ popgroups_data <- rbind(males, females, all) |>
 saveRDS(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.rds"))
 write.csv(popgroups_data, file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_shiny_popgrp.csv"), row.names = FALSE)
 
-#finally apply disclosure
-apply_stats_disc("alcohol_deaths_shiny_popgrp")
+# delete single sex alcohol deaths indicators as these are no longer distinct indicators and we don't want files moved to shiny data folder
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_females_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "alcohol_deaths_males_shiny.rds"))
 
 #END
