@@ -6,7 +6,6 @@
 # 21005 - Child dental health P1
 # 21006 - Child dental health P7
 
-
 # A data request is sent to the dental team following the release of National Dental Inspection Programme (NDIP) publication
 # publication link: https://publichealthscotland.scot/publications/national-dental-inspection-programme/ 
 # (usually published in October)
@@ -50,8 +49,8 @@ data_path <- file.path(profiles_data_folder, "Received Data/Child dental health"
 ### read in latest recieved data ----
 # tweak filename to name of latest extract
 # note: the number of rows to skip may need tweaked each year - these are rows containing info about the IR
-p1_new <- read_excel(file.path(data_path, "NDIP_P1.xlsx"), skip = 4)
-p7_new <- read_excel(file.path(data_path, "NDIP_P7.xlsx"), skip = 4)
+p1_new <- read_excel(file.path(data_path, "NDIP_P1_2024_25.xlsx"), skip = 4)
+p7_new <- read_excel(file.path(data_path, "NDIP_P7_2024_25.xlsx"), skip = 4)
 
 
 ### clean data ----
@@ -117,35 +116,21 @@ saveRDS(p7_trend, file.path(profiles_data_folder, "Prepared Data", "child_dental
 
 # Child dental health P1
 main_analysis(filename = "child_dental_p1", geography = "datazone11", measure = "perc_pcf",
-              yearstart = 2012, yearend = 2023, time_agg = 1, ind_id = 21005, 
-              year_type = "school",  pop="DZ11_pop_5")
+              yearstart = 2012, yearend = 2024, time_agg = 1, ind_id = 21005, 
+              year_type = "school",  pop = "DZ11_pop_5")
 
-analyze_first(filename = "child_dental_p1", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2023, time_agg = 1) 
-
-
-analyze_second(filename = "child_dental_p1", measure = "perc_pcf", time_agg = 1, 
-               ind_id = 21005, year_type = "school", pop="DZ11_pop_5")
-
-
-deprivation_analysis(filename="child_dental_p1", measure="perc_pcf",  
-                    yearstart= 2014, yearend = 2024, time_agg=1,
-                    year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
-
+deprivation_analysis(filename = "child_dental_p1", measure = "perc_pcf", 
+                     yearstart = 2014, yearend = 2024, time_agg = 1,
+                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21005)
 
 
 # Child dental health P7
-analyze_first(filename = "child_dental_p7", geography = "datazone11", measure = "percent", 
-              yearstart = 2012, yearend = 2023, time_agg = 1)
+main_analysis(filename = "child_dental_p7", geography = "datazone11", measure = "perc_pcf",
+              yearstart = 2012, yearend = 2024, time_agg = 1, ind_id = 21006, 
+              year_type = "school",  pop = "DZ11_pop_5")
 
-
-analyze_second(filename = "child_dental_p7", measure = "perc_pcf", time_agg = 1, 
-               ind_id = 21006, year_type = "school", pop="DZ11_pop_11")
-
-analyze_deprivation(filename="child_dental_p7", measure="perc_pcf",  
-                    yearstart= 2014, yearend = 2023, time_agg=1,
-                    year_type = "school", pop_pcf = "depr_pop_11", ind_id = 21006)
-
-
+deprivation_analysis(filename = "child_dental_p7", measure = "perc_pcf", 
+                     yearstart = 2014, yearend = 2024, time_agg = 1,
+                     year_type = "school", pop_pcf = "depr_pop_5", ind_id = 21006)
 
 ## END  
