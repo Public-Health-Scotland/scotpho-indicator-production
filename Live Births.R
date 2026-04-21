@@ -8,6 +8,7 @@
 ###############################################.
 
 source("functions/main_analysis.R") # source functions & libraries to run script
+library(readxl) # required to read in raw data supplied in excel
 
 # Old functions can be deleted once new functions have been embedded 
 # source("1.indicator_analysis.R") #Normal indicator functions
@@ -18,13 +19,13 @@ source("functions/main_analysis.R") # source functions & libraries to run script
 ###############################################.
 
 # live births data sourced via bespoke request to NRS
-live_births <- read_excel(paste0(scotpho_folder,"/Received Data/Live births/Births 2002-2023 datazone_2011.xlsx")) %>%
+live_births <- read_excel(paste0(profiles_data_folder,"/Received Data/Live births/Births 2002-2024 datazone_2011.xlsx")) %>%
   setNames(tolower(names(.))) %>%
   rename(year = "registration year", datazone = datazone_2011) %>%
   group_by(year, datazone) %>%
   summarise(numerator = sum(count, na.rm = TRUE), .groups = "drop")
 
-saveRDS(live_births, file=paste0(scotpho_folder, '/Prepared Data/live_births_raw.rds'))
+saveRDS(live_births, file=paste0(profiles_data_folder, '/Prepared Data/live_births_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
@@ -34,15 +35,13 @@ saveRDS(live_births, file=paste0(scotpho_folder, '/Prepared Data/live_births_raw
 #call main analysis function 
 main_analysis(filename = "live_births",  measure = "crude",
   geography = "datazone11",  year_type = "calendar",  ind_id = 20008, 
-  time_agg = 1,  yearstart = 2002,   yearend = 2023, pop = 'DZ11_pop_allages', 
+  time_agg = 1,  yearstart = 2002,   yearend = 2024, pop = 'DZ11_pop_allages', 
   crude_rate = 1000, # rate is crude rate per 1000
   test_file = FALSE, QA = TRUE)
 
 
-#calls to old functions - lines can be deleted once we are sure new analysis functions are working ok.
-#analyze_first(filename = "live_births", geography = "datazone11", measure = "crude",
-#              yearstart = 2002, yearend = 2023, time_agg = 1, pop ='DZ11_pop_allages')
-# 
-#analyze_second(filename = "live_births", measure = "crude", time_agg = 1, crude_rate=1000,
-#                ind_id = 20008, year_type = "calendar")
-# 
+
+# no deprivation analysis but this could theoretically be added.
+# consider if this is worth adding once 2024 SAPE populations are available.
+
+#END

@@ -38,10 +38,12 @@ sheets_list <- list(
 )
 
 sheets_list <- lapply(sheets_list, function(df) {
-  names(df)[c(2, 3, 6, 13)] <- c("crime_offence_group", "crime_offence_type", "2017-18", "2024-25") #renaming crime/offence cols so they can be combined vertically
-  df <- df |> 
-  mutate(across(4:13, as.character)) |>   #mutating all years to character as they're a mixture of strings and numeric
-  slice(1:(n() - 2))  # remove last two rows from each df which contain metadata
+  df <- df |>
+    rename(crime_offence_group = 2, #renaming crime/offence cols so they can be combined vertically
+           crime_offence_type = 3) |>
+    rename_with(~ substr(., 1, 7), .cols = 4:13) |> #May need to adjust col range if more or less years presented by SG. Keeps only first 7 chars so notes are removed. 
+    mutate(across(4:13, as.character)) |>#Mutating all years to character as they're a mix of strings and numeric
+    slice(1:(n() - 2)) #remove last two rows which contain metadata
   
   df
 })
@@ -53,12 +55,14 @@ crime_offence <- bind_rows(sheets_list) |>
   tidyr::pivot_longer(cols = c(4:13), names_to = "year", values_to = "numerator") |>  #pivot longer to only end up with one year type
   mutate(year = str_sub(year, start = 2)) |>   #cut off the x from the beginning of all the years
   fix_fin_year(fy_col_name = "year", first_year_digits = "4") |>  #converts string financial year to numeric first year
-  filter(!numerator %in% c("n/l", "x")) |>  #removing rows for years where the offence was not in place yet
+  filter(!numerator %in% c("n/l", "x")) |> #removing rows for years where the offence was not in place yet 
+  mutate(numerator = case_when(year = 2024 & numerator == "x" ~ NA_character_,
+                               TRUE ~ numerator)) |> 
   mutate(numerator = as.numeric(numerator)) |> #convert string numerators to numeric
   filter(year >= 2010) |> #filtering out incomplete early data
-  filter(year != 2024) |>  #filter out incomplete 24/25 data
-  ca_names_to_codes(local_authority) #convert ca names to codes
-
+  ca_names_to_codes(local_authority) #convert ca names to codes 
+  
+  
 ###############################################.
 ## Part 2 - Create Automated Crime Breakdown Function  ----
 ###############################################.
@@ -121,7 +125,7 @@ saveRDS(recorded_crime, file.path(profiles_data_folder, '/Prepared Data/recorded
 #Run analysis function
 main_analysis(filename = "recorded_crime", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 21108, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -136,7 +140,7 @@ saveRDS(attempted_murder, file.path(profiles_data_folder, '/Prepared Data/attemp
 #Run analysis function
 main_analysis(filename = "attempted_murder", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 4111, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -151,7 +155,7 @@ saveRDS(tab, file.path(profiles_data_folder, '/Prepared Data/threatening_and_abu
 #Run analysis function
 main_analysis(filename = "threatening_and_abusive_behaviour", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 4156, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -167,7 +171,7 @@ saveRDS(common_assault, file.path(profiles_data_folder, '/Prepared Data/common_a
 #Run analysis functions
 main_analysis(filename = "common_assault", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 4154, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -182,7 +186,7 @@ saveRDS(drugs, file.path(profiles_data_folder, '/Prepared Data/drug_crimes_raw.r
 #Run analysis functions
 main_analysis(filename = "drug_crimes", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 20806, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -197,7 +201,7 @@ saveRDS(vandalism, file.path(profiles_data_folder, '/Prepared Data/vandalism_raw
 #Run analysis functions
 main_analysis(filename = "vandalism", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 4155, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -213,7 +217,7 @@ saveRDS(violent_crime, file.path(profiles_data_folder, '/Prepared Data/violent_c
 #Run analysis functions
 main_analysis(filename = "violent_crime", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 20805, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ###############################################.
@@ -228,7 +232,7 @@ saveRDS(ddo, file.path(profiles_data_folder, '/Prepared Data/drink_drug_driving_
 #Run analysis functions
 main_analysis(filename = "drink_drug_driving", geography = "council", measure = "crude",
               year_type = "financial", ind_id = 4158, time_agg = 1, yearstart = 2015, 
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ############################################.

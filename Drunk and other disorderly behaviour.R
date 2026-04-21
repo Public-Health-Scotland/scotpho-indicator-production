@@ -14,6 +14,7 @@
 
 ### load dependencies ----
 source("./functions/main_analysis.R")
+source("./functions/data cleaning functions/fix_fin_year.R")
 library(opendatascot)
 
 ### 1. Read and prepare data -----
@@ -24,15 +25,15 @@ data <- opendatascot::ods_dataset("recorded-crime",
 
 # prepare data to be used in functions 
 data <- data |> 
-  mutate(year = as.numeric(str_sub(refPeriod, start= 1, end = 4))) |>  # extract year from financial year
+  fix_fin_year("refPeriod", first_year_digits = "4") |>  # extract year from financial year
   rename(numerator = value, ca = refArea) |>  # rename cols
-  select(year, ca, numerator)
+  select(year, ca, numerator) 
 
 # find max year in dataset to add to analyze_first() argument
 max_year = max(data$year)
 
 # save files to be used in analysis functions
-saveRDS(drunkeness_and_dis, file=paste0(profiles_data_folder, '/Prepared Data/drunkeness_and_dis_behaviour_raw.rds'))
+saveRDS(data, file.path(profiles_data_folder, '/Prepared Data/drunkeness_and_dis_behaviour_raw.rds'))
 
 ### 2. run analysis functions ----
 

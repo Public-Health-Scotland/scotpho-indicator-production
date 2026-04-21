@@ -4,18 +4,17 @@
 # Data source is DEFRA Population-weighted annual mean PM2.5 data:
 # https://uk-air.defra.gov.uk/data/pcm-data#population_weighted_annual_mean_pm25_data
 
+# Each year, download the latest 2 csv files from the link above (UK local authority and UK country files)
+# and save in this folder: /PHI_conf/ScotPHO/Profiles/Data/Recieved Data/Air quality
 
 ### functions/packages -----
-
-source("1.indicator_analysis.R") 
-library(purrr)
+source("functions/main_analysis.R") 
 
 
 ### 1. Read in data ----
 
 # Identify data files
-data_files <- paste0(data_folder, "Received Data/Air quality/", 
-                     list.files(path = paste0(data_folder,"Received Data/Air quality"), pattern = ".csv"))
+data_files <- list.files(path = file.path(profiles_data_folder,"Received Data/Air quality"), pattern = ".csv", full.names = TRUE)
 
 # Define column names
 column_names <- c("areacode", "total", "non_anthropogenic", "anthropogenic", "areaname")
@@ -23,11 +22,12 @@ column_names <- c("areacode", "total", "non_anthropogenic", "anthropogenic", "ar
 # Read in data
 data_list <- lapply(data_files, function(x) read_csv(data_files, col_names = column_names, skip = 3, id = "file_name")) 
 
+
 # Save as single data frame
 dat <- reduce(data_list, full_join)
 
 # Read in geography lookup
-dictionary <- readRDS(paste0(lookups, "Geography/opt_geo_lookup.rds")) %>%
+dictionary <- readRDS(file.path(profiles_data_folder, "Lookups/Geography/opt_geo_lookup.rds")) %>%
   filter(areatype %in% c("Scotland", "Council area")) %>% 
   select(c(code, areaname))
 
@@ -67,9 +67,10 @@ data <- dat %>%
 ### 3. Prepare final files -----
 
 # Save files in folder to be checked
-write.csv(data, paste0(data_folder, "Data to be checked/air_quality_shiny.csv"), row.names = FALSE)
-write_rds(data, paste0(data_folder, "Data to be checked/air_quality_shiny.rds"))
+write.csv(data, file.path(profiles_data_folder, "Data to be checked/air_quality_shiny.csv"), row.names = FALSE)
+write_rds(data, file.path(profiles_data_folder, "Data to be checked/air_quality_shiny.rds"))
 
-
+# QA data file
+run_qa(filename = "air_quality", type = "main")
 
 #END

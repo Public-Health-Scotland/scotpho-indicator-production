@@ -7,12 +7,16 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 # Varies filepaths depending on if using server or not.
-if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
+#if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
   cl_out_depr <- "/conf/linkage/output/lookups/Unicode/Deprivation/"
-} else {
-  cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
-}
 
+  
+#} else {
+  cl_out_depr <- "//stats/linkage/output/lookups/Unicode/Deprivation/"
+#}
+
+ # /PHI_conf/
+  
 source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
@@ -52,17 +56,17 @@ mapply(read_simd, data = "DataZone2011_simd2020v2", simd = "simd2020v2_inc_dep_n
 data_inc_dep <- do.call("rbind", data_inc_dep) # converting from list into dataframe
 
 #File for deprivation analysis
-saveRDS(data_inc_dep, file = paste0(data_folder, "Prepared Data/income_deprived_depr_raw.rds"))
+saveRDS(data_inc_dep, file = paste0(profiles_data_folder, "/Prepared Data/income_deprived_depr_raw.rds"))
 
 #File for DZ11 for 2014 onwards
 data_inc_depdz11 <- data_inc_dep %>% filter(year>2013)
 
-saveRDS(data_inc_depdz11, file = paste0(data_folder, "Prepared Data/income_deprived_dz11_raw.rds"))
+saveRDS(data_inc_depdz11, file = paste0(profiles_data_folder, "/Prepared Data/income_deprived_dz11_raw.rds"))
 
 #Preparing file for CA for period 2004 to 2013
 data_inc_depdz01 <- data_inc_dep %>% filter(year<2014)
 #Lookup file for CA
-ca_lookup <- read_xlsx(paste0(data_folder, "Lookups/Geography/DataZone2001.xlsx")) %>% 
+ca_lookup <- read_xlsx(paste0(profiles_data_folder, "/Lookups/Geography/DataZone2001.xlsx")) %>% 
   setNames(tolower(names(.))) %>% select(ca, datazone)
 
 #Merging with lookup and aggregating by ca
@@ -73,7 +77,7 @@ data_inc_depdz01 <- left_join(data_inc_depdz01, ca_lookup) %>%
   mutate(ca = recode(ca, "S12000015"='S12000047', "S12000024"='S12000048', 
                      "S12000046"='S12000049', "S12000044"='S12000050'))
 
-saveRDS(data_inc_depdz01, file = paste0(data_folder, "Prepared Data/income_deprived_ca_raw.rds"))
+saveRDS(data_inc_depdz01, file = paste0(profiles_data_folder, "/Prepared Data/income_deprived_ca_raw.rds"))
 
 ###############################################.
 ## Part 2 - Calling the analysis functions ----
@@ -81,13 +85,14 @@ saveRDS(data_inc_depdz01, file = paste0(data_folder, "Prepared Data/income_depri
 #Normal indicator analysis, first for CA and then DZ11
 analyze_first(filename = "income_deprived_ca", geography = "council", measure = "percent", hscp = T,
               yearstart = 2004, yearend = 2013, time_agg = 1, pop = "CA_pop_allages")
+
 analyze_first(filename = "income_deprived_dz11", geography = "datazone11", measure = "percent", 
               yearstart = 2014, yearend = 2019, time_agg = 1, pop = "DZ11_pop_allages")
 
 #Merging CA and DZ11 together
-all_data <- rbind(readRDS(paste0(data_folder, "Temporary/income_deprived_dz11_formatted.rds")),
-                  readRDS(paste0(data_folder, "Temporary/income_deprived_ca_formatted.rds")))
-saveRDS(all_data, file = paste0(data_folder, "Temporary/income_deprived_all_formatted.rds"))
+all_data <- rbind(readRDS(paste0(profiles_data_folder, "/Temporary/income_deprived_dz11_formatted.rds")),
+                  readRDS(paste0(profiles_data_folder, "/Temporary/income_deprived_ca_formatted.rds")))
+saveRDS(all_data, file = paste0(profiles_data_folder, "/Temporary/income_deprived_all_formatted.rds"))
 
 #Calling second analysis function
 analyze_second(filename = "income_deprived_all", measure = "percent", 
