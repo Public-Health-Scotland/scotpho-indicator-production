@@ -14,7 +14,7 @@ library(dplyr)
 library(stringr)
 library(rlang)
 
-fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
+fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "3", "4")){
   
   #If first_year_digits are none of 2, 3 or 4 stop the function and print an error
   if (!(first_year_digits %in% c("2", "3", "4"))) {
