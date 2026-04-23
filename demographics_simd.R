@@ -1,6 +1,10 @@
 
 #a<-phslookups::get_simd_datazone(simd_version = "2020v2")
 
+
+# picks up file thats generated in step 6 of  'population deprived.R' script
+
+
 result <- imap_dfr(simd_pop_data, ~ mutate(.x, simd_version = .y))
 
 
@@ -10,7 +14,7 @@ result <- result |>
     cols = c("datazone", "intzone2011", "hscp_locality", "ca2019", "hscp2019", "hb2019", "scotland"), 
     names_to = "geo_type", 
     values_to = "code")
-
+# doesn't filter
 
 
 
@@ -157,14 +161,3 @@ saveRDS(populations_by_simd_centiles, file=paste0(profiles_data_folder, '/Test S
 
 
 
-
-df <- tibble(
-  student = c("A", "A", "B", "B"),
-  subject = c("Math", "English", "Math", "English"),
-  score   = c(90, 85, 78, 88)
-)
-
-df %>% pivot_wider(
-  names_from = subject, 
-  values_from = score
-)
