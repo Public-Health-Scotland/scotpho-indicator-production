@@ -33,7 +33,7 @@ source("functions/main_analysis.R")
 # Geography: countries (select 'some') and pick Scotland 
 #             regional authorities (select some) then pick all within the Scotland region
 
-# Date: 12 months to Dec, 2004 to 2023
+# Date: 12 months to Dec, 2004 to latest available (not export restrictions don't seem to allow more than 25000 rows so extraction needs to be split into more than one)
 
 # Data sections (its possible to tick multiple boxes) 
 # selection from the 'category' dropdown: "economically inactive by age" (then pick: all sexes 16-64, plus all the age sub-groups e.g 16-19,20-24,25-29,30-34,35-49,50-64, for males/females only pick 16-64)
@@ -43,17 +43,31 @@ source("functions/main_analysis.R")
 # right click on option to download as csv and select 'copy link' then paste into API link
 # (if re-running check that in data returned  the 'date_name' column specifies Jan-Dec year ending figures)
 # Note that the API link below extracts latest data available which is dynamic - ie it doesn't automatically know you want Jan to Dec data
-# havent figured out a way to set up the api to fix the time period and just add a new year - not sure if its possible.
+# haven't figured out a way to set up the api to fix the time period and just add a new year - not sure if its possible.
 
-API_link <-c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=841,111...115,117,120,129&measures=20599,21001,21002,21003")
+# there seems to be a row limit (possibly file size limit) meaning extraction needs to be done in 2 chunks 
+
+#historic data (this link might still need to be refreshed as the time periods extracted specified are relative to current point in time)
+API_link2004_2021 <-c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS84,latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16&variable=112...115,117,111,120,129,841&measures=20599,21001,21002,21003")
+
+#2nd link 
+API_link2022_latest <-c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=112...115,117,111,120,129,841&measures=20599,21001,21002,21003")
+
 
 # Reads the API as a csv using readr and assigns it the name raw_data
-raw_data <- read_csv(API_link) %>%
-  clean_names()  # Clean column dataase
+raw_data <- read_csv(API_link2004_2021) %>%
+  clean_names()  # Clean column database
+
+raw_data_latest <- read_csv(API_link2022_latest) %>%
+  clean_names()  # Clean column database
+
+#bind full time series
+raw_data_all <- rbind(raw_data,raw_data_latest)
+
 
 ### 2. Prepare data  -----
 
-data <- raw_data %>%
+data <- raw_data_all %>%
   
   #create numeric year column
   mutate(year = as.numeric(str_sub(date, start= 1,4)),
