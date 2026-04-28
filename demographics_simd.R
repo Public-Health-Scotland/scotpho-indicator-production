@@ -2,7 +2,7 @@
 #a<-phslookups::get_simd_datazone(simd_version = "2020v2")
 
 
-# picks up file thats generated in step 6 of  'population deprived.R' script
+# picks up file thats generated in step 5 of  'population deprived.R' script and processes similar to step 6 except we retain dz level data
 
 
 result <- imap_dfr(simd_pop_data, ~ mutate(.x, simd_version = .y))
