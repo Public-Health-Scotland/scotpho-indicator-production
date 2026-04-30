@@ -25,7 +25,7 @@ live_births <- read_excel(paste0(profiles_data_folder,"/Received Data/Live birth
   group_by(year, datazone) %>%
   summarise(numerator = sum(count, na.rm = TRUE), .groups = "drop")
 
-saveRDS(live_births, file=paste0(scotpho_folder, '/Prepared Data/live_births_raw.rds'))
+saveRDS(live_births, file=paste0(profiles_data_folder, '/Prepared Data/live_births_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
@@ -40,10 +40,8 @@ main_analysis(filename = "live_births",  measure = "crude",
   test_file = FALSE, QA = TRUE)
 
 
-#calls to old functions - lines can be deleted once we are sure new analysis functions are working ok.
-#analyze_first(filename = "live_births", geography = "datazone11", measure = "crude",
-#              yearstart = 2002, yearend = 2023, time_agg = 1, pop ='DZ11_pop_allages')
-# 
-#analyze_second(filename = "live_births", measure = "crude", time_agg = 1, crude_rate=1000,
-#                ind_id = 20008, year_type = "calendar")
-# 
+
+# no deprivation analysis but this could theoretically be added.
+# consider if this is worth adding once 2024 SAPE populations are available.
+
+#END

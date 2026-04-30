@@ -19,6 +19,8 @@
 #   30013: Fruit & vegetable consumption (guidelines) *
 #   30003: General health questionnaire (GHQ-12) *
 #   30001: Mental wellbeing (WEMWBS)*
+### CYP mental health indicators:
+#   30111: Children meeting PA recommendations (>1 hour every day) (NB. not in statistics.scot.gov data quite yet: try end 2025/early 2026? Used to come from HBSC, but changed to SHeS in 2026)
 ### Alcohol profile indicators:
 #   4170: Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
 #   4171: Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here) 
@@ -26,10 +28,11 @@
 ### Physical activity profile:
 #   88888:  "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" N.B. INDICATOR NOT PUBLISHED YET: PUT IN TECHDOC WHEN READY TO PUBLISH.
 
-### And adding data for a further 14 indicators (12 adult mental health, 2 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
+### And adding data for a further 21 indicators (12 adult mental health, 9 CYP mental health) that have been processed in the ScotPHO_survey_data repo 
 ### (raw data processing elsewhere because they use UK Data Service data)
 ### (data for SIMD x sex are also added for the 6 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
 
+# Adult:
 # 30002 = life_sat	Mean score on the question "All things considered, how satisfied are you with your life as a whole nowadays?" (variable LifeSat).  N.B. This indicator is also available from the ScotPHO Online Profiles (national and council area level, but not by SIMD). Life satisfaction is measured by asking participants to rate, on a scale of 0 to 10, how satisfied they are with their life in general. On the scale, 0 represented 'extremely dissatisfied' and 10 'extremely satisfied' (the intervening scale points were numbered but not labelled). 
 # 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
 # 30004 = depsymp	Percentage of adults who had a symptom score of two or more on the depression section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was depsymp (or dvg11 in 2008). 
@@ -42,9 +45,16 @@
 # 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 # 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
 # 30026 = rg17a_new	Percentage of adults who provide 20 or more hours of care per week to a member of their household or to someone not living with them, excluding help provided in the course of employment. Participants were asked whether they look after, or give any regular help or support to, family members, friends, neighbours or others because of a long-term physical condition, mental ill-health or disability; or problems related to old age. Caring which is done as part of any paid employment is not asked about. From 2014 onwards, this question explicitly instructed respondents to exclude caring as part of paid employment. The variables used to construc this indicator were RG15aNew (Do you provide any regular help or care for any sick, disabled, or frail people?) and RG17aNew (How many hours do you spend each week providing help or unpaid care for him/her/them?). 
+
+# CYP:
 # 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
 # 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
-
+# 99117	Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
+# 30170	Peer relationship problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the peer relationship problems scale of the Strengths and Difficulties Questionnaire (SDQ)
+# 30172	Emotional symptoms - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 4-10) on the emotional symptoms scale of the Strengths and Difficulties Questionnaire (SDQ)
+# 30173	Conduct problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the conduct problems scale of the Strengths and Difficulties Questionnaire (SDQ)
+# 30174	Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
+# 30175	Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
 
 
 # The published data are downloaded from statistics.gov.scot:
@@ -68,9 +78,9 @@ library(arrow) # for parquet files
 library(opendatascot) # for getting data from stats.gov.scot
 
 ### 0. Get new data ---- 
-# # Download each of the datasets 
-# # (N.B. only do this if reading in new data. Latest downloaded = 2023, published in Nov 2024)
-# # (persist if gives HTTP errors such as 302...)
+# # # Download each of the datasets 
+# # # (N.B. only do this if reading in new data. Latest downloaded = 2023, published in Nov 2024)
+# # # (persist if gives HTTP errors such as 302...)
 # SHeS_SCOTLAND <- opendatascot::ods_get_csv("scottish-health-survey-scotland-level-data")
 # SHeS_LA <- opendatascot::ods_get_csv("scottish-health-survey-local-area-level-data")
 # SHeS_SIMD <- opendatascot::ods_get_csv("scottish-health-survey-scotland-level-data-by-simd")
@@ -80,12 +90,12 @@ library(opendatascot) # for getting data from stats.gov.scot
 # 
 # 
 # #Write the datasets to the Received Data folder in .parquet format
-# write_parquet(SHeS_SCOTLAND, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_SCOTLAND.parquet"))
-# write_parquet(SHeS_LA, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_LA.parquet"))
-# write_parquet(SHeS_SIMD, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_SIMD.parquet"))
-# write_parquet(SHeS_AGE, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_AGE.parquet"))
-# write_parquet(SHeS_INCOME, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_INCOME.parquet"))
-# write_parquet(SHeS_CONDITIONS, paste0(data_folder, "Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet"))
+# write_parquet(SHeS_SCOTLAND, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_SCOTLAND.parquet"))
+# write_parquet(SHeS_LA, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LA.parquet"))
+# write_parquet(SHeS_SIMD, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_SIMD.parquet"))
+# write_parquet(SHeS_AGE, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_AGE.parquet"))
+# write_parquet(SHeS_INCOME, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_INCOME.parquet"))
+# write_parquet(SHeS_CONDITIONS, paste0(profiles_data_folder, "/Received Data/Scottish Health Survey/SHeS_LONGTERM_CONDITIONS.parquet"))
 
 ### 1. Read in the downloaded and saved data ----
 
@@ -99,6 +109,7 @@ SHeS_CONDITIONS <- read_parquet(paste0(profiles_data_folder, "/Received Data/Sco
 
 # Pre-processed UKDS data (UK data service)
 # The data read in below is prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
+# Last updated Jan 2026 (SHeS data up to 2022)
 shes_from_ukds <- readRDS(paste0(profiles_data_folder, "/Prepared Data/shes_raw.rds")) %>%
   mutate(code = as.character(code))
 
@@ -126,6 +137,7 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
   mutate(split_value = ifelse(split_name=="Age" & split_value!="Total",
                               paste0(split_value, " y"), # add y for years to age groups
                               split_value)) %>%
+  mutate(split_name = ifelse(split_name=="Age", "Age group", split_name)) %>%
   
   # keep the required columns
   select(code, ind = `Scottish Health Survey Indicator`, trend_axis, split_name, split_value, stat, value = Value) %>%
@@ -155,17 +167,17 @@ shes_df <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the enviro
 unique(shes_df$ind)
 # look through to check which ones we need to keep
 
-# check LLTI data: 
-# there are 2 similarly-named indicators for LLTI. 
-# they have overlapping temporal coverage, so need to look at the splits, geographies, and year-ranges involved
-llti <- shes_df %>% 
-  filter(ind %in% c("Long-term conditions: Limiting long-term conditions", 
-                    "Long-term illness: Limiting long-term illness")) %>%
-  mutate(geog = substr(code, 1, 3)) %>%
-  select(ind, split_name, geog, year_diff) %>%
-  unique() %>% 
-  pivot_wider(names_from = split_name, values_from = year_diff) 
-# Conclusion: "Long-term conditions" is the one to keep, "Long-term illness" just available for annual Scotland data, for fewer years than the LT conditions data.
+# # check LLTI data: 
+# # there are 2 similarly-named indicators for LLTI. 
+# # they have overlapping temporal coverage, so need to look at the splits, geographies, and year-ranges involved
+# llti <- shes_df %>% 
+#   filter(ind %in% c("Long-term conditions: Limiting long-term conditions", 
+#                     "Long-term illness: Limiting long-term illness")) %>%
+#   mutate(geog = substr(code, 1, 3)) %>%
+#   select(ind, split_name, geog, year_diff) %>%
+#   unique() %>% 
+#   pivot_wider(names_from = split_name, values_from = year_diff) 
+# # Conclusion: "Long-term conditions" is the one to keep, "Long-term illness" just available for annual Scotland data, for fewer years than the LT conditions data.
 
 # List all the indicators we want to keep:
 keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women",  # binge drinking: M/F/Total (ind_id 4166, 4167, 4168) (NB. original ScotPHO indicator excluded non-drinkers from denominator)                   
@@ -181,23 +193,10 @@ keep <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 un
           "General health questionnaire (GHQ-12): Score 4+", # 30003                                                                             
           "Long-term conditions: Limiting long-term conditions" # 99109 
           #   "Long-term illness: Limiting long-term illness",  # 99109                                                                           
-          #   "Involved in the local community: A fair amount", # 30021 (check: probably not possible to combine into 'a fair amount or a great deal')
-          #   "Involved in the local community: A great deal",  # 30021 (check: probably not possible to combine into 'a fair amount or a great deal')                                                                                              
           #   "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)", # 30002 (better definition than existing: mean score?)                                                             
           #   "Symptoms of anxiety: No anxiety symptoms", # 30005: would need the inverse... would this be valid?                                                                                    
           #   "Symptoms of depression: No depression symptoms", # 30004: would need the inverse... would this be valid?                                                                               
-          #   "How stressful you find your job: Extremely stressful", # 30051 (check: probably not possible to combine into 'very/extremely stressful')
-          #   "How stressful you find your job: Very stressful" # 30051 (check: probably not possible to combine into 'very/extremely stressful')         
 )                                                                    
-
-
-
-
-#[152] "Alcohol Use Disorders Identification Test (AUDIT): Harmful drinking (score 16-19)"                                            
-#[153] "Alcohol Use Disorders Identification Test (AUDIT): Hazardous drinking (score 8-15)"                                           
-#[154] "Alcohol Use Disorders Identification Test (AUDIT): Low risk drinking/abstinence (score 0-7)"                                  
-#[155] "Alcohol Use Disorders Identification Test (AUDIT): Possible alcohol dependence (score 20+)"   
-
 
 
 # keep the required indicators
@@ -266,8 +265,8 @@ shes_df <- shes_df %>%
 shes_df <- shes_from_ukds %>%
   rbind(shes_df)
 
-table(shes_df$ind_id, useNA="always") # 27 in total, no NA
-table(shes_df$indicator, useNA="always") # 27 in total, no NA
+table(shes_df$ind_id, useNA="always") # 33 in total, no NA
+table(shes_df$indicator, useNA="always") # 33 in total, no NA
 table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
 table(shes_df$trend_axis, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
 table(shes_df$def_period, useNA="always") # 2008 to 2023, single year and 4-y aggregates, no NA
@@ -292,10 +291,11 @@ availability <- shes_df %>%
   select(ind_id, indicator, geog, years, split_name) %>%
   unique() %>%
   group_by(ind_id, indicator, geog, split_name) %>%
-  summarise(count = n()) %>%
+  summarise(count = n()) %>% # whether available for single/aggregated years only (count == 1), or both (count==2)
   ungroup()
 ftable(availability$indicator, availability$geog, availability$split_name, availability$count)
-# main_data needs to select data at the level of aggregation of any lower geographies, if present.
+# shows some splits are available at two levels of temporal aggregation: single year and 4y
+# main_data needs to select data at the level of aggregation of any lower geographies, if present, so that trend charts use the same trend_axis labels
 
 # make a list of the indicators this affects:
 indicators_w_lower_geogs <- availability %>%
@@ -341,6 +341,15 @@ prepare_final_files <- function(ind){
     filter((geog=="S00" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
              (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
     select(-indicator, -sex, -geog) %>%
+    mutate(split_value = factor(split_value, 
+                                levels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
+                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
+                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
+                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"),
+                                labels = c("Total", "0-3 years","2-3 years", "4-6 years", "7-9 years", "10-12 years",  
+                                           "13-15 years", "16-24 y", "25-34 y", "35-44 y", "45-54 y", "55-64 y", "65-74 y", "75+ y",  
+                                           "1 - highest income","2","3","4", "5 - lowest income","Female","Male",            
+                                           "No long-term conditions", "Non-limiting long-term conditions","Limiting long-term conditions"))) %>%
     arrange(code, year, split_name, split_value)
   
   # Save
@@ -408,7 +417,13 @@ prepare_final_files(ind = "anxiety_symptoms")
 prepare_final_files(ind = "deliberate_selfharm")   
 prepare_final_files(ind = "attempted_suicide")
 prepare_final_files(ind = "work-life_balance")
+prepare_final_files(ind = "cyp_pa_over_1h_per_day")
 prepare_final_files(ind = "cyp_sdq_totaldiffs") #note SDQ = strengths and difficulties questionnaire, indicator name "Children's behavioural and emotional difficulties"
+prepare_final_files(ind = "cyp_sdq_peer")
+prepare_final_files(ind = "cyp_sdq_conduct")
+prepare_final_files(ind = "cyp_sdq_hyperactivity")
+prepare_final_files(ind = "cyp_sdq_emotional")
+prepare_final_files(ind = "cyp_sdq_prosocial")
 
 
 # Run QA reports 
@@ -427,9 +442,6 @@ run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)
 run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
-run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
-run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
 run_qa(type = "main", filename = "support_network", test_file = FALSE)  
 run_qa(type = "main", filename = "stress_at_work", test_file = FALSE) 
@@ -440,6 +452,16 @@ run_qa(type = "main", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)    
 run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE) 
 run_qa(type = "main", filename = "work-life_balance", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_prosocial", test_file = FALSE)
+
 
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
@@ -456,9 +478,6 @@ run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PA
 run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "support_network", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "stress_at_work", test_file = FALSE)
@@ -469,6 +488,15 @@ run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
+run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "deprivation", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
@@ -485,9 +513,6 @@ run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE)
 run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
 run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
 run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
 run_qa(type = "popgrp", filename = "support_network", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "stress_at_work", test_file = FALSE)
@@ -498,6 +523,15 @@ run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)   
 run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE)
 run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
+run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_sdq_prosocial", test_file = FALSE)
 
 
 #END

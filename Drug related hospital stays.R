@@ -47,13 +47,13 @@ drug_hosp <- as_tibble(dbGetQuery(channel, statement= paste0(
       CASE WHEN extract(month from discharge_date) > 3 THEN extract(year from discharge_date) 
         ELSE extract(year from discharge_date) -1 END as year 
   FROM ANALYSIS.SMR01_PI z
-  WHERE discharge_date between  '1 April 2002' and '31 March 2024'
+  WHERE discharge_date between  '1 April 2002' and '31 March 2025'
       AND sex <> 9 AND sex <> 0
       AND exists (
           SELECT * 
           FROM ANALYSIS.SMR01_PI  
           WHERE link_no=z.link_no and cis_marker=z.cis_marker
-            AND discharge_date between '1 April 1997' and '31 March 2024'
+            AND discharge_date between '1 April 1997' and '31 March 2025'
             AND (regexp_like(main_condition, '", drug_diag ,"')
               OR regexp_like(other_condition_1,'", drug_diag ,"')
               OR regexp_like(other_condition_2,'", drug_diag ,"')
@@ -74,7 +74,7 @@ drug_hosp  %<>%
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing CA and datazone info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>%
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_1.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -126,7 +126,7 @@ saveRDS(drugstays_11to25, file.path(profiles_data_folder, 'Prepared Data/drug_st
 ##Run macros to generate HWB and Drug Profile indicator data
 main_analysis(filename = "drug_stays_dz11", geography = "datazone11", measure = "stdrate", ind_id = 20205, 
               epop_age = "normal", epop_total = 200000, pop = "DZ11_pop_allages",
-              time_agg = 3, year_type = "financial", yearstart = 2002, yearend = 2023)
+              time_agg = 3, year_type = "financial", yearstart = 2002, yearend = 2024)
 
 apply_stats_disc("drug_stays_dz11_shiny") # statistical disclosure applied to final values
 
@@ -143,7 +143,7 @@ apply_stats_disc("drug_stays_depr_ineq")  # statistical disclosure applied to fi
 
 main_analysis(filename = "drug_stays_11to25", geography = "council", measure = "stdrate", ind_id = 13025,
               pop = "CA_pop_11to25", epop_age = '11to25', epop_total = 34200,
-              year_type = "financial", time_agg = 3, yearstart = 2002, yearend = 2023)
+              year_type = "financial", time_agg = 3, yearstart = 2002, yearend = 2024)
 
 apply_stats_disc("drug_stays_11to25_shiny") # statistical disclosure applied to final values
 

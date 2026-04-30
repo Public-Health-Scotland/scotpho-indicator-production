@@ -6,6 +6,8 @@
 # THE NEW METHODOLOGY PRODUCED HLE ESTIMATES FROM 2013-2015 ONWARDS FOR SCOTLAND, NHS BOARD AND LA 
 # FIRST RELEASE UNDER NEW METHODOLOGY DOES NOT INCLUDE BREAKDOWN BY SIMD QUINTILE
 
+#PERHAPS AT SOME POINT THE DATA IN SG OPEN DATA PLATFORM WILL INCLUDE HLE BY THE NEW METHODOLOGY BUT CURRENTLY
+# DATA IN OPD IS OLD METHODOLOGY SO SHOULD NOT BE USED IN PROFILES UPDATE
 
 
 #  ScotPHO indicators: 2 indicator outputs from this script 
@@ -27,8 +29,9 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") #Normal indicator functions
+source("functions/main_analysis.R") # main indicator functions
+source("functions/deprivation_analysis.R") # deprivation indicator functions
+
 
 # Data queried directly from statistics.gov 
 # install the dev tools/opendata scotland r package which communicates with the statistics.gov website api - if you don't already have them.
@@ -38,11 +41,8 @@ source("2.deprivation_analysis.R") #Normal indicator functions
 library(opendatascot) # to extract from statistics.gov
 
 # Extracts for Life Expectancy data saved in left expectancy network folder.
-if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-  source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
-} else {
-  source_network <- "//stats/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
-}
+#  source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
+
 
 ###############################################.
 # Extract Healthy life expectancy data ----
@@ -135,8 +135,8 @@ if (sex_filter=="female"){
   hle_main_file_male <<- maindata_df #save sex specific dataframe as this will be overwritten by next function call
 }
 
-write_csv(maindata_df, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny.csv"))
-write_rds(maindata_df, file = paste0(data_folder, "Data to be checked/", indicator, "_shiny.rds"))
+write_csv(maindata_df, file = paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny.csv"))
+write_rds(maindata_df, file = paste0(profiles_data_folder, "/Data to be checked/", indicator, "_shiny.rds"))
 
 }
 
@@ -145,8 +145,8 @@ hle_main_file(indicator="healthy_life_expectancy_female", sex_filter ="female")
 hle_main_file(indicator="healthy_life_expectancy_male", sex_filter="male")
 
 #run QA reports for main data
-run_qa("healthy_life_expectancy_female")
-run_qa("healthy_life_expectancy_male")
+run_qa("healthy_life_expectancy_female", type="main")
+run_qa("healthy_life_expectancy_male", type="main")
 
 
 
