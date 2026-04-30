@@ -2,6 +2,10 @@
 # ---- Analyst Notes ----
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
+# PLEASE NOTE: This script replaces the now archived script 'Drug-related mortality.R' (as of 30/4/26). It was first used to update the
+# drug-related deaths indicators (ids 4121, 12534, 12535) with NRS deaths data for 2024. This new version has an updated filename and uses
+# the new main and deprivation analysis functions.
+
 # Indicators:
 # - Drug-related deaths (id = 4121)
 # - Drug-related deaths, males (id = 12534)
