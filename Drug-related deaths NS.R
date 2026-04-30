@@ -1,0 +1,270 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# ---- Analyst Notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~
+
+# Indicators:
+# - Drug-related deaths (id = 4121)
+# - Drug-related deaths, males (id = 12534)
+# - Drug-related deaths, females (id = 12535)
+
+# Description:
+# (id = 4121) Number of drug-related deaths: actual number and european age sex standardised rate per 100,000 population, single years.
+# (id = 12534) Number of drug-related deaths for males: 5-year rolling average and directly age standardised rate per 100,000 male population.
+# (id = 12535) Number of drug-related deaths for females: 5-year rolling average and directly age standardised rate per 100,000 female population.
+
+# Data source: National Records of Scotland (NRS)
+# NRS drug-related deaths (DRD) file supplied by PHS Drugs Team (phs.drugsteam@phs.scot).
+# (Not to be confused with the PHS National Drug-Related Deaths Database (NDRDD) publication, also produced by the PHS Drugs Team)
+# SMRA deaths file is then matched to the NRS DRD file.
+
+# PART 1 - Read in received data
+# PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions
+# PART 3 - Run both sexes drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder
+# PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Libraries, functions and filepaths ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+source("functions/main_analysis.R") # Brings in the main_analysis() function
+source("functions/deprivation_analysis.R") # Brings in the deprivation_analysis() function
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 1 - Read in received data ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Read in files with DRD data for 2002 to 2005 (taken from previous profiles updates) as drugs team only provide NRS data from 2006 onwards
+# Data file for 2002-2005 - All
+drug_deaths_02_05 <- read.csv(paste0(profiles_data_folder, "/Received Data/drugs_deaths_2002-05_DO_NOT_DELETE.csv")) |>
+  clean_names()
+# Data file for 2002-2005 - Females
+drug_deaths_female_02_05 <- read.csv(paste0(profiles_data_folder, "/Received Data/drugs_deaths_female_DO_NOT_DELETE.csv")) |>
+  clean_names()
+# Data file for 2002-2005 - Males
+drug_deaths_male_02_05 <- read.csv(paste0(profiles_data_folder, "/Received Data/drugs_deaths_male_DO_NOT_DELETE.csv")) |>
+  clean_names()
+
+# Read in NRS DRD file supplied by PHS Drugs Team.
+drug_deaths_NRS <- readRDS(paste0(profiles_data_folder, "/Received Data/Drug-related deaths (4121)/nrs_drugrelateddeaths_2006-24_IR2025-00814.rds")) |>
+  clean_names()
+
+# Extract ALL deaths from SMRA from 2006 onwards and then match SMRA deaths details with the death records in the NRS DRD file provided
+# by the drugs team.
+
+# SMRA login - If you don't already have it, you will need to request access to the smr gro deaths analysis view on SMRA
+# (email Clare.Campbell3@phs.scot for access).
+# Login using your network username and password
+channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
+
+# SQL query to extract ALL deaths from SMRA from 2006 onwards extracting specified variables only, excluding those records where
+# age is null and sex is unknown (9).
+# (ICD10 codes have been removed from the SQL query as it was not finding all deaths in the NRS extract - Sep 21)
+drug_deaths_smr <- as_tibble(dbGetQuery(channel, statement=
+  "SELECT year_of_registration year, 
+  age, 
+  SEX sex_grp, 
+  UNDERLYING_CAUSE_OF_DEATH cod1, 
+  POSTCODE pc7, 
+  REGISTRATION_DISTRICT rdno, 
+  ENTRY_NUMBER entry_no, 
+  PLACE_OF_DEATH_POSTCODE pc_death
+  FROM ANALYSIS.GRO_DEATHS_C 
+  WHERE date_of_registration between '1 January 2006' and '31 December 2024' 
+  AND age is not NULL 
+  AND sex <> 9")) |>
+  clean_names() # Variable names to lower case
+
+# Create a key variable in SMR extract (rdno_entry_no_yr) so can join to NRS DRD file.
+
+# Add padding to the entry_no variable so it matches NRS format.
+drug_deaths_smr <- drug_deaths_smr |> 
+  mutate(entry_no = case_when(nchar(entry_no) == 2 ~ paste0("0", entry_no),
+                              nchar(entry_no) == 1 ~ paste0("00", entry_no),
+                              TRUE ~paste0(entry_no)),
+         # Create rdno_entry_no_yr key variable in SMR extract by concatenating relevant existing variables.
+         rdno_entry_no_yr = paste0(rdno, entry_no, year)) |>
+  create_agegroups()  # Create age_grp variable with 5 yr age-bands from age variable.
+
+# Using drug_deaths_NRS as base file, join to this variables from drug_deaths_smr matching on rdno_entry_no_yr as key variable
+drug_deaths <- left_join(drug_deaths_NRS, drug_deaths_smr, "rdno_entry_no_yr")
+
+# If postcode is NA (missing) then use place of death postcode (added to ensure HB/CA breakdown matches NRS publication).
+drug_deaths <- drug_deaths |> 
+  mutate(pc7 = case_when(is.na(pc7) ~ pc_death, 
+                         TRUE ~ pc7))
+
+# Checking totals match with NRS publication.
+drug_deaths |> group_by(year) |> count() |> View()
+
+#tidy files finished with
+rm(drug_deaths_smr, drug_deaths_NRS)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 2 - Bring in council area/datazone info and create basefiles for main and deprivation analysis functions ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Read in latest Scottish Postcode Directory (SPD) lookup file that maps postcodes to council areas, HBs, HSCPs, datazones etc.
+# SPD updated twice a year (Mar(v_1)/Sep(v_2)) with the most recent two versions available in the lookups SPD folder (older versions available in Archive sub-folder).
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') |>
+  clean_names() # Variable names to lower case.
+
+# Create drug-related deaths main basefiles for both sexes, males and females (to be fed into main_analysis() function) and save to 'Prepared Data' folder.
+# (Aggregate data by council area)
+drug_deaths_ca <- left_join(drug_deaths, postcode_lookup, "pc7") |> 
+  rename(ca = ca2019) |>
+  group_by(year, ca, sex_grp, age_grp) |>  
+  summarize(numerator = n()) |> ungroup()
+
+saveRDS(drug_deaths_ca, file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_raw.rds')) # Both sexes
+saveRDS(drug_deaths_ca |> subset(sex_grp==1), file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_male_raw.rds')) # Males
+saveRDS(drug_deaths_ca |> subset(sex_grp==2), file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_female_raw.rds')) # Females
+
+# Optional: Create data frames of male / female basefiles so can view data
+# drug_deaths_ca_male <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_male_NS_raw.rds"))
+# drug_deaths_ca_female <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_female_NS_raw.rds"))
+
+# Create drug-related deaths deprivation basefile (to be fed into deprivation_analysis() function) and save to 'Prepared Data' folder.
+# (Aggregate data by datazone)
+drug_deaths_depr <- left_join(drug_deaths, postcode_lookup, "pc7") |> 
+  select(year, datazone2001, datazone2011, sex_grp, age_grp) |>
+  mutate(datazone = case_when(year<2014 ~ datazone2001,
+                              year>2013 ~ datazone2011)) |>
+  group_by(year, datazone, sex_grp, age_grp) |>
+  summarize(numerator = n()) |> ungroup()
+
+saveRDS(drug_deaths_depr, file=paste0(profiles_data_folder, '/Prepared Data/drug_deaths_depr_raw.rds'))
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 3 - Run both sexes / all drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Call main_analysis() function for DRDs for both sexes (all ages), calendar years (single), calculating standardised rates and saving output
+# to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 1,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 4121,
+              test_file = FALSE,
+              QA = FALSE,
+              epop_age = "normal",
+              epop_total = 200000)
+
+# Update both sexes output files from main_analysis() function with DRD data for 2002 to 2005 as drugs team only provide NRS data from 2006 onwards
+drug_deaths_bothsexes <- rbind(main_analysis_result, drug_deaths_02_05) |>
+  arrange(year) #sort dataframe by year to ensure QA report chart runs
+
+# delete partial drug deaths file that doesn't have full time series - don't want this one loaded to shiny tool
+file.remove(file.path(profiles_data_folder, "Data to be checked", "drug_deaths_shiny.rds"))
+
+saveRDS(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_shiny.rds'))
+write_csv(drug_deaths_bothsexes, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_shiny.csv'))
+
+# run qa report on final data file for shiny app
+run_qa(filename="all_drug_deaths",type="main")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 4 - Run male drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Call main_analysis() function for DRDs for males (all ages), calendar years (5-year aggregates), calculating standardised rates and saving
+# output to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths_male",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 5,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 12534,
+              test_file = FALSE,
+              QA = FALSE,
+              epop_age = "normal",
+              epop_total = 100000)
+
+# Update male output files from main_analysis() function with DRD data for 2002-2006 to 2005-2009 (5-year aggregates) as drugs team only provide
+# NRS data from 2006-2010 onwards
+drug_deaths_male <- rbind(main_analysis_result, drug_deaths_male_02_05)|>
+  arrange(year) #sort dataframe by year to ensure QA report chart runs
+
+# delete partial drug deaths file that doesn't have full time series - don't want this one loaded to shiny tool
+file.remove(file.path(profiles_data_folder, "Data to be checked", "drug_deaths_male_shiny.rds"))
+
+saveRDS(drug_deaths_male, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_male_shiny.rds'))
+write_csv(drug_deaths_male, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_male_shiny.csv'))
+
+# run qa on final data file (note that historic filename was different - 2025 update this can be revised as both filename the same)
+run_qa(filename="all_drug_deaths_male",type="main", old_filename = "all_male_drug_deaths")
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 5 - Run female drug-related deaths basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Call main_analysis() function for DRDs for females (all ages), calendar years (5-year aggregates), calculating standardised rates and saving
+# output to the 'Data to be checked' folder.
+main_analysis(filename = "drug_deaths_female",
+              measure = "stdrate",
+              geography = "council",
+              time_agg = 5,
+              year_type = "calendar",
+              pop = "CA_pop_allages",
+              yearstart = 2006,
+              yearend = 2024,
+              ind_id = 12535,
+              test_file = FALSE,
+              QA = FALSE,
+              epop_age = "normal",
+              epop_total = 100000)
+
+# Update female output files from main_analysis() function with DRD data for 2002-2006 to 2005-2009 (5-year aggregates) as drugs team only
+# provide NRS data from 2006-2010 onwards
+drug_deaths_female <- rbind(main_analysis_result, drug_deaths_female_02_05)|>
+  arrange(year) #sort dataframe by year to ensure QA report chart runs
+
+# delete partial drug deaths file that doesn't have full time series - don't want this one loaded to shiny tool
+file.remove(file.path(profiles_data_folder, "Data to be checked", "drug_deaths_female_shiny.rds"))
+
+saveRDS(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_female_shiny.rds'))
+write_csv(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be checked/all_drug_deaths_female_shiny.csv'))
+
+# run qa on final data file (note that historic filename was different - 2025 update this can be revised as both filename the same)
+run_qa(filename="all_drug_deaths_female",type="main", old_filename = "all_male_drug_deaths", test_file = FALSE)
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Call deprivation_analysis() function for DRDs for both sexes (all ages), calendar years (5-year aggregates), calculating standardised rates
+# and saving output to 'Data to be checked' folder.
+
+deprivation_analysis(filename = "drug_deaths_depr",
+                     measure = "stdrate",
+                     time_agg = 5,
+                     year_type = "calendar",
+                     pop_age = NULL,
+                     pop_sex = "all",
+                     yearstart = 2006,
+                     yearend = 2023,
+                     ind_id = 4121,
+                     test_file = FALSE,
+                     QA = TRUE,
+                     epop_age = "normal",
+                     epop_total = 200000)
+
+
+# Read in deprivation output file into a data table for checking purposes
+drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Data to be checked/drug_deaths_depr_NS_ineq.rds"))
+OLD_drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Shiny Data/drug_deaths_depr_ineq.rds"))
+
+# Read in deprivation basefile into a data table for checking purposes
+basefile_deprivation_OLD <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_depr_raw.rds"))
+basefile_deprivation_NEW <- readRDS(paste0(profiles_data_folder, "/Prepared Data/drug_deaths_depr_NS_raw.rds"))
