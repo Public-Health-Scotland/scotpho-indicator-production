@@ -21,6 +21,7 @@
 
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/data cleaning functions/ca_names_to_codes.R") #Converts council names to codes
+source("./functions/data cleaning functions/exclude_geog_codes.R") #Allows post-hoc removal of geog codes due to e.g. DQ issues
 library(tidyr) #For pivoting
 
 ################################################################################
@@ -103,6 +104,9 @@ main_analysis("personal_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4140", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
+exclude_geog_codes("personal_licences", codes = "S00000001", codes_years = "2022") #exclude the Scotland total for 2022 
+#due to there being enough CAs missing that it falsely implies a substantial decrease in licences
+
 ################################################################################
 #####  Part 5) Premise licences in force - total (4144) --------------
 ################################################################################ 
@@ -115,45 +119,58 @@ main_analysis("premise_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
+exclude_geog_codes("premise_licences", codes = "S00000001", codes_years = "2022") #exclude the Scotland total for 2022 
+#due to there being enough CAs missing that it falsely implies a substantial decrease in licences
+
 ################################################################################
-#####  Part 6) Premise licences in force - on trade (4114) --------------
+#####  Part 6) Creating pop groups file for on and off licence trade
 ################################################################################ 
-premises_on <- df6 |> select(code, year, on_premise) |> 
-  rename(numerator = on_premise)
+#The main analysis function has to be run for each split value
+#Then the files are read back in and combined with the main file to get the split totals
+
+#For "on" licences need to include "both" category on where available
+premises_on <- df6 |> select(code, year, on_premise, both) |> 
+  mutate(numerator = on_premise + coalesce(both, 0)) |>  #if "both" col is NA, replace with 0 then add to on_premise totals to calc numerator
+  select(-on_premise, -both)
 
 saveRDS(premises_on, file.path(profiles_data_folder, "Prepared Data/premise_licences_on_trade_raw.rds"))
 
 main_analysis("premise_licences_on_trade", measure = "crude", geography = "council",
-              year_type = "financial", ind_id = "4114", time_agg = 1, yearstart = 2010,
+              year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-################################################################################
-#####  Part 7) Premise licences in force - on trade (4139) --------------
-################################################################################
+#Create off licences df
 premises_off <- df6 |> select(code, year, off_premise) |> 
-  rename(numerator = off_premise) |> 
-  filter(year != 2010) #no data for 2010
+  rename(numerator = off_premise)
 
 saveRDS(premises_off, file.path(profiles_data_folder, "Prepared Data/premise_licences_off_trade_raw.rds"))
 
 main_analysis("premise_licences_off_trade", measure = "crude", geography = "council",
-              year_type = "financial", ind_id = "4139", time_agg = 1, yearstart = 2011,
+              year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-################################################################################
-#####  Part 8) Premise licences in force - on trade (xxxx) --------------
-################################################################################
-#Currently only available for 2019 and 2022
+#Read the data back in and add a couple of additional columns with split details
+on_premise <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_licences_on_trade_shiny.rds")) |> 
+  mutate(split_name = "Licence Type",
+         split_value = "On licences (including premises with on and off licences")
 
-# premises_both <- df6 |> select(code, year, both) |> 
-#   rename(numerator = both) |> 
-#   filter(year == 2019 | year == 2022)
-# 
-# saveRDS(premises_both, file.path(profiles_data_folder, "Prepared Data/premise_licences_both_on_off_trade_raw.rds"))
-# 
-# main_analysis("premise_licences_both_on_off_trade", measure = "crude", geography = "council",
-#               year_type = "financial", ind_id = "xxxx", time_agg = 1, yearstart = 2019,
-#               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
-# 
+off_premise <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_licences_off_trade_shiny.rds")) |> 
+  mutate(split_name = "Licence Type",
+         split_value = "Off licences")
+
+total <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny.rds")) |> 
+  mutate(split_name = "Licence Type",
+         split_value = "Total premise licences")
+
+pop_grps <- bind_rows(on_premise, off_premise, total) #join off licence, on licence and totals
+
+write.csv(pop_grps, file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny_popgrp.csv"), row.names = FALSE) #Save combined pop groups file
+saveRDS(pop_grps, file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny_popgrps.rds"))
+
+#Delete the uncombined split values from data to be checked
+file.remove(file.path(profiles_data_folder, "Data to be checked", "premise_licences_on_trade_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "premise_licences_on_trade_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "premise_licences_off_trade_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "Data to be checked", "premise_licences_off_trade_shiny.csv"))
 
 ####End.
