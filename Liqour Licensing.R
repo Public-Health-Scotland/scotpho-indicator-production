@@ -15,6 +15,10 @@
 #Change list of years vector in Part 1 to include latest year
 #Change year end parameters in analysis functions
 
+#Note that 22/23 publication had missing data for 5 councils: Clackmannanshire, Na h-Eileanan Siar, East Lothian, Scottish Borders & South Lanarkshire
+#These councils and the HBs, HSCPs they form part of have been removed for 2022.
+#Check when updating if these councils have been retrospectively published
+
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
@@ -104,8 +108,11 @@ main_analysis("personal_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4140", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
-exclude_geog_codes("personal_licences", codes = "S00000001", codes_years = "2022") #exclude the Scotland total for 2022 
-#due to there being enough CAs missing that it falsely implies a substantial decrease in licences
+exclude_geog_codes("personal_licences", codes = c("S00000001", "S08000019", "S08000032",
+                                                  "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
+
+#As a handful of councils are missing for 2022, the Scotland figure as well as HSCPs/HBs/ADPs need to be removed
+#As they show artificial decreases that are the result of missing data
 
 ################################################################################
 #####  Part 5) Premise licences in force - total (4144) --------------
@@ -119,8 +126,11 @@ main_analysis("premise_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-exclude_geog_codes("premise_licences", codes = "S00000001", codes_years = "2022") #exclude the Scotland total for 2022 
-#due to there being enough CAs missing that it falsely implies a substantial decrease in licences
+exclude_geog_codes("premise_licences", codes = c("S00000001", "S08000019", "S08000032",
+                                                  "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
+
+#As a handful of councils are missing for 2022, the Scotland figure as well as HSCPs/HBs/ADPs need to be removed
+#As they show artificial decreases that are the result of missing data
 
 ################################################################################
 #####  Part 6) Creating pop groups file for on and off licence trade
@@ -139,6 +149,9 @@ main_analysis("premise_licences_on_trade", measure = "crude", geography = "counc
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
+exclude_geog_codes("premise_licences_on_trade", codes = c("S00000001", "S08000019", "S08000032",
+                                                 "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
+
 #Create off licences df
 premises_off <- df6 |> select(code, year, off_premise) |> 
   rename(numerator = off_premise)
@@ -148,6 +161,9 @@ saveRDS(premises_off, file.path(profiles_data_folder, "Prepared Data/premise_lic
 main_analysis("premise_licences_off_trade", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+
+exclude_geog_codes("premise_licences_off_trade", codes = c("S00000001", "S08000019", "S08000032",
+                                                 "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
 
 #Read the data back in and add a couple of additional columns with split details
 on_premise <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_licences_on_trade_shiny.rds")) |> 
