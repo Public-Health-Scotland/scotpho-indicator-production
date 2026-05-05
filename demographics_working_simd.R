@@ -286,16 +286,97 @@ rm(localities, pop_data, quint_breaks, simd_data, simd_index_pop, simd_quintiles
 # and add a column to signify which SIMD version has been applied
 # note there will be NAs for SIMD2004 crime domain as doesn't exist
 # and NAs for IZs/localities until 2015 as they cannot be mapped to 2001 dzs
-result <- imap_dfr(simd_pop_data, ~ mutate(.x, simd_version = .y))
+result_decile <- imap_dfr(simd_pop_data, ~ mutate(.x, simd_version = .y))
 
-
-
+#drop some of the fields so its easier to explore what we have and what to do with them
 result_filtered <- result |>
-  select(datazone, year, all_ages, ca2019,hb2019,hscp2019,hscp_locality, index_year,overall_quint_all_ages, income_quint_all_ages, simd_version)
+  select(datazone, year, all_ages, ca2019,hb2019,hscp2019,hscp_locality, index_year,overall_quint_all_ages, simd_version)
 
-
-
-
-result_filter_flag <- result_filtered |>
+#pivot wider gives df which lists all dz, what organisations they belong to and which deprivation decile they are for each year
+filter_wider <- result_filtered |>
   arrange(datazone,year) |>
-  mutate(dec10=case_when(overall_quint_all_ages=="1" ~ "most", TRUE ~ ""))
+  select(-index_year, -simd_version, -all_ages)|>
+  pivot_wider(names_from = year,names_prefix = "y",values_from = overall_quint_all_ages)
+
+# Explore how simd classification for each dz has changed over time.
+
+#which datazones have been in the most deprived decile since 2011 (thats as far as we can go since dz2011 start then)
+persistent_deprivation <- filter_wider|>
+  select(-(y2002:y2013)) |> # deselect earlier years since these are 2001 datazone
+  filter(as.numeric(str_extract(datazone, "\\d+")) > 1006506)|> #filter for the dz11 only (anything above 6506 is a 2011 datazone)
+  mutate(across(y2014:y2023, as.numeric)) %>% # Convert the decile values to numeric across all columns
+  mutate(decile_sum=rowSums(across(y2014:y2023), na.rm = TRUE)) # total of deciles across all the years, can be used to indicate of how many years in most deprived decile
+
+  
+persistent_most_deprived <- persistent_deprivation |>
+  filter(decile_sum==10)
+
+
+result_council <- persistent_most_deprived %>%
+  group_by(ca2019) %>% 
+  summarize(persistent_deprived_dz = paste(datazone, collapse = ", "),
+            count_dz=n())
+
+result_hb <- persistent_most_deprived %>%
+  group_by(hb2019) %>% 
+  summarize(persistent_deprived_dz = paste(datazone, collapse = ", "),
+            count_dz=n())
+
+result_hscp <- persistent_most_deprived %>%
+  group_by(hscp2019) %>% 
+  summarize(persistent_deprived_dz = paste(datazone, collapse = ", "),
+            count_dz=n())
+
+result_locality <- persistent_most_deprived %>%
+  group_by(hscp_locality) %>% 
+  summarize(persistent_deprived_dz = paste(datazone, collapse = ", "),
+            count_dz=n())
+
+  
+#currently deprived - but previously less deprived
+p_increasing_deprivation <- persistent_deprivation |>
+  filter(y2023==1) |>
+  filter(decile_sum !=10)
+
+#currently less deprived - but previously was more deprived
+p_decreasing_deprivation <- persistent_deprivation |>
+  filter(y2014==1) |>
+  filter(decile_sum !=10)
+
+# Assuming 'var1' and 'var2' each have 10 unique categories
+contingency_table <- table(persistent_deprivation$y2014, persistent_deprivation$y2023)
+
+# View it
+print(contingency_table)
+  
+
+library(reactable)
+library(dplyr)
+library(tibble)
+
+# 1. Create the table and convert to data frame
+# 'as.data.frame.matrix' preserves the 10x10 shape
+ct_data <- as.data.frame.matrix(table(presistent_deprivation$y2014, presistent_deprivation$y2023))%>%
+rownames_to_column("SIMD decile")
+
+# 2. Render in reactable
+reactable(ct_data, 
+           rownames = TRUE, # Shows the "Smoke" categories
+          columns = list(
+            # Customize the row names column header
+            .rownames = colDef(name = "SIMD 2014", style = list(fontWeight = "bold"))
+          ),
+          columnGroups = list(
+            # Add a header spanning all exercise columns
+            colGroup(name = "SIMD 2023", columns = colnames(ct_data))
+          ),
+          compact = TRUE, 
+          bordered = TRUE, 
+          striped = TRUE,
+          defaultPageSize = 10)
+
+ctab_total <- addmargins(ct_data)
+
+ctab_total_df <- as.data.frame.matrix(ctab_total)
+
+reactable(ctab_total_df, rownames = TRUE)
