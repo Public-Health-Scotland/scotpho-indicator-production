@@ -36,6 +36,5 @@ main_analysis(filename = "teen_preg", geography = "datazone11", measure = "crude
 #Deprivation analysis function
 deprivation_analysis(filename ="teen_preg", measure ="crude", time_agg = 3, crude_rate = 1000,
                     yearstart = 2014, yearend = 2023, year_type = "calendar", 
-                     ind_id = 21001)
-
+                     ind_id = 21001, pop_sex = "female", pop_age = c(15, 19))
 ##END
