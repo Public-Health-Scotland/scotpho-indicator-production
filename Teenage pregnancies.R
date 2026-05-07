@@ -19,7 +19,7 @@ source("./functions/deprivation_analysis.R") # deprivation function
 teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pregnancies/IR2026-00003_TeenPregs.csv")) %>% 
   clean_names() %>% #set names to lower case
   rename(datazone = datazone2011, numerator = tp, year = yearcon) %>% 
-  mutate(datazone = dplyr::na_if(datazone, "Unknown")) |> 
+  mutate(datazone = dplyr::na_if(datazone, "Unknown")) |> #convert unknown datazones to NA so they're still included in Scotland total to align with births in Scotland publication which included non-residents. 
   # aggregate to get the count, removing age groups
   group_by(year, datazone) %>% 
   summarise(numerator = sum(numerator, na.rm =T)) %>% ungroup()
