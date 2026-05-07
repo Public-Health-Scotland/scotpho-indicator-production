@@ -253,11 +253,20 @@ write_csv(drug_deaths_female, file=paste0(profiles_data_folder, '/Data to be che
 
 # Run QA report on final output file (females) for shiny app
 # (Note: for 2024 update historic filename was different - for 2025 update this can be revised as both filenames will be the same)
-run_qa(filename="all_drug_deaths_female",type="main", old_filename = "all_female_drug_deaths")
+run_qa(filename="all_drug_deaths_female", type="main", old_filename="all_female_drug_deaths")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 6 - Run deprivation drug-related deaths basefile through deprivation_analysis() function and save output to 'Data to be checked' folder ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# PLEASE NOTE: The deprivation analysis code has NOT been run yet for the drug-related deaths update with 2024 NRS deaths data.
+# This is due to the delay in NRS publishing updated small area population estimates (SAPE) and the forthcoming release of SIMD2026 later
+# this year. It has been agreed not to do a deprivation update at this time. When the update does take place it should only be necessary to
+# update the 'yearend' parameter below.
+
+# This Part 6 code is WORK IN PROGRESS. It hasn't been fully tested yet. It uses the new deprivation_analysis() function.
+# It would be worthwhile running this code on the DRDs data for 2006 to 2023 and comparing the output with the existing published data for
+# 2006-2023 in the live OPT.
 
 # Call deprivation_analysis() function for DRDs for both sexes (all ages), calendar years (5-year aggregates), calculating standardised rates
 # and saving output to 'Data to be checked' folder.
@@ -272,10 +281,13 @@ deprivation_analysis(filename = "drug_deaths_depr",
                      yearend = 2023,
                      ind_id = 4121,
                      test_file = FALSE,
-                     QA = TRUE,
+                     QA = FALSE,
                      epop_age = "normal",
                      epop_total = 200000)
 
-# Read in deprivation output file into a data table for checking purposes
+# Read deprivation output file into a data table for checking purposes
 drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Data to be checked/drug_deaths_depr_ineq.rds"))
 OLD_drug_deaths_deprivation_simd <- readRDS(paste0(profiles_data_folder, "/Shiny Data/drug_deaths_depr_ineq.rds"))
+
+# Run QA report on final output file for shiny app
+run_qa(filename="drug_deaths_depr", type="deprivation")
