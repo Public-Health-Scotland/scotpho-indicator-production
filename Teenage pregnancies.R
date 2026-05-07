@@ -19,7 +19,7 @@ source("./functions/deprivation_analysis.R") # deprivation function
 teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pregnancies/IR2026-00003_TeenPregs.csv")) %>% 
   clean_names() %>% #set names to lower case
   rename(datazone = datazone2011, numerator = tp, year = yearcon) %>% 
-  subset(!(is.na(datazone) | datazone == "         " | datazone == "Unknown")) %>% #excluding non-Scottish residents
+  mutate(datazone = dplyr::na_if(datazone, "Unknown")) |> 
   # aggregate to get the count, removing age groups
   group_by(year, datazone) %>% 
   summarise(numerator = sum(numerator, na.rm =T)) %>% ungroup()
@@ -34,8 +34,8 @@ main_analysis(filename = "teen_preg", geography = "datazone11", measure = "crude
               ind_id = 21001, year_type = "calendar", crude_rate = 1000)
 
 #Deprivation analysis function
-deprivation_analysis(filename="teen_preg", measure="crude", time_agg=3, crude_rate=1000,
-                    yearstart= 2014, yearend=2023, year_type = "calendar", 
+deprivation_analysis(filename ="teen_preg", measure ="crude", time_agg = 3, crude_rate = 1000,
+                    yearstart = 2014, yearend = 2023, year_type = "calendar", 
                      ind_id = 21001)
 
 ##END
