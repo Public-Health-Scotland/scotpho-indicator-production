@@ -28,6 +28,7 @@
 
 # these small functions are used within the function below
 source("functions/helper functions/check_file_exists.R") # to check file exists before attempting to read in 
+source("functions/helper functions/validate_popgrps_columns.R")
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
@@ -100,9 +101,9 @@ popgrps_analysis <- function(filename,
   
   # check required columns are present, named correctly and of correct class
   # The no. of cols and col names expected varies depending on geography level and measure type of the indicator.
-  # data <- validate_columns(data, measure, geography)
-  # 
-  # # step complete
-  # cli::cli_alert_success("'Read and validate prepared data' step complete")
+  data <- validate_popgrps_columns(data, measure, geography, splits)
+
+  # step complete
+  cli::cli_alert_success("'Read and validate prepared data' step complete")
   
 }

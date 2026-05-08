@@ -27,8 +27,8 @@ teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pre
 saveRDS(teen_preg, file.path(profiles_data_folder, "Prepared Data/teen_preg_popgrps_raw.rds"))
 
 splits_tp <- list(
-  age_grp = c("Under 16 years", "16-17 years", "Under 20 years"),
-  dummy_grp = c("A", "B"))
+  age_grp = c("Under 16 year", "16-17 years", "Under 20 years"),
+  dummy_group = c("A", "B"))
 
 
 

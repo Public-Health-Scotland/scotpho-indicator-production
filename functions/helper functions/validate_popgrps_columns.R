@@ -1,4 +1,4 @@
-validate_columns <- function(data, measure, geography){
+validate_popgrps_columns <- function(data, measure, geography, splits){
   
   # ensure data isn't grouped as this will prevent column classes being  successfully changed
   if(is.grouped_df(data)){
@@ -9,7 +9,6 @@ validate_columns <- function(data, measure, geography){
       )
     )
   }
-  
   
   # define expected geography code pattern depending on the geography level
   code_pattern <- switch(geography,
@@ -101,13 +100,39 @@ validate_columns <- function(data, measure, geography){
     )
   }
   
+  # Validate split details 
+  missing_cols_splits <- setdiff(names(splits), names(data)) #identifies columns specified in split argument that aren't available in the data as col headers
+  missing_cols_splits_length <- length(missing_cols_splits)   #counts how many splits are missing
   
-  # then check pop groups present in the data match those specified in the function arguments
+  # Return error message if splits are missing or named incorrectly in the data
+  if(missing_cols_splits_length > 0 ){
+    cli::cli_abort(
+      c("The following {missing_cols_splits_length} column{?s} {?is/are} specified in the function arguments
+        but are not present in the data as column headings:",
+        "x" = ".var {missing_cols_splits}",
+        "i" = "Amend the data file or function arguments as required and save again")
+    )
+  }
   
-  required_cols_popgrps <- switch(splits, 
-                                  )
+  # Check that there are no values of the splits in the data that are not covered by the split argument
+  invalid_split_values <- purrr::imap(splits, ~ { #iterates across all elements in the splits list (i.e. split names)
+    setdiff(unique(data[[.y]]), .x) # and identifies any split values present in the data that have not been specified in the list
+  }) |>
+    keep(~ length(.x) > 0)
+    
+  # Keep only split names with invalid values and return an error message if there are any.
+  invalid_split_values <- invalid_split_values[sapply(invalid_split_values, length) > 0] #Keep only the splits where there are invalid values
   
-  
+  if (length(invalid_split_values) > 0) { 
+    cli::cli_abort(
+      c("The following split names contain values in the data which have not been specified or have been specified incorrectly in the splits argument of the function:",
+      purrr::imap_chr(invalid_split_values, ~ paste0( #loops over all list elements (i.e. split names) then adds to list of split names with invalid values
+        "{.var ", .y, "}: ",
+        paste(.x, collapse = ", ")
+      )) #close mapping loop
+    )) #close error message
+  } #close condition
+
   
   # check numerator col can be converted to class numeric (i.e. don't contain symbols etc.)
   if(!any(varhandle::check.numeric(data$numerator))){
