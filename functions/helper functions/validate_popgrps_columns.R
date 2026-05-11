@@ -125,10 +125,11 @@ validate_popgrps_columns <- function(data, measure, geography, splits){
   
   if (length(invalid_split_values) > 0) { 
     cli::cli_abort(
-      c("The following split names contain values in the data which have not been specified or have been specified incorrectly in the splits argument of the function:",
+      c("The following split values are present in the data but do not match any specified in the function argument:",
       purrr::imap_chr(invalid_split_values, ~ paste0( #loops over all list elements (i.e. split names) then adds to list of split names with invalid values
         "{.var ", .y, "}: ",
-        paste(.x, collapse = ", ")
+        paste(.x, collapse = ", "),
+        "\n Please ensure specified split values match the data and run again."
       )) #close mapping loop
     )) #close error message
   } #close condition
@@ -144,7 +145,7 @@ validate_popgrps_columns <- function(data, measure, geography, splits){
     )
   }
   
-  # check cdenominator can be converted to class numeric (i.e. don't contain symbols etc.)
+  # check denominator can be converted to class numeric (i.e. don't contain symbols etc.)
   if(measure == "percent"){
     if(!any(varhandle::check.numeric(data$denominator))){
       cli::cli_abort(
@@ -172,7 +173,8 @@ validate_popgrps_columns <- function(data, measure, geography, splits){
   data <- data |>
     mutate(
       across(any_of(c({{required_geo_colname}}, "sex_grp", "age_grp")), as.character),
-      across(any_of(c("numerator", "denominator", "year")), as.numeric)
+      across(any_of(c("numerator", "denominator", "year")), as.numeric),
+      across(any_of(names(splits)), as.character)
     )
   
   
@@ -181,11 +183,13 @@ validate_popgrps_columns <- function(data, measure, geography, splits){
   data <- data |>
     mutate(!!sym(required_geo_colname) := if_else(!!sym(required_geo_colname) %in% c(NA, "NA", "Unknown", ""), NA_character_, !!sym(required_geo_colname)))
   
+  #Append split names to list of required columns, then filter out any further columns
+  #Appending this separately as other processing is done prior to validation of function arguments and data
+  required_cols <- c(required_cols, names(splits))
   
   # select all required columns
   data <- data |>
     select(all_of(required_cols))
-  
   
   
 }
