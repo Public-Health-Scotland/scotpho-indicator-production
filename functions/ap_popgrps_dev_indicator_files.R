@@ -1,10 +1,9 @@
 #Still to think about
-#Pop group classes? add something to the validation? I think we'd always want them to be characters?
-
+#Restrict list of acceptable splits? Want to try and standardised where possible but how? E.g. don't want age, age group, age band etc
 
 #4 main measure types
 
-#Percentage - 
+#Percentage - Bowel screening
 #Crude rate - Teenage pregnancies
 #Standardised rate - Alcohol-related hospital admissions
 #Percentages with population correction factor (pcf) - Child healthy weight
@@ -22,9 +21,8 @@ bowel_screening <- readRDS(file.path(profiles_data_folder, "Received Data/Bowel 
 saveRDS(bowel_screening, file.path(profiles_data_folder, "Prepared Data/bowel_screening_popgrps_raw.rds"))
 
 #Testing
-
 splits_bs <- list(
-  age_group = c("50-54", "55-59", "60-64", "65-69", "70-74"),
+  age_group= c("50-54", "55-59", "60-64", "65-69", "70-74"),
   sex = c("Male", "Female"))
 
 source("./functions/popgrps_analysis.R")
@@ -48,7 +46,6 @@ teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pre
 
 saveRDS(teen_preg, file.path(profiles_data_folder, "Prepared Data/teen_preg_popgrps_raw.rds"))
 ################################################################################
-
 
 splits_tp <- list(
   age_grp = c("Under 16 years", "16-17 years", "Under 20 years"),

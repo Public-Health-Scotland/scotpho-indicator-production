@@ -20,8 +20,27 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # load packages ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# packages specifically for indicators
+library(odbc) # for reading oracle databases (needed for many indicator data extractions)
+library(stringr) #used for string manipulation/searching
+library(readr) #used to write out rds files
+
+#packages required for function
 library(dplyr) # data wrangling
+library(tidyr) # pivoting data longer
+library(cli) # formatting custom error messages
+library(RcppRoll) # for calculating rolling averages
+library(utils) # for printing questions in console
+library(varhandle) # for checking columns that need to be converted to numeric don't contain special characters
+library(janitor) # helps cleaning imported variable names
 library(purrr) # for running iterative processes
+library(rmarkdown) # for running rmarkdown QA checks
+library(plotly) # used in rmarkdown
+library(htmltools) # used in rmarkdown
+library(shiny) # used in rmarkdown
+library(flextable) # used in rmarkdown
+library(ggplot2) # used in rmarkdown
+library(hablar) # sum_ function from hablar keeps NA when there should be NA
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # source functions ----
@@ -39,9 +58,10 @@ source("functions/helper functions/calculate_easr.R") # for european age-sex sta
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
 # source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
-# source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
+source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 # source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
-# source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
+source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
+
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
 # this filepath object will be created if the main_analysis script is sourced (before and functions are called)
@@ -282,15 +302,45 @@ popgrps_analysis <- function(filename,
 #   }
 #   
 #   
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Aggregate splits and add totals  ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+  #first capitalise columns with the split names if not done already. They are mapped before they are "pivoted" longer into split_name as it's more efficient to change once than on every row
+  #note make_clean_names is used instead of standard clean_names() as the latter is only applicable to df cols and this works for vectors i.e. the list of split col names
+  name_map <- setNames(janitor::make_clean_names(names(splits), case = "sentence"), names(splits))
+
+  
+  data <- purrr::map_dfr(names(splits), function(split) { #using purrr's map_dfr to run the code below across each of the split columns specified in the named list "splits"
+    
+    # create the split_name and split_value columns - rather than pivoting, summarised output will populate these columns
+    data_split <- data |>
+      mutate(split_name = name_map[[split]], #using name_map[[]] to apply sentence case when populating the split_name column
+             split_value = .data[[split]]) #applying the data within the split column to the new split_value column
+      
+    # next aggregate each of the splits e.g. get male and female totals for all age groups, or age group totals for both sexes combined
+    splits_aggregated <- data_split |>
+      group_by(year, code, split_name, split_value) |>
+      summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop")
+    
+    # finally calculate totals i.e. males + females, all age groups combined. This should match the output of the main analysis function
+    totals <- data_split |>
+      group_by(year, code, split_name) |>
+      summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop") |>
+      mutate(split_value = "All")
+    
+    # append totals onto main aggregated data
+    bind_rows(splits_aggregated, totals)
+  }) #close mapping
   
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate by time period ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+
   # Up until this stage, the numerators and denominators are calculated for each geography, for a single year only.
   # However, we often need to combine years in order to publish data if the figures are small or sensitive. This step
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
-  
+
   # determine sort order or variables before aggregating
   var_order <- if(measure == "stdrate"){
     c("code", "sex_grp", "age_grp", "year")
@@ -308,7 +358,7 @@ popgrps_analysis <- function(filename,
     # aggregate by time period
     data<- data |>
       arrange(across(all_of(var_order))) |> # arrange data by var order
-      group_by(across(any_of(c("code", names(splits))))) |>
+      group_by(across(any_of(c("code", "split_name", "split_value")))) |>
       # calculating rolling averages
       mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
       ungroup()
@@ -319,7 +369,7 @@ popgrps_analysis <- function(filename,
     # aggregate by time period
     data<- data |>
       arrange(across(all_of(var_order))) |> # arrange data by var order
-      group_by(across(any_of(c("code", names(splits))))) |>
+      group_by(across(any_of(c("code", "split_name", "split_value")))) |>
       # calculating rolling averages
       mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
       ungroup()
@@ -336,14 +386,15 @@ popgrps_analysis <- function(filename,
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Calculate rate ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-  # By this stage there is a numerator and denominator for every geography and time period
-  # (and age and sex if the measure is a standardised rate)
+
+  # By this stage there is a numerator and denominator for every geography and time period,
+  # age and sex if the measure is a standardised rate,
+  # and split_name and split_value
   # This step calculates the rate and confidence intervals
-  # Note each rate has it's own function. If you want to undertand how these rates are calculated
+  # Note each rate has its own function. If you want to undertand how these rates are calculated
   # you can look at the code for those functions.
-  
-  
+
+
   if(measure == "percent"){
     data <- calculate_percent(data) # calculate percent
   } else if(measure == "crude"){
@@ -353,15 +404,16 @@ popgrps_analysis <- function(filename,
   } else if(measure == "perc_pcf"){
     data <- calculate_perc_pcf(data)
   }
-  
-  
+
+
   # step complete
   cli::cli_alert_success("'Calculate rate' step complete")
-  
+
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Add some metadata columns  ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+
   data <- data |>
     # create indicator id column - whatever id has been passed to the 'ind_id' argument should match
     # the id assigned to the indicator in our teams technical document
@@ -370,15 +422,15 @@ popgrps_analysis <- function(filename,
     create_trend_axis_column(year_type, time_agg) |>
     # create definition period column (used to show time period for charts looking at a single year)
     create_def_period_column(year_type, time_agg)
-  
+
   # Step complete
   cli::cli_alert_success("'Add some metadata columns' step complete.")
-  
-  
+
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Save final file  ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+
   # the number of years to subtract from the 'year' column after calculating rolling averages
   # E.g. if 3 year rolling average (2017-2019) shift the year column back a year (2018)
   # note the numeric year column is only used in the shiny app to filter, for example on the max year for an indicator
@@ -389,36 +441,36 @@ popgrps_analysis <- function(filename,
     time_agg == 5 ~ 2,
     TRUE ~ NA_real_
   )
-  
-  # select final columns
+
+  # # select final columns
   data <- data |>
-    mutate(year = year - year_fix) #|> # adjust year column
-   # select(ind_id, year, code, numerator, rate, upci, lowci, trend_axis, def_period)
-  
+    mutate(year = year - year_fix) |> # adjust year column
+    select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) |>
+    arrange(year, code, split_name, split_value)
+
   # save the data as both an RDS and CSV file
- # saveRDS(data, paste0(output_folder, "/", filename, "_shiny.rds"))
- #write.csv(data, paste0(output_folder, "/", filename, "_shiny.csv"), row.names = FALSE)
-  
-  
+ #saveRDS(data, paste0(output_folder, "/", filename, "_shiny_popgrps.rds"))
+ #write.csv(data, paste0(output_folder, "/", filename, "_shiny_popgrps.csv"), row.names = FALSE)
+
+
   # make results available in global environment
   popgrps_analysis_result <<- data
-  
+
   # Step complete
   cli::cli_alert_success("Final files saved.")
-  
-  
+
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Run QA  ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-  # if(QA){
-  #   cli::cli_alert_info("Running QA")
-  #   run_qa(type = "main", filename={{filename}},test_file={{test_file}})
-  # }
-  # 
-  # 
-  # # all steps finished
-  # cli::cli_alert_success("All steps complete :)")
-  # 
 
+  if(QA){
+    cli::cli_alert_info("Running QA")
+    run_qa(type = "popgrp", filename={{filename}},test_file={{test_file}})
+  }
+
+
+  # all steps finished
+  cli::cli_alert_success("All steps complete :)")
+  
 }
