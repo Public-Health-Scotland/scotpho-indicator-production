@@ -108,11 +108,23 @@ main_analysis("personal_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4140", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
-exclude_geog_codes("personal_licences", codes = c("S00000001", "S08000019", "S08000032",
-                                                  "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
-
 #As a handful of councils are missing for 2022, the Scotland figure as well as HSCPs/HBs/ADPs need to be removed
-#As they show artificial decreases that are the result of missing data
+#to avoid them showing artificial decreases that are the result of missing data
+#Look at source csv files to identify which councils have missing figures for 2022 then use master parent geos to identify which geographies will be incomplete
+
+exclude_geog_codes("personal_licences", codes = c("S00000001", #scotland
+                                                  #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
+                                                  "S08000019", "S11000005","S37000005",
+                                                  #missing  east lothians ca(S12000010) - means nhs lothian HB, lothian ADP, east lothian HSCP incomplete
+                                                  "S08000024", "S11000051","S37000010",
+                                                  #missing  western isles ca(S12000013) - means nhs WI, WI ADP, WI HSCP incomplete
+                                                  "S08000028", "S11000032","S37000031",
+                                                  #missing  scottish borders ca(S12000026) - means nhs border, borders ADP, borders HSCP incomplete
+                                                  "S08000016", "S11000025","S37000025", 
+                                                  #missing  south lanarkshire ca(S12000029) - means nhs lanarkshire, lanakrshire ADP, lanarkshire HSCP incomplete
+                                                  "S08000032", "S11000052","S37000028"), codes_years = "2022") 
+
+
 
 ################################################################################
 #####  Part 5) Premise licences in force - total (4144) --------------
@@ -126,11 +138,20 @@ main_analysis("premise_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-exclude_geog_codes("premise_licences", codes = c("S00000001", "S08000019", "S08000032",
-                                                  "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
-
 #As a handful of councils are missing for 2022, the Scotland figure as well as HSCPs/HBs/ADPs need to be removed
-#As they show artificial decreases that are the result of missing data
+#to avoid them showing artificial decreases that are the result of missing data
+#Look at source csv files to identify which councils have missing figures for 2022 then use master parent geos to identify which geographies will be incomplete
+
+exclude_geog_codes("premise_licences",codes = c("S00000001", #scotland
+                                                #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
+                                                "S08000019", "S11000005","S37000005",
+                                                #missing  western isles ca(S12000013) - means nhs WI, WI ADP, WI HSCP incomplete
+                                                "S08000028", "S11000032","S37000031",
+                                                #missing  scottish borders ca(S12000026) - means nhs border, borders ADP, borders HSCP incomplete
+                                                "S08000016", "S11000025","S37000025", 
+                                                #missing  south lanarkshire ca(S12000029) - means nhs lanarkshire, lanakrshire ADP, lanarkshire HSCP incomplete
+                                                "S08000032", "S11000052","S37000028"), codes_years = "2022") 
+
 
 ################################################################################
 #####  Part 6) Creating pop groups file for on and off licence trade
@@ -149,8 +170,15 @@ main_analysis("premise_licences_on_trade", measure = "crude", geography = "counc
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-exclude_geog_codes("premise_licences_on_trade", codes = c("S00000001", "S08000019", "S08000032",
-                                                 "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
+exclude_geog_codes("premise_licences_on_trade", codes = c("S00000001", #scotland
+                                                          #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
+                                                          "S08000019", "S11000005","S37000005",
+                                                          #missing  western isles ca(S12000013) - means nhs WI, WI ADP, WI HSCP incomplete
+                                                          "S08000028", "S11000032","S37000031",
+                                                          #missing  scottish borders ca(S12000026) - means nhs border, borders ADP, borders HSCP incomplete
+                                                          "S08000016", "S11000025","S37000025", 
+                                                          #missing  south lanarkshire ca(S12000029) - means nhs lanarkshire, lanakrshire ADP, lanarkshire HSCP incomplete
+                                                          "S08000032", "S11000052","S37000028"), codes_years = "2022") 
 
 #Create off licences df
 premises_off <- df6 |> select(code, year, off_premise) |> 
@@ -162,8 +190,15 @@ main_analysis("premise_licences_off_trade", measure = "crude", geography = "coun
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
               yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
 
-exclude_geog_codes("premise_licences_off_trade", codes = c("S00000001", "S08000019", "S08000032",
-                                                 "S11000052", "S11000051", "S37000005"), codes_years = "2022") 
+exclude_geog_codes("premise_licences_off_trade", codes = c("S00000001", #scotland
+                                                           #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
+                                                           "S08000019", "S11000005","S37000005",
+                                                           #missing  western isles ca(S12000013) - means nhs WI, WI ADP, WI HSCP incomplete
+                                                           "S08000028", "S11000032","S37000031",
+                                                           #missing  scottish borders ca(S12000026) - means nhs border, borders ADP, borders HSCP incomplete
+                                                           "S08000016", "S11000025","S37000025", 
+                                                           #missing  south lanarkshire ca(S12000029) - means nhs lanarkshire, lanakrshire ADP, lanarkshire HSCP incomplete
+                                                           "S08000032", "S11000052","S37000028"), codes_years = "2022") 
 
 #Read the data back in and add a couple of additional columns with split details
 on_premise <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_licences_on_trade_shiny.rds")) |> 
