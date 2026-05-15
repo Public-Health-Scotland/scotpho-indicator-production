@@ -50,14 +50,14 @@ library(hablar) # sum_ function from hablar keeps NA when there should be NA
 source("functions/helper functions/check_file_exists.R") # to check file exists before attempting to read in 
 source("functions/helper functions/validate_popgrps_columns.R") # for checking all required columns are present, named correctly and of correct class
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
-#source("functions/helper functions/check_denominator_years.R") # for checking years present in population denominator files
+source("functions/helper functions/check_denominator_years.R") # for checking years present in population denominator files
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
 source("functions/helper functions/calculate_easr.R") # for european age-sex standarised rates and confidence intervals
 source("functions/helper functions/create_def_period_column.R") # for creating definition period column 
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
-# source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
+source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 # source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
 source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
@@ -243,65 +243,81 @@ popgrps_analysis <- function(filename,
   # step complete
   cli::cli_alert_success("'Aggregate by geography level' step complete.")
 
-#   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   # Conditional step - Add population figures  ----
-#   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#   
-#   # This step is only applicable if the measure type is a standardised rate or a crude rate
-#   # where population figures are required to calculate the rate. It reads in the correct
-#   # population lookup file from scotphos population lookups folder, depending on whatever
-#   # was passed to the 'pop' argument of the function.
-#   
-#   # add population lookups if required
-#   if(!is.null(pop)){
-#     
-#     pop_lookup <- get_population_lookup(folder = population_lookups, pop, measure)
-#     
-#     # check what geography levels are in the dataset
-#     geo_codes <- paste0("^", unique(stringr::str_sub(data$code, 1, 3)))
-#     geo_codes <- paste(geo_codes, collapse = "|")
-#     
-#     # filter the population lookup so it only include required geo levels
-#     pop_lookup <- pop_lookup |>
-#       filter(grepl(geo_codes, code))
-#     
-#     # show warning if population lookup doesn't have enough years in it
-#     # i.e. if your trying to update an indicator but new population estimates have not yet
-#     # been published and added to our lookups to facilitate this
-#     pop_max_year <- max(pop_lookup$year)
-#     data_max_year <- max(data$year)
-#     
-#     if(data_max_year > pop_max_year){
-#       
-#       cli::cli_alert_warning("'Population lookup only contains population estimates up to {pop_max_year}. Unable to attach population estimates for {data_max_year}")
-#     }
-#     
-#     # filter by time period
-#     pop_lookup <- pop_lookup |>
-#       filter(year >= yearstart & year <= yearend)
-#     
-#     
-#     # identify which variables to join data by - the population lookups used for
-#     # standardised rates also include age and sex splits
-#     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
-#     
-#     # full_join keeps all groups in the pop_lookup file and indicator data file
-#     # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
-#     # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
-#     
-#     #should this be full or left - based on population lookup?
-#     data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
-#     
-#     # check year parameters are sensible and all required years are present
-#     check_denominator_years(data, yearend, yearstart)
-#     
-#     
-#     # step complete
-#     cli::cli_alert_success("'Add population figures' step complete.")
-#     
-#   }
-#   
-#   
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Conditional step - Add population figures  ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  # This step is only applicable if the measure type is a standardised rate or a crude rate
+  # where population figures are required to calculate the rate. It reads in the correct
+  # population lookup file from scotphos population lookups folder, depending on whatever
+  # was passed to the 'pop' argument of the function.
+
+  # add population lookups if required
+  if(!is.null(pop)){
+
+    pop_lookup <- get_population_lookup(folder = population_lookups, pop, measure)
+
+    # check what geography levels are in the dataset
+    geo_codes <- paste0("^", unique(stringr::str_sub(data$code, 1, 3)))
+    geo_codes <- paste(geo_codes, collapse = "|")
+
+    # filter the population lookup so it only include required geo levels
+    pop_lookup <- pop_lookup |>
+      filter(grepl(geo_codes, code))
+
+    # show warning if population lookup doesn't have enough years in it
+    # i.e. if your trying to update an indicator but new population estimates have not yet
+    # been published and added to our lookups to facilitate this
+    pop_max_year <- max(pop_lookup$year)
+    data_max_year <- max(data$year)
+
+    if(data_max_year > pop_max_year){
+
+      cli::cli_alert_warning("'Population lookup only contains population estimates up to {pop_max_year}. Unable to attach population estimates for {data_max_year}")
+    }
+
+    # filter by time period
+    pop_lookup <- pop_lookup |>
+      filter(year >= yearstart & year <= yearend)
+
+
+    # identify which variables to join data by - the population lookups used for
+    # standardised rates also include age and sex splits
+    #joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
+
+    
+    joining_vars <- c("code", "year")
+    
+    if (measure == "stdrate") {
+      joining_vars <- c(joining_vars, "age_grp")
+    } else if ("age" %in% names(df)) {
+      joining_vars <- c(joining_vars, "age")
+    }
+    
+    if ("sex_grp" %in% names(df)) {
+      joining_vars <- c(joining_vars, "sex_grp")
+    } else if ("sex" %in% names(df)) {
+      joining_vars <- c(joining_vars, "sex")
+    }
+    
+    
+    # full_join keeps all groups in the pop_lookup file and indicator data file
+    # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
+    # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
+
+    #should this be full or left - based on population lookup?
+    data <- full_join(x = data, y = pop_lookup, by = joining_vars)
+
+    # check year parameters are sensible and all required years are present
+    check_denominator_years(data, yearend, yearstart)
+
+
+    # step complete
+    cli::cli_alert_success("'Add population figures' step complete.")
+
+  }
+
+
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate splits and add totals  ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
