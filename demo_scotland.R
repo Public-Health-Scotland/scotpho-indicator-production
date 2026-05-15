@@ -272,12 +272,13 @@ result_decile <- imap_dfr(simd_pop_data, ~ mutate(.x, simd_version = .y))
 
 
 # pivot data longer to create 1 geography col
+# note that hscp locality and intermediate zone11 only available from 2014 onwards
 result_decile2 <- result_decile |>
   pivot_longer(
     cols = c("datazone", "intzone2011", "hscp_locality", "ca2019", "hscp2019", "hb2019", "scotland"), 
     names_to = "geo_type", 
     values_to = "code")
-# doesn't filter
+
 
 
 
@@ -361,12 +362,16 @@ rm(simd_pop_data)
 #apply filters to some years as the dataset is so large (in excess if 1.2 million rows)
 #maybe limit to years which SIMD produced and latest year? 
 populations_by_domain <-populations_by_domain   |>
-  filter(geo_type != "intzone2011") |> #not sure we really need iz level for this presentation & will help reduce row numbers 
-  filter(year %in% c(2004,2006,2009,2012,2016,2020,2023)) #brings down t0 380,000 ish rows
+  filter(geo_type != "datazone")|> #we don't need datazone level data now since we created a column that counts how many distinct dz
+  filter(geo_type != "intzone2011") |> #not sure we really need iz level as users probably not looking at individual dz (more likely hscp or higher geos) & will help reduce row numbers
+  #filter(geo_type != "HSC locality" & year <2013) |> #hscp locality only 
+  filter(!(geo_type == "hscp_locality" & year <2013)) |> #hscp localities only mapped to 2011 dz so data by locality prior to 2013 not available
+  filter(year %in% c(2004,2006,2009,2012,2014,2016,2020,2023)) #brings down t0 380,000 ish rows
 
 
 # likely stage that indicator data file saved out (this would then be picked up in app data prep) 
 #saveRDS(populations_by_domain, file=paste0(profiles_data_folder, '/Test Shiny Data/testfile_population_by_simd_centiles.rds'))
+
 
 
 
@@ -388,6 +393,12 @@ demo_simd<- populations_by_domain|>
   select(-geo_type,-simd_version)
 
 
+
+
+
+
+
+
 # draw a simple table with just scotland data as an example 
 demo_table<- demo_simd |>
   select(-c(total_pop_all_ages,total_pop_u26,total_pop_working))|>
@@ -395,21 +406,41 @@ demo_table<- demo_simd |>
   complete(centile = c("1","2","3","4","5","6","7","8","9","10"), fill = list(pop_all_ages = 0))|> # ensure all areas have 5 quintiles and fill gaps with zero
   mutate(centile=paste0("D",centile))|> #this field becomes a column name and numeric column names can be problematic
   filter(centile_type=="decile")|> #not strictly necessary here but maybe the groupings should be quintile & decile
+  #pivot longer converts all the various populations by age group into long format, one field to label population age grouping and another column for actual pop figure
   pivot_longer(cols = c("all_ages_pop", "u26_pop", "working_pop","all_ages_percent","u26_percent","working_percent","dz_count"),
                                                             names_to = "population_group",
-                                                            values_to = "population")|>
+                                                            values_to = "population")
+
+##choice here to pivot wider and generate a different column for each decile
+demo_table_wide <-demo_table|>
   pivot_wider(names_from = "centile",
               values_from = "population")|>
   relocate(D10,.after=D9)|> # relocate decile 10 which wants to sort after decile 1 not 9
   mutate(Total = rowSums(across(D1:D10), na.rm = TRUE),
          measure_type=case_when(grepl("pop", population_group) ~ "count",
-                                grepl("percent", population_group) ~ "(%)", TRUE ~ "other"))
+                                grepl("percent", population_group) ~ "(%)", TRUE ~ "dzcount"))
+
+## alternative long format add rows which contain population total split by ageband
+## long format doesn't seem to have advantage since the table ultimately created reactable needs data in wide format 
+# demo_table_long <-demo_table|>
+#   group_by(code,year,simd_domain,centile_type,areaname,areatype,parent_area,areaname_full,population_group)|>
+#   summarize(population=sum(population)) |>
+#   mutate(centile="All")
+# 
+# demo_table_long2 <-rbind(demo_table,demo_table_long) |>
+#   mutate(centile_number=case_when(centile =="All" ~ 11, centile != "All"~ as.numeric(substr(centile,2,3)),TRUE ~ 0),
+#          measure_type=case_when(grepl("pop", population_group) ~ "count",
+#                                 grepl("percent", population_group) ~ "(%)", TRUE ~ "dz_count"))|>
+#   arrange(code,year) |>
+#   select(-centile) |>
+#   pivot_wider(names_from = "centile_number",
+#               values_from = "population")
 
 
 #filter data desired for 1st table
 # Summary of how many datazones within each decile for a selected year and selected geography
 
-demo_table1<-demo_table |>
+demo_table1<-demo_table_wide |>
   filter(areatype == "Scotland" & areaname =="Scotland")|>
   filter(year==2023) |>
   filter(population_group=="dz_count")|>
@@ -423,7 +454,7 @@ demo_table1<-demo_table |>
 reactable(demo_table1,          
           #defaultExpanded = TRUE, #set default expanded groups (not required if table isn't grouped)
           pagination = FALSE,
-          defaultPageSize = nrow(data),
+         # defaultPageSize = nrow(data),
          # groupBy = c("simd_domain"),
           columns = list(
             simd_domain = colDef(name = "SIMD Domain",      
@@ -450,25 +481,26 @@ reactable(demo_table1,
 
 # filter for one particular
 
-demo_table2<-demo_table |>  
+demo_table2<-demo_table_wide |>  
   #filter(areatype == "Council area" & areaname =="Aberdeen City")|>
 #  filter(areatype == "Council area" & areaname =="Inverclyde")|>
   filter(areatype == "HSC locality" & areaname =="Airdrie")|>
   #filter(areatype == "Scotland" & areaname =="Scotland")|>
-  filter(measure_type != "other") |>
+  filter(measure_type != "dzcount") |>
   filter(year==2023) |>
   select(simd_domain,measure_type,population_group,D1:Total)
 
 
 # 1. Define the styling function - want to highlight when the % of population deviates from 10%
 # suggesting that a particular decile is over/under represented for a certain geography
+
+
 my_style <- function(value) {
   bg_color <- case_when(
-    value < 6              ~ "#9fc5e8", # Red range
-    #value >= 5 & value < 9 ~ "#cfe2ff", # Yellow range
-    value >= 6 & value < 14 ~ "#eeeeee", # Green range
-    #value >= 11 & value < 14 ~ "#fff3cd", # Green range
-    TRUE                   ~ "#fce4c0"  # Blue (everything else)
+   #value < 6              ~ "#9fc5e8", # less than 6% suggest lower than average pop in this domain
+    value >= 10 ~ "#fce4c0" 
+    #value >= 11 & value < 14 ~ "#fff3cd",
+    #TRUE                   ~ "#eeeeee"  # Blue (everything else)
   )
   list(background = bg_color)
 }
@@ -481,7 +513,7 @@ my_style <- function(value) {
 reactable(demo_table2,          
           defaultExpanded = TRUE, #set default expanded groups (not required if table isn't grouped)
           pagination = FALSE,
-          defaultPageSize = nrow(data),
+          #defaultPageSize = nrow(data),
           groupBy = c("population_group"),
           columns = list(
             simd_domain = colDef(name = "SIMD Domain",      
@@ -513,38 +545,33 @@ reactable(demo_table2,
 
 
 
-
-
-
-
-
-
-
-#table showing population count and percent of population by each simd quintile grouped by simd domain
-reactable(data=demo_table2,
-          defaultExpanded = TRUE,
-          defaultPageSize = nrow(data),
-          groupBy = "simd_domain",
-              columns = list(
-            simd_domain = colDef(name = "SIMD Domain",      
-                                 style = list(borderRight = "1px solid #eee"),
-                                 headerStyle = list(borderRight = "1px solid #eee")),
-            D1=colDef(format = colFormat(digits = 0,separators = TRUE)), #ideally want formatting for pops to be 0dp with separator and percent to be % with 1dp
-            D2=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D3=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D4=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D5=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D6=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D7=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D8=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D9=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            D10=colDef(format = colFormat(digits = 0,separators = TRUE)),
-            Total=colDef(format = colFormat(digits = 0,separators = TRUE))
-          ),
-          columnGroups = list(
-          #  colGroup("", columns = c("population_group", "simd_domain")),
-            colGroup("Deprivation Decile (population weighted)", columns = c("1", "2", "3","4","5","6","7","8","9","10"))
-          ))
+# 
+# 
+# #table showing population count and percent of population by each simd quintile grouped by simd domain
+# reactable(data=demo_table2,
+#           defaultExpanded = TRUE,
+#           #defaultPageSize = nrow(data),
+#           groupBy = "simd_domain",
+#               columns = list(
+#             simd_domain = colDef(name = "SIMD Domain",      
+#                                  style = list(borderRight = "1px solid #eee"),
+#                                  headerStyle = list(borderRight = "1px solid #eee")),
+#             D1=colDef(format = colFormat(digits = 0,separators = TRUE)), #ideally want formatting for pops to be 0dp with separator and percent to be % with 1dp
+#             D2=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D3=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D4=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D5=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D6=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D7=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D8=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D9=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             D10=colDef(format = colFormat(digits = 0,separators = TRUE)),
+#             Total=colDef(format = colFormat(digits = 0,separators = TRUE))
+#           ),
+#           columnGroups = list(
+#           #  colGroup("", columns = c("population_group", "simd_domain")),
+#             colGroup("Deprivation Decile (population weighted)", columns = c("1", "2", "3","4","5","6","7","8","9","10"))
+#           ))
 
 
 
