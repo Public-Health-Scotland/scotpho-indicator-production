@@ -26,7 +26,6 @@
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/data cleaning functions/ca_names_to_codes.R") #Converts council names to codes
 source("./functions/data cleaning functions/exclude_geog_codes.R") #Allows post-hoc removal of geog codes due to e.g. DQ issues
-library(tidyr) #For pivoting
 
 ################################################################################
 #####  Part 1) Read in data --------------------------------
@@ -136,7 +135,7 @@ saveRDS(premises_total, file.path(profiles_data_folder, "Prepared Data/premise_l
 
 main_analysis("premise_licences", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
-              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
 #As a handful of councils are missing for 2022, the Scotland figure as well as HSCPs/HBs/ADPs need to be removed
 #to avoid them showing artificial decreases that are the result of missing data
@@ -168,7 +167,7 @@ saveRDS(premises_on, file.path(profiles_data_folder, "Prepared Data/premise_lice
 
 main_analysis("premise_licences_on_trade", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
-              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
 exclude_geog_codes("premise_licences_on_trade", codes = c("S00000001", #scotland
                                                           #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
@@ -188,7 +187,7 @@ saveRDS(premises_off, file.path(profiles_data_folder, "Prepared Data/premise_lic
 
 main_analysis("premise_licences_off_trade", measure = "crude", geography = "council",
               year_type = "financial", ind_id = "4144", time_agg = 1, yearstart = 2011,
-              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000)
+              yearend = 2022, pop = "CA_pop_18+", crude_rate = 10000, NA_means_suppressed = TRUE)
 
 exclude_geog_codes("premise_licences_off_trade", codes = c("S00000001", #scotland
                                                            #missing clackmannanshire ca (S1200005) - means FV HB & stirling & clackmananshire HSCP and ADP incomplete
