@@ -64,7 +64,7 @@ for(i in rows_to_filter){
     write.csv(df, paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.csv"), row.names = F)
   }
 
-df #allow data to be saved to environment
+run_qa(filename = filename, type = "main", test = test) #run the QA doc to see effect of removing codes/check it's worked as intended
   
 }
   
