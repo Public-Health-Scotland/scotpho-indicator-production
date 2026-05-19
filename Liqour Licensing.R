@@ -124,7 +124,6 @@ exclude_geog_codes("personal_licences", codes = c("S00000001", #scotland
                                                   "S08000032", "S11000052","S37000028"), codes_years = "2022") 
 
 
-
 ################################################################################
 #####  Part 5) Premise licences in force - total (4144) --------------
 ################################################################################ 
@@ -215,7 +214,11 @@ total <- readRDS(file.path(profiles_data_folder, "Data to be checked/premise_lic
 pop_grps <- bind_rows(on_premise, off_premise, total) #join off licence, on licence and totals
 
 write.csv(pop_grps, file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny_popgrp.csv"), row.names = FALSE) #Save combined pop groups file
-saveRDS(pop_grps, file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny_popgrps.rds"))
+saveRDS(pop_grps, file.path(profiles_data_folder, "Data to be checked/premise_licences_shiny_popgrp.rds"))
+
+# QA popgroup files
+run_qa(filename="premise_licences", type="popgrp")
+
 
 #Delete the uncombined split values from data to be checked
 file.remove(file.path(profiles_data_folder, "Data to be checked", "premise_licences_on_trade_shiny.rds"))
