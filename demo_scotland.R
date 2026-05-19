@@ -370,14 +370,32 @@ populations_by_domain <-populations_by_domain   |>
 
 
 # likely stage that indicator data file saved out (this would then be picked up in app data prep) 
-#saveRDS(populations_by_domain, file=paste0(profiles_data_folder, '/Test Shiny Data/testfile_population_by_simd_centiles.rds'))
+#saveRDS(populations_by_domain, file=paste0(profiles_data_folder, '/Test Shiny Data/testfile_population_by_simd_centiles.rds')) |>
+#select(-c(total_pop_all_ages,total_pop_u26,total_pop_working))
+
+## open base file - match to geo lookup and transform data as would be required for shiny
+
+populations_by_domain2 <- populations_by_domain |>
+#populations_by_domain <-readRDS(file=paste0(profiles_data_folder, '/Test Shiny Data/testfile_population_by_simd_centiles.rds')) |>
+  select(-c(total_pop_all_ages,total_pop_u26,total_pop_working, geo_type)) |> #no longer needed
+  complete(centile = c("1","2","3","4","5","6","7","8","9","10"), fill = list(pop_all_ages = 0))|> # ensure all areas have 5 quintiles and fill gaps with zero
+  mutate(centile=paste0("D",centile))|> #this field becomes a column name and numeric column names can be problematic
+  filter(centile_type=="decile")|> #not strictly necessary here but maybe the groupings should be quintile & decile
+  #pivot longer converts all the various populations by age group into long format, one field to label population age grouping and another column for actual pop figure
+  pivot_longer(cols = c("all_ages_pop", "u26_pop", "working_pop","all_ages_percent","u26_percent","working_percent","dz_count"),
+               names_to = "population_group",
+               values_to = "population")|>
+  pivot_wider(names_from = "centile",
+              values_from = "population")|>
+  relocate(D10,.after=D9)|> # relocate decile 10 which wants to sort after decile 1 not 9
+  mutate(Total = rowSums(across(D1:D10), na.rm = TRUE),
+         measure_type=case_when(grepl("pop", population_group) ~ "count",
+                                grepl("percent", population_group) ~ "(%)", TRUE ~ "dzcount"))
 
 
+# likely stage that indicator data file saved out (this would then be picked up in app data prep) 
+saveRDS(populations_by_domain2, file=paste0(profiles_data_folder, '/Test Shiny Data/testfile_population_by_simd_centiles.rds')) 
 
-
-## START MESSING AROUND WITH TABLE/CHART DESIGNS ----
-
-library(reactable)
 
 
 # table could present by quintile or decile
@@ -393,15 +411,9 @@ demo_simd<- populations_by_domain|>
   select(-geo_type,-simd_version)
 
 
-
-
-
-
-
-
 # draw a simple table with just scotland data as an example 
 demo_table<- demo_simd |>
-  select(-c(total_pop_all_ages,total_pop_u26,total_pop_working))|>
+  #select(-c(total_pop_all_ages,total_pop_u26,total_pop_working))|> not needed if
   #need to consider that not all geo will have all deciles present
   complete(centile = c("1","2","3","4","5","6","7","8","9","10"), fill = list(pop_all_ages = 0))|> # ensure all areas have 5 quintiles and fill gaps with zero
   mutate(centile=paste0("D",centile))|> #this field becomes a column name and numeric column names can be problematic
@@ -412,6 +424,7 @@ demo_table<- demo_simd |>
                                                             values_to = "population")
 
 ##choice here to pivot wider and generate a different column for each decile
+## reactable expects data structured as you would like output table so data needs to be transformed 
 demo_table_wide <-demo_table|>
   pivot_wider(names_from = "centile",
               values_from = "population")|>
@@ -419,6 +432,10 @@ demo_table_wide <-demo_table|>
   mutate(Total = rowSums(across(D1:D10), na.rm = TRUE),
          measure_type=case_when(grepl("pop", population_group) ~ "count",
                                 grepl("percent", population_group) ~ "(%)", TRUE ~ "dzcount"))
+
+
+
+
 
 ## alternative long format add rows which contain population total split by ageband
 ## long format doesn't seem to have advantage since the table ultimately created reactable needs data in wide format 
@@ -436,6 +453,15 @@ demo_table_wide <-demo_table|>
 #   pivot_wider(names_from = "centile_number",
 #               values_from = "population")
 
+## START MESSING AROUND WITH TABLE/CHART DESIGNS ----
+
+library(reactable)
+
+
+
+##################################.
+## CHART 1 : COUNT OF DZ ----
+##################################.
 
 #filter data desired for 1st table
 # Summary of how many datazones within each decile for a selected year and selected geography
@@ -476,10 +502,9 @@ reactable(demo_table1,
             ))
           
 
-
-
-
-# filter for one particular
+############################################.
+## CHART 2 : COUNT/% OF POPULATION  ----
+############################################.
 
 demo_table2<-demo_table_wide |>  
   #filter(areatype == "Council area" & areaname =="Aberdeen City")|>
@@ -494,7 +519,6 @@ demo_table2<-demo_table_wide |>
 # 1. Define the styling function - want to highlight when the % of population deviates from 10%
 # suggesting that a particular decile is over/under represented for a certain geography
 
-
 my_style <- function(value) {
   bg_color <- case_when(
    #value < 6              ~ "#9fc5e8", # less than 6% suggest lower than average pop in this domain
@@ -504,8 +528,6 @@ my_style <- function(value) {
   )
   list(background = bg_color)
 }
-
-
 
 #don't really want the colour scheme on the population count
 
@@ -536,10 +558,66 @@ reactable(demo_table2,
 
 
 
+############################################.
+## CHART 3 : BAR GRAPH  % OF POPULATION ----
+############################################.
+
+demo_table3<-demo_table_wide |>  
+  filter(areatype == "Council area" & areaname =="Aberdeen City")|>
+  #filter(areatype == "Council area" & areaname =="Inverclyde")|>
+  #filter(areatype == "HSC locality" & areaname =="Airdrie")|>
+  #filter(areatype == "Scotland" & areaname =="Scotland")|>
+  filter(measure_type != "dzcount") |>
+  filter(substr(population_group,1,3)=="all") |>
+  #filter(year==2023) |>
+  filter(simd_domain=="overall")|>
+  select(year,simd_domain,measure_type,population_group,D1:Total)
 
 
 
+data<-demo_table3
 
+hc <- 
+  
+  hchart()|>
+  hc_chart(object = data,type = "line") %>%
+  #hcaes(x = .data[[xaxis_col]], y = .data[[yaxis_col]], group = .data[[grouping_col]]), 
+  hc_xAxis(categories = data$year)|>
+  hc_add_series(data = data$D1, name = "Q1 Most Deprived",color = "#1f77b4") %>%
+  # Add the second column
+  hc_add_series(data = data$D2, color = "#DFDDE3") |> 
+  hc_add_series(data = data$D3, color = "#DDDDE3") |>
+  hc_add_series(data = data$D4, color = "#DFDDE3") |> 
+  hc_add_series(data = data$D5, name = "Q5 Least Deprived",color = "#9b4393")
+
+
+marker = list(enabled = TRUE)) |>
+  hc_colors(colours) |>
+  hc_xAxis(title = "") |>
+  hc_yAxis(title = "") |>
+  hc_chart(marginRight = 15) |>
+  hc_legend(verticalAlign = legend_position, align = "left") |>
+  hc_tooltip(crosshairs = TRUE, shared = TRUE)
+
+
+
+highchart() %>%
+  hc_chart(type = "line") %>%
+  hc_xAxis(categories = data$date_column) %>%
+  # Add the first column
+  hc_add_series(
+    data = data$column1, 
+    name = "Series A", 
+    color = "#1f77b4"
+  ) %>%
+  # Add the second column
+  hc_add_series(
+    data = data$column2, 
+    name = "Series B", 
+    color = "#ff7f0e"
+  ) %>%
+  hc_tooltip(shared = TRUE
+             
 
 
 
