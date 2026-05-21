@@ -147,6 +147,8 @@ age_prevalence_shes <- bind_rows(age_prevalence_shes, age_prevalence_shes_new) #
 age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
   rename(agegrp2 = agegrp)
 
+rm(age_prevalence_shes_new, age_prevalence_shos)
+
 ###############################################.
 ## Part 2 - Extract data from SMR01 and SMR04 ----
 ###############################################.
@@ -233,7 +235,7 @@ smoking_adm_smr04 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
             MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
             MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
             MAX(discharge_date) OVER (PARTITION BY link_no, cis_marker) end_cis
-        FROM ANALYSIS.SMR01_PI  z
+        FROM ANALYSIS.SMR04_PI  z
         WHERE exists(
           SELECT * 
           FROM ANALYSIS.SMR04_PI  
@@ -403,12 +405,13 @@ data_shiny <- readRDS(file.path(profiles_data_folder, "Data to be checked/smokin
   mutate(numerator = round(numerator, -1)) |>  #to nearest 10
   mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
 
+
 saveRDS(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
-write_csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write.csv(data_shiny, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.csv"), row.names = FALSE)
 
 
 #Save appended SHeS prevalence data for next year - only run when ready to deploy
-saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
-saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
+# saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
+# saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
 
 ##END
