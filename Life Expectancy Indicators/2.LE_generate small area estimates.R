@@ -37,7 +37,7 @@ data_deaths_raw <- tbl_df(dbGetQuery(channel, statement=
                                        "SELECT year_of_registration year, age, sex sex_grp, POSTCODE pc7,
         CASE WHEN country_of_residence='XS'THEN 'XS'ELSE 'nonres' END as nonres 
   FROM ANALYSIS.GRO_DEATHS_C 
-  WHERE year_of_registration between 2001 AND 2023")) %>%
+  WHERE year_of_registration between 2001 AND 2024")) %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Check of numbers of non-residents - can compare to NRS published estimates.
@@ -50,7 +50,7 @@ data_deaths_raw <- data_deaths_raw %>%
   mutate(sex_grp=recode(data_deaths_raw$sex_grp,"9"="1"))
 
 # Read in geographic reference file.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>%
   setNames(tolower(names(.)))  #variables to lower case
 
 # Join geogrpaphy lookup and deaths data.
@@ -111,7 +111,7 @@ data_pop1 <- readRDS(paste0(cl_out_pop,"DataZone2011_pop_est_2001_2010.rds"))%>%
   select(-c(total_pop,sex, datazone2011name))
 
 # Read in small area population lookup, select required data and recode to permit matching.
-data_pop2 <- readRDS(paste0(cl_out_pop,"DataZone2011_pop_est_2011_2022.rds")) %>%
+data_pop2 <- readRDS(paste0(cl_out_pop,"DataZone2011_pop_est_2011_2024.rds")) %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   subset(year>=2011) %>%
   mutate(sex = case_when(sex=="m"~"M", sex=="f"~"F", TRUE~as.character(sex)),
@@ -121,13 +121,13 @@ data_pop2 <- readRDS(paste0(cl_out_pop,"DataZone2011_pop_est_2011_2022.rds")) %>
 ############################################################################################################################.
 ## TEMPORARY - remove when SAPE 2023 available ----
 # reapply 2022 populations as if they were 2023 data as likely to be long delays or new datazones which will impact time series
-
-pop_2022<-data_pop2 |>
-  filter(year==2022) |> # filter for latest year
-  mutate(year=2023) # mutate latest year so that it will appear as 2023 
-
-data_pop2 <-rbind(data_pop2,pop_2022)
-rm(pop_2022)
+# 
+# pop_2022<-data_pop2 |>
+#   filter(year==2022) |> # filter for latest year
+#   mutate(year=2023) # mutate latest year so that it will appear as 2023 
+# 
+# data_pop2 <-rbind(data_pop2,pop_2022)
+# rm(pop_2022)
 ###########################################################################################################################.
 
 # bind the full population time series
@@ -204,15 +204,15 @@ rm(postcode_lookup, data_pop, data_pop_iz, data_pop_locality, dz_geo_lookup) #op
 # yearend       - last calendar year of data to use in trend 
 # time_agg      - number of years of data for aggegrated time periods (1 = single year, 2,3,4,5 etc)
 
-LE_function(max_agegrp=85,run_name="2001to2023 IZ&Locality LE(85+)_20241127",fp_deaths="data_deaths", 
+LE_function(max_agegrp=85,run_name="2001to2024 IZ&Locality LE(85+)_20260302",fp_deaths="data_deaths", 
             fp_pop="data_pop", fp_output="4_Intermediate Zone LE (annual)",
-            yearstart=2001, yearend=2023, time_agg=5)
+            yearstart=2001, yearend=2024, time_agg=5)
 
 
 # Function generates 3 output RDS files than can be used for checking or analysis
 # Once function runs these should appear in local environment
 # all_data: all_data should be raw population and deaths data files added priort to calculations
-# final_lifetable : lifetable contains invidual age groups plus all stages of calculation
+# final_lifetable : lifetable contains individual age groups plus all stages of calculation
 # final_le0_data : le0 just a summary of life expectancy at birth data.
 
 

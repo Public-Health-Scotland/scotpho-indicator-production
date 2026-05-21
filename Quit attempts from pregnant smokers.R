@@ -54,7 +54,7 @@ library(phsopendata) # for extracting opendata
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # extract data from opendata platform
-# https://www.opendata.nhs.scot/dataset/births-in-scottish-hospitals/resource/e87a7673-0397-43ca-91a5-166184319728%20%20e87a7673-0397-43ca-91a5-166184319728
+# https://www.opendata.nhs.scot/dataset/births-in-scottish-hospitals/resource/e87a7673-0397-43ca-91a5-166184319728
 preg_smokers <- get_resource(res_id = "e87a7673-0397-43ca-91a5-166184319728", row_filters = list(SmokingAtBooking = "Current smoker")) |>
   clean_names()
 
@@ -104,10 +104,7 @@ preg_smokers <- left_join(preg_smokers, geo_lookup, by = c("ca" = "ca2019")) |>
 filepath <- file.path(profiles_data_folder, "Received Data", "Smoking quit attempts", "scotpho_simd_data.parquet")
 
 # read in data 
-quit_attempts <- read_parquet(filepath) |>
-  # temporary step May 2025: remove 2024/25 data as incomplete
-  # either replace with 2025/26 at next update if required or remove
-  filter(finyear != "2024/25")
+quit_attempts <- read_parquet(filepath)
   
 # remove NAs
 quit_attempts <- quit_attempts |>
@@ -165,7 +162,7 @@ saveRDS(main_data, file.path(profiles_data_folder, "Prepared Data", "1526_quit_a
 
 # run analysis function 
 main_analysis(filename = "1526_quit_attempts_pregnant", ind_id = 1526, geography = "council", 
-              measure = "percent", yearstart = 2014, yearend = 2023, time_agg = 3, year_type = "financial")
+              measure = "percent", yearstart = 2014, yearend = 2024, time_agg = 3, year_type = "financial")
 
 run_qa(filename="1526_quit_attempts_pregnant", type="main", test_file=FALSE)
 

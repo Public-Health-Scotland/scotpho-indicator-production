@@ -26,7 +26,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2024' 
+  WHERE admission_date between '1 April 2005' and '31 March 2025' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -59,7 +59,7 @@ saveRDS(young_assault, file=paste0(profiles_data_folder, '/Prepared Data/youngas
 ###############################################.
 main_analysis(filename = "youngassault_ca2019", geography = "council", measure = "stdrate",
               year_type = "financial", ind_id = 13049, time_agg = 3, yearstart = 2005,
-              yearend = 2023, pop = "CA_pop_15to25", epop_total = 25400, epop_age = "15to25")
+              yearend = 2024, pop = "CA_pop_15to25", epop_total = 25400, epop_age = "15to25")
 
 
 ##END

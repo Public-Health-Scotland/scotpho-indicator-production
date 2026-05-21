@@ -4,7 +4,7 @@ calculate_percent <- function(data){
   data <- data |>
     mutate(rate = numerator / denominator * 100)
   
-  # calculate confidence intervals
+  # calculate confidence intervals (Wilson Score method)
   data <- data |>
     mutate(
       # lower CI
@@ -21,7 +21,8 @@ calculate_percent <- function(data){
   data <- data |>
     mutate(
       upci = case_when(upci > 100 ~ 100, TRUE ~ round(upci, 2)),
-      lowci = case_when(lowci < 0 ~ 0, TRUE ~ round(lowci, 2))
+      lowci = case_when(lowci < 0 ~ 0, TRUE ~ round(lowci, 2)),
+      rate = round(rate, 2) # avoids rate being lower than lowci or higher than upci
     )
   
 }

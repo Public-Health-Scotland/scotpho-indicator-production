@@ -9,12 +9,12 @@
 # https://publichealthscotland.scot/publications/unintentional-injuries/ 
 
 # The dates in the SQL query should be updated to extract admissions up to the latest financial year that matches publication
-# E.g. if publication reports up to 2023/24, data should extracted up to '31 March 2024'
+# E.g. if publication reports up to 2024/25, data should extracted up to '31 March 2025'
 # Note that part of the SQL query formats the year column so that those last 3 months of the financial year
-# are converted to the starting year of the FY i.e. Jan-March data for 2024 will show as 2023 in the year column
+# are converted to the starting year of the FY i.e. Jan-March data for 2025 will show as 2024 in the year column
 
 # The 'yearend' parameter in the `main_analysis` function should then match the maximum year in the data
-# i.e. if your data goes up to 2023/24 (showing as 2023 in the SQL extract) then `yearend` should be set to 2023
+# i.e. if your data goes up to 2024/25 (showing as 2024 in the SQL extract) then `yearend` should be set to 2024
 
 # If in doubt, figures can be sense checked against the injuries aged 0-4 in the open data: 
 # https://www.opendata.nhs.scot/dataset/unintentional-injuries/resource/aee43295-2a13-48f6-bf05-92769ca7c6cf
@@ -27,7 +27,6 @@
 # Filepaths/Functions ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 source("functions/main_analysis.R") # for creating 'main' indicator file
-data_folder <- "/PHI_conf/ScotPHO/Profiles/Data/"
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -47,14 +46,14 @@ unint_diag <- '^V|^W|^X[0-5]|^Y8[56]'
 # Extract data from SMRA: one row per hospital admission for those aged under 5,
 # with a valid sex recorded, and admission_type 32 on its own or 33 and 35 combined
 # with a diagnosis of unintentional injury
-unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
+unintentional_under5 <- tibble::as_tibble(dbGetQuery(channel, statement=paste0(
   "SELECT distinct link_no linkno, cis_marker cis,
     min(AGE_IN_YEARS) age, min(SEX) sex_grp, min(DR_POSTCODE) pc7,
     CASE WHEN extract(month from admission_date) > 3
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END as year
   FROM ANALYSIS.SMR01_PI z
-  WHERE admission_date between  '1 April 2005' and '31 March 2024'
+  WHERE admission_date between  '1 April 2005' and '31 March 2025'
     AND sex <> 0
     AND AGE_IN_YEARS <=4
     AND CASE WHEN admission_type = '32' THEN 1
@@ -76,7 +75,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
    mutate(age_grp = 1)
 
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>%
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>%
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2019)
 
@@ -88,7 +87,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
    ungroup()
 
  # save temp file to be used in analysis function
- saveRDS(unintentional_under5, file=paste0(data_folder, 'Prepared Data/unintentional_under5_new_raw.rds'))
+ saveRDS(unintentional_under5, file.path(profiles_data_folder, 'Prepared Data/unintentional_under5_raw.rds'))
 
  
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,7 +97,7 @@ unintentional_under5 <- tbl_df(dbGetQuery(channel, statement=paste0(
 main_analysis(filename = "unintentional_under5", ind_id = 13050, 
               geography = "council", measure = "stdrate",
               pop = "CA_pop_under5", epop_age = 'normal', epop_total = 10000, 
-              yearstart = 2005, yearend = 2023, time_agg = 3, year_type = "financial")
+              yearstart = 2005, yearend = 2024, time_agg = 3, year_type = "financial")
 
 
 ##END

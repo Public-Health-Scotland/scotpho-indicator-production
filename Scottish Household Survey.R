@@ -22,7 +22,7 @@
 # NOTES:
 # Data for 2020 and 2021 are not included in the timeseries as they are not comparable 
 # with other years due to changes in the mode and delivery of the survey for those years because of the pandemic. 
-# Latest year available is 2023.
+# Latest year available is 2024.
 # Where the base is under 50, the associated figures have been left blank.
 # For the credit tables specifically, the percentages are very low as the actual 
 # numbers for the credit309 options are low. As such, they will likely not be useful for your 
@@ -49,7 +49,7 @@ area_lookup <- readRDS(paste0(profiles_lookups, "/Geography/opt_geo_lookup.rds")
 
 ### 1 - Read in SHoS data from spreadsheet ----
 
-file <- "/Scottish Household Survey/Tables_2025.xlsx"
+file <- "/Scottish Household Survey/PHS Mental Health Indicator Tables 2026.xlsx"
 
 vars <- c("SERV1H", "HK2", "COMMBEL", "RB1", "SOCIAL32", 
           "GREENUSE13", "VOLUN", "SOCIAL2",
@@ -256,8 +256,6 @@ prepare_final_files <- function(indicator_name){
       add_population_to_quintile_level_data(pop="depr_pop_16+", ind = ind_id, ind_name = indicator_name) |>
       filter(!is.na(rate)) # drop any years without data (that have been given population data)
     
-    simd_data$numerator[is.na(simd_data$numerator)] <- 0 # Converting any NAs to 0s (all are NA in SHoS because not provided)
-    
     # calculate the inequality measures
     simd_data <- simd_data |>
       calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
@@ -303,7 +301,7 @@ run_qa(type = "main", filename = "discrimination", test_file = FALSE)
 run_qa(type = "main", filename = "harassment", test_file = FALSE)
 run_qa(type = "main", filename = "feeling_lonely", test_file = FALSE)
 run_qa(type = "main", filename = "noisy_neighbours", test_file = FALSE)
-run_qa(type = "main", filename = "high_risk_loans", test_file = FALSE) # "Warning: Error in eval: object 'S08' not found"
+run_qa(type = "main", filename = "high_risk_loans", test_file = FALSE) # data for 2015, 2017 and 2019. 2023 % too low so not provided.
 
 
 # ineq data:
@@ -318,5 +316,17 @@ run_qa(type = "deprivation", filename = "discrimination", test_file=FALSE)
 run_qa(type = "deprivation", filename = "harassment", test_file=FALSE)
 run_qa(type = "deprivation", filename = "feeling_lonely", test_file=FALSE)
 run_qa(type = "deprivation", filename = "noisy_neighbours", test_file=FALSE)
+
+# pop group data:
+run_qa(type = "popgrp", filename = "influence_local_decisions", test_file=FALSE) 
+run_qa(type = "popgrp", filename = "neighbourhood_belonging", test_file=FALSE)
+run_qa(type = "popgrp", filename = "neighbourhood_good_place", test_file=FALSE)
+run_qa(type = "popgrp", filename = "neighbourhood_trust", test_file=FALSE)
+run_qa(type = "popgrp", filename = "open_space_use", test_file=FALSE)
+run_qa(type = "popgrp", filename = "volunteering", test_file=FALSE)
+run_qa(type = "popgrp", filename = "discrimination", test_file=FALSE)
+run_qa(type = "popgrp", filename = "harassment", test_file=FALSE)
+run_qa(type = "popgrp", filename = "feeling_lonely", test_file=FALSE)
+run_qa(type = "popgrp", filename = "noisy_neighbours", test_file=FALSE)
 
 # END

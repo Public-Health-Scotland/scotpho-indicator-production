@@ -42,13 +42,20 @@ source("functions/main_analysis.R")
 
 # Link comes from the NOMIS website after completing the query building steps
 # if rerunning check that in data returned specifies Jan-Dec year ending figures
+# extraction split into two parts since row limit on extracted data
 
-API_link <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1774190786,1774190787,1774190793,1774190788,1774190789,1774190768,1774190769,1774190794,1774190770,1774190795,1774190771,1774190772,1774190774,1774190796,1774190798,1774190775...1774190778,1774190773,1774190779,1774190799,1774190780,1774190797,1774190790,1774190781...1774190785,1774190791,1774190792,2092957701&date=latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=46...49,51,45,54,63,594&measures=20599,21001,21002,21003")
-
+API_link_2004to2021 <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1778385233,1778385234,1778385240,1778385235,1778385236,1778385215,1778385216,1778385241,1778385217,1778385242,1778385218,1778385219,1778385221,1778385243,1778385245,1778385222...1778385225,1778385220,1778385226,1778385246,1778385227,1778385244,1778385237,1778385228...1778385232,1778385238,1778385239,2092957701&date=latestMINUS84,latestMINUS80,latestMINUS76,latestMINUS72,latestMINUS68,latestMINUS64,latestMINUS60,latestMINUS56,latestMINUS52,latestMINUS48,latestMINUS44,latestMINUS40,latestMINUS36,latestMINUS32,latestMINUS28,latestMINUS24,latestMINUS20,latestMINUS16&variable=46...49,51,45,54,63,594&measures=20599,21001,21002,21003")
+API_link_2022tolatest <- c("https://www.nomisweb.co.uk/api/v01/dataset/NM_17_5.data.csv?geography=1778385233,1778385234,1778385240,1778385235,1778385236,1778385215,1778385216,1778385241,1778385217,1778385242,1778385218,1778385219,1778385221,1778385243,1778385245,1778385222...1778385225,1778385220,1778385226,1778385246,1778385227,1778385244,1778385237,1778385228...1778385232,1778385238,1778385239,2092957701&date=latestMINUS12,latestMINUS8,latestMINUS4,latest&variable=46...49,51,45,54,63,594&measures=20599,21001,21002,21003")
 
 # Reads the API as a csv using readr and assigns it the name raw_data
-raw_data <- read_csv(API_link) %>%
+raw_data_2004to2021 <- read_csv(API_link_2004to2021) %>%
   clean_names()  # Clean column data
+
+raw_data_2022tolatest <- read_csv(API_link_2022tolatest) %>%
+  clean_names()  # Clean column data
+
+raw_data<- rbind(raw_data_2004to2021,raw_data_2022tolatest)
+
 
 ### 2. Prepare data  -----
 

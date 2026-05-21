@@ -20,15 +20,16 @@
 ###1.a load dependencies/functions ----
 
 source("./functions/main_analysis.R") 
+library(readxl)
 
 ###1.b read in data ----
 
-dat <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Annual participation measure/annual-participation-measure-2024-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
+dat <- read_excel(file.path(profiles_data_folder, "/Received Data/Annual participation measure/2025-annual-participation-measure-supplementary-tables.xlsx"), sheet = "Table 1.7") #aps data
 
 ###1.c clean data ----
 
 dat_cleaned <- dat |> 
-  slice(8:305) |>  #remove metadata from top and bottom of spreadsheet
+  slice(9:(n() - 3)) |>  #remove metadata from top and bottom of spreadsheet, starting at row 9 and removing last 3
   row_to_names(row_number = 1) |>  #set 1st row as column names
   clean_names() |> #tidy up column names
   select(year, council_area_2019_code, participating_16_19, total_cohort_16_19) |> #drop unnecessary variables
@@ -39,7 +40,7 @@ dat_cleaned <- dat |>
   filter(!is.na(ca)) #drop Scotland totals which are showing as NA codes - will be re-added by analysis functions
 
 #1.d. Save file to be used in part 2 ----
-  saveRDS(dat_cleaned, file=paste0(profiles_data_folder, '/Prepared Data/participation_raw.rds'))
+  saveRDS(dat_cleaned, file.path(profiles_data_folder, '/Prepared Data/participation_raw.rds'))
 
 
 ###############################################.
@@ -48,7 +49,7 @@ dat_cleaned <- dat |>
   
  main_analysis(filename = "participation", measure = "percent", geography = "council",
                year_type = "calendar", ind_id = 13053, time_agg = 1, yearstart = 2016,
-               yearend = 2024)
+               yearend = 2025)
 
 
 #End.

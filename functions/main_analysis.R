@@ -41,6 +41,7 @@ library(htmltools) # used in rmarkdown
 library(shiny) # used in rmarkdown
 library(flextable) # used in rmarkdown
 library(ggplot2) # used in rmarkdown
+library(hablar) # sum_ function from hablar keeps NA when there should be NA
 
 
 
@@ -52,6 +53,7 @@ library(ggplot2) # used in rmarkdown
 source("functions/helper functions/check_file_exists.R") # to check file exists before attempting to read in 
 source("functions/helper functions/validate_columns.R") # for checking all required columns are present, named correctly and of correct class
 source("functions/helper functions/check_year_parameters.R") # for checking years in the dataset before filtering on them
+source("functions/helper functions/check_denominator_years.R") # for checking years present in population denominator files
 source("functions/helper functions/calculate_percent.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_perc_pcf.R") # for calculating percent and confidence intervals
 source("functions/helper functions/calculate_crude_rate.R") # for calculating crude rates and confidence intervals
@@ -61,7 +63,7 @@ source("functions/helper functions/create_trend_axis_column.R") # for creating t
 source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
 source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
-
+source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
 # file paths (derived when script sourced)----
@@ -120,20 +122,21 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 #'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25` = 'normal' if the age groupings are fit standard 5 year banding 0-4,5-9,10-14 etc
 #'@param epop_total only applicable to standardised rates
 #'@param crude_rate only applicable to crude rates. Size of the population to use.
-
-
+#'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
+#'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data. Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
 
 main_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
                           geography = c("scotland", "board", "council", "intzone11", "datazone11", "multiple"),
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
-                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE){
+                          pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE,
+                          NA_means_suppressed = FALSE){
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
+
   # ensure arguments with finite choices are valid
   # this section should only work when calling the entire function, not running individually
   geography <- rlang::arg_match(geography)
@@ -221,10 +224,15 @@ main_analysis <- function(filename,
     area_types <- switch(geography,
                          "scotland" =  c("scotland"),
                          "board" = c("hb2019", "scotland"),
-                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland", "hscp2019"),
+                         "council" = c("ca2019", "hscp2019", "hb2019", "adp", "scotland"),
                          "intzone11" = c("intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019"),
                          "datazone11" = c("datazone2011", "intzone2011", "ca2019", "hb2019", "scotland", "adp", "hscp2019", "hscp_locality")
                          )
+    
+    # if police division is set to true then add to geography list, default is false so will skip this step
+    if (police_div==TRUE){
+      area_types <- c(area_types,"pd")
+    }
 
     # select those columns from the lookup
     geography_lookup <- geography_lookup |>
@@ -262,11 +270,25 @@ main_analysis <- function(filename,
     
    }
 
+
   # and finally, aggregate the data by each geography code
-  data <- data |>
-    group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
-    summarise_all(sum, na.rm = T) |>
-    ungroup()
+  if (NA_means_suppressed==FALSE) {
+    
+    data <- data |>
+      group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+      summarise_all(sum, na.rm = T) |>
+      ungroup()
+  }
+  
+  if (NA_means_suppressed==TRUE) {
+   
+    data <- data |>
+      group_by(across(any_of(c("code", "year", "age_grp", "sex_grp")))) |>
+      summarise_all(sum_) |> #sum_ function from hablar better than sum here, as it still ignores NA when there is some data to sum, but retains NA if there are no counts, e.g., when suppressed data. sum turns suppressed counts into 0, when they should be NA.
+      # means that aggregated totals that include some suppressed data will be calculated. The metadata should note that suppression exists in the data.  
+      ungroup()
+    
+  }
 
   # step complete
   cli::cli_alert_success("'Aggregate by geography level' step complete.")
@@ -301,6 +323,7 @@ main_analysis <- function(filename,
     data_max_year <- max(data$year)
 
     if(data_max_year > pop_max_year){
+      
       cli::cli_alert_warning("'Population lookup only contains population estimates up to {pop_max_year}. Unable to attach population estimates for {data_max_year}")
     }
 
@@ -312,13 +335,22 @@ main_analysis <- function(filename,
     # identify which variables to join data by - the population lookups used for
     # standardised rates also include age and sex splits
     joining_vars <- c("code", "year", if(measure == "stdrate") c("age_grp", "sex_grp"))
+    
+    # full_join keeps all groups in the pop_lookup file and indicator data file
+    # full_join selected as a fail safe to try and prevent cases where either events in areas where apparently no population (which might indicate a problem with population lookup)
+    # or to keep an eye on areas with population but apparently no events, this might be legitimate for events that are rare or it might signify incomplete event/case data.
+    
+    #should this be full or left - based on population lookup?
+    data <- full_join(x = data, y = pop_lookup, by = joining_vars) 
 
-    data <- full_join(x = data, y = pop_lookup, by = joining_vars)
-
+    # check year parameters are sensible and all required years are present
+    check_denominator_years(data, yearend, yearstart)
+    
+    
     # step complete
     cli::cli_alert_success("'Add population figures' step complete.")
+    
   }
-  
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate by time period ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -327,30 +359,44 @@ main_analysis <- function(filename,
   # However, we often need to combine years in order to publish data if the figures are small or sensitive. This step
   # aggregates the data according to what number has been passed to the 'time_agg' argument of the function.
 
-
-  # replace NAs with 0 before aggregating data by time period
-  data <- data |>
-    tidyr::replace_na(list(numerator = 0,
-                           denominator = 0))
-
-
   # determine sort order or variables before aggregating
   var_order <- if(measure == "stdrate"){
     c("code", "sex_grp", "age_grp", "year")
   } else {
     c("code", "year")
   }
-
-
-  # aggregate by time period
+  
+  if (NA_means_suppressed==FALSE) {
+    
+    # replace NAs with 0 before aggregating data by time period
+    data <- data |>
+      tidyr::replace_na(list(numerator = 0, # should est_pop be included here too? I don't have indicators with this column in...
+                             denominator = 0))
+  
+    # aggregate by time period
+    data<- data |>
+      arrange(across(all_of(var_order))) |> # arrange data by var order
+      group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
+      # calculating rolling averages
+      mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
+      ungroup() 
+  }
+  
+  if (NA_means_suppressed==TRUE) { # additional na.rm=TRUE is the only difference here. Maybe possible to simplify?
+    
+    # aggregate by time period
+    data<- data |>
+      arrange(across(all_of(var_order))) |> # arrange data by var order
+      group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
+      # calculating rolling averages
+      mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg, na.rm=TRUE))) |>
+      ungroup() 
+  }
+  
   data <- data |>
-    arrange(across(all_of(var_order))) |> # arrange data by var order
-    group_by(across(any_of(c("code", "sex_grp", "age_grp")))) |>
-    # calculating rolling averages
-    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ RcppRoll::roll_meanr(., time_agg))) |>
-    filter(!is.na(denominator)) |>
-    ungroup()
-
+    filter(!is.na(denominator) | is.nan(denominator)) |> # want to keep NaN but drop NA
+    mutate(across(any_of(c("numerator", "denominator", "est_pop")), ~ ifelse(is.nan(.), NA, .))) #NaN result if time_agg is 1 and an NA is encountered. Reset as NA.
+  #Want to keep suppressed data as NA so that these are available to show as empty cells on the dashboard, and are included in data downloads from there
   
   # step complete
   cli::cli_alert_success("'Aggregate by time period' step complete - aggregated by {time_agg} year{?s}")

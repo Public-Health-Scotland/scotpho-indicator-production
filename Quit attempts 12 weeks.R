@@ -47,10 +47,7 @@ library(arrow) # for reading parquet files
 filepath <- file.path(profiles_data_folder, "Received Data", "Smoking quit attempts", "scotpho_simd_data.parquet")
 
 # read in data 
-data <- read_parquet(filepath) |>
-  # temporary step May 2025: remove 2024/25 data as incomplete
-  # either replace with 2025/26 at next update if required or remove
-  filter(finyear != "2024/25")
+data <- read_parquet(filepath)
 
 # remove NAs - already included in Scotland totals
 data <- data |>
@@ -91,7 +88,7 @@ saveRDS(main_data, file.path(profiles_data_folder, "Prepared Data", "1537_quit_r
 
 # run analysis function 
 main_analysis(filename = "1537_quit_rate_12weeks", ind_id = "1537", measure = "percent", geography = "council", 
-              time_agg = 1, year_type = "financial",yearstart = 2014, yearend = 2023)
+              time_agg = 1, year_type = "financial",yearstart = 2014, yearend = 2024)
 
 
 

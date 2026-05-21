@@ -10,7 +10,7 @@
 # 99143 - Homeless deaths
 
 # Data is sourced from the NRS homeless deaths publication:
-# https://www.nrscotland.gov.uk/publications/homeless-deaths-2023/
+# https://www.nrscotland.gov.uk/publications/homeless-deaths-2024/
 
 # Published data table to be download each year and saved here:
 # \\Isdsf00d03\ScotPHO\Profiles\Data\Received Data\Homelessness deaths
@@ -18,7 +18,11 @@
 # We use 3 tabs from published tables:
 # Table_1 - deaths by local authority
 # Table_2 - deaths by age and sex (Scotland level only)
-# Data_Figure_5 - deaths by selected causes of death (Alcohol, drugs, suicide) (Scotland level only)
+# Table_4 - deaths by selected causes of death (Alcohol, drugs, suicide) (Scotland level only)
+
+
+# Note published data format may vary slightly each year so code may need tweaked
+# e.g. number of rows to skip when reading in file
 
 # NRS publish both estimated deaths and crude rate (estimated deaths per 1 million population aged 15-74)
 # However, they only publish estimated deaths for the breakdowns by cause of death
@@ -69,13 +73,13 @@ prepare_final_cols <- function(data) {
 
 # excel file details
 folder <- file.path(profiles_data_folder, "Received Data", "Homelessness deaths")
-file <- "homeless-deaths-2023-data.xlsx"
+file <- "homeless-deaths-2024-data.xlsx"
 path <- file.path(folder, file)
 
 # read in data 
-la_splits <- clean_names(read_excel(path, skip = 4, sheet = "Table_1")) # deaths by local authority 
+la_splits <- clean_names(read_excel(path, skip = 5, sheet = "Table_1")) # deaths by local authority 
 age_sex_splits <- clean_names(read_excel(path, skip = 4, sheet = "Table_2")) # deaths by age and sex
-select_causes_splits <- clean_names(read_excel(path, skip = 4, sheet = "Data_Figure_5")) # deaths drug/acl/suicide
+select_causes_splits <- clean_names(read_excel(path, skip = 4, sheet = "Table_4")) # deaths drug/acl/suicide
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,10 +127,10 @@ age_sex_formatted <- age_sex_splits |>
   mutate(
     # create split_name col 
     split_name = case_when(
-      age_group == "All Ages" &sex %in% c("Persons", "Males", "Females") ~ "Sex",
-      age_group != "All Ages" & sex == "Persons" ~ "Age",
-      age_group != "All Ages" & sex == "Females" ~ "Age (females)",
-      age_group != "All Ages" & sex == "Males" ~ "Age (males)",
+      age_group == "All aged 15 to 74" & sex %in% c("Persons", "Males", "Females") ~ "Sex",
+      age_group != "All aged 15 to 74" & sex == "Persons" ~ "Age",
+      age_group != "All aged 15 to 74" & sex == "Females" ~ "Age (females)",
+      age_group != "All aged 15 to 74" & sex == "Males" ~ "Age (males)",
       TRUE ~ "Other"
     ),
     # create split_value col 
@@ -146,12 +150,10 @@ age_sex_formatted <- age_sex_splits |>
 
 # format select causes data (drugs, alcohol suicides)
 select_causes_formatted <- select_causes_splits |>
-  pivot_longer(
-    cols = -year,
-    names_to = "split_value",
-    values_to = "numerator",
-    names_transform = list(split_value = ~ str_replace_all(.x, "_", " "))
-  ) |>
+  rename(
+    split_value = cause, 
+    numerator = estimated_deaths
+    ) |>
   mutate(split_name = "Select causes of death")
 
 

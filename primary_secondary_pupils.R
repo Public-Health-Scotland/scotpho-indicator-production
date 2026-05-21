@@ -13,15 +13,13 @@
 # and update the name of the file in the 'pupil_census_data' object below to read in the latest data. Update the end_date parameters in the 
 # main_analysis functions.
 
-# Note March 2025: Indicators cannot be updated following release of 2025 pupil census data (due end of March 2025) as population estimates are the denominator for these indicators
-# we do not yet have population estimates for 2024 or 2025 to do this. Data therefore only prepared up to 2023 until we have denominator available.
-
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Functions/filepaths/packages ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 source("functions/main_analysis.R") # source main analysis function 
+source("functions/data cleaning functions/ca_names_to_codes.R")
 library(rio) # for import_list() function to reading and combine multiple excel sheets from same file 
 
 # full path to raw pupil census data 
@@ -33,7 +31,7 @@ pupil_census_folder <- file.path(profiles_data_folder, "Received Data", "School 
 
 # read in data from the 2 sheets containing 
 # data on number of primary and secondary pupils 
-data <- rio::import_list(file = file.path(pupil_census_folder, "Pupil+Census+Supplementary+Statistics+2024+-+December+v2.xlsx"), 
+data <- rio::import_list(file = file.path(pupil_census_folder, "Pupil+census+supplementary+statistics+2024+-+March (1).xlsx"), 
                          which = c("Table 6.2", "Table 7.2"), 
                          rbind = TRUE, 
                          rbind_label = "sheet", 
@@ -76,20 +74,8 @@ data <- data |>
 
 # replace some council names in order to successfully join data with council area lookup in next step
 data <- data |>
-  mutate(`Local Authority` = str_replace(`Local Authority`, "&", "and"),
-         `Local Authority` = str_replace(`Local Authority`, "Edinburgh City", "City of Edinburgh"),
-         `Local Authority` = str_replace(`Local Authority`, "Eilean Siar", "Na h-Eileanan Siar")
-         ) |>
-  filter(!`Local Authority` %in% c("All local authorities", "Grant aided", "Scotland"))
-
-# get council area lookup containing geography codes 
-lookup <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "CAdictionary.rds"))
-
-
-# join data with lookup so there is a geography code column
-data <- data |>
-  left_join(lookup, by = c(`Local Authority` = "areaname"))
-
+  filter(!`Local Authority` %in% c("All local authorities", "Grant aided", "Scotland")) |>
+  ca_names_to_codes(`Local Authority`)
 
 
 # read in council area population estimates - these are required to use as denominator 
@@ -121,12 +107,12 @@ saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "13108_
 
 # analyse and prepare final file for primary pupils indicator  
 main_analysis(filename = "13107_primary_pupils", geography = "council", measure = "percent", yearstart = 2002,
-              yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13107)
+              yearend = 2024, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
 # analyse and prepare final file for secondary pupils indicator 
 main_analysis(filename = "13108_secondary_pupils", geography = "council", measure = "percent", yearstart = 2002,
-              yearend = 2023, time_agg = 1, year_type = "calendar", ind_id = 13108)
+              yearend = 2024, time_agg = 1, year_type = "calendar", ind_id = 13108)
 
 
 ## END

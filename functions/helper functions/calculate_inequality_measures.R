@@ -70,6 +70,10 @@ calculate_inequality_measures <- function(dataset){
   data_depr <- data_depr %>% mutate(rii = sii / overall_rate,
                                     lowci_rii = lowci_sii / overall_rate,
                                     upci_rii = upci_sii / overall_rate,
+                                    # those calcs give RII = NaN if there is zero inequality (it does happen!), but RII should be zero in that case
+                                    rii = ifelse(sii==0, 0, rii),
+                                    lowci_rii = ifelse(sii==0, 0, lowci_rii),
+                                    upci_rii = ifelse(sii==0, 0, upci_rii),
                                     #Transforming RII into %. This way is interpreted as "most deprived areas are
                                     # xx% above the average" For example: Cancer mortality rate is around 55% higher
                                     # in deprived areas relative to the mean rate in the population

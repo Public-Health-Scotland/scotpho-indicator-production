@@ -10,8 +10,8 @@
 ###############################################.
 library(lubridate)
 
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/deprivation_analysis.R") # deprivation function
 
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
@@ -30,7 +30,7 @@ copd_deaths <- as_tibble(dbGetQuery(channel, statement=
           THEN extract(year from date_of_registration) 
           ELSE extract(year from date_of_registration) -1 END as finyear 
    FROM ANALYSIS.GRO_DEATHS_C
-   WHERE date_of_registration between '1 January 2002' and '31 March 2024'
+   WHERE date_of_registration between '1 January 2002' and '31 March 2025'
       AND sex <> 9 
       AND age>=16 
       AND country_of_residence= 'XS'
@@ -39,7 +39,7 @@ copd_deaths <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazones and LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -48,11 +48,11 @@ copd_deaths <- left_join(copd_deaths, postcode_lookup, by = "pc7") %>%
 
 #Creating basefile for COPD deaths indicator by calendar year.
 copd_deaths_cal <- copd_deaths %>% 
-  filter(year<=2023) %>% #excluding incomplete year for the copd deaths indicator which is calendar year not financial year
+  filter(year<= max(year)-1) %>% #excluding incomplete year for the copd deaths indicator which is calendar year not financial year
   group_by(year, age_grp, sex_grp, ca2019) %>% count() %>% #aggregating
   ungroup() %>% rename(ca = ca2019, numerator = n)
 
-saveRDS(copd_deaths_cal, file=paste0(data_folder, 'Prepared Data/copd_deaths_raw.rds'))
+saveRDS(copd_deaths_cal, file.path(profiles_data_folder, 'Prepared Data/copd_deaths_raw.rds'))
 
 #Creating deaths file for COPD incidence indicator by financial year.
 copd_deaths_fin <- copd_deaths %>% 
@@ -75,11 +75,11 @@ copd_adm <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from min(admission_date)) 
         ELSE extract(year from min(admission_date)) -1 END as year 
    FROM ANALYSIS.SMR01_PI z
-   WHERE admission_date between '1 January 1997' and '31 March 2024'
+   WHERE admission_date between '1 January 1997' and '31 March 2025'
       AND sex <> 9 
       AND exists (select * from ANALYSIS.SMR01_PI  
           where link_no=z.link_no and cis_marker=z.cis_marker
-            and admission_date between '1 January 1997' and '31 March 2024'
+            and admission_date between '1 January 1997' and '31 March 2025'
             and regexp_like(main_condition, 'J4[0-4]') )
    GROUP BY link_no, cis_marker
   UNION ALL 
@@ -117,7 +117,7 @@ copd_adm_indicator <- copd_adm %>% filter(year>2001) %>%
 copd_admind_dz11 <- copd_adm_indicator %>% group_by(year, datazone2011, age_grp, sex_grp) %>% 
   count() %>% ungroup() %>% rename(datazone = datazone2011, numerator = n)
 
-saveRDS(copd_admind_dz11, file=paste0(data_folder, 'Prepared Data/copd_hospital_dz11_raw.rds'))
+saveRDS(copd_admind_dz11, file.path(profiles_data_folder, 'Prepared Data/copd_hospital_dz11_raw.rds'))
 
 #Datazone2001 raw file
 copd_admind_dz01 <- copd_adm_indicator %>% group_by(year, datazone2001, age_grp, sex_grp) %>% 
@@ -128,7 +128,7 @@ copd_admind_dz01 <- copd_adm_indicator %>% group_by(year, datazone2001, age_grp,
 copd_admind_depr <- rbind(copd_admind_dz01 %>% subset(year<=2013), 
                   copd_admind_dz11 %>% subset(year>=2014)) 
 
-saveRDS(copd_admind_depr, file=paste0(data_folder, 'Prepared Data/copd_hospital_depr_raw.rds'))
+saveRDS(copd_admind_depr, file.path(profiles_data_folder, 'Prepared Data/copd_hospital_depr_raw.rds'))
 
 ###############################################.
 ## Part 3 - Incidence data file ----
@@ -149,36 +149,27 @@ copd_incidence <- bind_rows(copd_adm, copd_deaths_fin) %>%
   group_by(year, ca, age_grp, sex_grp) %>% count() %>% ungroup() %>% 
   rename(numerator = n)
 
-saveRDS(copd_incidence, file=paste0(data_folder, 'Prepared Data/copd_incidence_raw.rds'))
+saveRDS(copd_incidence, file.path(profiles_data_folder, 'Prepared Data/copd_incidence_raw.rds'))
 
 ###############################################.
 ## Part 4 - Run analysis functions ----
 ###############################################.
 #COPD deaths
-analyze_first(filename = "copd_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "16+")
-
-analyze_second(filename = "copd_deaths", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 1547, year_type = "calendar")
+main_analysis(filename = "copd_deaths", geography = "council", measure = "stdrate",
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2024, year_type = "calendar",
+              ind_id = 1547, time_agg = 3, epop_total = 165800, epop_age = "16+")
 
 ###############################################.
 # COPD incidence
-analyze_first(filename = "copd_incidence", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "16+")
-
-analyze_second(filename = "copd_incidence", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 1550, year_type = "financial")
+main_analysis(filename = "copd_incidence", geography = "council", measure = "stdrate",
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2024, year_type = "financial",
+              ind_id = 1550, time_agg = 3, epop_total = 165800, epop_age = "16+")
 
 ###############################################.
 # COPD hospitalizations 
-analyze_first(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
-
-analyze_second(filename = "copd_hospital_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 20302, year_type = "financial")
+main_analysis(filename = "copd_hospital_dz11", geography = "datazone11", measure = "stdrate",
+              pop = "DZ11_pop_16+", yearstart = 2002, yearend = 2024, year_type = "financial",
+              ind_id = 20302, time_agg = 3, epop_total = 165800, epop_age = "16+")
 
 #Deprivation analysis function
 analyze_deprivation(filename="copd_hospital_depr", measure="stdrate", time_agg=3, 

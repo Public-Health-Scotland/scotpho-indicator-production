@@ -1,4 +1,4 @@
-#new indicators introduced for care and wellbeing portfolio
+#new indicators introduced for Population health Framework/care and wellbeing portfolio
 
 ###################################################################################################################################################################
 ####### JUNE 2025: ##########
@@ -6,14 +6,12 @@
 ###################################################################################################################################################################
 
 
-# TO DO: enable automated checking at end of the indicator production
-#         create a deprivation data file output (for any indicators that may have sutiable data)
-
-###   Update ScotPHO Care and Wellbeing indicators: 
-#   99117: Young peoples mental wellbeing (was known as 'Child wellbeing and happiness' in NPF but naming conventioned expected to change and we are adopting new name)
+##  This script will update indicators: 
 #   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
 
+#   Indicator 99117 (Young peoples mental wellbeing) was previously produced here, but as this is sourced from the SHeS, and hasn't been updated in the NPF data file, we're
+#   now producing it with other SHeS indicators: starting with extraction of the microdata in the ScotPHO_survey_data repo, and then finishing the processing in this repo.
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
 # 2024 update (August 2024): https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
@@ -30,7 +28,8 @@ library(readxl) # to read in excel spreadsheets
 
 ### Lookups ----
 
-# bring in LA dictionary and include LA codes
+# bring in LA dictionary and include LA codes 
+# NB the current 2 indicators not available at sub-national level, but others extracted from this file in the future could be.
 la_lookup <- readRDS(paste0(profiles_lookups, "/Geography/CAdictionary.rds"))%>%
   mutate(geographylevel="Local Authority")
 hb_lookup <- readRDS(paste0(profiles_lookups, "/Geography/HBdictionary.rds"))%>%
@@ -39,17 +38,7 @@ hb_lookup <- readRDS(paste0(profiles_lookups, "/Geography/HBdictionary.rds"))%>%
 area_lookup <-rbind(la_lookup, hb_lookup)
 
 
-# make a SIMD x population file for 4-12 year olds (young people's wellbeing age range)
-depr_pop_4to12y <- readRDS(paste0(profiles_lookups, "/Population/simd_population_lookup.rds")) %>%
-  filter(age %in% c(4:12)) %>%
-  filter(quint_type == "sc_quin") %>%
-  group_by(year, code, quintile, quint_type) %>%
-  summarise(denominator = sum(denominator)) %>%
-  ungroup()
-saveRDS(depr_pop_4to12y, paste0(profiles_lookups, "/Population/depr_pop_4to12y.rds"))
-
-
-rm(hb_lookup, la_lookup, depr_pop_4to12y)
+rm(hb_lookup, la_lookup)
 
 
 ### 1 - Read in data -----
@@ -78,11 +67,11 @@ data <- dat %>%
   
   # Select relevant indicators 
   filter(indicator %in% c("Persistent poverty", 
-                          "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                           "Health risk behaviours",
                           "Gender balance in organisations",
                         # Sourced from elsewhere now:  
                           # "Child material deprivation", "Children's material deprivation", # now source direct from stats.gov (see Child Poverty.R script) as more disaggregated there
+                          # "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                         # Additional CWB indicators available:
                           "Access to green and blue space",
                           "Healthy Start", #perinatal mort
@@ -105,8 +94,7 @@ data <- dat %>%
                           # "Influence over local decisions", "Loneliness", "Mental wellbeing", "Pay gap", 
                           # "Perceptions of local area", "Physical activity", "Premature mortality", "Unmanageable debt", "Young peoples participation"
                       )) %>%
-  filter(!(indicator=="Child Wellbeing and Happiness" & substr(disaggregation, 1, 18)!="Total Difficulties")) %>% # remove the SDQ subsection data, keep only Total Diffs
-  
+
   # Convert indicator names to lower case and add underscore 
   mutate(indicator = str_replace_all(tolower(indicator), " ", "_")) %>%
 
@@ -121,10 +109,6 @@ data <- dat %>%
   rename(split_value = temp_breakdown,
          split_name = temp_disagg) %>%
 
-  # Sort the splits for child wellbeing and happiness
-  mutate(split_name = gsub("Total Difficulties Score", "Total", split_name)) %>%
-  mutate(split_name = gsub("Total X ", "", split_name)) %>%
-  
   # Sort for satisfaction with housing (add note in tech doc that the splits refer to the highest income householder)
   mutate(split_name = gsub(" of the highest income householder", "", split_name)) %>%
   
@@ -185,8 +169,7 @@ data <- dat %>%
  
   
   # Add indicator ids
-  mutate(ind_id = case_when(indicator == "persistent_poverty" ~ 99116, # subsequently split out child poverty into ind_id 30155
-                            indicator == "child_wellbeing_and_happiness" ~ 99117,
+  mutate(ind_id = case_when(#indicator == "persistent_poverty" ~ 99116, # subsequently split out child poverty into ind_id 30155
                             indicator == "health_risk_behaviours" ~ 99121,
                             indicator == "gender_balance_in_organisations" ~ 99123
                             # Uncomment once these CWB indicators have IDs and are added to techdoc (will be NA currently):
@@ -239,12 +222,9 @@ data <- dat %>%
   # Select relevant variables
   select(c(ind_id, indicator, code, split_name, split_value, year, trend_axis, def_period, rate, numerator, lowci, upci)) %>%
   
-  # Rename indicator to fit new name that NPF will adopt
-  mutate(indicator = case_when (indicator=="child_wellbeing_and_happiness" ~ "young_peoples_mental_wellbeing", TRUE ~indicator)) %>%
-  
   # Reorder data frame
   arrange(indicator, code, year) %>%
-  distinct() # get rid of duplicates, n=2919 now (still includes those with no ind_id)
+  distinct() # get rid of duplicates, n=2805 now (still includes those with no ind_id)
 
 
   
@@ -382,11 +362,8 @@ prepare_final_files <- function(ind, agerange=NULL){
 
 
 
-#== Create final files and run QA reports ----
+# Create final files and run QA reports ----
 
-
-# Indicator 99117: Young peoples mental wellbeing  ----
-prepare_final_files(ind = "young_peoples_mental_wellbeing", agerange="4to12y")
 
 # Indicator  99121: Health risk behaviours ----
 prepare_final_files(ind = "health_risk_behaviours", agerange="16+")
@@ -399,15 +376,15 @@ prepare_final_files(ind = "gender_balance_in_organisations", agerange="16+")
 
 
 ###  Run QA reports ----
-run_qa(type = "main", filename = "young_peoples_mental_wellbeing", test_file = FALSE)
 run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "main", filename = "gender_balance_in_organisations", test_file = FALSE)
 
-run_qa(type = "deprivation", filename = "young_peoples_mental_wellbeing", test_file = FALSE)
 run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "deprivation", filename = "gender_balance_in_organisations", test_file = FALSE)
  
- 
+run_qa(type = "popgrp", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "popgrp", filename = "gender_balance_in_organisations", test_file = FALSE)
+
 
 #END
 

@@ -1,3 +1,5 @@
+# HASNT BEEN UPDATED SINCE 2017-2021 RELEASE AS AWAITING CAPACITY AT NRS TO RUN BESPOKE REQUEST
+
 # ScotPHO indicators: 2 indicators showing 5 year Period Life Expectancy for each SIMD quintile & whole of Scotland
 
 # Female life Expectancy (inequality tab indicator)
@@ -30,11 +32,8 @@ source("1.indicator_analysis.R") #Normal indicator functions
 source("2.deprivation_analysis.R") # deprivation function
 
 # Extracts for Life Expectancy data saved in left expectancy network folder.
-if (sessionInfo()$platform %in% c("x86_64-redhat-linux-gnu (64-bit)", "x86_64-pc-linux-gnu (64-bit)")) {
-  source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
-} else {
-  source_network <- "//stats/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
-}
+source_network <- "/PHI_conf/ScotPHO/Life Expectancy/Data/Source Data/NRS data/"
+
 
 #################################################################.
 #   Part 1 Function formatting into indicator output files ----
@@ -115,74 +114,86 @@ data_depr <- data_depr_all %>%
 #call function to save file
 save_output(filename="life_expectancy_male", ind_id=20101)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 ##################################################.
 ##  Part 3 - Checking charts ----
-# just some quick charts checking how measure data is looking as usual checking scripts aren't run
-# Use the plot output window to make sure tredns and patterns look as expected (at least at the scotland level) 
+##  checks no longer required as QA report created, leaving script in as may be useful
 ##################################################. 
  
 ####Charting rate by quintile ----
- 
-chart <- data_depr %>%
-filter(code=="S00000001" & quintile !="Total")
-
- p <- plot_ly(data=chart , x=~trend_axis) %>%
-   #Comparator line
-   add_lines(y = ~rate, name = "Life Ex", type = 'scatter', mode = 'lines',
-             color=~quintile, text= ~quintile, hoverinfo="text") %>%
-   layout(bargap = 0.1, margin=list(b = 140), #to avoid labels getting cut out
-          showlegend = FALSE) %>%
-   config(displayModeBar = F, displaylogo = F, editable =F) # taking out toolbar
-
- p
- 
-
-####Charting sii ----
-
-chart2 <- data_depr %>%
-  filter(code=="S00000001" & quintile =="Total")
-
-sii_plot <- plot_ly(data=chart2, x=~trend_axis,hoverinfo="text") %>%
-  add_lines(y = ~sii, name = "Absolute inequality (SII)", type = 'scatter', mode = 'lines',
-            line = list(color = '#74add1'))  %>% 
-  #Layout
-  layout(showlegend = FALSE,
-         margin = list(b = 140)) %>% 
-  config(displayModeBar = FALSE, displaylogo = F,  editable =F) # taking out toolbar
-
-sii_plot
-
-####Charting rii ----
-
-rii_plot <- plot_ly(data=chart2, x=~trend_axis)%>%
-  add_lines(y = ~rii,name = "Relative gap", type = 'scatter', mode = 'lines',
-            line = list(color = '#313695')) %>% 
-  #Layout
-  layout(showlegend = FALSE, margin = list(b = 140))%>%
-  config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
-
-rii_plot
-
-####Charting paf ----
-
-#preparing data needed, creates two dummy variables for stacked bar chart
-chart3<- data_depr %>%
-  filter(code=="S00000001" & year=="2018" & quintile !="Total") %>%
-  mutate(baseline = rate[quintile == "5"],
-         diff_baseline = rate - rate[quintile == "5"]) %>% 
-  droplevels()
-
-par_bar_plot <- plot_ly(data = chart3, x = ~quintile, 
-                        textposition="none", hoverinfo="text") %>%
-  add_bars(y = ~baseline, name= "", marker = list(color = "#4da6ff"), showlegend = FALSE) %>%   
-  add_bars(y = ~diff_baseline, name = "Attributable to deprivation", 
-           marker = list(color = "#ffa64d"), showlegend = FALSE) %>% 
-  layout(bargap = 0.1, barmode = 'stack', showlegend = T, 
-         legend = list(x = 0.9, y = 0.9),
-         margin = list(b = 140)) %>% #to avoid labels getting cut out
-  config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
-
-par_bar_plot 
+#  
+# chart <- data_depr %>%
+# filter(code=="S00000001" & quintile !="Total")
+# 
+#  p <- plot_ly(data=chart , x=~trend_axis) %>%
+#    #Comparator line
+#    add_lines(y = ~rate, name = "Life Ex", type = 'scatter', mode = 'lines',
+#              color=~quintile, text= ~quintile, hoverinfo="text") %>%
+#    layout(bargap = 0.1, margin=list(b = 140), #to avoid labels getting cut out
+#           showlegend = FALSE) %>%
+#    config(displayModeBar = F, displaylogo = F, editable =F) # taking out toolbar
+# 
+#  p
+#  
+# 
+# ####Charting sii ----
+# 
+# chart2 <- data_depr %>%
+#   filter(code=="S00000001" & quintile =="Total")
+# 
+# sii_plot <- plot_ly(data=chart2, x=~trend_axis,hoverinfo="text") %>%
+#   add_lines(y = ~sii, name = "Absolute inequality (SII)", type = 'scatter', mode = 'lines',
+#             line = list(color = '#74add1'))  %>% 
+#   #Layout
+#   layout(showlegend = FALSE,
+#          margin = list(b = 140)) %>% 
+#   config(displayModeBar = FALSE, displaylogo = F,  editable =F) # taking out toolbar
+# 
+# sii_plot
+# 
+# ####Charting rii ----
+# 
+# rii_plot <- plot_ly(data=chart2, x=~trend_axis)%>%
+#   add_lines(y = ~rii,name = "Relative gap", type = 'scatter', mode = 'lines',
+#             line = list(color = '#313695')) %>% 
+#   #Layout
+#   layout(showlegend = FALSE, margin = list(b = 140))%>%
+#   config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
+# 
+# rii_plot
+# 
+# ####Charting paf ----
+# 
+# #preparing data needed, creates two dummy variables for stacked bar chart
+# chart3<- data_depr %>%
+#   filter(code=="S00000001" & year=="2018" & quintile !="Total") %>%
+#   mutate(baseline = rate[quintile == "5"],
+#          diff_baseline = rate - rate[quintile == "5"]) %>% 
+#   droplevels()
+# 
+# par_bar_plot <- plot_ly(data = chart3, x = ~quintile, 
+#                         textposition="none", hoverinfo="text") %>%
+#   add_bars(y = ~baseline, name= "", marker = list(color = "#4da6ff"), showlegend = FALSE) %>%   
+#   add_bars(y = ~diff_baseline, name = "Attributable to deprivation", 
+#            marker = list(color = "#ffa64d"), showlegend = FALSE) %>% 
+#   layout(bargap = 0.1, barmode = 'stack', showlegend = T, 
+#          legend = list(x = 0.9, y = 0.9),
+#          margin = list(b = 140)) %>% #to avoid labels getting cut out
+#   config(displayModeBar = FALSE, displaylogo = F, editable =F) # taking out toolbar
+# 
+# par_bar_plot 
 
 
 #END
