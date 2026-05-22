@@ -1,4 +1,4 @@
-# ScotPHO indicator: Smoking attributable admissions
+# ScotPHO indicators: Smoking attributable admissions and smoking attributable deaths
 
 # Notes for analyst:
 # Smoking attributable admissions/deaths are modelled estimates rather than measured values
@@ -23,10 +23,11 @@
 
 # Part 1 - Compile smoking prevalence data
 # Part 2 - Extract data from SMR01 and SMR04
-# Part 3 - Add in relative risks of each disease as a result of smoking
-# Part 4 - Aggregate geographic areas
-# Part 5 - Calculate smoking attributable fraction
-# Part 6 - Run analysis functions
+# Part 3 - Extract data from NRS Deaths
+# Part 4 - Add in relative risks of each disease as a result of smoking
+# Part 5 - Aggregate geographic areas
+# Part 6 - Calculate smoking attributable fraction
+# Part 7 - Run analysis functions
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
