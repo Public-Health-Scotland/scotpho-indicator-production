@@ -24,7 +24,7 @@ library(openxlsx)
 
 # Identify data folder
 schdest_data_folder <- paste0(profiles_data_folder, "/Received Data/School leaver positive destinations/")
-file <- "SSAILD+2025+supplementary+tables+L1.6+correction.xlsx"
+file <- "SSAILD+2026+supplementary+tables.xlsx"
 
 
 ### Lookups ----
@@ -151,7 +151,7 @@ saveRDS(ca_series, file=paste0(profiles_data_folder, '/Prepared Data/school_leav
 # Run main analysis function to aggregate and calculate rates (CA to higher geogs)
 main_analysis(filename = "school_leaver_destinations", ind_id = 13010, 
               geography = "council", measure = "percent", 
-              yearstart = 2009, yearend = 2023,
+              yearstart = 2009, yearend = 2024,
               time_agg = 1, year_type = "school", police_div=TRUE, NA_means_suppressed=TRUE)
 
 # Aggregated Scotland data do not equal the original Scotland data from the spreadsheet (likely due to some suppression), so drop the aggregated data for Scotland:
