@@ -20,7 +20,7 @@ source("functions/deprivation_analysis.R")
 ##################################.
 
 # read in received data ----
-raw_data <- read_csv(file = file.path(profiles_data_folder, "Received Data/Smoking during pregnancy/IR2025-00379_ABC_smoking_calyear.csv"))
+raw_data <- read_csv(file = file.path(profiles_data_folder, "Received Data/Smoking during pregnancy/IR2026-00003_ABC_smoking_calyear.csv"))
 
 # rename columns ----
 raw_data <- raw_data |>
@@ -41,10 +41,11 @@ saveRDS(raw_data, file.path(profiles_data_folder, 'Prepared Data/smoking_during_
 
 # main dataset analysis functions ----
 main_analysis(filename = "smoking_during_preg", geography = "datazone11", measure = "percent", 
-              yearstart = 2020, yearend = 2024, time_agg = 3, ind_id = 30058, year_type = "calendar")
+              yearstart = 2020, yearend = 2025, time_agg = 3, ind_id = 30058, year_type = "calendar")
 
 
 # deprivation analysis function ----
+# MM note May 2025 - SIMD lookup only goes up to 2024 so cannot re-run yet
 deprivation_analysis(filename="smoking_during_preg", measure="percent", time_agg=3, 
                     yearstart= 2020, yearend=2024, year_type = "calendar", ind_id = 30058)
 
