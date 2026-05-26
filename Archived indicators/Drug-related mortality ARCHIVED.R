@@ -1,5 +1,10 @@
 # WORK N PROGRESS - Drug-related mortality indicator code
 
+# ARCHIVED - Script archived by Nick Scott 30/04/26, last used to update drug-related deaths indicators (ids 4121, 12534, 12535) with NRS
+# deaths data for 2023. See new version of script 'Drug-related deaths.R', which was first used for indicator updates with 2024 NRS deaths data.
+# The new version has an updated filename (i.e. includes "deaths" rather than "mortality"). The new version has also been updated to take
+# account of the new main and deprivation analysis functions.
+
 #   Part 1 - Extract data from SMRA
 #   Part 2 - Prepare geographies
 #   Part 3 - Run analysis functions
