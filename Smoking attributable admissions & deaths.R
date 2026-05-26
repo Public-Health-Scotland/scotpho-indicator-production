@@ -1,0 +1,490 @@
+# ScotPHO indicators: Smoking attributable admissions and smoking attributable deaths
+
+# Notes for analyst:
+# Smoking attributable admissions/deaths are modelled estimates rather than measured values
+# Put simply calculation involves multiplying certain types of admissions/deaths by the attributable fractions that are 
+# associated with smoking and then also factoring percentage of the population that are current or ex smokers.
+
+# For 2019 data onwards the indicator switched from using SHoS (Household Survey) as the source of smoking prevalence to using SHeS (Health Survey).
+# This was because around this time SHoS stopped asking about ex-smoking status, which is essential to calculate attributable hospitalisations/deaths.
+# This change was recommended by the SG SHoS team as SHeS is deemed the best source of health data.
+# SHes was not previously used as the sample size did not allow for robust estimates at LA level.
+# Therefore we now need to use aggregated years to provide smoking status for areas, which is not ideal as the ScotPHO indicator is a rolling average.
+# However as smoking attributable admissions/deaths are modelled estimates use of the best available data should be acceptable. 
+
+# As of February 2026 2 teams in PHS produce smoking attributable figures for ScotPHO - the tobacco team (led by Scott Kilgariff,
+# who publish their estimates on the PHS website) and ScotPHO team (who produce indicator data for scotpho profiles tool).
+# The estimates produced by the two teams serve different purposes and are generated using different scripts - the outputs are 
+# therefore slightly different but figures should not be drastically different. Once indicator data has been generated the Scotland
+# totals can be compared to output published https://www.scotpho.org.uk/risk-factors/tobacco-use/data/smoking-attributable-deaths/
+
+# Although both teams now use SHeS as source of smoking prevalence our scotland totals will differ as ScotPHO indicator is a 2 year rolling figure
+# (tobacco team produce Scotland only data for individual years)
+
+# Part 1 - Compile smoking prevalence data
+# Part 2 - Extract data from SMR01 and SMR04
+# Part 3 - Extract data from NRS Deaths
+# Part 4 - Add in relative risks of each disease as a result of smoking
+# Part 5 - Aggregate geographic areas
+# Part 6 - Calculate smoking attributable fraction
+# Part 7 - Run analysis functions
+
+###############################################.
+## Packages/Filepaths/Functions ----
+###############################################.
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/data cleaning functions/ca_names_to_codes.R") #HB lookup function
+source("./functions/data cleaning functions/hb_names_to_codes.R") #CA lookup functions
+
+library(readxl) #for reading in xlsx files
+
+###############################################.
+# Part 1  - Compile smoking prevalence data ----
+###############################################.
+
+#Requires two data series. Both are trends in the percentage of ex and current smokers aged 35+ split by sex.
+#Series 1 - prevalence split by CA/HB with overall Scotland value for all ages 
+#Series 2 - prevalence split by age groups for Scotland only
+
+###############################################.
+# Prevalence data series 1:  AREA PREVALENCE ----
+###############################################.
+
+#These are the smoking prevalences for all ages across the CAs and HBs of Scotland (Series 1)
+
+#These data are stored in 3 data files which are read in, cleaned then combined
+#1 - SHoS data (2012-2018)
+#2 - SHeS data - file 1 (historic, 2019 - most recent year published on profiles tool)
+#3 - SHeS data file 2 (most recent year being added)
+
+#Note - ideally get a full time series from the SG for age 35+ with smoking prevalence data 2019 onwards for 2024 data update
+#This would combine data files 2 and 3.
+#SHeS data obtained from the SG via IR
+
+#1. SHos Data (2012-18)
+area_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHoS_area_prevalence_DO_NOT_DELETE.rds")) #read in historic data
+
+#2. SHeS Data (2019 - most recent year published on profiles tool)
+area_prevalence_shes <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds"))
+
+#3. SHeS Data (latest year)
+area_prevalence_shes_new <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/2024 Data/Smoking_HB_LA_35andover_sup.csv")) |> 
+  janitor::clean_names() |> #variables to snake case
+  filter(sex != "All") |> #filter out both sexes combined
+  rename(period = year,
+         type = geography) |>
+  mutate(sex = recode(sex, "Male" = 1, "Female" = 2), #recoding sex to 1 and 2 
+         type = case_when(type %in% c("Health Board", "Scotland") ~ "hb",
+                          type == "Local Authority" ~ "ca", #recoding to match SHoS data
+                          TRUE ~ type),
+         area = coalesce(health_board, local_authority), #Taking the half-populated health_board and local_authority columns and combining. 
+         area = tidyr::replace_na(replace_na(area, "Scotland")), #Replace NAs with Scotland
+         year = as.numeric(substr(period, 6, 9))) |> #extracting last year of period and converting to numeric  
+  select(-lower_ci, -upper_ci, -health_board, -local_authority) |>  #dropping unnecessary cols
+  mutate(smoking_status = recode(smoking_status,
+                                 "Never smoked/Used to smoke occasionally" = "never", #recoding to match SHoS
+                                 "Used to smoke regularly" = "ex_area",
+                                 "Current smoker" = "current_area")) |> 
+  tidyr::pivot_wider(id_cols = c(area, sex, period, type, year), #create cols for each smoking status
+                     names_from = smoking_status, values_from = percent) |> 
+  select(-never) #drop never-smokers
+  
+#Use helper functions to convert CA and HB names to codes
+ca <- area_prevalence_shes_new |> filter(type == "ca") |> ca_names_to_codes(area) #filter out the HBs then convert names to codes
+hb <- area_prevalence_shes_new |> filter(type == "hb") |> hb_names_to_codes(area) |> #filter out the CAs then convert names to codes
+  mutate(code = replace_na(code, "S00000001")) #Add Scotland code manually
+
+area_prevalence_shes_new <- bind_rows(ca, hb)  #recombine into 1 df
+
+#Add columns containing Scotland current and ex smoking prevalence rate to entire dataset (used in calculations later)
+area_prevalence_shes_scot <- area_prevalence_shes_new |> 
+  filter(code=="S00000001") |> 
+  select(-type, -code) |> 
+  rename(scot_current=current_area, scot_ex=ex_area)
+
+area_prevalence_shes_new <-left_join(area_prevalence_shes_new, area_prevalence_shes_scot, by = c("sex","period","year")) #join Scotland prevalence
+
+area_prevalence_shes <- bind_rows(area_prevalence_shes, area_prevalence_shes_new) #bind 2 dfs that use SHeS - this object will be saved at the end of the script
+#to be read in when the data is next run with a new year of prevalence. 
+
+area_prevalence <- bind_rows(area_prevalence_shos, area_prevalence_shes) |> 
+  mutate(sex = as.character(sex))
+
+rm(area_prevalence_shos, area_prevalence_shes_new, ca, hb, area_prevalence_shes_scot)
+
+###############################################.
+## Prevalence data series 2: AGE PREVALENCE ----
+###############################################.
+
+#These are the Scotland-level smoking prevalences split by age groups
+
+#1 - SHoS data (2012-2018)
+#2 - SHeS data file 1 (2019 - most recent year published on profiles tool)
+#3 - SHeS data file 2 (latest year)
+
+#1 - SHoS age data (for period 2012-2018)
+age_prevalence_shos <- readRDS(file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHOS_age_prevalence_DO_NOT_DELETE.rds")) 
+
+#2 - SHeS age data (for period 2019 onwards). 
+age_prevalence_shes <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.RDS"))
+
+#3 - SHeS age data (latest year)
+age_prevalence_shes_new <- read_csv(file.path(profiles_data_folder, "/Received Data/Smoking prevalence data/2024 Data/Smoking_Scotland_35545564657475_2024_sup.csv")) |> 
+  clean_names() |> 
+  select(-lower_ci, -upper_ci) |> 
+  mutate(smoking_status = recode(smoking_status,
+                         "Used to smoke regularly" = "ex_age",         
+                         "Current smoker" = "current_age"),
+         sex = recode(sex, "Male" = 1, "Female" = 2)) |> 
+  tidyr::pivot_wider(id_cols = c(age, sex, year), names_from = smoking_status, values_from = percent) |> 
+  filter(!(is.na(sex)), !(age %in% c("All", "<35"))) |> 
+  rename(sex_grp = sex, agegrp = age) |> 
+  mutate(sex_grp = as.character(sex_grp)) |> 
+  select(-`Never smoked/Used to smoke occasionally`)
+
+#bind shos and shes area prevalence
+age_prevalence_shes <- bind_rows(age_prevalence_shes, age_prevalence_shes_new) #this object is saved at the end of the script for next year
+
+age_prevalence <- bind_rows(age_prevalence_shes, age_prevalence_shos) |> 
+  rename(agegrp2 = agegrp)
+
+rm(age_prevalence_shes_new, age_prevalence_shos)
+
+###############################################.
+## Part 2 - Extract data from SMR01 and SMR04 ----
+###############################################.
+# SMRA login information
+channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
+                                      uid=.rs.askForPassword("SMRA Username:"), 
+                                      pwd=.rs.askForPassword("SMRA Password:")))
+
+# Smoking attributable diagnoses
+# Based on royal college of physicians so do not change often - changed in 2025 and in the early 00s before that
+smoking_diag <- paste0("A1[5-9]|C1[0145689]|C2[025]|C3[0-4]|C4[34]|C5[03]|C6[4-7]|C92|E11|F0[1-3]|",
+                       "F2[0-5]|F2[89]|F3[23]|F502|F5081|G30|G473|H25|H35[3-9]|H3[6-9]|H4[0-9]|",
+                       "H5[01]|H5(20|21|22|23|24)|H9[01]|I2[0-6]|I6[0-7]|I71|I739|I8[0-2]|J09|J1[0-8]|",
+                       "J4[0-7]|J841|K227|K50|L40|M0[56]|M32|M545|N18[0-9]|O0[03]|O4[245]|S72[0-2]|",
+                       "T814|Y83")
+
+# Sorting variables
+sort_var <- "link_no, admission_date, discharge_date, admission, discharge, uri"
+
+# Extracting one row per hospital admission in which there was at least one episode containing
+# a smoking attributable condition in the main condition field.
+# The indicator counts hospital stays but will only includes stays if there was at least one episode with 
+# related diagnosis within the year of interest. Patients must also be aged over 34 years on admission to be counted. 
+
+# For each admission it extracts the information from the first episode within a hospital stay.
+# Then of these admissions selecting the ones that had an smoking attributable
+# diagnosis as their first main diagnosis (to follow PHE methodology); with an
+# age on admission of 35+, valid sex group, Scottish resident, and with a final
+# discharge date in the period of interest
+smoking_adm_smr01 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+    "WITH adm_table AS (
+        SELECT distinct link_no || '-' || cis_marker admission_id, 
+            FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") ca,
+            FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") hb,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") sex_grp,
+            FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") diag,
+                FIRST_VALUE(POSTCODE) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") pc7,
+            MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
+            MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
+            MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
+            MAX(discharge_date) OVER (PARTITION BY link_no, cis_marker) end_cis
+        FROM ANALYSIS.SMR01_PI  z
+        WHERE exists(
+          SELECT * 
+          FROM ANALYSIS.SMR01_PI  
+          WHERE link_no=z.link_no and cis_marker=z.cis_marker
+              AND regexp_like(main_condition, '", smoking_diag, "')
+              AND age_in_years > 34
+              AND discharge_date between '1 January 2012' and '31 December 2024' 
+        )
+    )
+    SELECT admission_id, substr(diag, 1, 5) diag, sex_grp, age, year, 
+           start_cis, end_cis, ca, hb, pc7
+    FROM adm_table 
+    WHERE end_cis between '1 January 2012' and '31 December 2024' 
+        AND age > 34 
+        AND sex_grp in ('1', '2') 
+        AND pc7 IS NOT NULL 
+        AND regexp_like(diag, '", smoking_diag, "')"))) |>  
+  clean_names() |> 
+  create_agegroups() |>  # Creating age groups for standardization.
+  filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
+  mutate(scotland = "S00000001")
+
+smoking_adm_smr04 <- tibble::as_tibble(dbGetQuery(channel, statement= paste0(
+  "WITH adm_table AS (
+        SELECT distinct link_no || '-' || cis_marker admission_id, 
+            FIRST_VALUE(council_area_2019) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") ca,
+            FIRST_VALUE(hbres_currentdate) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") hb,
+            FIRST_VALUE(sex) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") sex_grp,
+            FIRST_VALUE(main_condition) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") diag,
+                FIRST_VALUE(POSTCODE) OVER (PARTITION BY link_no, cis_marker 
+                ORDER BY ", sort_var, ") pc7,
+            MIN(age_in_years) OVER (PARTITION BY link_no, cis_marker) age,
+            MAX(extract (year from discharge_date)) OVER (PARTITION BY link_no, cis_marker) year,
+            MIN(admission_date) OVER (PARTITION BY link_no, cis_marker) start_cis,
+            MAX(discharge_date) OVER (PARTITION BY link_no, cis_marker) end_cis
+        FROM ANALYSIS.SMR04_PI  z
+        WHERE exists(
+          SELECT * 
+          FROM ANALYSIS.SMR04_PI  
+          WHERE link_no=z.link_no and cis_marker=z.cis_marker
+              AND regexp_like(main_condition, '", smoking_diag, "')
+              AND age_in_years > 34
+              AND discharge_date between '1 January 2012' and '31 December 2024' 
+        )
+    )
+    SELECT admission_id, substr(diag, 1, 5) diag, sex_grp, age, year, 
+           start_cis, end_cis, ca, hb, pc7
+    FROM adm_table 
+    WHERE end_cis between '1 January 2012' and '31 December 2024' 
+        AND age > 34 
+        AND sex_grp in ('1', '2') 
+        AND pc7 IS NOT NULL 
+        AND regexp_like(diag, '", smoking_diag, "')"))) |>  
+  clean_names() |> 
+  create_agegroups() |>  # Creating age groups for standardization.
+  filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
+  mutate(scotland = "S00000001")
+
+#Saving temporary files
+ saveRDS(smoking_adm_smr01, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr01.rds"))
+ saveRDS(smoking_adm_smr04, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr04.rds"))
+ 
+ smoking_adm_smr01 <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr01.rds")) |> 
+   mutate(source = "SMR01")
+ smoking_adm_smr04 <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_adm_extract_smr04.rds")) |> 
+   mutate(source = "SMR04")
+
+smoking_adm <- bind_rows(smoking_adm_smr01, smoking_adm_smr04) #join SMR01 and 04 data
+
+###############################################.
+## Part 3 - Extract data from NRS Deaths ----
+###############################################.
+
+# Extracting deaths from Scottish residents 35 and over with a smoking 
+# attributable diagnosis code within the underlying cause of death field. 
+smoking_deaths <- as_tibble(dbGetQuery(channel, statement=paste0(
+  "SELECT year_of_registration AS year, substr(UNDERLYING_CAUSE_OF_DEATH,1,3) AS diag, age,
+            sex AS sex_grp, postcode AS pc7
+    FROM ANALYSIS.GRO_DEATHS_C
+    WHERE date_of_registration between '1 January 2012' and '31 December 2024'
+         AND sex <> 9
+         AND age > 34
+         AND country_of_residence='XS'
+         AND council_area is not null
+         AND regexp_like(UNDERLYING_CAUSE_OF_DEATH, '", smoking_diag, "')
+    "))) |>
+  clean_names() |>   #variables to lower case
+  create_agegroups() |>   # Creating age groups for standardization.
+  filter(!is.na(pc7)) |> #filtering any admissions for people without a valid Scottish postcode - 2 records and most likely non-Scottish residents
+  mutate(scotland = "S00000001")
+
+#Saving temporary file
+saveRDS(smoking_deaths, file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_deaths_extract.rds"))
+smoking_deaths <- readRDS(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_deaths_extract.rds"))
+
+ ###############################################.
+## Part 4 - Add in relative risks of each disease as a result of smoking ----
+###############################################.
+smoking_risks <- read.csv(file.path(profiles_data_folder, "Received Data/Smoking Attributable/smoking_risks.csv")) |> 
+    mutate(sex_grp = as.character(sex_grp),
+           current = ifelse(current == 0, 1, current),
+           ex      = ifelse(ex == 0, 1, ex))
+
+#ICD10 codes in relative risk lookup could be presented with 3, 4 or 5 digits. 
+#All SMR records have been extracted with the maximum granularity, but now may need to be truncated to match lookups
+
+#Creating three vectors containing a list of all the codes of each length
+three_chr_codes <- smoking_risks |> filter(nchar(diag) == 3) |> distinct(diag) |> pull(diag) |> append(values = c("C43", "C44"))
+four_chr_codes <- smoking_risks |> filter(nchar(diag) == 4) |> distinct(diag) |> pull(diag)
+five_chr_codes <- smoking_risks |> filter(nchar(diag) == 5) |> distinct(diag) |> pull(diag)
+
+smoking_risks_prejoin_prep <- function(data){
+  data <- data |> 
+    mutate(age_band_coarse = case_when(age > 34 & age < 55 ~ "35-54",
+                                       age > 54 & age < 65 ~ "55-64", #create age group bracket columns for joining to smoking risks
+                                       age > 64 & age < 75 ~ "65-74",
+                                       age > 74 ~ "75+",
+                                       TRUE ~ as.character(age)),
+           fifty_plus = if_else(age > 49, 1, 0),
+           icd_trimmed = case_when(
+             diag %in% five_chr_codes ~ diag,
+             diag %in% four_chr_codes ~ diag,
+             diag %in% three_chr_codes ~ diag,
+             substr(diag, 1, 4) %in% four_chr_codes ~ substr(diag, 1, 4),
+             substr(diag, 1, 3) %in% three_chr_codes ~ substr(diag, 1, 3),
+             TRUE ~ "Not in lookup"))}
+
+smoking_adm <- smoking_risks_prejoin_prep(smoking_adm)
+smoking_deaths <- smoking_risks_prejoin_prep(smoking_deaths)
+
+#Split the smoking risks lookup into 3 based on age groups. Non-age specific, age groups aligning with ShoS prevalence, and 50+
+smoking_risks <- smoking_risks |> 
+  rename(icd_trimmed = diag)
+
+smoking_risks_non_spec <- smoking_risks |>
+  filter(is.na(age_text)) |>
+  select(-age_text)
+
+smoking_risks_age_band <- smoking_risks |>
+  filter(!age_text %in% c("50+", "")) |> 
+  rename(age_band = age_text)
+
+smoking_risks_fifty_plus <- smoking_risks |> 
+  filter(age_text == "50+") |> 
+  mutate(fifty_plus = 1) 
+
+#Joining each group to the main dataframes for admissions and deaths
+smoking_joins <- function(data){
+  joined_non_spec <- left_join(data, smoking_risks_non_spec, by = c("icd_trimmed", "sex_grp"))
+  joined_age_band <- left_join(data, smoking_risks_age_band, by = c("icd_trimmed", "sex_grp", "age_band_coarse" = "age_band"))
+  joined_fifty_plus <- left_join(data, smoking_risks_fifty_plus, by = c("icd_trimmed", "sex_grp", "fifty_plus"))
+
+#Coalescing the 2 dfs together to overwrite the NAs
+  smoking_joined <- joined_age_band |>
+    mutate(
+      current = coalesce(current, joined_non_spec$current),
+      ex = coalesce(ex, joined_non_spec$ex),
+      disease = coalesce(disease, joined_non_spec$disease))
+
+#Removing some records for combinations of sex, age and diagnosis that are not associated with risk
+#Eg C43 and C44 have no fraction associated with women or under 50s
+
+  data <- smoking_joined |> 
+    filter(!is.na(disease))} #end of function
+
+smoking_adm <- smoking_joins(smoking_adm) #takes a few seconds to run
+smoking_deaths <- smoking_joins(smoking_deaths)
+
+rm(smoking_risks_age_band, smoking_risks_fifty_plus, smoking_risks_non_spec)
+
+###############################################.
+## Part 5 - Aggregating geographic areas ----
+###############################################.
+
+#For deaths data only, read in postcode lookup to match postcodes to HB and CA of residence
+postcode_lookup <- readRDS("/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_1.rds") |> 
+  clean_names() |> 
+  select(pc7, ca2019, hb2019)
+
+smoking_joined <- left_join(smoking_deaths, postcode_lookup, "pc7") 
+
+smoking_adm <- smoking_adm |> 
+  rename(ca2019 = ca, hb2019 = hb) #rename in admissions data to match postcode lookup
+
+#For admissions and deaths, aggregate records so that only 1 row per HB or CA per year
+smoking_aggregation <- function(data){
+  data <- data |>  
+    #creating code variable with all geos and then aggregating to get totals
+    pivot_longer(cols = c(ca2019, hb2019, scotland), names_to = "geo_level", values_to = "code") |> 
+    group_by(code, year, sex_grp, age_grp, current, ex)  |>  count() |>  ungroup() |>  
+    # filter out cases with NA, cases with a valid hb but no ca, just a few hundred
+    filter(!(is.na(code))) |> 
+    filter(!code %in% c("S08200001", "S08200002", "S08200003", "S08200004"))} #removing non-Scotland admissions (no admissions associated, but empty rows were in output)
+  
+smoking_adm_2 <- smoking_aggregation(smoking_adm)
+smoking_deaths_2 <- smoking_aggregation(smoking_joined)
+
+saveRDS(smoking_adm_2, file.path(profiles_data_folder, 'Temporary/smoking_adm_part4.rds'))
+saveRDS(smoking_deaths_2, file.path(profiles_data_folder, 'Temporary/smoking_deaths_part4.rds'))
+
+
+###############################################.
+# Merging prevalence with admissions and deaths basefiles
+
+prevalence_merge <- function(data){
+data <- left_join(data, area_prevalence, by = c("code", "year", "sex_grp" = "sex")) |> 
+  #recode age groups to match prevalence by age file
+  #note that different age groupings used in SHeS and SHoS so different approach needed for 2019 on
+  mutate(age_grp = as.numeric(age_grp),
+         agegrp2 = case_when(
+           year > 2018 & year < 2024 & age_grp %in% c(8, 9) ~ "35-44",
+           year > 2018 & year < 2024 & age_grp %in% c(10, 11) ~ "45-54",
+           (year <= 2018 | year >= 2024) & age_grp %in% c(8, 9, 10, 11) ~ "35-54",
+           age_grp %in% c(12, 13) ~ "55-64",
+           age_grp %in% c(14, 15) ~ "65-74",
+           age_grp > 15 & age_grp < 20 ~ "75+",
+           TRUE ~ NA_character_  ))
+
+#And now merging with the file with prevalence by age and sex 
+data <- left_join(data, age_prevalence, by = c("agegrp2", "year", "sex_grp"))}
+
+smoking_adm <- prevalence_merge(smoking_adm_2)
+smoking_deaths <- prevalence_merge(smoking_deaths_2)
+
+###############################################.
+## Part 6 - Calculate smoking attributable fractions ----
+###############################################.
+# Calculate age, sex and area specific esimtated prevalence info using 
+# Public Health England formula. divide by 100 to get a proportion.
+
+attributable_fraction_calc <- function(data){
+  data <- data |> 
+    mutate(# current and ex smoker prevalence specific to area, age and sex group.
+      prev_current = (current_area/scot_current)*current_age/100,
+      prev_ex=(ex_area/scot_ex)*ex_age/100,
+      # Calculating smoking attributable fraction
+      saf = (prev_current*(current-1) + prev_ex*(ex-1))/ 
+        (1 + prev_current*(current-1) + prev_ex*(ex-1)),
+      # compute total number of admissions attributable to smoking, using SAF
+      numerator = n * saf) |>  
+  # sum up safs to get total deaths attributable to smoking.
+    group_by(code, year, sex_grp, age_grp) |>  
+    summarise(numerator = sum(numerator), .groups = "drop")}
+
+smoking_adm <- attributable_fraction_calc(smoking_adm)
+smoking_deaths <- attributable_fraction_calc(smoking_deaths)
+
+saveRDS(smoking_adm, file.path(profiles_data_folder, '/Prepared Data/smoking_adm_raw.rds'))
+saveRDS(smoking_deaths, file.path(profiles_data_folder, '/Prepared Data/smoking_deaths_raw.rds'))
+
+###############################################.
+## Part 7 - Run analysis functions ----
+###############################################.
+
+main_analysis(filename = "smoking_adm", measure = "stdrate", geography = "multiple",
+             pop = "CA_pop_allages", yearstart = 2012, yearend = 2024,
+             time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 1548, 
+             year_type = "calendar")
+
+main_analysis(filename = "smoking_deaths", measure = "stdrate", geography = "multiple",
+              pop = "CA_pop_allages", yearstart = 2012, yearend = 2024,
+              time_agg = 2, epop_age = "normal", epop_total = 120000, ind_id = 2021, 
+              year_type = "calendar")
+
+  
+# Rounding figures - they are estimates and rounding helps to understand that
+# they are not precise
+data_shiny_adm <- readRDS(file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds")) |>  
+  mutate(numerator = round(numerator, -1)) |>  #to nearest 10
+  mutate_at(c("rate", "lowci", "upci"), round, 0) # no decimals
+
+saveRDS(data_shiny_adm, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.rds"))
+write.csv(data_shiny_adm, file.path(profiles_data_folder, "Data to be checked/smoking_adm_shiny.csv"), row.names = FALSE)
+
+#Repeat for smoking attributable deaths
+data_shiny_deaths <- readRDS(file.path(profiles_data_folder, "Data to be checked/smoking_deaths_shiny.rds")) |>  
+  mutate(numerator = round(numerator, -1)) |> 
+  mutate_at(c("rate", "lowci", "upci"), round, 0) 
+
+saveRDS(data_shiny_deaths, file.path(profiles_data_folder, "Data to be checked/smoking_deaths_shiny.rds"))
+write.csv(data_shiny_deaths, file.path(profiles_data_folder, "Data to be checked/smoking_deaths_shiny.csv"), row.names = FALSE)
+
+#Save appended SHeS prevalence data for next year - only run when ready to deploy
+# saveRDS(area_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_area_prevalence_DO_NOT_DELETE.rds")) #save ready for new year of data to be appended next time
+# saveRDS(age_prevalence_shes, file.path(profiles_data_folder, "/Received Data/Smoking Attributable/SHeS_age_prevalence_DO_NOT_DELETE.rds"))
+
+##END
