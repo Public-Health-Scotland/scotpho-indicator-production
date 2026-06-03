@@ -26,20 +26,20 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
+source("./functions/main_analysis.R") #Normal indicator functions
 
 # Function to format population files as indicators
 # Brings the selected numerator and denominator files, merge them together and save it
 format_pops <- function(filename) {
   
-  numer <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_", filename, ".rds")) %>% 
+  numer <- readRDS(file.path(profiles_data_folder, "Lookups/Population/",  paste0("DZ11_",filename, ".rds"))) %>% 
     rename(numerator = denominator) 
     
-  denom <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.rds"))
+  denom <- readRDS(file.path(profiles_data_folder, "Lookups/Population/DZ11_pop_allages.rds"))
   
   pop <- left_join(numer, denom, by = c("year", "code"))
   
-  saveRDS(pop, paste0(data_folder, "Temporary/", filename, "_formatted.rds"))
+  saveRDS(pop, file.path(profiles_data_folder, "Prepared Data/", paste0(filename, "_raw.rds")))
 
 }
 
@@ -57,19 +57,16 @@ mapply(format_pops, file_list) #formatting all files
 ###############################################.
 ## Part 2 - Running analysis function for each indicator ----
 ###############################################.
-mapply(analyze_second, filename = file_list, measure = "percent", 
-       year_type = "calendar", time_agg = 1, qa = F,
+mapply(main_analysis, filename = file_list, measure = "percent", 
+       geography = "multiple", yearstart = 2002, yearend = 2024,
+       year_type = "calendar", time_agg = 1, QA = F, 
        ind_id = c(20002, 4162, 20003, 20005, 1504, 20006, 20007, 20004, 4161, 
                   13101, 13105, 13102, 13103, 13104, 1502, 1503))
-
-filepath <- paste0(data_folder, "/Data to be checked/")
-
-
 
 ###############################################.
 ## Part 3 - Preparing data for all ages indicator ----
 ###############################################.
-allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.rds")) |>  
+allages_pop <- readRDS(file.path(profiles_data_folder, "Lookups/Population/DZ11_pop_allages.rds")) |>  
   rename(numerator = denominator) |> 
   mutate(ind_id = 20001, #adding indicator code and chart labels
          trend_axis = year,
@@ -78,7 +75,7 @@ allages_pop <- readRDS(paste0(data_folder, "Lookups/Population/DZ11_pop_allages.
          rate = numerator)   # blank variables are needed
 
 #Including both rds and csv file for now
-saveRDS(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.rds"))
-write_csv(allages_pop, file = paste0(data_folder, "Data to be checked/pop_allages_shiny.csv"))
+saveRDS(allages_pop, file.path(profiles_data_folder, "Data to be checked/pop_allages_shiny.rds"))
+write_csv(allages_pop, file.path(profiles_data_folder, "Data to be checked/pop_allages_shiny.csv"))
 
 ##END
