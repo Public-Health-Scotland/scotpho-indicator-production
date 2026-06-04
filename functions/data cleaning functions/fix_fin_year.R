@@ -14,7 +14,7 @@ library(dplyr)
 library(stringr)
 library(rlang)
 
-fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
+fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "3", "4")){
   
   #If first_year_digits are none of 2, 3 or 4 stop the function and print an error
   if (!(first_year_digits %in% c("2", "3", "4"))) {
@@ -35,11 +35,9 @@ fix_fin_year <- function(df, fy_col_name, first_year_digits = c("2", "4")){
     df <- df |> 
       mutate(
         !!fy_col_name_sym := as.character(!!fy_col_name_sym), #convert to character in case fy provided as a number e.g. 2223
-        temp_year := as.numeric(str_sub(!!fy_col_name_sym, 1, 2)), #keep only first two digits and convert to numeric, store in temp variable
-        !!fy_col_name_sym := case_when(
-          temp_year > 50 ~ paste0("19", temp_year),  #This is guesswork for correct century!
-          TRUE ~ paste0("20", temp_year))) |> #If remaining 2 digits >50 guess 1900s, if <=50 guess 2000s
-      select(-temp_year) #drop the temporary year variable
+        !!fy_col_name_sym := case_when(as.numeric(str_sub(!!fy_col_name_sym, 1, 2)) > 50 ~ #Guesswork for correct century! If last 2 digits of first year >50,
+                                         paste0("19", str_sub(!!fy_col_name_sym, 1, 2)),  #then guess 1900s
+                                       TRUE ~paste0("20", str_sub(!!fy_col_name_sym, 1, 2)))) #if <= 50, guess 2000s
     
     #If fin year format is YYY (only a few indicators) i.e. 203 = 02/03. Likely due to Excel dropping leading zero.
   }else if(first_year_digits == "3"){
