@@ -7,8 +7,8 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R") #Normal indicator functions
+source("./functions/deprivation_analysis.R") # deprivation function
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -31,7 +31,7 @@ data_psychiatric <- as_tibble(dbGetQuery(channel, statement=
         MAX( datazone_2011 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2011, 
         MAX( datazone_2001 ) KEEP ( DENSE_RANK LAST ORDER BY discharge_date) as datazone_2001 
    FROM ANALYSIS.SMR04_PI z
-   WHERE discharge_date between '1 April 2002' and '31 March 2024'
+   WHERE discharge_date between '1 April 2002' and '31 March 2025'
          AND specialty <> 'G5' 
          AND sex in ('1', '2')
          AND datazone_2011 is not null 
@@ -47,35 +47,32 @@ data_psychiatric <- as_tibble(dbGetQuery(channel, statement=
 ###############################################.
 # Datazone2011
 dz11 <- data_psychiatric %>% group_by(year, datazone_2011, age_grp, sex_grp) %>% 
-  summarise(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2011)
+  summarise(numerator = n(), .groups = "drop") %>%  rename(datazone = datazone_2011)
 
-saveRDS(dz11, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
+saveRDS(dz11, file.path(profiles_data_folder, 'Prepared Data/psychiatric_discharges_dz11_raw.rds'))
 
 ###############################################.
 # Deprivation basefile
 # DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 dz01 <- data_psychiatric %>% group_by(year, datazone_2001, sex_grp, age_grp) %>% 
-  subset(year<=2013) %>% summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone_2001)
+  subset(year<=2013) %>% summarize(numerator = n(), .groups = "drop") %>%  rename(datazone = datazone_2001)
 
 dep_file <- rbind(dz01, dz11 %>% subset(year>=2014)) 
 
-saveRDS(dep_file, file=paste0(data_folder, 'Prepared Data/psychiatric_discharges_depr_raw.rds'))
+saveRDS(dep_file, file.path(profiles_data_folder, 'Prepared Data/psychiatric_discharges_dz01_dz11_raw.rds'))
 
 ###############################################.
 ## Part 3 - Run analysis functions ----
 ###############################################.
 # All patients psychiatric discharge
-analyze_first(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
-              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2023,
-              time_agg = 3, epop_age = "normal")
-
-analyze_second(filename = "psychiatric_discharges_dz11", measure = "stdrate", time_agg = 3, 
-               epop_total = 200000, ind_id = 20402, year_type = "financial")
+main_analysis(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
+              pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2024, time_agg = 3,
+              epop_age = "normal", epop_total = 200000, ind_id = 20402, year_type = "financial")
 
 # Deprivation analysis function
-analyze_deprivation(filename="psychiatric_discharges_depr", measure="stdrate", time_agg=3, 
-                    yearstart= 2002, yearend=2023,   year_type = "financial", 
-                    pop = "depr_pop_allages", epop_age="normal",
-                    epop_total =200000, ind_id = 20402)
+deprivation_analysis(filename = "psychiatric_discharges_dz01_dz11", measure = "stdrate", time_agg = 3, 
+                    yearstart = 2002, yearend = 2023,   year_type = "financial", 
+                    pop = "depr_pop_allages", epop_age = "normal", pop_sex = "all",
+                    epop_total = 200000, ind_id = 20402)
 
 ##END
