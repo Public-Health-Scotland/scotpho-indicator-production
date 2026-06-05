@@ -9,6 +9,7 @@
 ###############################################.
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/deprivation_analysis.R") # deprivation function
+source("./functions/data cleaning functions/exclude_geog_codes.R") #exclude specific geogs e.g. intermediate zones
 
 ###############################################.
 ## Part 1 - Extract data from SMRA ----
@@ -68,6 +69,10 @@ saveRDS(dep_file, file.path(profiles_data_folder, 'Prepared Data/psychiatric_dis
 main_analysis(filename = "psychiatric_discharges_dz11", geography = "datazone11", measure = "stdrate", 
               pop = "DZ11_pop_allages", yearstart = 2002, yearend = 2024, time_agg = 3,
               epop_age = "normal", epop_total = 200000, ind_id = 20402, year_type = "financial")
+
+#Remove intermediate zones
+exclude_geog_codes(filename = "psychiatric_discharges_dz11", iz = TRUE)
+
 
 # Deprivation analysis function
 deprivation_analysis(filename = "psychiatric_discharges_dz01_dz11", measure = "stdrate", time_agg = 3, 
