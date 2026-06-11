@@ -13,8 +13,9 @@
 # This script uses the data published on the SHeS dashboard https://scotland.shinyapps.io/sg-scottish-health-survey/ 
 # for the indicators that are published there (currently 21, as of May 2026, see below). 
 # (It can be easiest to request the published data direct from the SHeS team, scottishhealthsurvey@gov.scot) 
-# NB. Some indicators on their dashboard look similar but aren't defined/grouped in the way we need for ScotPHO indicators.
+# NB. Some indicators on their dashboard look similar but aren't defined/grouped in the way we want/need for ScotPHO indicators.
 
+## ADULTS (N=15)
 #### 4170:  Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
 #### 4171:  Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here)
 #### 4172:  Alcohol consumption (mean weekly units)
@@ -29,25 +30,30 @@
 #### 99107: Summary activity levels (ADULT) Percentage of adults who met the recommended moderate or vigorous physical activity guideline in the previous four weeks. In July 2011, the Chief Medical Officers of each of the four UK countries agreed and introduced revised guidelines on physical activity. Adults are recommended to accumulate 150 minutes of moderate activity or 75 minutes of vigorous activity per week, or an equivalent combination of both, in bouts of 10 minutes or more. The variable used was adt10gpTW. This bandings used for this variable include the new walking definition for those aged 65 years and over.
 #### 99108: Self-assessed health of adults (age 16+) Percentage of adults who, when asked "How good is your health in general?", selected "good" or "very good". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
 #### 99109: Limiting long-term conditions (age 16+) Percentage of adults who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
-#### 99121: Health risk behaviours
+#### 99121: Health risk behaviours (NO DATA EXTRACTED FROM UKDS DATA AS UNCLEAR HOW TO CODE)
+
+## CHILDREN (N=6)
 #### 30111: Children's PA guidelines:  % children meeting 1 hour PA per day (INCL. SCHOOL)
 #### 14003: Children with very low PA levels
 #### 14006: Children participating in sport
 #### 30114: Children's general health. Percentage of children who, when asked "How good is your health in general?", selected "good" or "excellent". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
 #### 30115: Children with Limiting long-term conditions.	Percentage of children who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
-#### 99144: Children at risk of obesity (2-15y) (Monica's indicator)
+#### 14012 % children meeting activity guidelines (NOT inc school) (var ch00sum7)
+
 
 #########################################################
 # STEP 2:
 #########################################################
 
-# Additional indicators (20 as of May 2026, listed below) can only be sourced from the UK Data Service (UKDS) microdata. 
+# Additional indicators (21 as of May 2026, listed below) can only be sourced from the UK Data Service (UKDS) microdata. 
 # The UKDS data are imported and processed in a separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
-# In that repo we calculate estimates for all available splits for all available indicators 
-# (including those available on the SHeS dashboard, listed above, as there could be additional splits that aren't published, 
-# despite being above the SHeS suppression threshold of denominators <30) 
+# In that repo we calculate estimates for all available splits for all available indicators, including those available on the SHeS dashboard (listed above), 
+# as there could be additional splits that aren't published, despite being above the SHeS suppression threshold of denominators <30). 
+# Suppression of splits below that threshold is done in the ScotPHO_survey_data ukds_shes_calcs.R script, 
+# and any splits where more than 25% of the estimates have to be suppressed are removed entirely 
+# (25% was an entirely arbitrary figure from Liz's head, which seemed reasonable at the time).
 
-##### ADULTS
+##### ADULTS (N=11)
 #### 30004 = depsymp	Percentage of adults who had a symptom score of two or more on the depression section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was depsymp (or dvg11 in 2008). 
 #### 30005 = anxsymp	Percentage of adults who had a symptom score of two or more on the anxiety section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was anxsymp (or dvj12 in 2008). 
 #### 30009 = suicide2	Percentage of adults who made an attempt to take their own life, by taking an overdose of tablets or in some other way, in the past year. The variable used was suicide2. 
@@ -59,7 +65,7 @@
 #### 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
 #### 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 #### 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
-##### CHILDREN
+##### CHILDREN (N=10)
 #### 14007 - ch30plyg - Children engaging in active play
 #### 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
 #### 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
@@ -69,19 +75,20 @@
 #### 30174	Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
 #### 30175	Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
 #### 99117	Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
+#### 99144: Children at risk of obesity (2-15y) (Monica's indicator: need to check how it compares with the data she's been provided with)
 
 #########################################################
 # STEP 3: 
 #########################################################
 
-### And adding data for a further 25 indicators (13 adult, 12 CYP) that have been processed in the ScotPHO_survey_data repo 
-### (raw data processing elsewhere because they use UK Data Service data)
-### (data for SIMD x sex are also added for the 7 published variables above that are in the adult MH profile (see *), as these can be derived from the UKDS data.)
-### (Mar 2026: stat.gov.scot data not published for 2024 yet, so will just use the additional geog - CA - for the indicators we get from UKDS)
+# Check availability of the indicators from these two sources.
+# Use the SHeS dashboard data wherever available.
+# Prep the final ScotPHO dashboard indicator files
 
 
-
-### functions/packages -----
+#########################################################
+### Functions/packages -----
+#########################################################
 
 source("functions/main_analysis.R") # for packages and QA
 source("functions/deprivation_analysis.R") # for packages and QA
@@ -90,14 +97,56 @@ library(arrow) # for parquet files
 ## SHeS folder
 shes_folder <- file.path(profiles_data_folder, "Received Data", "Scottish Health Survey")
 
-# Pre-processed UKDS data (UK data service)
+
+
+#########################################################
+### Read in the data -----
+#########################################################
+
+## Pre-processed UKDS data (UK data service)
 # The data read in below has been prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
-# Last updated May 2026 (SHeS data up to 2024)
+# Last updated June 2026 (SHeS data up to 2024)
 shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes_raw.rds")) %>%
-  mutate(code = as.character(code))
+  mutate(code = as.character(code)) %>%
+  mutate(source = "UKDS") %>%
+  mutate(areatype = case_when(substr(code, 1, 3)=="S00" ~ "Scot",
+                              substr(code, 1, 3)=="S08" ~ "HB",
+                              substr(code, 1, 3)=="S12" ~ "CA",
+                              substr(code, 1, 3)=="S11" ~ "ADP",
+                              substr(code, 1, 3)=="S32" ~ "PD",
+                              substr(code, 1, 3)=="S37" ~ "HSCP",
+                              TRUE ~ "NA")) %>%
+  # correct the equivalised income splits: (to be added to the survey data processing ultimately)
+  # NB. quintiles have opposite ordering to SIMD (to match SHeS dashboard)
+  ## NEED TO CHANGE THIS IN THE PROCESSING FILE CODE
+  mutate(split_value = case_when(split_name == "Income (equivalised)" & split_value == "Q1 (lowest)" ~ "Q5 (lowest income)",
+                                 split_name == "Income (equivalised)" & split_value == "Q5 (highest)" ~ "Q1 (highest income)",
+                                 TRUE ~ split_value))
 
 
+# which geogs do we want to keep/drop?
+# drop ADP and PD for PA profile indicators:
+pa_inds <- c(14001, 14002, 30111, 14003, 14006, 14007, 14012)
+shes_from_ukds <- shes_from_ukds %>%
+  filter(!(ind_id %in% pa_inds & areatype %in% c("PD", "ADP")))
 
+# make a lookup for ind_id
+ind_ids <- shes_from_ukds %>%
+  select(indicator, ind_id) %>%
+  unique()
+
+
+## SHeS dashboard data: 
+## Can be downloaded from there but easier to get direct from the SHeS team (see open_data_to_2024 folder)
+SHeS_SCOTLAND <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
+SHeS_LA <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_rank_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
+SHeS_SIMD <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_simd_opendata.xlsx")) %>% mutate(split_name = "Deprivation (SIMD)")
+SHeS_AGE <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_age_opendata.xlsx")) %>% mutate(split_name = "Age group")
+SHeS_INCOME <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_ei_opendata.xlsx")) %>% mutate(split_name = "Income (equivalised)")
+SHeS_CONDITIONS <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_ltc_opendata.xlsx")) %>% mutate(split_name = "Long-term Illness")
+
+
+## Alternative route to the published data: 
 # ### Do this if you need to extract the data from statistics.gov.scot (as of May 2026: not updated as quickly as the SHeS dashboard is) ---- 
 # Run lines below to install the opendata scotland package
 # devtools::install_github("ScotGovAnalysis/opendatascot",upgrade = "never",build_vignettes = TRUE)
@@ -120,9 +169,7 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
 # # write_parquet(SHeS_INCOME, file.path(shes_folder, "SHeS_INCOME.parquet"))
 # # write_parquet(SHeS_CONDITIONS, file.path(shes_folder, "SHeS_LONGTERM_CONDITIONS.parquet"))
 # 
-# ### 1. Read in the downloaded and saved data ----
-# 
-# # Published data from statistics.gov.scot:
+# ### Read in the downloaded and saved data ----
 # SHeS_SCOTLAND <- read_parquet(file.path(shes_folder, "SHeS_SCOTLAND.parquet")) %>% mutate(split_name = "Sex")
 # SHeS_LA <- read_parquet(file.path(shes_folder, "SHeS_LA.parquet")) %>% mutate(split_name = "Sex")
 # SHeS_SIMD <- read_parquet(file.path(shes_folder, "SHeS_SIMD.parquet")) %>% mutate(split_name = "Deprivation (SIMD)")
@@ -130,21 +177,12 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
 # SHeS_INCOME <- read_parquet(file.path(shes_folder, "SHeS_INCOME.parquet")) %>% mutate(split_name = "Income (equivalised)")
 # SHeS_CONDITIONS <- read_parquet(file.path(shes_folder, "SHeS_LONGTERM_CONDITIONS.parquet")) %>% mutate(split_name = "Long-term illness")
 
-## The dashboard data are more likely to be up to date: 
-## Obtained direct from the SHeS team (see open_data_2026 folder)
-SHeS_SCOTLAND <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_trend_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
-SHeS_LA <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_rank_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
-SHeS_SIMD <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_trend_simd_opendata.xlsx")) %>% mutate(split_name = "Deprivation (SIMD)")
-SHeS_AGE <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_trend_age_opendata.xlsx")) %>% mutate(split_name = "Age")
-SHeS_INCOME <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_trend_ei_opendata.xlsx")) %>% mutate(split_name = "Income (equivalised)")
-SHeS_CONDITIONS <- readxl::read_xlsx(file.path(shes_folder, "open_data_2026", "shes_trend_ltc_opendata.xlsx")) %>% mutate(split_name = "Long-term illness")
 
+#########################################################
+### Process the published data -----
+#########################################################
 
-
-# Mar 2026: no 2024 data in the statistics.gov.scot data yet, so keep all from UKDS raw microdata (all years)
-###------------------------------------------------------------------------------------------------
-### PUBLISHED DATA PROCESSING:
-### 2. Combine data and get column data and formats right----
+### Combine data and get column data and formats right----
 shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the environment starting with "SHeS_"
   bind_rows() %>% # append them together
   mutate(code = ifelse(GeographyCode=="S92000003", "S00000001", GeographyCode)) %>% # recode Scotland
@@ -155,17 +193,35 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
   # create a new split_value column: coalesce combines non-NA values into a single column
   mutate(split_value = coalesce(Age, Sex, LongtermConditions, EquivalisedIncome, SIMDquintiles)) %>% # this works because there is only ever one non-NA cell in these 5 columns
   mutate(split_value = if_else(split_value == "All", "Total", split_value)) %>% # recode All -> Total
-  mutate(split_value = case_when(split_value=="1 - most deprived" ~ "1", # format needed for the inequalities analysis
-                                 split_value=="5 - least deprived" ~ "5",
-                                 split_value=="1st-Top quintile" ~ "1 - highest income", # match ScotPHO format
-                                 split_value=="2nd quintile" ~ "2",
-                                 split_value=="3rd quintile" ~ "3",
-                                 split_value=="4th quintile" ~ "4",
-                                 split_value=="5th-Bottom quintile" ~ "5 - lowest income",
-                                 TRUE ~ split_value)) %>%
-  #filter(split_name!="Age") %>% # now will use coarser age groups (dichotomised at 65y) so that can present at HB level too
-
-# keep the required columns
+  mutate(split_value = case_when(# Deprivation:
+    split_name == "Deprivation (SIMD)" & split_value=="1 - most deprived" ~ "1", # format needed for the inequalities analysis
+    split_name == "Deprivation (SIMD)" & split_value=="2nd quintile" ~ "2",
+    split_name == "Deprivation (SIMD)" & split_value=="3rd quintile" ~ "3",
+    split_name == "Deprivation (SIMD)" & split_value=="4th quintile" ~ "4",
+    split_name == "Deprivation (SIMD)" & split_value=="5 - least deprived" ~ "5",
+    # equivalised household income
+    split_name == "Income (equivalised)" & split_value=="1st-Top quintile" ~ "Q1 (highest income)", # match ScotPHO format
+    split_name == "Income (equivalised)" & split_value=="2nd quintile" ~ "Q2", 
+    split_name == "Income (equivalised)" & split_value=="3rd quintile" ~ "Q3", 
+    split_name == "Income (equivalised)" & split_value=="4th quintile" ~ "Q4", 
+    split_name == "Income (equivalised)" & split_value=="5th-Bottom quintile" ~ "Q5 (lowest income)",
+    # Age group:
+    split_name == "Age group" & split_value=="0-3" ~ "0 to 3y",
+    split_name == "Age group" & split_value=="11-12" ~ "11 to 12y",
+    split_name == "Age group" & split_value=="12-15" ~ "12 to 15y",
+    split_name == "Age group" & split_value=="13-15" ~ "13 to 15y",
+    split_name == "Age group" & split_value=="2-4" ~ "2 to 4y",
+    split_name == "Age group" & split_value=="4-7" ~ "4 to 7y",
+    split_name == "Age group" & split_value=="5-7" ~ "5 to 7y",
+    split_name == "Age group" & split_value=="8-10" ~ "8 to 10y",
+    split_name == "Age group" & split_value=="8-11" ~ "8 to 11y",
+    # long-term illness
+    split_name == "Long-term Illness" & split_value=="Limiting long-term conditions" ~ "Limiting Long-term Illness",
+    split_name == "Long-term Illness" & split_value=="No long-term conditions" ~ "No Long-term Illness",
+    split_name == "Long-term Illness" & split_value=="Non-limiting long-term conditions" ~ "Non-limiting Long-term Illness",
+    TRUE ~ split_value)) %>%
+  
+  # keep the required columns
   select(code, ind = ScottishHealthSurveyIndicator, trend_axis, split_name, split_value, stat, value = Value) %>%
   
   # reshape to wide
@@ -178,7 +234,7 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
   mutate(year_diff =
            as.numeric(substr(trend_axis, nchar(trend_axis) - 3, nchar(trend_axis))) # the last year in trend_axis
          - as.numeric(substr(trend_axis, 1, 4))) %>% # minus the first year in trend_axis
-  filter(year_diff!=1) %>% #drop the two-year aggregates
+  filter(year_diff!=1) %>% #drop the two-year aggregates: we don't present these
   mutate(year = case_when(year_diff == 0 ~ as.numeric(substr(trend_axis, 1, 4)), # only one year in the label
                           year_diff %in% c(3:4) ~ as.numeric(substr(trend_axis, 1, 4))+2)) %>% # year = first year in the label + 2 (=mid point or midpoint rounded up to nearest whole year)
   mutate(def_period = ifelse(year_diff==0,
@@ -186,282 +242,194 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
                              paste0("Aggregated survey years (", trend_axis, ")"))) %>%
   mutate(numerator = NA, # columns needed to get into same format as the imported UKDS data
          sex = case_when(split_name=="Sex" ~ split_value,
-                         TRUE ~ "Total"))
+                         TRUE ~ "Total")) %>%
+  # identify the areatype
+  mutate(areatype = case_when(substr(code, 1, 3)=="S00" ~ "Scot",
+                              substr(code, 1, 3)=="S08" ~ "HB",
+                              substr(code, 1, 3)=="S12" ~ "CA",
+                              TRUE ~ "NA")) 
 
 
-### 3. Which indicators should be kept? ----
+### Which published indicators should be kept? ----
 
 # print out list of all available indicators in the data:
 unique(shes_from_dashboard$ind)
 # look through to check which ones we need to keep
 
 # List all the indicators we want to keep:
-# keep_all <- c("Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women",  # binge drinking: M/F/Total (ind_id 4166, 4167, 4168) (NB. original ScotPHO indicator excluded non-drinkers from denominator)
-#           "Alcohol consumption (mean weekly units)", # units: can't use to derive % exceed weekly guidelines: M/F/Total (ind_id 4163-5)
-#           "Alcohol consumption: Hazardous/Harmful drinker", # Problem drinker: M/F/Total (ind_id 4169, 12554, 12555) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here, as for binge drinkers)
-#           "Food insecurity (worried would run out of food): Yes",  # 99105
-#           "Healthy weight: Healthy weight" #99106
-#           )
-# 
-# keep_only_ca <- c("Summary activity levels: Meets recommendations",  #99107
-#                   "Self-assessed general health: Very good/Good",    # 99108
-#                   "Fruit & vegetable consumption: 5 portions or more",  #30013
-#                   "Mental wellbeing", # 30001 (mean score, as in the indicator definition)
-#                   "General health questionnaire (GHQ-12): Score 4+", # 30003
-#                   "Long-term conditions: Limiting long-term conditions") # 99109
-
 dashboard_vars_to_keep <- c("Alcohol consumption: Hazardous/Harmful drinker",                                                                               
                             "Alcohol consumption (mean weekly units)",                                                                                      
                             "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women",                             
-                            "Healthy weight: Healthy weight",                                                                                               
                             "Fruit & vegetable consumption: 5 portions or more",                                                                            
-                            "Worried would run out of food: Yes",                                                                                           
+                            "General health questionnaire (GHQ-12): Score 4+",                                                                              
+                            "Healthy weight: Healthy weight",                                                                                               
                             "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)",                                                              
-                            "Self-assessed general health: Very good/Good",                                                                                 
-                            "Self-assessed general health (children): Very good/Good",                                                                      
                             "Long-term conditions: Limiting long-term conditions",                                                                          
                             "Long-term conditions (children): Limiting long-term conditions",                                                               
-                            "General health questionnaire (GHQ-12): Score 4+",                                                                              
+                            "Mental wellbeing",                                                                                           
+                            "Multiple risks for poor health: Two or more",
                             "Participating in sport (children): Yes",                                                                                       
+                            "Self-assessed general health: Very good/Good",                                                                                 
+                            "Self-assessed general health (children): Very good/Good",                                                                      
                             "Summary activity levels: Meets recommendations", 
                             "Summary activity levels: Very low activity",
                             "Summary activity levels (including school) (children): Meets recommendations",                                                 
-                            "Summary activity levels (including school) (children): Low activity",                                                          
+                            "Summary activity levels (including school) (children): Low activity",  
+                            "Summary activity levels (excluding school) (children): Meets recommendations",
                             "Whether meets muscle strengthening recommendations: Yes",                                                                      
-                            "Mental wellbeing")                                                                                                             
-
-dashboard_vars_to_keep <- c(,                                                                               
-                            ,                                                                                      
-                            ,                             
-                            ,                                                                                               
-                            ,                                                                            
-                            ,                                                                                           
-                            ,                                                              
-                            ,                                                                                 
-                            "Self-assessed general health (children): Very good/Good",                                                                      
-                            ,                                                                          
-                            "Long-term conditions (children): Limiting long-term conditions",                                                               
-                            ,                                                                              
-                            ,                                                                                       
-                            , 
-                            ,
-                            ,                                                 
-                            ,                                                          
-                            ,                                                                      
-                            )    
-# involve...
-
-
-
-shes_from_dashboard <- shes_from_dashboard %>%
-  mutate(indicator = case_when( ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs",    
-                                ind == "Self-assessed general health: Very good/Good" ~ "self_assessed_health",  
-                                ind == "Long-term conditions: Limiting long-term conditions" ~ "limiting_long_term_condition",  
-                                ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
-                                ind == "Fruit & vegetable consumption: 5 portions or more" ~ "fruit_veg_consumption",  
-                                ind == "Mental wellbeing" ~ "mental_wellbeing",    
-                                ind == "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)" ~ "life_satisfaction",  
-                                ind == "Summary activity levels (including school) (children): Meets recommendations" ~ "cyp_pa_over_1h_per_day",
-                                ind == "Summary activity levels: Very low activity" ~ "adults_very_low_activity",    
-                                ind == "Whether meets muscle strengthening recommendations: Yes" ~ "meeting_muscle_strengthening_recommendations",
-                                ind == "Summary activity levels (including school) (children): Low activity" ~ "children_very_low_activity",
-                                ind == "Participating in sport (children): Yes" ~ "children_participating_sport",
-                                ind == "Healthy weight: Healthy weight" ~ "adult_healthy_weight",
-                                ind == "Worried would run out of food: Yes" ~ "food_insecurity",
-                                ind == "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women" ~ "alc_binge_drinking",
-                                ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "haz_or_harmful_drinker",
-                                ind == "Alcohol consumption (mean weekly units)" ~ "alc_consumption_units",
-                                TRUE ~ as.character(NA)  )) %>%
-  indicator == "gh_qg2" ~ "common_mh_probs",    
-indicator == "gen_helf" ~ "self_assessed_health",  
-indicator == "limitill2" ~ "limiting_long_term_condition",  
-indicator == "adt10gp_tw2" ~ "physical_activity",
-indicator == "porftvg3" ~ "fruit_veg_consumption",  
-indicator == "rg17a_new" ~ "unpaid_caring", 
-indicator == "wemwbs" ~ "mental_wellbeing",    
-indicator == "lifesat2" ~ "life_satisfaction",  
-indicator == "cghq214" ~ "cyp_parent_w_ghq4",    
-indicator == "ch_audit" ~ "cyp_parent_w_harmful_alc",
-indicator == "involve" ~ "involved_locally",  
-indicator == "p_crisis" ~ "support_network", 
-indicator == "str_work2" ~ "stress_at_work",
-indicator == "contrl" ~ "choice_at_work",   
-indicator == "support1" ~ "line_manager", 
-indicator == "depsymp" ~ "depression_symptoms",  
-indicator == "anxsymp" ~ "anxiety_symptoms",  
-indicator == "dsh5sc" ~ "deliberate_selfharm",   
-indicator == "suicide2" ~ "attempted_suicide",
-indicator == "work_bal" ~ "work-life_balance",
-indicator == "sdq_totg" ~ "cyp_sdq_totaldiffs",
-indicator == "childpa1hr" ~ "cyp_pa_over_1h_per_day",
-indicator == "sdq_totg" ~ "cyp_sdq_totaldiffs",
-indicator == "sdq_peeg" ~ "cyp_sdq_peer",
-indicator == "sdq_cong" ~ "cyp_sdq_conduct",
-indicator == "sdq_hypg" ~ "cyp_sdq_hyperactivity",
-indicator == "sdq_emog" ~ "cyp_sdq_emotional",
-indicator == "sdq_pro" ~ "cyp_sdq_prosocial",
-indicator == "adt10gp_tw_LOW" ~ "adults_very_low_activity",    
-indicator == "mus_rec" ~ "meeting_muscle_strengthening_recommendations",
-indicator == "c00sum7s" ~ "children_very_low_activity",
-indicator == "spt1ch" ~ "children_participating_sport",
-indicator == "ch30plyg" ~ "children_active_play",
-indicator == "healthyweight" ~ "adult_healthy_weight",
-indicator == "foodinsecure" ~ "food_insecurity",
-indicator == "binge" ~ "alc_binge_drinking",
-indicator == "hazharmful" ~ "haz_or_harmful_drinker",
-indicator == "drating" ~ "alc_consumption_units",
-indicator == "cbmig5_new" ~ "child_obesity_risk",
-indicator == "child_gen_helf" ~ "child_general_health",
-indicator == "child_limitill2" ~ "child_llti",
-
-# keep the required indicators
-shes_keep_all <- shes_df %>%
-  filter(ind %in% keep_all) 
-shes_keep_ca <- shes_df %>%
-  filter(ind %in% keep_only_ca & substr(code, 1, 3) == "S12")
+                            "Worried would run out of food: Yes"   )                                                                                                             
 
 shes_from_dashboard <- shes_from_dashboard %>%
   filter(ind %in% dashboard_vars_to_keep) %>%
-  
-
-### 4. Further processing:  ----
-
-shes_df <- rbind(shes_keep_all, shes_keep_ca) %>%
-  
-  # Add shorter indicator name column (used as filename)
-  mutate(indicator = case_when(ind == "Self-assessed general health: Very good/Good" ~ "self_assessed_health",
-                               ind == "Long-term conditions: Limiting long-term conditions" ~ "limiting_long_term_condition",
-                               ind == "Healthy weight: Healthy weight" ~ "healthy_weight",
-                               ind == "Food insecurity (worried would run out of food): Yes" ~ "food_insecurity",
-                               ind == "Fruit & vegetable consumption: 5 portions or more" ~ "fruit_veg_consumption",
-                               ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs",
-                               ind == "Mental wellbeing" ~ "mental_wellbeing",
-                               ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
-                               ind == "Whether meets MVPA & muscle strengthening recommendations: Meets MVPA & muscle strengthening recommendations" ~ "meets_mvpa_and_strength_recs",
-                               ind == "Drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" ~ "binge_drinking",
-                               ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
-                               ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units"),
-         # Create new ind_id column
-         ind_id = case_when(indicator == "self_assessed_health" ~ 99108,
-                            indicator == "limiting_long_term_condition" ~ 99109,
-                            indicator == "healthy_weight" ~ 99106,
-                            indicator == "food_insecurity" ~ 99105,
-                            indicator == "fruit_veg_consumption" ~ 30013,
-                            indicator == "common_mh_probs" ~ 30003,
-                            indicator == "mental_wellbeing" ~ 30001,
-                            indicator == "physical_activity" ~ 99107,
-                            indicator == "meets_mvpa_and_strength_recs" ~ 14001,
-                            indicator == "binge_drinking" ~ 4170,
-                            indicator == "problem_drinker" ~ 4171,
-                            indicator == "weekly_alc_units" ~ 4172)) %>%
-  
+  # add indicator names to match the UKDS data
+  mutate(indicator = case_when( ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "haz_or_harmful_drinker",
+                                ind == "Alcohol consumption (mean weekly units)" ~ "alc_consumption_units",
+                                ind == "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women" ~ "alc_binge_drinking",
+                                ind == "Fruit & vegetable consumption: 5 portions or more" ~ "fruit_veg_consumption",  
+                                ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs",    
+                                ind == "Healthy weight: Healthy weight" ~ "adult_healthy_weight",
+                                ind == "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)" ~ "life_satisfaction",  
+                                ind == "Long-term conditions: Limiting long-term conditions" ~ "limiting_long_term_condition",  
+                                ind == "Long-term conditions (children): Limiting long-term conditions" ~ "child_llti",
+                                ind == "Mental wellbeing" ~ "mental_wellbeing",    
+                                ind == "Multiple risks for poor health: Two or more" ~ "multi_health_risks", 
+                                ind == "Participating in sport (children): Yes" ~ "children_participating_sport",
+                                ind == "Self-assessed general health: Very good/Good" ~ "self_assessed_health",  
+                                ind == "Self-assessed general health (children): Very good/Good" ~ "child_general_health",
+                                ind == "Summary activity levels: Meets recommendations" ~ "physical_activity",
+                                ind == "Summary activity levels: Very low activity" ~ "adults_very_low_activity",    
+                                ind == "Summary activity levels (including school) (children): Meets recommendations" ~ "cyp_pa_over_1h_per_day",
+                                ind == "Summary activity levels (including school) (children): Low activity" ~ "children_very_low_activity",
+                                ind == "Summary activity levels (excluding school) (children): Meets recommendations" ~ "children_meet_pa_recs_excl_school",
+                                ind == "Whether meets muscle strengthening recommendations: Yes" ~ "meeting_muscle_strengthening_recommendations",
+                                ind == "Worried would run out of food: Yes" ~ "food_insecurity",
+                                TRUE ~ as.character(NA)  )) %>%
+  # Add ind_id column using lookup created above
+  merge(y=ind_ids, by="indicator", all.x=TRUE) %>%
+  mutate(ind_id = ifelse(indicator=="multi_health_risks", 99121, ind_id)) %>% #this indicator is not in UKDS data, so add its ind_id manually
   # Select relevant columns
-  select(ind_id, indicator, code, year, trend_axis, def_period, sex, split_name, split_value, rate, lowci, upci, numerator)
+  select(ind_id, indicator, code, areatype, year, trend_axis, def_period, sex, split_name, split_value, rate, lowci, upci, numerator) 
 
-### Healthy weight: no aggregated Scot data since 2016-19 despite having annual data to 2023, so calculate those here:
-healthy_weight_roll_means <- shes_df %>%
-  filter(ind_id == 99106 & code == "S00000001" & trend_axis %in% c("2017", "2018", "2019", "2021", "2022", "2023")) %>%
-  select(-trend_axis, -def_period) %>%
-  group_by(ind_id, indicator, code, sex, split_name, split_value) %>%
-  arrange(year, .by_group = TRUE) %>%
-  mutate(rate = roll_mean(rate, n=4, align="center", fill = NA),
-         lowci = roll_mean(lowci, n=4, align="center", fill = NA),
-         upci = roll_mean(upci, n=4, align="center", fill = NA),
-         numerator = as.logical(NA)) %>%
-  ungroup %>%
-  filter(!is.na(rate)) %>%
-  mutate(year = year+1) %>%
-  mutate(trend_axis = case_when(year==2019 ~ "2017-2021",
-                                year==2020 ~ "2018-2022",
-                                year==2022 ~ "2019-2023",
-                                TRUE ~ as.character(NA))) %>%
-  mutate(def_period = paste0("Aggregated survey years (", trend_axis, ")"))
-  
-shes_df <- rbind(shes_df, healthy_weight_roll_means)
+# which indicator ids?
+inds_in_db <- shes_from_dashboard$ind_id %>% unique() #n=21
 
-### 5. Add totals for the popgroup and SIMD splits ----
-# (some have totals but some don't...)
-
-# Get split_value = "Total" for the splits without totals.
+### Add totals for the popgroup and SIMD splits ----
 # This is needed for subsequent calculation of the inequalities metrics, and is nice-to-have for the popgroup data:
-splits_w_no_total <- shes_df %>%
+# Add split_value = "Total" for the splits without totals.
+
+# 1st Find the splits without totals:
+splits_w_no_total <- shes_from_dashboard %>%
   group_by(indicator, split_name) %>%
   mutate(has_total = "Total" %in% split_value) %>%
   ungroup() %>%
   filter(has_total==FALSE) %>%
-  select(code, indicator, ind_id, trend_axis, year, def_period, sex, split_name) %>%
+  select(code, indicator, ind_id, trend_axis, year, def_period, sex, split_name, areatype) %>%
   unique()
 
-totals_to_add <- shes_df %>%
+# 2nd Get the totals for those splits
+totals_to_add <- shes_from_dashboard %>%
   filter(split_value=="Total") %>%
-  select(code, indicator, trend_axis, split_value, rate, lowci, upci, numerator) %>%
+  select(code, indicator, trend_axis, split_value, rate, lowci, upci, numerator, areatype) %>%
   unique() %>%
-  merge(y = splits_w_no_total, by=c("code", "indicator", "trend_axis"), all.y=TRUE)
+  merge(y = splits_w_no_total, by=c("code", "indicator", "trend_axis", "areatype"), all.y=TRUE)
 
-shes_df <- shes_df %>%
-  rbind(totals_to_add)
+shes_from_dashboard <- shes_from_dashboard %>%
+  rbind(totals_to_add) %>%
+  mutate(source="dashboard")
+
+#########################################################
+### Compare availability -----
+#########################################################
+
+#indicators with different age groups to the dashboard data:
+# = adult low activity, adult meet muscle recs, child v low PA, child sport, child meets recs (incl school), child meets recs (excl school)
+pa_inds_agegp <- c(14001, 14002, 14006, 14003, 30111, 14012)
+# remove the dashboard age group splits for these indicators
+
+source_comparison <- shes_from_dashboard %>%
+  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>%
+  filter(!split_name=="Long-term Illness") %>% # we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  merge(y=shes_from_ukds, by=c("indicator", "ind_id", "code", "areatype", "year", "trend_axis", "def_period", "sex", "split_name", "split_value"), all=TRUE) %>%
+  filter(areatype %in% c("Scot", "HB", "CA") & ind_id %in% inds_in_db) %>% # UKDS provides any PD, HSCP or ADP splits, as these aren't available in the dashboard. 
+  mutate(final_source = ifelse(is.na(source.x), source.y, source.x))
+
+# This comparison is limited to the indicators that are available from both sources (n=20 as of June 2026).
+# Another 21 (as of June 2026) are only available from the UKDS extract. One is only available from the dashboard data.
+ftable(source_comparison$indicator, 
+       source_comparison$split_name, 
+       source_comparison$final_source, 
+       source_comparison$areatype, 
+       row.vars=c(1:2))
+
+# Key points about the two sources:
+## Aggregated UKDS data start from 2008-11, while the aggregated dashboard data starts at 2012-15. 
+## Single year data start at 2008 for both sources
+## Dashboard only presents single year data for Scotland...
+## We want Scotland figures for aggregate years too, for plotting against lower geogs: so any aggregated Scotland data present in the UKDS extract will be used too. 
+## Dashboard only presents lower geogs for adult indicators (total, male, female) but no child indicators.
+## Dashboard presents all splits (except adult indicators by sex) for Scotland only, no lower geogs.
+## UKDS data have been processed for splits where less than 25% of the data need suppression. This means up to 1 in 4 data points could be suppressed for some splits.
+## Dashboard data don't provide numerators. Numerators from the UKDS processing will be used where available. 
+## UKDS provides SIMD splits by sex, dashboard doesn't.
+## UKDS provides urban/rural splits, while dashboard doesn't
+
+# additionals for deprivation = splits by sex, + aggregate years and lower geogs
+# additionals for age group = aggregate years + lower geogs
+# additionals for equiv invome = aggregate years + lower geogs
+# additionals for sex = earlier aggregate data
 
 
-###------------------------------------------------------------------------------------------------
-### Now add the UKDS data:
-# (and standardise the split_names and split_values)
-shes_df <- shes_from_ukds %>%
-  rbind(shes_df) %>%
-  mutate(split_name=case_when(split_name=="Long-term Illness" ~ "Long-term illness",
-                              TRUE ~ split_name)) %>%
-  # published data refers to long term 'conditions' but the this is used interchangeably with 'illness' in the reporting. Here we standardise these:
-  mutate(split_value=case_when(split_value %in% c("No long-term conditions", "No Long-term Illness") ~ "No long-term illness",
-                               split_value %in% c("Non-limiting long-term conditions", "Limiting Long-term Illness") ~ "Limiting long-term illness",
-                               split_value %in% c("Limiting long-term conditions", "Non-limiting Long-term Illness") ~ "Non-limiting long-term illness",
-                               TRUE ~ split_value))
 
-table(shes_df$ind_id, useNA="always") # 37 in total, no NA
-table(shes_df$indicator, useNA="always") # 37 in total, no NA
-table(shes_df$code, useNA="always") # Scot, HB, LA, no NA
-table(shes_df$trend_axis, useNA="always") # 2008 to 2024, single year and 4-y aggregates, no NA
-table(shes_df$def_period, useNA="always") # 2008 to 2024, single year and 4-y aggregates, no NA
-table(shes_df$sex, useNA="always") # M/F/total, no NA
-table(shes_df$split_name, useNA="always") # 5 different splits, no NA
-table(shes_df$split_value, useNA="always") # correct, no NA
+# keep UKDS where available
+shes_combined <- shes_from_dashboard %>%
+  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>%
+  filter(!split_name=="Long-term Illness") %>% # we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  merge(y=shes_from_ukds, by=c("indicator", "ind_id", "split_name", "split_value", "sex", "code", "areatype", "trend_axis", "year", "def_period"), all=TRUE) %>%
+  # .x is dashboard, .y is ukds, so we keep dashboard for Scotland, where available
+  # opted to take lower geog data from UKDS processing, rather than dashboard data (even when available), so that all coincident geographies have the same data.
+  mutate(rate = ifelse(areatype=="Scot" & !is.na(rate.x), rate.x, rate.y), 
+         lowci = ifelse(areatype=="Scot" & !is.na(rate.x), lowci.x, lowci.y),
+         upci = ifelse(areatype=="Scot" & !is.na(rate.x), upci.x, upci.y),
+         numerator = numerator.y, # there are no numerators in the dashboard extract
+         source = ifelse(areatype=="Scot" & !is.na(rate.x), source.x, source.y)) %>%
+  mutate(rate_diff = case_when(!is.na(rate.x) & !is.na(rate.y) ~ rate.x-rate.y, 
+                               TRUE ~ as.numeric(NA)))
+#shes_from_dashboard has 25,693 records
+#shes_from_ukds has 612,347 records
+#shes_combined has 614,689 records
 
-
-
-
+# how do the indicator values compare?
+shes_combined %>% 
+  filter(!is.na(rate.x) & !is.na(rate.y)) %>%
+  ggplot() +
+  geom_point(aes(x=rate.x, y=rate.y)) +
+  facet_wrap(~indicator)
+# SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
+# SLIGHT DISCREPANCIES APPARENT THAT PROBABLY ARISE FROM THE UKDS DATA BEING A MORE SUPPRESSED VERSION OF THE RAW DATA THE SHES TEAM USE
 
 ### 6. Check geographical availability: ----
 
-# which Scotland-wide data to keep to match any lower geographies in the main_data (for trend chart and rank comparisons)?
-availability <- shes_df %>%
-  mutate(geog = substr(code, 1, 3),
-         years = case_when(nchar(trend_axis)==4 ~ "single",
+# which Scotland-wide data to keep to match any lower geographies in the main_data (needed for trend chart and rank comparisons)?
+availability <- shes_combined %>%
+  mutate(years = case_when(nchar(trend_axis)==4 ~ "single",
                            nchar(trend_axis)>4 ~ "aggregated",
                            TRUE ~ as.character(NA))) %>%
   filter(split_value=="Total") %>%
-  select(ind_id, indicator, geog, years, split_name) %>%
+  select(ind_id, indicator, areatype, years, split_name) %>%
   unique() %>%
-  group_by(ind_id, indicator, geog, split_name) %>%
+  group_by(ind_id, indicator, areatype, split_name) %>%
   summarise(count = n()) %>% # whether available for single/aggregated years only (count == 1), or both (count==2)
   ungroup()
-ftable(availability$indicator, availability$geog, availability$split_name, availability$count)
+ftable(availability$indicator, availability$areatype, availability$split_name, availability$count)
 # shows some splits are available at two levels of temporal aggregation: single year and 4y
 # main_data needs to select data at the level of aggregation of any lower geographies, if present, so that trend charts use the same trend_axis labels
 
 # make a list of the indicators this affects:
 indicators_w_lower_geogs <- availability %>%
-  filter(!geog=="S00") %>%
+  filter(!areatype=="Scot") %>%
   select(indicator) %>%
   unique()
 indicators_w_lower_geogs <- as.vector(indicators_w_lower_geogs$indicator)
-
-# identify indicators where only sex==Total is available for HBs (so can exclude from popgroup file)
-inds_w_only_total_sex_hb <- shes_df %>%
-  filter(substr(code, 1, 3)=="S08") %>%
-  filter(split_name=="Sex") %>% 
-  group_by(indicator) %>%
-  summarise(female = sum(sex=="Female")) %>%
-  ungroup() %>%
-  filter(female==0)
-inds_w_only_total_sex_hb <- as.vector(inds_w_only_total_sex_hb$indicator)
 
 
 ### 7. Prepare final files -----
@@ -470,14 +438,15 @@ inds_w_only_total_sex_hb <- as.vector(inds_w_only_total_sex_hb$indicator)
 prepare_final_files <- function(ind){
   
   # 1 - main data (ie data behind summary/trend/rank tab)
-  # Contains Scotland, LA and HB data (4-year aggregate)
-  main_data_final <- shes_df %>% 
+  # Contains Scotland and lower geogs
+  main_data_final <- shes_combined %>% 
     filter(indicator == ind,
            split_name == "Sex",
            split_value == "Total") %>%
+    # if lower geogs are present (4-y aggregated data only), the 4-y aggregated data should be selected for Scotland too, so that both can be plotted and compared
     {if (ind %in% indicators_w_lower_geogs) filter(., str_detect(def_period, "Aggregated")) #select the aggregated data
       else filter(., str_detect(def_period, "Survey year "))} %>% # select the un-aggregated data
-    select(!c(split_name, split_value, indicator, sex)) %>% 
+    select(ind_id, year, code, numerator, rate, upci, lowci, trend_axis, def_period) %>%
     unique() %>%
     arrange(code, year)
   
@@ -485,41 +454,37 @@ prepare_final_files <- function(ind){
   write_rds(main_data_final, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
   
   # 2 - population groups data (i.e. data behind population groups tab)
-  # Contains LA/HB data by sex (3 or 4-year aggregate) and Scotland data by sex/age/condition/income/simd (single year)
-  # Can use single year and aggregated data in the popgrp tab (as will only be comparing across data with the same time period: single year (all splits x Scotland) or aggregated (sex x lower geogs))
-  pop_grp_data <- shes_df %>% 
+  # Contains single year Scotland data and lower geog aggregated data 
+  # Can use single year and aggregated data in the popgrp tab (as will only ever be comparing across data with the same geog)
+  pop_grp_data <- shes_combined %>% 
     filter(indicator == ind) %>% 
     filter(split_name!="Deprivation (SIMD)") %>%
-    mutate(geog = substr(code, 1, 3)) %>%
-    filter((geog=="S00" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
-             (geog!="S00" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
-    {if (ind %in% inds_w_only_total_sex_hb) filter(., !(split_name=="Sex" & geog!="S00")) #drop the HB*Sex split if only has 'total'
-      else .} %>% # keep all data
-    select(-indicator, -sex, -geog) %>%
+    filter((areatype=="Scot" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
+             (areatype!="Scot" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
+    select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
     mutate(split_value = factor(split_value, 
                                 levels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
                                            "16 to 64y", "65y and over", 
                                            "16-24", "25-34","35-44","45-54","55-64","65-74","75+",
                                            "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
-                                           "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"),
+                                           "No long-term illness", "Long-term illness"),
                                 labels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
                                            "16 to 64y", "65y and over", 
                                            "16-24y", "25-34y","35-44y","45-54y","55-64y","65-74y","75y+",
                                            "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
-                                           "No long-term illness", "Non-limiting long-term illness","Limiting long-term illness"))) %>%
+                                           "No long-term illness", "Long-term illness"))) %>%
     arrange(code, year, split_name, split_value)
-  
-  # drop if sex only == total (no M/F)
-  
   
   # Save
   write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
   write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
   
   # Process SIMD data
-  simd_data <- shes_df %>% 
+  simd_data <- shes_combined %>% 
     filter(indicator == ind) %>% 
-    filter(split_name=="Deprivation (SIMD)" & str_detect(def_period, "Survey year ")) %>%
+    filter(split_name=="Deprivation (SIMD)") %>%
+    filter(!(areatype=="Scot" & str_detect(def_period, "Aggregated "))) %>% # for Scotland data, keep only the single year data
+    select(ind_id, year, code, sex, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
     rename(quintile = split_value) %>%
     mutate(quint_type="sc_quin") %>%
     select(-split_name) %>%
@@ -532,7 +497,7 @@ prepare_final_files <- function(ind){
   # get the right age groups for the inequalities calculation:
   age_under16y <- c(30130, 30129) # all children included in "child with a parent with..." indicators
   age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
-  age_5to15y <- c(14003, 14006, 14007) # these child PA indicators restricted to 5-15y olds
+  age_5to15y <- c(14003, 14006, 14007, 14012) # these child PA indicators restricted to 5-15y olds
   age_2to15y <- c(30111) # child PA >1hr pertains to 2-15y olds
   
   agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
@@ -548,7 +513,7 @@ prepare_final_files <- function(ind){
   # calculate the inequality measures
   simd_data <- simd_data |>
     calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
-    select(-c(indicator,overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
   
   # save the data as RDS file
   saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
@@ -560,19 +525,18 @@ prepare_final_files <- function(ind){
   
 }
 
-
 # Run function to create final files
 prepare_final_files(ind = "self_assessed_health")
 prepare_final_files(ind = "limiting_long_term_condition")
-prepare_final_files(ind = "healthy_weight")
+prepare_final_files(ind = "adult_healthy_weight")
 prepare_final_files(ind = "food_insecurity")
 prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-prepare_final_files(ind = "binge_drinking")
-prepare_final_files(ind = "problem_drinker")
-prepare_final_files(ind = "weekly_alc_units")
+prepare_final_files(ind = "alc_binge_drinking")
+prepare_final_files(ind = "haz_or_harmful_drinker")
+prepare_final_files(ind = "alc_consumption_units")
 prepare_final_files(ind = "unpaid_caring") 
 prepare_final_files(ind = "life_satisfaction")  
 prepare_final_files(ind = "cyp_parent_w_ghq4")    
@@ -599,21 +563,22 @@ prepare_final_files(ind = "adults_very_low_activity")
 prepare_final_files(ind = "children_very_low_activity")
 prepare_final_files(ind = "children_participating_sport")
 prepare_final_files(ind = "children_active_play")
+prepare_final_files(ind = "children_meet_pa_recs_excl_school")
 
 
 # Run QA reports 
 # main data
 run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) 
-run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) 
+run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) # small diffs largely due to decimal places 
 run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
 run_qa(type = "main", filename = "common_mh_probs", test_file = FALSE) 
 run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) 
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
-run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
-run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
-run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
+run_qa(type = "main", filename = "adult_healthy_weight", test_file = FALSE) 
+run_qa(type = "main", filename = "alc_binge_drinking", test_file = FALSE)  
+run_qa(type = "main", filename = "haz_or_harmful_drinker", test_file = FALSE)  
+run_qa(type = "main", filename = "alc_consumption_units", test_file = FALSE)  
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
@@ -640,20 +605,21 @@ run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
 run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE)
 run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
+run_qa(type = "main", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
 
 
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "deprivation", filename = "healthy_weight", test_file=FALSE)
+run_qa(type = "deprivation", filename = "adult_healthy_weight", test_file=FALSE)
 run_qa(type = "deprivation", filename = "food_insecurity", test_file=FALSE)
 run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE) # no 2023 or 2024: why?
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "deprivation", filename = "binge_drinking", test_file=FALSE)
-run_qa(type = "deprivation", filename = "problem_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
-run_qa(type = "deprivation", filename = "weekly_alc_units", test_file=FALSE)
+run_qa(type = "deprivation", filename = "alc_binge_drinking", test_file=FALSE)
+run_qa(type = "deprivation", filename = "haz_or_harmful_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
+run_qa(type = "deprivation", filename = "alc_consumption_units", test_file=FALSE)
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
@@ -680,19 +646,20 @@ run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = 
 run_qa(type = "deprivation", filename = "children_very_low_activity", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
+run_qa(type = "deprivation", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
 
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "popgrp", filename = "healthy_weight", test_file=FALSE)
+run_qa(type = "popgrp", filename = "adult_healthy_weight", test_file=FALSE)
 run_qa(type = "popgrp", filename = "food_insecurity", test_file=FALSE)
 run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "popgrp", filename = "binge_drinking", test_file=FALSE)
-run_qa(type = "popgrp", filename = "problem_drinker", test_file=FALSE) 
-run_qa(type = "popgrp", filename = "weekly_alc_units", test_file=FALSE)
+run_qa(type = "popgrp", filename = "alc_binge_drinking", test_file=FALSE)
+run_qa(type = "popgrp", filename = "haz_or_harmful_drinker", test_file=FALSE) 
+run_qa(type = "popgrp", filename = "alc_consumption_units", test_file=FALSE)
 run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
 run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
@@ -719,9 +686,12 @@ run_qa(type = "popgrp", filename = "adults_very_low_activity", test_file = FALSE
 run_qa(type = "popgrp", filename = "children_very_low_activity", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
+run_qa(type = "popgrp", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
 
 
 #END
+
+
 
 
 
