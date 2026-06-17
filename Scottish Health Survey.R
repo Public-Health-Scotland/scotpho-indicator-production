@@ -118,7 +118,8 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
                               TRUE ~ "NA")) %>%
   # correct the equivalised income splits: (to be added to the survey data processing ultimately)
   # NB. quintiles have opposite ordering to SIMD (to match SHeS dashboard)
-  ## NEED TO CHANGE THIS IN THE PROCESSING FILE CODE
+  ## NEED TO CHANGE THIS IN THE PROCESSING FILE CODE: done June 2026, but not run. 
+  ## Remove this section next time the ukds_shes_processing.R script is run. 
   mutate(split_value = case_when(split_name == "Income (equivalised)" & split_value == "Q1 (lowest)" ~ "Q5 (lowest income)",
                                  split_name == "Income (equivalised)" & split_value == "Q5 (highest)" ~ "Q1 (highest income)",
                                  TRUE ~ split_value))
@@ -133,8 +134,20 @@ shes_from_ukds <- shes_from_ukds %>%
 # make a lookup for ind_id
 ind_ids <- shes_from_ukds %>%
   select(indicator, ind_id) %>%
-  unique()
+  unique() %>%
+  # rename these indicators to match the existing shiny files (were previously prepared in other scripts)
+  # NB need to change in the UKDS processing file to match, then remove this section.
+  mutate(indicator = case_when(indicator == "child_obesity_risk" ~ "child_healthyweight",
+                               indicator == "alc_consumption_units" ~ "weekly_alc_units", 
+                               indicator == "alc_binge_drinking" ~"binge_drinking" , 
+                               indicator == "haz_or_harmful_drinker" ~ "problem_drinker",
+                               indicator == "adult_healthy_weight" ~ "healthy_weight",
+                               TRUE ~ indicator))
 
+           
+
+                      
+                         
 
 ## SHeS dashboard data: 
 ## Can be downloaded from there but easier to get direct from the SHeS team (see open_data_to_2024 folder)
@@ -282,17 +295,17 @@ dashboard_vars_to_keep <- c("Alcohol consumption: Hazardous/Harmful drinker",
 shes_from_dashboard <- shes_from_dashboard %>%
   filter(ind %in% dashboard_vars_to_keep) %>%
   # add indicator names to match the UKDS data
-  mutate(indicator = case_when( ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "haz_or_harmful_drinker",
-                                ind == "Alcohol consumption (mean weekly units)" ~ "alc_consumption_units",
-                                ind == "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women" ~ "alc_binge_drinking",
+  mutate(indicator = case_when( ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
+                                ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units",
+                                ind == "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women" ~ "binge_drinking",
                                 ind == "Fruit & vegetable consumption: 5 portions or more" ~ "fruit_veg_consumption",  
                                 ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs",    
-                                ind == "Healthy weight: Healthy weight" ~ "adult_healthy_weight",
+                                ind == "Healthy weight: Healthy weight" ~ "healthy_weight",
                                 ind == "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)" ~ "life_satisfaction",  
                                 ind == "Long-term conditions: Limiting long-term conditions" ~ "limiting_long_term_condition",  
                                 ind == "Long-term conditions (children): Limiting long-term conditions" ~ "child_llti",
                                 ind == "Mental wellbeing" ~ "mental_wellbeing",    
-                                ind == "Multiple risks for poor health: Two or more" ~ "multi_health_risks", 
+                                ind == "Multiple risks for poor health: Two or more" ~ "health_risk_behaviours", 
                                 ind == "Participating in sport (children): Yes" ~ "children_participating_sport",
                                 ind == "Self-assessed general health: Very good/Good" ~ "self_assessed_health",  
                                 ind == "Self-assessed general health (children): Very good/Good" ~ "child_general_health",
@@ -528,15 +541,11 @@ prepare_final_files <- function(ind){
 # Run function to create final files
 prepare_final_files(ind = "self_assessed_health")
 prepare_final_files(ind = "limiting_long_term_condition")
-prepare_final_files(ind = "adult_healthy_weight")
 prepare_final_files(ind = "food_insecurity")
 prepare_final_files(ind = "fruit_veg_consumption")
 prepare_final_files(ind = "common_mh_probs")
 prepare_final_files(ind = "mental_wellbeing") 
 prepare_final_files(ind = "physical_activity")
-prepare_final_files(ind = "alc_binge_drinking")
-prepare_final_files(ind = "haz_or_harmful_drinker")
-prepare_final_files(ind = "alc_consumption_units")
 prepare_final_files(ind = "unpaid_caring") 
 prepare_final_files(ind = "life_satisfaction")  
 prepare_final_files(ind = "cyp_parent_w_ghq4")    
@@ -564,21 +573,25 @@ prepare_final_files(ind = "children_very_low_activity")
 prepare_final_files(ind = "children_participating_sport")
 prepare_final_files(ind = "children_active_play")
 prepare_final_files(ind = "children_meet_pa_recs_excl_school")
+prepare_final_files(ind = "healthy_weight") 
+prepare_final_files(ind = "binge_drinking")
+prepare_final_files(ind = "problem_drinker")
+prepare_final_files(ind = "weekly_alc_units")
+prepare_final_files(ind = "health_risk_behaviours")
+prepare_final_files(ind = "child_healthyweight")
+prepare_final_files(ind = "child_general_health")
+prepare_final_files(ind = "child_llti")
 
 
 # Run QA reports 
 # main data
 run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) 
-run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) # small diffs largely due to decimal places 
+run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) # small diffs largely due to decimal places: ukds data includes more, so flagged as a % difference, particularly for smaller rates. CIs also oft different: our estimation might use different calculation  
 run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
 run_qa(type = "main", filename = "common_mh_probs", test_file = FALSE) 
 run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) 
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
-run_qa(type = "main", filename = "adult_healthy_weight", test_file = FALSE) 
-run_qa(type = "main", filename = "alc_binge_drinking", test_file = FALSE)  
-run_qa(type = "main", filename = "haz_or_harmful_drinker", test_file = FALSE)  
-run_qa(type = "main", filename = "alc_consumption_units", test_file = FALSE)  
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
@@ -606,20 +619,24 @@ run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE
 run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "main", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
+run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
+run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
+run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "main", filename = "child_healthyweight", test_file = FALSE)
+run_qa(type = "main", filename = "child_general_health", test_file = FALSE)
+run_qa(type = "main", filename = "child_llti", test_file = FALSE)
 
 
 # ineq data: 
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "deprivation", filename = "adult_healthy_weight", test_file=FALSE)
 run_qa(type = "deprivation", filename = "food_insecurity", test_file=FALSE)
 run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE) # no 2023 or 2024: why?
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "deprivation", filename = "alc_binge_drinking", test_file=FALSE)
-run_qa(type = "deprivation", filename = "haz_or_harmful_drinker", test_file=FALSE) # PAF data for this indicator a bit peculiar since gradient isn't simple (quintile 4 highest) - consider excluding just the PAF dat afor this indicator on next update? 
-run_qa(type = "deprivation", filename = "alc_consumption_units", test_file=FALSE)
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
@@ -647,19 +664,24 @@ run_qa(type = "deprivation", filename = "children_very_low_activity", test_file 
 run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
+run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "weekly_alc_units", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "deprivation", filename = "child_healthyweight", test_file = FALSE)
+run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE)
+run_qa(type = "deprivation", filename = "child_llti", test_file = FALSE)
+
 
 # popgrp data: 
 run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
 run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "popgrp", filename = "adult_healthy_weight", test_file=FALSE)
 run_qa(type = "popgrp", filename = "food_insecurity", test_file=FALSE)
 run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
 run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
 run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
 run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "popgrp", filename = "alc_binge_drinking", test_file=FALSE)
-run_qa(type = "popgrp", filename = "haz_or_harmful_drinker", test_file=FALSE) 
-run_qa(type = "popgrp", filename = "alc_consumption_units", test_file=FALSE)
 run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
 run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
@@ -687,7 +709,14 @@ run_qa(type = "popgrp", filename = "children_very_low_activity", test_file = FAL
 run_qa(type = "popgrp", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-
+run_qa(type = "popgrp", filename = "healthy_weight", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "weekly_alc_units", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "popgrp", filename = "child_healthyweight", test_file = FALSE)
+run_qa(type = "popgrp", filename = "child_general_health", test_file = FALSE)
+run_qa(type = "popgrp", filename = "child_llti", test_file = FALSE)
 
 #END
 
