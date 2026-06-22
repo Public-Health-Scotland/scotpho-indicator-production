@@ -11,7 +11,6 @@
 ## Packages/Filepaths/Functions ----
 ###############################################.
 source("./functions/main_analysis.R") #Normal indicator functions
-source("./functions/deprivation_analysis.R") # deprivation function
 source("./functions/data cleaning functions/fix_fin_year.R")
 
 ###############################################.
@@ -33,12 +32,6 @@ saveRDS(birthweight, file.path(profiles_data_folder, 'Prepared Data/healthy_birt
 main_analysis(filename = "healthy_birth", geography = "datazone11", measure = "percent",
               yearstart = 2002, yearend = 2024, time_agg = 3, ind_id = 21105,
               year_type = "financial")
-
-#Deprivation analysis function
-#Deprivation function could technically be run be results suggest limited difference between quintiles - possibly needs more investigation
-# into whether this information might be useful
-# analyze_deprivation(filename="healthy_birth_depr", measure="percent", time_agg=3, 
-#                     yearstart= 2014, yearend=2023, year_type = "financial", ind_id = 21105)
 
 ##END
 
