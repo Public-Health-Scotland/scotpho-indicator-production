@@ -1,3 +1,8 @@
+
+#To do 
+#decide what range to use for each indicator based on legislation, data changes etc
+#run for 2025 data once the MYE estimates released on 14/07
+
 # ScotPHO indicators: Recorded Crime
 
 #Temporary script to restore CA-level figures while dz-level data is quality assured
