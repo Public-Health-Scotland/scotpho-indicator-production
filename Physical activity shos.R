@@ -44,7 +44,7 @@ shos_pa <- left_join(shos_pa, codedictionary, by = "areaname") |>
 split_main_data <- function(df, indicator, ind_id, filename) {
   df <- df |> 
     filter(indicator == {{indicator}}, split_name == "Long-term Illness (LTI)", split_value == "Total") |> #filter to get total counts on one split
-    select(code, year, numerator, denominator, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
+    select(code, year, numerator, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
     mutate(ind_id = {{ind_id}}) #add ind_id col
   
   saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_shiny.rds")))
@@ -67,6 +67,9 @@ split_depr_data <- function(df, indicator, ind_id, filename){
  
  df <- filter(df, code == "S00000001") #currently only going to produce deprivation splits for Scotland. Too many denominators below SHoS-advised threshold of 50 to publish now. 
  
+ df <- df |> 
+   select(-c("indicator", "total_pop", "proportion_pop", "par_rr", "overall_rate", "most_rate", "least_rate"))
+ 
  saveRDS(df, file.path(profiles_data_folder, "Data to be checked", paste0({{filename}}, "_ineq.rds")))
  
  return(df)
@@ -78,7 +81,7 @@ split_depr_data <- function(df, indicator, ind_id, filename){
 split_popgrps_data <- function(df, indicator, ind_id, filename){
   df <- df |> 
     filter(indicator == {{indicator}}, split_name != "Deprivation") |> #filter on correct indicator and all splits
-    select(code, year, numerator, denominator, split_name, split_value, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
+    select(code, year, numerator, split_name, split_value, rate, lowci, upci, trend_axis, def_period) |> #select necessary variables
     mutate(ind_id = {{ind_id}}) #add ind_id col
   
   df <- df |> 
