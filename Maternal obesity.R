@@ -8,6 +8,8 @@
 ###############################################.
 source("./functions/main_analysis.R") #Normal indicator functions
 source("./functions/deprivation_analysis.R") # deprivation function
+source("./functions/data cleaning functions/fix_fin_year.R")
+
 
 ###############################################.
 ## Part 1 - Prepare basefile ----
