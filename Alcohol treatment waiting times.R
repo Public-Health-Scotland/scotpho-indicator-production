@@ -1,3 +1,36 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# ---- Analyst Notes ----
+# ~~~~~~~~~~~~~~~~~~~~~~~
+
+# Indicator: Alcohol treatment waiting times - % where LDP Standard (90%) not met (id = 4119)
+
+# Description: The LDP Standard is that 90% of people referred for help with problematic drug or alcohol use will wait no longer than
+# three weeks for specialist treatment that supports their recovery.
+
+# Data source: Drug and Alcohol Information System (DAISy) and its predecessor the Drug and Alcohol Treatment Waiting Times (DATWT) database.
+# The drug, alcohol and co-dependency treatment waiting times data files are supplied by the PHS Drugs Team (phs.drugsteam@phs.scot).
+
+# PART 1 - Read in received data, format data and create basefile for main_analysis() function
+# PART 2 - Run alcohol treatment waiting times basefile through main_analysis() function and save output to 'Data to be checked' folder
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Libraries, functions and filepaths ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+source("functions/main_analysis.R") # Brings in the main_analysis() function
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 1 - Read in received data, format data and create basefile for main_analysis() function ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Read in alcohol treatment waiting times data file supplied by PHS Drugs Team.
+alcohol_wt <- read_csv(paste0(profiles_data_folder, "/Received Data/Drug and alcohol treatment waiting times/2025 request/alcohol_waiting_times_2024-25.csv"))
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+
+# OLD CODE
+
 # ScotPHO indicators: Alcohol treatment waiting times - % where LDP Standard (90%) not met
 
 #   Part 1 - Create basefile
