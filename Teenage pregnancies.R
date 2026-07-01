@@ -1,5 +1,7 @@
 # ScotPHO indicators: teenage pregnancies #
 
+#To do - look at adding age splits
+
 #   Part 1 - Prepare basefile
 #   Part 2 - Run analysis functions
 
@@ -15,7 +17,7 @@ source("./functions/deprivation_analysis.R") # deprivation function
 
 # Reading data provided by maternity team
 # All data is included, but to calculate the rates only 15-19 female pop is used, 
-# following ISD publication methodology.
+# following PHS publication methodology.
 teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pregnancies/IR2026-00003_TeenPregs.csv")) %>% 
   clean_names() %>% #set names to lower case
   rename(datazone = datazone2011, numerator = tp, year = yearcon) %>% 
