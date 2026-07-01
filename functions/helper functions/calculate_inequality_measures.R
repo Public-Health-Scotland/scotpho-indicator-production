@@ -47,6 +47,7 @@ calculate_inequality_measures <- function(dataset){
            sqr_proportion_pop = sqrt(proportion_pop), #square root of the proportion of the population in each SIMD
            relrank_sqr_proppop = relative_rank * sqr_proportion_pop,
            rate_sqr_proppop = sqr_proportion_pop * rate) %>% #rate based on population weights
+    filter(!is.na(rate), !is.na(proportion_pop)) %>% #exclude any rows where rate is NA, e.g. due to missing data. Modelling doesn't work otherwise. 
     nest() %>% #creating one column called data with all the variables not in the grouping
     # Calculating linear regression for all the groups, then formatting the results
     # and calculating the confidence intervals
