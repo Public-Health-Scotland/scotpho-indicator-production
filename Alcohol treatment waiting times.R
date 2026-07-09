@@ -64,11 +64,25 @@ alcohol_wt <- alcohol_wt |>
             denominator = sum(denominator)) |> 
   ungroup()
 
-# Save basefile to 'Prepared Data' folder to be fed into main_analysis() function
-saveRDS(alcohol_wt, file=paste0(profiles_data_folder, '/Prepared Data/alcohol_waiting_times_raw.rds'))
+# Save alcohol treatment waiting times basefile to 'Prepared Data' folder (to be fed into main_analysis() function).
+saveRDS(alcohol_wt, file=paste0(profiles_data_folder, '/Prepared Data/Alcohol_waiting_times_raw.rds'))
 
-# This will save a file with variables year/geography/code/numerator/denominator - Is this correct?
-# Name of file - how do we know what the filename should be?
+awt_raw <- readRDS(paste0(profiles_data_folder, "/Prepared Data/Alcohol_waiting_times_raw.rds"))
+
+
+
+# Last update first basefile passed into analyze_second() - doesn't go through analyze_first() - saved to Temporary (10/11/2023 13:05)
+# awt_basefile_old <- readRDS(paste0(profiles_data_folder, "/Temporary/Alcohol_waiting_times_formatted.rds"))
+
+# Last update output file from running _formatted.rds through analyze_second() and saved to Temporary (17/11/2023 14:21)
+# awt_basefilefinal_old <- readRDS(paste0(profiles_data_folder, "/Temporary/Alcohol_waiting_times_final.rds")) 
+
+# Last update final output file for profiles tool, as _final.rds above but minus geography and denominator variables saved to Shiny Data (17/11/2023 14:21)
+# awt_finaloutputfile_old <- readRDS(paste0(profiles_data_folder, "/Shiny Data/Alcohol_waiting_times_shiny.rds"))
+
+# An old basefile from a previous update (2019) saved to Prepared Data
+# awt_prepareddata_old <- readRDS(paste0(profiles_data_folder, "/Prepared Data/Alcohol_waiting_times_raw.rds")) # Saved 04/11/2019 13:06
+
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # PART 2 - Run alcohol treatment waiting times basefile through main_analysis() function and save output to 'Data to be checked' folder ----
