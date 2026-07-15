@@ -67,8 +67,22 @@ alcohol_wt <- alcohol_wt |>
 # Save alcohol treatment waiting times basefile to 'Prepared Data' folder (to be fed into main_analysis() function).
 saveRDS(alcohol_wt, file=paste0(profiles_data_folder, '/Prepared Data/Alcohol_waiting_times_raw.rds'))
 
-awt_raw <- readRDS(paste0(profiles_data_folder, "/Prepared Data/Alcohol_waiting_times_raw.rds"))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# PART 2 - Run alcohol treatment waiting times basefile through main_analysis() function and save output to 'Data to be checked' folder ----
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+# Call main_analysis() function for alcohol treatment waiting times calculating percentage referrals waiting more than 3 weeks for treatment
+# and saving output to the 'Data to be checked' folder.
+main_analysis(filename = "Alcohol_waiting_times",
+              measure = "percent",
+              geography = "multiple",
+              time_agg = 1,
+              year_type = "financial",
+              yearstart = 2015,
+              yearend = 2024,
+              ind_id = 4119,
+              test_file = FALSE,
+              QA = TRUE)
 
 
 # Last update first basefile passed into analyze_second() - doesn't go through analyze_first() - saved to Temporary (10/11/2023 13:05)
@@ -82,13 +96,6 @@ awt_raw <- readRDS(paste0(profiles_data_folder, "/Prepared Data/Alcohol_waiting_
 
 # An old basefile from a previous update (2019) saved to Prepared Data
 # awt_prepareddata_old <- readRDS(paste0(profiles_data_folder, "/Prepared Data/Alcohol_waiting_times_raw.rds")) # Saved 04/11/2019 13:06
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# PART 2 - Run alcohol treatment waiting times basefile through main_analysis() function and save output to 'Data to be checked' folder ----
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~
