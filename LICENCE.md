@@ -33,7 +33,3 @@ Attribution Statement:
 Licence v3.0."
 
 Licence Terms: https://nationalarchives.gov.uk
-
-A comprehensive index of all specific indicators, datasets, and their 
-respective government sources can be found in the accompanying 
-DATA_SOURCES.md file in this repository.
