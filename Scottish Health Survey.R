@@ -1,10 +1,15 @@
+# to do:
+# Get adult healthy weight var updated for lower geogs: looking to get the right bmivg5 variable from UKDS.
+# Don't update that indicatr until fixed. 
+
 
 #########################################################
 # Scottish Health Survey indicator prep
 #########################################################
 
 # There are almost 50 ScotPHO indicators that are sourced from the Scottish Health Survey.
-# This script produces dashboard-ready files for all SHeS indicators EXCEPT FOR the 7 smoking prevalence indicators.
+# This script produces dashboard-ready files for all SHeS indicators... 
+# EXCEPT FOR the 7 smoking prevalence indicators, and child healthy weight (extract received from SHeS including locality data).
 
 #########################################################
 # STEP 1: 
@@ -45,7 +50,7 @@
 # STEP 2:
 #########################################################
 
-# Additional indicators (21 as of May 2026, listed below) can only be sourced from the UK Data Service (UKDS) microdata. 
+# Additional indicators (20 as of May 2026, listed below) can only be sourced from the UK Data Service (UKDS) microdata. 
 # The UKDS data are imported and processed in a separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
 # In that repo we calculate estimates for all available splits for all available indicators, including those available on the SHeS dashboard (listed above), 
 # as there could be additional splits that aren't published, despite being above the SHeS suppression threshold of denominators <30). 
@@ -65,7 +70,7 @@
 #### 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
 #### 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 #### 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
-##### CHILDREN (N=10)
+##### CHILDREN (N=9)
 #### 14007 - ch30plyg - Children engaging in active play
 #### 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
 #### 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
@@ -75,7 +80,6 @@
 #### 30174	Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
 #### 30175	Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
 #### 99117	Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
-#### 99144: Children at risk of obesity (2-15y) (Monica's indicator: need to check how it compares with the data she's been provided with)
 
 #########################################################
 # STEP 3: 
@@ -103,7 +107,7 @@ shes_folder <- file.path(profiles_data_folder, "Received Data", "Scottish Health
 ### Read in the data -----
 #########################################################
 
-## Pre-processed UKDS data (UK data service)
+## Import the pre-processed UKDS data (UK data service)
 # The data read in below has been prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
 # Last updated June 2026 (SHeS data up to 2024)
 shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes_raw.rds")) %>%
@@ -116,40 +120,21 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
                               substr(code, 1, 3)=="S32" ~ "PD",
                               substr(code, 1, 3)=="S37" ~ "HSCP",
                               TRUE ~ "NA")) %>%
-  # correct the equivalised income splits: (to be added to the survey data processing ultimately)
-  # NB. quintiles have opposite ordering to SIMD (to match SHeS dashboard)
-  ## NEED TO CHANGE THIS IN THE PROCESSING FILE CODE: done June 2026, but not run. 
-  ## Remove this section next time the ukds_shes_processing.R script is run. 
-  mutate(split_value = case_when(split_name == "Income (equivalised)" & split_value == "Q1 (lowest)" ~ "Q5 (lowest income)",
-                                 split_name == "Income (equivalised)" & split_value == "Q5 (highest)" ~ "Q1 (highest income)",
-                                 TRUE ~ split_value))
+  filter(!(split_name=="Deprivation (SIMD)" & areatype!="Scot" & sex!="Total")) # drop deprivation x sex for all lower geogs
 
-
-# which geogs do we want to keep/drop?
-# drop ADP and PD for PA profile indicators:
+# Drop any geogs we don't want
+# The PA profile indicators don't need ADP and PD geographies:
 pa_inds <- c(14001, 14002, 30111, 14003, 14006, 14007, 14012)
 shes_from_ukds <- shes_from_ukds %>%
   filter(!(ind_id %in% pa_inds & areatype %in% c("PD", "ADP")))
 
-# make a lookup for ind_id
+# Make a lookup for ind_id to indicator name, so can match with the dashboard data
 ind_ids <- shes_from_ukds %>%
   select(indicator, ind_id) %>%
-  unique() %>%
-  # rename these indicators to match the existing shiny files (were previously prepared in other scripts)
-  # NB need to change in the UKDS processing file to match, then remove this section.
-  mutate(indicator = case_when(indicator == "child_obesity_risk" ~ "child_healthyweight",
-                               indicator == "alc_consumption_units" ~ "weekly_alc_units", 
-                               indicator == "alc_binge_drinking" ~"binge_drinking" , 
-                               indicator == "haz_or_harmful_drinker" ~ "problem_drinker",
-                               indicator == "adult_healthy_weight" ~ "healthy_weight",
-                               TRUE ~ indicator))
+  unique() 
 
-           
 
-                      
-                         
-
-## SHeS dashboard data: 
+## Import SHeS dashboard data: 
 ## Can be downloaded from there but easier to get direct from the SHeS team (see open_data_to_2024 folder)
 SHeS_SCOTLAND <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
 SHeS_LA <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_rank_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
@@ -296,14 +281,14 @@ shes_from_dashboard <- shes_from_dashboard %>%
   filter(ind %in% dashboard_vars_to_keep) %>%
   # add indicator names to match the UKDS data
   mutate(indicator = case_when( ind == "Alcohol consumption: Hazardous/Harmful drinker" ~ "problem_drinker",
-                                ind == "Alcohol consumption (mean weekly units)" ~ "weekly_alc_units",
+                                ind == "Alcohol consumption (mean weekly units)" ~ "drinker_units",
                                 ind == "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women" ~ "binge_drinking",
                                 ind == "Fruit & vegetable consumption: 5 portions or more" ~ "fruit_veg_consumption",  
                                 ind == "General health questionnaire (GHQ-12): Score 4+" ~ "common_mh_probs",    
                                 ind == "Healthy weight: Healthy weight" ~ "healthy_weight",
                                 ind == "Life satisfaction: Above the mode (9 to 10-Extremely satisfied)" ~ "life_satisfaction",  
                                 ind == "Long-term conditions: Limiting long-term conditions" ~ "limiting_long_term_condition",  
-                                ind == "Long-term conditions (children): Limiting long-term conditions" ~ "child_llti",
+                                ind == "Long-term conditions (children): Limiting long-term conditions" ~ "cyp_llti",
                                 ind == "Mental wellbeing" ~ "mental_wellbeing",    
                                 ind == "Multiple risks for poor health: Two or more" ~ "health_risk_behaviours", 
                                 ind == "Participating in sport (children): Yes" ~ "children_participating_sport",
@@ -319,7 +304,7 @@ shes_from_dashboard <- shes_from_dashboard %>%
                                 TRUE ~ as.character(NA)  )) %>%
   # Add ind_id column using lookup created above
   merge(y=ind_ids, by="indicator", all.x=TRUE) %>%
-  mutate(ind_id = ifelse(indicator=="multi_health_risks", 99121, ind_id)) %>% #this indicator is not in UKDS data, so add its ind_id manually
+  mutate(ind_id = ifelse(indicator=="health_risk_behaviours", 99121, ind_id)) %>% #this indicator is not in UKDS data, so add its ind_id manually
   # Select relevant columns
   select(ind_id, indicator, code, areatype, year, trend_axis, def_period, sex, split_name, split_value, rate, lowci, upci, numerator) 
 
@@ -346,6 +331,7 @@ totals_to_add <- shes_from_dashboard %>%
   unique() %>%
   merge(y = splits_w_no_total, by=c("code", "indicator", "trend_axis", "areatype"), all.y=TRUE)
 
+# Add the totals to the original data
 shes_from_dashboard <- shes_from_dashboard %>%
   rbind(totals_to_add) %>%
   mutate(source="dashboard")
@@ -355,8 +341,8 @@ shes_from_dashboard <- shes_from_dashboard %>%
 #########################################################
 
 #indicators with different age groups to the dashboard data:
-# = adult low activity, adult meet muscle recs, child v low PA, child sport, child meets recs (incl school), child meets recs (excl school)
-pa_inds_agegp <- c(14001, 14002, 14006, 14003, 30111, 14012)
+# = adult low activity, adult meet muscle recs, child v low PA, child sport. 
+pa_inds_agegp <- c(14001, 14002, 14006, 14003)
 # remove the dashboard age group splits for these indicators
 
 source_comparison <- shes_from_dashboard %>%
@@ -386,16 +372,10 @@ ftable(source_comparison$indicator,
 ## UKDS provides SIMD splits by sex, dashboard doesn't.
 ## UKDS provides urban/rural splits, while dashboard doesn't
 
-# additionals for deprivation = splits by sex, + aggregate years and lower geogs
-# additionals for age group = aggregate years + lower geogs
-# additionals for equiv invome = aggregate years + lower geogs
-# additionals for sex = earlier aggregate data
 
-
-
-# keep UKDS where available
+# keep UKDS where available (for lower geogs)
 shes_combined <- shes_from_dashboard %>%
-  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>%
+  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>% #drop the dashboard data for indicators where we want to use different age groups
   filter(!split_name=="Long-term Illness") %>% # we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
   merge(y=shes_from_ukds, by=c("indicator", "ind_id", "split_name", "split_value", "sex", "code", "areatype", "trend_axis", "year", "def_period"), all=TRUE) %>%
   # .x is dashboard, .y is ukds, so we keep dashboard for Scotland, where available
@@ -405,11 +385,16 @@ shes_combined <- shes_from_dashboard %>%
          upci = ifelse(areatype=="Scot" & !is.na(rate.x), upci.x, upci.y),
          numerator = numerator.y, # there are no numerators in the dashboard extract
          source = ifelse(areatype=="Scot" & !is.na(rate.x), source.x, source.y)) %>%
+  mutate(rate = ifelse(ind_id==99121, rate.x, rate), # indicator 99121 (health risk behaviours) only available from dashboard, so keep dashboard data for all geogs where available
+         lowci = ifelse(ind_id==99121, lowci.x, lowci),
+         upci = ifelse(ind_id==99121, upci.x, upci),
+         source = ifelse(ind_id==99121, source.x, source)) %>%
   mutate(rate_diff = case_when(!is.na(rate.x) & !is.na(rate.y) ~ rate.x-rate.y, 
                                TRUE ~ as.numeric(NA)))
 #shes_from_dashboard has 25,693 records
-#shes_from_ukds has 612,347 records
-#shes_combined has 614,689 records
+#shes_from_ukds has 487,605 records
+#shes_combined has 489,947 records
+
 
 # how do the indicator values compare?
 shes_combined %>% 
@@ -418,7 +403,9 @@ shes_combined %>%
   geom_point(aes(x=rate.x, y=rate.y)) +
   facet_wrap(~indicator)
 # SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
-# SLIGHT DISCREPANCIES APPARENT THAT PROBABLY ARISE FROM THE UKDS DATA BEING A MORE SUPPRESSED VERSION OF THE RAW DATA THE SHES TEAM USE
+# THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
+# could be explained by UKDS estimates having more decimal places, and the UKDS data being slightly more suppressed than the raw data the SHeS team have access to
+
 
 ### 6. Check geographical availability: ----
 
@@ -434,7 +421,7 @@ availability <- shes_combined %>%
   summarise(count = n()) %>% # whether available for single/aggregated years only (count == 1), or both (count==2)
   ungroup()
 ftable(availability$indicator, availability$areatype, availability$split_name, availability$count)
-# shows some splits are available at two levels of temporal aggregation: single year and 4y
+# shows some splits are available at two levels of temporal aggregation: single year and 4y (i.e., have count==2)
 # main_data needs to select data at the level of aggregation of any lower geographies, if present, so that trend charts use the same trend_axis labels
 
 # make a list of the indicators this affects:
@@ -476,17 +463,27 @@ prepare_final_files <- function(ind){
              (areatype!="Scot" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
     select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
     mutate(split_value = factor(split_value, 
-                                levels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
-                                           "16 to 64y", "65y and over", 
-                                           "16-24", "25-34","35-44","45-54","55-64","65-74","75+",
-                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
-                                           "No long-term illness", "Long-term illness"),
-                                labels = c("Total", "0 to 4y","2 to 4y", "4 to 11y", "4 to 8y", "5 to 11y", "9 to 12y", "12 to 15y",  
-                                           "16 to 64y", "65y and over", 
-                                           "16-24y", "25-34y","35-44y","45-54y","55-64y","65-74y","75y+",
-                                           "1", "1 - highest income","2","3","4", "5", "5 - lowest income","Female","Male",            
-                                           "No long-term illness", "Long-term illness"))) %>%
+                                levels = c("Total", 
+                                           "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
+                                           "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
+                                           "16-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+",             
+                                           "1", "2", "3", "4", "5",   
+                                           "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
+                                           "Female", "Male",    
+                                           "No long-term illness", "Long-term illness",   
+                                           "Urban", "Rural"),
+                                labels = c("Total", 
+                                           "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
+                                           "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
+                                           "16-24y", "25-34y", "35-44y", "45-54y", "55-64y", "65-74y", "75y+",             
+                                           "1", "2", "3", "4", "5",   
+                                           "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
+                                           "Female", "Male",    
+                                           "No long-term illness", "Long-term illness",   
+                                           "Urban", "Rural"))) %>%
     arrange(code, year, split_name, split_value)
+  
+  
   
   # Save
   write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
@@ -508,10 +505,10 @@ prepare_final_files <- function(ind){
   ind_id <- unique(simd_data$ind_id) # identify the indicator number 
   
   # get the right age groups for the inequalities calculation:
-  age_under16y <- c(30130, 30129) # all children included in "child with a parent with..." indicators
+  age_under16y <- c(30130, 30129, 30114, 30115, 99144) # all children included 
   age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
-  age_5to15y <- c(14003, 14006, 14007, 14012) # these child PA indicators restricted to 5-15y olds
-  age_2to15y <- c(30111) # child PA >1hr pertains to 2-15y olds
+  age_5to15y <- c(14003, 14006, 14007) # these child PA indicators restricted to 5-15y olds
+  age_2to15y <- c(30111, 14012) # child PA recs pertains to 2-15y olds
   
   agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
                       ifelse(ind %in% age_4to12y, "depr_pop_4to12",
@@ -573,27 +570,62 @@ prepare_final_files(ind = "children_very_low_activity")
 prepare_final_files(ind = "children_participating_sport")
 prepare_final_files(ind = "children_active_play")
 prepare_final_files(ind = "children_meet_pa_recs_excl_school")
-prepare_final_files(ind = "healthy_weight") 
 prepare_final_files(ind = "binge_drinking")
 prepare_final_files(ind = "problem_drinker")
-prepare_final_files(ind = "weekly_alc_units")
 prepare_final_files(ind = "health_risk_behaviours")
-prepare_final_files(ind = "child_healthyweight")
 prepare_final_files(ind = "child_general_health")
-prepare_final_files(ind = "child_llti")
+prepare_final_files(ind = "cyp_llti")
+prepare_final_files(ind = "drinker_units") 
+prepare_final_files(ind = "healthy_weight") 
 
 
 # Run QA reports 
-# main data
-run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) 
-run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE) # small diffs largely due to decimal places: ukds data includes more, so flagged as a % difference, particularly for smaller rates. CIs also oft different: our estimation might use different calculation  
-run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
+
+# NB differences from previous file identified for many, as now we're using the UKDS data where available for lower geogs, rather than dashboard. 
+# Did this so that all coincident geographies have the same data (otherwise Ed council and HSCP highlighted as having slight differences, when they should be identical).
+# I looked at the differences and many concerned the confidence intervals rather than the rates (SHeS must use a different type of survey estimation calculation). 
+# Rates were very similar, though the UKDS figures had 2 decimal places compared with 0 for SHeS dashboard, which sometimes showed as a big % difference if the rate was small.
+# Rates sometimes differ between UKDS and dashboard by around 1 % point.
+# Will add explanatory note to the techdoc.
+
+###########################
+# Main data
+###########################
+
+# (a) main sample indicators (Scot + lower geogs)
 run_qa(type = "main", filename = "common_mh_probs", test_file = FALSE) 
-run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "main", filename = "self_assessed_health", test_file = FALSE) 
+run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   # big diffs when run in 2026 due to change in definition
+run_qa(type = "main", filename = "limiting_long_term_condition", test_file = FALSE)  
 run_qa(type = "main", filename = "physical_activity", test_file = FALSE) 
 run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE) 
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
-run_qa(type = "main", filename = "life_satisfaction", test_file = FALSE)   
+run_qa(type = "main", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
+run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) # lower geogs only have data up to 2016-19 (same as existing ScotPHO data) NEEDS TO BE FIXED: WAITING FOR SHES COMMENT
+run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
+run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "main", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "main", filename = "drinker_units", test_file = FALSE)  
+run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_pa_over_1h_per_day", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_sdq_peer", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_conduct", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_emotional", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_sdq_prosocial", test_file = FALSE)
+run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE)
+run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
+run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
+run_qa(type = "main", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
+run_qa(type = "main", filename = "child_general_health", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_llti", test_file = FALSE) # new source explains the differences (was HBSC previously)
+
+# (b) smaller sample indicators (Scotland only)
 run_qa(type = "main", filename = "involved_locally", test_file = FALSE)   
 run_qa(type = "main", filename = "support_network", test_file = FALSE)  
 run_qa(type = "main", filename = "stress_at_work", test_file = FALSE) 
@@ -604,119 +636,108 @@ run_qa(type = "main", filename = "anxiety_symptoms", test_file = FALSE)
 run_qa(type = "main", filename = "deliberate_selfharm", test_file = FALSE)    
 run_qa(type = "main", filename = "attempted_suicide", test_file = FALSE) 
 run_qa(type = "main", filename = "work-life_balance", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
-run_qa(type = "main", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
-run_qa(type = "main", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
-run_qa(type = "main", filename = "cyp_sdq_peer", test_file = FALSE)
-run_qa(type = "main", filename = "cyp_sdq_conduct", test_file = FALSE)
-run_qa(type = "main", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
-run_qa(type = "main", filename = "cyp_sdq_emotional", test_file = FALSE)
-run_qa(type = "main", filename = "cyp_sdq_prosocial", test_file = FALSE)
-run_qa(type = "main", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
-run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
-run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE)
-run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
-run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
-run_qa(type = "main", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
-run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
-run_qa(type = "main", filename = "weekly_alc_units", test_file = FALSE)  
-run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
-run_qa(type = "main", filename = "child_healthyweight", test_file = FALSE)
-run_qa(type = "main", filename = "child_general_health", test_file = FALSE)
-run_qa(type = "main", filename = "child_llti", test_file = FALSE)
 
 
-# ineq data: 
-run_qa(type = "deprivation", filename = "self_assessed_health", test_file=FALSE)
-run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "deprivation", filename = "food_insecurity", test_file=FALSE)
-run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file=FALSE)
-run_qa(type = "deprivation", filename = "common_mh_probs", test_file=FALSE) # no 2023 or 2024: why?
-run_qa(type = "deprivation", filename = "mental_wellbeing", test_file=FALSE) 
-run_qa(type = "deprivation", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "support_network", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "stress_at_work", test_file = FALSE)
-run_qa(type = "deprivation", filename = "choice_at_work", test_file = FALSE)   
-run_qa(type = "deprivation", filename = "line_manager", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "depression_symptoms", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)   
-run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE)
-run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE)
-run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "deprivation", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
-run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+
+###########################
+# Inequalities tab data: 
+###########################
+# some gaps at lower geogs 
+
+# (a) main sample indicators (Scot + lower geogs) (lower geogs will only have sex==Total)
+run_qa(type = "deprivation", filename = "common_mh_probs", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "self_assessed_health", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)   
+run_qa(type = "deprivation", filename = "limiting_long_term_condition", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "physical_activity", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
+run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) # lower geogs only have data up to 2016-19 (same as existing ScotPHO data) NEEDS TO BE FIXED: WAITING FOR SHES COMMENT
+run_qa(type = "deprivation", filename = "food_insecurity", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "drinker_units", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE) # Scotland only because all data are from dashboard
+# (ai) main children indicators: Scot only
+run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "cyp_pa_over_1h_per_day", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "cyp_sdq_peer", test_file = FALSE)
 run_qa(type = "deprivation", filename = "cyp_sdq_conduct", test_file = FALSE)
 run_qa(type = "deprivation", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
 run_qa(type = "deprivation", filename = "cyp_sdq_emotional", test_file = FALSE)
 run_qa(type = "deprivation", filename = "cyp_sdq_prosocial", test_file = FALSE)
-run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
-run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_very_low_activity", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "binge_drinking", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "problem_drinker", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "weekly_alc_units", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE)
-run_qa(type = "deprivation", filename = "child_healthyweight", test_file = FALSE)
-run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE)
-run_qa(type = "deprivation", filename = "child_llti", test_file = FALSE)
+run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE) # Scot + Police Depts (WHY?)
+run_qa(type = "deprivation", filename = "cyp_llti", test_file = FALSE) # Scot + Police Depts (WHY?)
 
+# (b) smaller sample indicators (Scotland only)
+run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)   
+run_qa(type = "deprivation", filename = "support_network", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "stress_at_work", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "choice_at_work", test_file = FALSE)    
+run_qa(type = "deprivation", filename = "line_manager", test_file = FALSE)  
+run_qa(type = "deprivation", filename = "depression_symptoms", test_file = FALSE)   
+run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)   
+run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)    
+run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE) 
 
-# popgrp data: 
-run_qa(type = "popgrp", filename = "self_assessed_health", test_file=FALSE)
-run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file=FALSE)
-run_qa(type = "popgrp", filename = "food_insecurity", test_file=FALSE)
-run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file=FALSE)
-run_qa(type = "popgrp", filename = "common_mh_probs", test_file=FALSE)
-run_qa(type = "popgrp", filename = "mental_wellbeing", test_file=FALSE) 
-run_qa(type = "popgrp", filename = "physical_activity", test_file=FALSE)
-run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "support_network", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "stress_at_work", test_file = FALSE)
-run_qa(type = "popgrp", filename = "choice_at_work", test_file = FALSE)   
-run_qa(type = "popgrp", filename = "line_manager", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "depression_symptoms", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)   
-run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE)
-run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE)
-run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)    
-run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE)
-run_qa(type = "popgrp", filename = "cyp_pa_over_1h_per_day", test_file = FALSE)
-run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE)
+###########################
+# Pop group tab data: 
+###########################
+
+# (a) main sample indicators (Scot + lower geogs)
+run_qa(type = "popgrp", filename = "common_mh_probs", test_file = FALSE) # not enough at lower geogs  # no 2023 or 2024: why?
+run_qa(type = "popgrp", filename = "self_assessed_health", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "life_satisfaction", test_file = FALSE)   # big diffs when run in 2026 due to change in definition
+run_qa(type = "popgrp", filename = "limiting_long_term_condition", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "physical_activity", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "fruit_veg_consumption", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "unpaid_caring", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
+run_qa(type = "popgrp", filename = "adults_very_low_activity", test_file = FALSE)
+run_qa(type = "popgrp", filename = "healthy_weight", test_file = FALSE) # lower geogs only have data up to 2016-19 (same as existing ScotPHO data) NEEDS TO BE FIXED: WAITING FOR SHES COMMENT
+run_qa(type = "popgrp", filename = "food_insecurity", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "binge_drinking", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "problem_drinker", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "drinker_units", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "health_risk_behaviours", test_file = FALSE)
+run_qa(type = "popgrp", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
+run_qa(type = "popgrp", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "cyp_pa_over_1h_per_day", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "cyp_sdq_totaldiffs", test_file = FALSE) 
 run_qa(type = "popgrp", filename = "cyp_sdq_peer", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_conduct", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_hyperactivity", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_emotional", test_file = FALSE)
 run_qa(type = "popgrp", filename = "cyp_sdq_prosocial", test_file = FALSE)
-run_qa(type = "popgrp", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
-run_qa(type = "popgrp", filename = "adults_very_low_activity", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_very_low_activity", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "popgrp", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "binge_drinking", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "problem_drinker", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "weekly_alc_units", test_file = FALSE)  
-run_qa(type = "popgrp", filename = "health_risk_behaviours", test_file = FALSE)
-run_qa(type = "popgrp", filename = "child_healthyweight", test_file = FALSE)
-run_qa(type = "popgrp", filename = "child_general_health", test_file = FALSE)
-run_qa(type = "popgrp", filename = "child_llti", test_file = FALSE)
+run_qa(type = "popgrp", filename = "child_general_health", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "cyp_llti", test_file = FALSE) # new source explains the differences (was HBSC previously)
+
+# (b) smaller sample indicators (Scotland only)
+run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)   
+run_qa(type = "popgrp", filename = "support_network", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "stress_at_work", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "choice_at_work", test_file = FALSE)    
+run_qa(type = "popgrp", filename = "line_manager", test_file = FALSE)  
+run_qa(type = "popgrp", filename = "depression_symptoms", test_file = FALSE)   
+run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)   
+run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)    
+run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE) 
+run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE) 
 
 #END
 
