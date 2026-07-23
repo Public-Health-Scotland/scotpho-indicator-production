@@ -94,19 +94,19 @@ main_analysis(filename = "total_dwellings_dz",  measure = "crude",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40001, 
               time_agg = 1,  yearstart = 2014,   yearend = 2023, pop = 'DZ11_pop_allages',
               crude_rate = 1000, # rate is crude rate per 1000
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 #call main analysis function - occupied dwellings
 main_analysis(filename = "occupied_dwellings_dz",  measure = "percent",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40002, 
               time_agg = 1,  yearstart = 2014,   yearend = 2023,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 #call main analysis function - occupied exempt dwellings
 main_analysis(filename = "occupied_exempt_dwellings_dz",  measure = "percent",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40003, 
               time_agg = 1,  yearstart = 2014,   yearend = 2023,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 ## 4.2  Dwelling estimates and occupants CA------------------------------------
 
@@ -138,19 +138,19 @@ main_analysis(filename = "total_dwellings_ca",  measure = "crude",
               geography = "council",  year_type = "calendar",  ind_id = 40001, 
               time_agg = 1,  yearstart = 2006,   yearend = 2024, pop = 'CA_pop_allages',
               crude_rate = 1000, # rate is crude rate per 1000
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 #call main analysis function - occupied dwellings
 main_analysis(filename = "occupied_dwellings_ca",  measure = "percent",
               geography = "council",  year_type = "calendar",  ind_id = 40002, 
               time_agg = 1,  yearstart = 2006,   yearend = 2024,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 #call main analysis function - occupied exempt dwellings
 main_analysis(filename = "occupied_exempt_dwellings_ca",  measure = "percent",
               geography = "council",  year_type = "calendar",  ind_id = 40003, 
               time_agg = 1,  yearstart = 2006,   yearend = 2024,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 ## 4.3  Aggregate Dwelling estimate data files---------------------------------
 
@@ -238,7 +238,7 @@ main_analysis(filename = "tax_band_ac",  measure = "percent",
               time_agg = 1,  yearstart = 2005,   yearend = 2023,
               test_file = TRUE, QA = TRUE)
 
-#call main analysis function - occupied dwellings
+#call main analysis function - tax band F-H
 main_analysis(filename = "tax_band_fh",  measure = "percent",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40005, 
               time_agg = 1,  yearstart = 2005,   yearend = 2023,
