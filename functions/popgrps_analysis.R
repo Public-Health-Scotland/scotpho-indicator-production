@@ -465,9 +465,10 @@ popgrps_analysis <- function(filename,
     arrange(year, code, split_name, split_value)
 
   # save the data as both an RDS and CSV file
- #saveRDS(data, paste0(output_folder, "/", filename, "_shiny_popgrps.rds"))
- #write.csv(data, paste0(output_folder, "/", filename, "_shiny_popgrps.csv"), row.names = FALSE)
+ saveRDS(data, paste0(output_folder, "/", filename, "_shiny_popgrp.rds"))
+ write.csv(data, paste0(output_folder, "/", filename, "_shiny_popgrp.csv"), row.names = FALSE)
 
+ list.files("/PHI_conf/ScotPHO/Profiles/Data/Test Shiny Data")
 
   # make results available in global environment
   popgrps_analysis_result <<- data
