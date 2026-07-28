@@ -1,8 +1,3 @@
-
-#To do 
-#decide what range to use for each indicator based on legislation, data changes etc
-#run for 2025 data once the MYE estimates released on 14/07
-
 # ScotPHO indicators: Recorded Crime
 
 #Temporary script to restore CA-level figures while dz-level data is quality assured
@@ -120,9 +115,11 @@ tab <- crime_breakdown(crime, c("Offences: Group 6: Threatening and abusive beha
 #Save prepared data for analysis functions
 saveRDS(tab, file.path(profiles_data_folder, '/Prepared Data/threatening_and_abusive_behaviour_raw.rds'))
 
+#Beginning data in 2010 in line with commencement of Criminal Justice and Licensing (Scotland) Act 2010
+
 #Run analysis function
 main_analysis(filename = "threatening_and_abusive_behaviour", geography = "council", measure = "crude",
-              year_type = "financial", ind_id = 4156, time_agg = 1, yearstart = 2002, 
+              year_type = "financial", ind_id = 4156, time_agg = 1, yearstart = 2010, 
               yearend = 2025, pop = "CA_pop_allages", crude_rate = 10000)
 
 
@@ -197,10 +194,13 @@ ddo <- crime_breakdown(crime, c("Offences: Group 8: Driving under the influence"
 #Save prepared data for analysis functions
 saveRDS(ddo, file.path(profiles_data_folder, '/Prepared Data/drink_drug_driving_raw.rds'))
 
+#Setting yearstart to 2014 as that was the year SG reduced the limit from 100mg/100ml of blood to 50mg. 
+#Offences had been declining sharply prior to 2014 but have been increasing under the new definition.
+
 #Run analysis functions
 main_analysis(filename = "drink_drug_driving", geography = "council", measure = "crude",
-              year_type = "financial", ind_id = 4158, time_agg = 1, yearstart = 2002, 
-              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
+              year_type = "financial", ind_id = 4158, time_agg = 1, yearstart = 2014, 
+              yearend = 2025, pop = "CA_pop_allages", crude_rate = 10000)
 
 
 ############################################.
