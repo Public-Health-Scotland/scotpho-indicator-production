@@ -15,11 +15,11 @@ library(readxl)
 ### 3. Clean data ------
 
 # filepath 
-path <- paste0(profiles_data_folder,"/Received Data/Active Travel to School/hands_up_24.xlsx")
+path <- paste0(profiles_data_folder,"/Received Data/Active Travel to School/Hands Up Scotland data for ScotPHO_2008 to 2025.xlsx")
 
 # get name of sheets
 sheet <- readxl::excel_sheets(path)
-sheet <- sheet[-c(1, 19)] #dropping contents page and footnotes. Add 1 to second number each year.
+sheet <- sheet[-c(1, 20)] #dropping contents page and footnotes. Add 1 to second number each year.
 
 # read in data from each sheet and apply sheet names as a df column 
 # this is because each years data is on a separate tab
@@ -62,11 +62,11 @@ data <- data |>
 
 
 # save file to be used in analysis functions 
-saveRDS(data, paste0(data_folder, "Prepared Data/active_travel_to_school_raw.rds"))
+saveRDS(data, file.path(profiles_data_folder, "Prepared Data/active_travel_to_school_raw.rds"))
 
 ### 4. Run analysis functions ------
 main_analysis(filename = "active_travel_to_school", geography = "council",
-              measure = "percent", yearstart = 2008, yearend = 2024, time_agg = 1,
+              measure = "percent", yearstart = 2008, yearend = 2025, time_agg = 1,
               ind_id = 13040, year_type = "school")
 
 
