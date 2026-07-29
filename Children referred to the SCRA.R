@@ -28,7 +28,7 @@ library(openxlsx)
 
 # get filepath to data file
 folder <- file.path(profiles_data_folder, "Received Data", "Children referred to childrens reporter")
-file <- "ScotPHO NHS Non-offence and offence children 24-25 update.xlsx"
+file <- "ScotPHO NHS Non-offence and offence children 25-26 update.xlsx"
 path <- file.path(folder, file)
 
 # read in data
@@ -79,12 +79,12 @@ saveRDS(indicator$Offence, file.path(profiles_data_folder, "Prepared Data", "208
 # Children referred to the Children's Reporter for care and protection
 main_analysis(filename = "13001_scra_care_protection", measure = "crude", ind_id = 13001,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2024)
+              pop = "CA_pop_under16", crude_rate = 1000, yearstart = 2004, yearend = 2025)
 
 
 # Children referred to the Children's Reporter for offences
 main_analysis(filename = "20803_scra_offence", measure = "crude", ind_id = 20803,
               geography = "council", year_type = "financial", time_agg = 1,
-              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2024)
+              pop = "CA_pop_8to15", crude_rate = 1000, yearstart = 2004, yearend = 2025)
 
 ## END
