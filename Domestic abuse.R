@@ -16,6 +16,7 @@
 
 #sourcing analysis function
 source("./functions/main_analysis.R")
+source("./functions/data cleaning functions/fix_fin_year.R")
 
 ###############################################.
 ## Read in data  ----
@@ -28,12 +29,10 @@ data <- opendatascot::ods_dataset("domestic-abuse-recorded-by-the-police-number-
 ## Tidy up data  ----
 ###############################################.
 
-filter(ref_area != "S9200000" & ref_area != "S92000003") |> #remove Scotland figs - to be re-added in analysis function
-filter(measure_type == "count") |> #drop ratio measure and keep count which forms numerator
-mutate(ref_period = substr(ref_period, 1, 4), #abbreviate fin year to first calendar year
-       ref_period = as.numeric(ref_period)) |> #convert to numeric from character
+filter(!str_detect(ref_area, "S92"),#remove Scotland figs - to be re-added in analysis function
+       measure_type == "count") |> #drop ratio measure and keep count which forms numerator
+fix_fin_year("ref_period", first_year_digits = "4") |> 
 rename(code = ref_area, #rename columns to format expected by analysis function
-       year = ref_period,
        numerator = value) |> 
 filter(year > 2012) |> 
 select(-c(measure_type)) #drop count as no longer needed
@@ -47,6 +46,6 @@ saveRDS(data, file = paste0(profiles_data_folder, "/Prepared Data/domestic_abuse
 
 main_analysis(filename = "domestic_abuse", measure = "crude", geography = "council", 
               year_type = "financial", ind_id = 20804, time_agg = 1, yearstart = 2013,
-              yearend = 2023, pop = "CA_pop_allages", crude_rate = 10000)
+              yearend = 2024, pop = "CA_pop_allages", crude_rate = 10000)
 
 ##End.
