@@ -41,7 +41,7 @@ teen_preg <- read_csv(file.path(profiles_data_folder, "Received Data/Teenage pre
   mutate(datazone = dplyr::na_if(datazone, "Unknown"),  #convert unknown datazones to NA so they're still included in Scotland total to align with births in Scotland publication which included non-residents. 
          age_grp = case_when(agecon < 16 ~ "Under 16 years",
                              agecon >= 16 & agecon < 18 ~ "16-17 years",
-                             agecon >= 18 ~ "Under 20 years",
+                             agecon >= 18 ~ "18-19 years",
                              TRUE ~ NA_character_), #Creating an age group column which will be a split
          dummy_group = sample(c("A", "B"), size = n(), replace = TRUE)) #Assigning all rows randomly to A or B to make another dummy split
 
@@ -50,7 +50,7 @@ saveRDS(teen_preg, file.path(profiles_data_folder, "Prepared Data/teen_preg_popg
 
 #Testing
 splits_tp <- list(
-  age_grp = c("Under 16 years", "16-17 years", "Under 20 years"),
+  age_grp = c("Under 16 years", "16-17 years", "18-19 years"),
   dummy_group = c("A", "B"))
 
 source("./functions/popgrps_analysis.R")
@@ -76,6 +76,7 @@ healthy_weight <- readRDS(file.path(profiles_data_folder, "Received Data/Child H
 
 saveRDS(healthy_weight, file.path(profiles_data_folder, "Prepared Data/child_healthyweight_popgrps_raw.rds"))
 
+
 #Testing
 splits_chw <- list(
   sex = c("Male", "Female"))
@@ -86,6 +87,33 @@ data <- popgrps_analysis(filename = "child_healthyweight", measure = "perc_pcf",
                          year_type = "school", ind_id = 21106, time_agg = 1, yearstart = 2009,
                          yearend = 2024, test_file = TRUE, splits = splits_chw, QA = FALSE,
                          pop = "DZ11_pop_5")
+
+
+#Double check on NAs produced by square rooting in the pop percf calc
+
+################################################################################
+#Standardised rate - Alcohol-related hospital admissions
+
+#Reading in males and females existing pop groups prepared data files
+alcohol_stays <- rbind(
+readRDS(file.path(profiles_data_folder, "Prepared Data/alcohol_stays_females_raw.rds")),
+readRDS(file.path(profiles_data_folder, "Prepared Data/alcohol_stays_males_raw.rds"))) |> 
+  mutate(sex = case_when(sex_grp == "1" ~ "Male",
+                                 sex_grp == "2" ~ "Female",
+                                 TRUE ~ sex_grp))
+
+saveRDS(alcohol_stays, file.path(profiles_data_folder, "Prepared Data/alcohol_stays_popgrps_raw.rds"))
+
+#Testing
+splits_alc <- list(
+  sex = c("Male", "Female"))
+
+source("./functions/popgrps_analysis.R")
+
+popgrps_analysis(filename = "alcohol_stays", geography = "council", measure = "stdrate",
+              pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
+              time_agg = 1, epop_age = "normal", epop_total = 100000, ind_id = 20203,
+              year_type = "financial", splits = splits_alc)
 
 
 

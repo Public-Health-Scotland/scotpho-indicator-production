@@ -290,13 +290,13 @@ popgrps_analysis <- function(filename,
     
     if (measure == "stdrate") {
       joining_vars <- c(joining_vars, "age_grp")
-    } else if ("age" %in% names(df)) {
+    } else if ("age" %in% names(data)) {
       joining_vars <- c(joining_vars, "age")
     }
     
-    if ("sex_grp" %in% names(df)) {
+    if ("sex_grp" %in% names(data)) {
       joining_vars <- c(joining_vars, "sex_grp")
-    } else if ("sex" %in% names(df)) {
+    }  else if ("sex" %in% names(data)) {
       joining_vars <- c(joining_vars, "sex")
     }
     
@@ -336,13 +336,13 @@ popgrps_analysis <- function(filename,
       
     # next aggregate each of the splits e.g. get male and female totals for all age groups, or age group totals for both sexes combined
     splits_aggregated <- data_split |>
-      group_by(year, code, split_name, split_value) |>
-      summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop")
+      group_by(year, code, split_name, split_value, across(any_of(c("sex_grp", "age_grp")))) |>
+      summarise(numerator = sum(numerator), denominator = sum(denominator), across(any_of(c("est_pop")), any), .groups = "drop")
     
     # finally calculate totals i.e. males + females, all age groups combined. This should match the output of the main analysis function
     totals <- data_split |>
-      group_by(year, code, split_name) |>
-      summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop") |>
+      group_by(year, code, split_name, across(any_of(c("sex_grp", "age_grp")))) |>
+      summarise(numerator = sum(numerator), denominator = sum(denominator), across(any_of(c("est_pop")), any), .groups = "drop") |>
       mutate(split_value = "All")
     
     # append totals onto main aggregated data
