@@ -82,7 +82,7 @@ popgrps_analysis <- function(filename,
                           year_type = c("financial", "calendar", "survey", "snapshot", "school"),
                           ind_id, time_agg, yearstart, yearend, 
                           pop = NULL, epop_total = NULL, epop_age = NULL, crude_rate = NULL, test_file = FALSE, QA = TRUE, police_div = FALSE,
-                          NA_means_suppressed = FALSE, splits){
+                          NA_means_suppressed = FALSE, splits, pop_sex = NULL){
  
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # check function arguments ---
@@ -242,6 +242,7 @@ popgrps_analysis <- function(filename,
 
   # step complete
   cli::cli_alert_success("'Aggregate by geography level' step complete.")
+  
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Conditional step - Add population figures  ----
@@ -316,7 +317,51 @@ popgrps_analysis <- function(filename,
     cli::cli_alert_success("'Add population figures' step complete.")
 
   }
+  
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Conditional step - Add population figures without a defined lookup  ----
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  #If custom population lookups needed for splits that don't already exist in the lookups folder, read in the basefile
+  if(is.null(pop) & measure == "crude"){
+    basefile_dz11 <- readRDS(file.path(profiles_data_folder, "Lookups/Population/basefile_DZ11.rds"))
+    
+    #If indicator is male or female-specific, filter the lookup to only include that sex
+    if(!is.null(pop_sex)) {
+      basefile_dz11 <- switch(
+        tolower(pop_sex),
+        "male" = filter(basefile_dz11, sex_grp == "1"),
+        "female" = filter(basefile_dz11, sex_grp == "2"),
+        basefile_dz11)}
+    
+    #If age is one of the split names
+    if (any(c("age_group", "age_grp", "age") %in% names(data))) {
+      
+      age_col <- c("age_group", "age_grp", "age")[ #Identify how "age" has been coded in the data
+        c("age_group", "age_grp", "age") %in% names(data)][1]
+      
+      data <- data |> #Then separate the age bracket into a lower and upper figure. These will be used to match against the lookup.
+        rename(age = all_of(age_col)) |> 
+        tidyr::separate(age, into = c("lower", "upper"), sep = "-", fill = "right", remove = FALSE) |>
+        mutate(across(c(lower, upper), as.numeric)) |> #convert these ages to numeric
+        mutate(upper = dplyr::coalesce(upper, lower)) #If it's a single year age group set it as both the lower and upper.
+    }
+    
+    
+    
+    
+    # #Join the lookup data
+    #   data2 <- data |> 
+    #     left_join(basefile_dz11, by = join_by(lower <= age, upper >= age)) |> 
+    #     group_by(age_group) |> 
+    #     summarise(denominator = sum(denominator), .groups = "drop")
+    #   
+    
+  }
+  
 
+  
+  
 
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate splits and add totals  ----
@@ -372,6 +417,7 @@ popgrps_analysis <- function(filename,
                              denominator = 0))
 
     # aggregate by time period
+    
     data<- data |>
       arrange(across(all_of(var_order))) |> # arrange data by var order
       group_by(across(any_of(c("code", "split_name", "split_value")))) |>
