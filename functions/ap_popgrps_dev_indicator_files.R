@@ -129,9 +129,6 @@ teen_preg_comparison <- left_join(teen_preg_published, teen_preg_new, by = c("co
 ################################################################################
 #Standardised rate - Alcohol-related hospital admissions
 
-#Where on earth is "trace 3" coming from? Some NAs in the data?
-#Fortunately think whatever population lookup system is in place is functioning as it should
-
 #Reading in males and females existing pop groups prepared data files
 alcohol_stays <- rbind(
 readRDS(file.path(profiles_data_folder, "Prepared Data/alcohol_stays_females_raw.rds")),
@@ -152,20 +149,24 @@ popgrps_analysis(filename = "alcohol_stays", geography = "council", measure = "s
               pop = "CA_pop_allages", yearstart = 2002, yearend = 2024,
               time_agg = 1, epop_age = "normal", epop_total = 100000, ind_id = 20203,
               year_type = "financial", QA = TRUE, police_div = FALSE,
-              NA_means_suppressed = FALSE, splits = splits_alc, pop_sex = NULL)
+              NA_means_suppressed = FALSE, splits = splits_alc, pop_sex = NULL, test_file = TRUE)
 
 
+#QAing against published data
 alcohol_stays_published <- readRDS(file.path(profiles_data_folder, "Shiny Data", "alcohol_stays_dz11_shiny.rds"))  |> 
   mutate(rate = round(rate, digits = 2))
 
 alcohol_stays_new <- readRDS(file.path(profiles_data_folder, "Test Shiny Data", "alcohol_stays_shiny_popgrp.rds")) |> 
   filter(split_name == "Sex" & split_value == "All")
 
-alcohol_stays_comparison <- left_join(alcohol_stays_published, alcohol_stays_new, by = c("code", "year", "trend_axis", "def_period", "ind_id")) |> 
-  mutate(perc_diff = (numerator.x - numerator.y) / numerator.y) #Check if rates for overlapping rows are the same between functions
+alcohol_stays_comparison <- left_join(alcohol_stays_published, alcohol_stays_new, by = c("code", "year", "ind_id")) |> 
+  mutate(perc_diff = (numerator.x - numerator.y) / numerator.y, #Check if rates for overlapping rows are the same between functions
+         num_diff = numerator.y - numerator.x) |>  
+  filter(!is.na(numerator.y))
 
+#Very similar overall, a few very small variations in numerator i.e. between -3 and +3 - possibly due to a small number of records where sex not recorded or similar?
 
-
+################################################################################
 
 #splits variable testing
 #the validate_popgrps_columns checks:

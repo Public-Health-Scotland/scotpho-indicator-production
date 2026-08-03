@@ -308,6 +308,10 @@ popgrps_analysis <- function(filename,
 
     #should this be full or left - based on population lookup?
     data <- full_join(x = data, y = pop_lookup, by = joining_vars)
+    
+    #if full join on all ages population lookup, causes problems where numerator doesn't exist for certain ages
+    #So filter out any rows where the numerator doesn't exist
+    data <- data |> filter(!(is.na(numerator)))
 
     # check year parameters are sensible and all required years are present
     check_denominator_years(data, yearend, yearstart)
