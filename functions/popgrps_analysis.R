@@ -11,11 +11,12 @@
 # 7. filter by defined time period
 # 8. aggregate by geography level (e.g. building up datazones to larger geographies)
 # 9. add population figures (conditional for crude/standardised rates)
-# 10. aggregate over multiple years (conditional)
-# 11. calculate rates
-# 12. add metadata columns (e.g. indicator id)
-# 13. save final file
-# 14. run QA 
+# 10. calculate split totals and pivot
+# 11. aggregate over multiple years (conditional)
+# 12. calculate rates
+# 13. add metadata columns (e.g. indicator id)
+# 14. save final file
+# 15. run QA 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # load packages ----
@@ -59,7 +60,7 @@ source("functions/helper functions/create_def_period_column.R") # for creating d
 source("functions/helper functions/create_trend_axis_column.R") # for creating trend axis column 
 source("functions/helper functions/get_population_lookup.R") # for reading in correct population lookup if required
 source("functions/helper functions/run_rmarkdown_QA.R") # for running QA rmarkdown doc
-# source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
+source("functions/helper functions/create_agegroups.R") # converts single year age field to 5 year ageband - used in indicator data manipulation
 source("functions/helper functions/create_geo_parents.R") # creates lookup which details the parent areas of smaller geographies (for QA checks)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,6 +76,59 @@ profiles_data_folder <- "/PHI_conf/ScotPHO/Profiles/Data"
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # understanding this function ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# To understand how this function works you can run it line by line from this script (don't run the 'check function arguments' section)
+# First, run all the code above to a. load the packages and b. source the small functions which are used within this larger function
+# For a more in-depth understanding on how to calculate rates such as crude rates, standarised rates etc. check the code in the smaller functions.
+
+# You'll also need to create some variables to use as placeholders for the functions arguments.
+# un-comment and run the below variables before running lines of code
+# This will prepare the 'Asthma hospitalisations' indicator as an example:
+
+# filename = "teen_preg"
+# geography = "datazone11"
+# measure = "crude"
+# pop = NULL
+# yearstart = 2002
+# yearend = 2023
+# time_agg = 3
+# year_type = "calendar"
+# pop_sex = "female"
+# crude_rate = 1000
+# ind_id = 21001
+# test_file = TRUE
+# QA = TRUE
+# police_div = FALSE
+# NA_means_suppressed = FALSE
+
+# splits_tp <- list(
+#   age_group = c("15", "16-17", "18-19"))
+
+# splits = splits_tp
+
+#' `popgrps_analysis` takes a formatted rds file containing raw data for single years. Aggregates by geography levels and time period and calculates
+#' a rate. Saves final file in RDS and CSV format and makes final result available in global environment called `popgrps_analysis_result`
+#' The file created in this function is used in the 'Summary', 'Trends' and 'Rank' tabs of the ScotPHO profiles tool dashboard.
+#'
+#'@param filename name of the rds file to read in. File should end in '_raw.rds' but this shouldn't be added to the argument.
+#'@param measure type of rate to calculate - one of `percent`, `stdrate`, `crude` or `perc_pcf`
+#'@param geography base geography level of data file. If only one geography level present then should be one of 
+#' `scotland`, `board`, `council`, `intzone`, `datazone`, otherwise set to `multiple`. If `multiple` is selected, no additional geography levels will be added. Consider removing Scotland if e.g. CA and Scotland present but HB required
+#'@param time_agg number of years to aggregate the data by. 
+#'@param year_type type of year data refers to, for creating time period columns - one of `financial`, `calendar`, `survey`, `snapshot` or `school`.
+#'@param pop name of population file to read in from population lookups folder, if custom age groupings not needed
+#'@param pop_sex optional argument that can be used to filter the population lookup if an indicator is single-sex e.g. tene pregnancy. If all sexes leave as NULL
+#'@param yearstart start year to filter data by - 4-digit number
+#'@param yearend end year to filter data by - 4-digit number - -this should be the last complete year of source data as functions will adjust indicator time series & remove any with partial coverage   
+#'@param ind_id unique numeric id for indicator. Should match that assigned to the indicator in the technical document
+#'@param test_file whether to save file to test folder or not - either `TRUE` or `FALSE`. Set to `FALSE` by default
+#'@param QA = whether to run QA checks on the dataset - either `TRUE` or `FALSE`. Set to `TRUE` by default
+#'@param epop_age only applicable to standardised rates. Should be one of `normal`, `16+`, `<16`, `0to25`, `11to25` or `15to25` = 'normal' if the age groupings are fit standard 5 year banding 0-4,5-9,10-14 etc
+#'@param epop_total only applicable to standardised rates
+#'@param crude_rate only applicable to crude rates. Size of the population to use.
+#'@param police_div optional parameter : if you data is DZ, IZ or Council level you can choose to produce indicator for police division geography by setting parameter to TRUE - default is FALSE
+#'@param NA_means_suppressed optional parameter : set to TRUE if there are NA in the input data that refer to suppressed data. Default is FALSE, meaning that any NA will be converted to zeroes during the processing. 
+#'@param splits takes a list of split names and acceptable values
 
 popgrps_analysis <- function(filename,
                           measure = c("percent", "stdrate", "crude", "perc_pcf"),
@@ -327,7 +381,7 @@ popgrps_analysis <- function(filename,
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   
   #If custom population lookups needed for splits that don't already exist in the lookups folder, read in the basefile
-  if(is.null(pop) & measure == "crude"){
+  if(is.null(pop) & measure != "percent"){
     basefile_dz11 <- readRDS(file.path(profiles_data_folder, "Lookups/Population/basefile_DZ11.rds"))
     
     #If indicator is male or female-specific, filter the lookup to only include that sex
@@ -338,35 +392,29 @@ popgrps_analysis <- function(filename,
         "female" = filter(basefile_dz11, sex_grp == "2"),
         basefile_dz11)}
     
+    
     #If age is one of the split names
     if (any(c("age_group", "age_grp", "age") %in% names(data))) {
       
       age_col <- c("age_group", "age_grp", "age")[ #Identify how "age" has been coded in the data
-        c("age_group", "age_grp", "age") %in% names(data)][1]
+        c("age_group", "age_grp", "age") %in% names(data)][1] #And take whichever one is first.
       
-      data <- data |> #Then separate the age bracket into a lower and upper figure. These will be used to match against the lookup.
-        rename(age = all_of(age_col)) |> 
-        tidyr::separate(age, into = c("lower", "upper"), sep = "-", fill = "right", remove = FALSE) |>
+      data <- data |> 
+        rename(age = all_of(age_col)) |> #Then rename that so it's always age
+        tidyr::separate(age, into = c("lower", "upper"), sep = "-", fill = "right", remove = FALSE) |> #Then separate the age bracket into a lower and upper figure. These will be used to match against the lookup.
         mutate(across(c(lower, upper), as.numeric)) |> #convert these ages to numeric
         mutate(upper = dplyr::coalesce(upper, lower)) #If it's a single year age group set it as both the lower and upper.
     }
     
-    
-    
-    
-    # #Join the lookup data
-    #   data2 <- data |> 
-    #     left_join(basefile_dz11, by = join_by(lower <= age, upper >= age)) |> 
-    #     group_by(age_group) |> 
-    #     summarise(denominator = sum(denominator), .groups = "drop")
-    #   
-    
+    #Joining the lookup
+    data <- basefile_dz11 |> 
+      left_join(data, join_by(code, year, age >= lower, age <= upper)) |> #the age variable in the master lookup is compared to the age range in the data 
+      filter(!is.na(numerator)) |> #filter out rows where numerator is NA (due to populations for ages not contained in the data) 
+      group_by(year, code, age.y, numerator) |> 
+      summarise(denominator = sum(denominator), .groups = "drop") |> #summarise the denominators for each age in the age group
+      rename(age_group = age.y)
   }
   
-
-  
-  
-
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # Aggregate splits and add totals  ----
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -515,10 +563,8 @@ popgrps_analysis <- function(filename,
     arrange(year, code, split_name, split_value)
 
   # save the data as both an RDS and CSV file
- saveRDS(data, paste0(output_folder, "/", filename, "_shiny_popgrp.rds"))
- write.csv(data, paste0(output_folder, "/", filename, "_shiny_popgrp.csv"), row.names = FALSE)
-
- list.files("/PHI_conf/ScotPHO/Profiles/Data/Test Shiny Data")
+ saveRDS(data, paste0(output_folder, "/", filename, "_shiny_popgrps.rds"))
+ write.csv(data, paste0(output_folder, "/", filename, "_shiny_popgrps.csv"), row.names = FALSE)
 
   # make results available in global environment
   popgrps_analysis_result <<- data
