@@ -70,11 +70,9 @@ source("./functions/popgrps_analysis.R")
 
 popgrps_analysis(filename = "teen_preg", measure = "crude", geography = "datazone11",
                  year_type = "calendar", ind_id = 21001, time_agg = 3, yearstart = 2002,
-                 yearend = 2023, 
-                 #pop = "DZ11_pop_fem15to19", 
-                 pop_sex = "female",
+                 yearend = 2023, pop_sex = "female",
                  crude_rate = 1000, test_file = TRUE,
-                 QA = TRUE, police_div = FALSE, NA_means_suppressed = FALSE, splits = splits_tp)
+                 QA = TRUE, police_div = FALSE, NA_means_suppressed = FALSE, splits = splits_tp, pop = NULL)
 
 #Checking against published data
 teen_preg_published <- readRDS(file.path(profiles_data_folder, "Shiny Data", "teen_preg_shiny.rds"))  |> 
@@ -84,7 +82,10 @@ teen_preg_new <- readRDS(file.path(profiles_data_folder, "Test Shiny Data", "tee
   filter(split_name == "Age group" & split_value == "All")
 
 teen_preg_comparison <- left_join(teen_preg_published, teen_preg_new, by = c("code", "year", "trend_axis", "def_period", "ind_id")) |> 
-  mutate(perc_diff = (rate.y - rate.x) / rate.x) #Check if rates for overlapping rows are the same between functions
+  mutate(perc_diff = (numerator.x - numerator.y) / numerator.y, #Check if rates for overlapping rows are the same between functions
+         num_diff = numerator.y - numerator.x) |>  
+  filter(!is.na(numerator.y))
+
 
 ################################################################################
 #Percentages with population correction factor
