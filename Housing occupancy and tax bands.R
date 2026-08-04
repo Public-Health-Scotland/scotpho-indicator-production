@@ -236,11 +236,11 @@ council_tax_bands |>
 main_analysis(filename = "tax_band_ac",  measure = "percent",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40004, 
               time_agg = 1,  yearstart = 2005,   yearend = 2023,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
 #call main analysis function - tax band F-H
 main_analysis(filename = "tax_band_fh",  measure = "percent",
               geography = "datazone11",  year_type = "calendar",  ind_id = 40005, 
               time_agg = 1,  yearstart = 2005,   yearend = 2023,
-              test_file = TRUE, QA = TRUE)
+              QA = TRUE)
 
