@@ -1,8 +1,3 @@
-# to do:
-# Get adult healthy weight var updated for lower geogs: looking to get the right bmivg5 variable from UKDS.
-# Don't update that indicatr until fixed. 
-
-
 #########################################################
 # Scottish Health Survey indicator prep
 #########################################################
@@ -11,58 +6,22 @@
 # This script produces dashboard-ready files for all SHeS indicators... 
 # EXCEPT FOR the 7 smoking prevalence indicators, and child healthy weight (extract received from SHeS including locality data).
 
-#########################################################
-# STEP 1: 
-#########################################################
+# The indicators covered by this script:
 
-# This script uses the data published on the SHeS dashboard https://scotland.shinyapps.io/sg-scottish-health-survey/ 
-# for the indicators that are published there (currently 21, as of May 2026, see below). 
-# (It can be easiest to request the published data direct from the SHeS team, scottishhealthsurvey@gov.scot) 
-# NB. Some indicators on their dashboard look similar but aren't defined/grouped in the way we want/need for ScotPHO indicators.
-
-## ADULTS (N=15)
-#### 4170:  Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
-#### 4171:  Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here)
-#### 4172:  Alcohol consumption (mean weekly units)
-#### 14001: Adults meeting muscle strengthening guidelines. 2011 CMO guidelines recommend 2x 30 minute muscle strengthening sessions per week
-#### 14002: Adult very low PA: Adults with very low activity levels. Also in CWB, AMH profiles. 2011 CMO guidelines recommend 150 mins/week MVPA.
-#### 30001: Mental wellbeing (WEMWBS): Mean score on the WEMWBS scale (adults). WEMWBS stands for Warwick-Edinburgh Mental Wellbeing Scale. N.B. This indicator is also available from the ScotPHO Online Profiles (national, health board, and council area level, but not by SIMD). The questionnaire consists of 14 positively worded items designed to assess: positive affect (optimism, cheerfulness, relaxation) and satisfying interpersonal relationships and positive functioning (energy, clear thinking, self-acceptance, personal development, mastery and autonomy). It is scored by summing the response to each item answered on a 1 to 5 Likert scale ('none of the time', 'rarely', 'some of the time', often', 'all of the time'). The total score ranges from 14 to 70 with higher scores indicating greater wellbeing. The variable used was WEMWBS.
-#### 30002: Life satisfaction: % scoring above the mode: Percentage with the highest levels of life satisfaction: responses above the mode (9 to 10-Extremely satisfied) when asked "All things considered, how satisfied are you with your life as a whole nowadays?"
-#### 30003: General health questionnaire (GHQ-12)Percentage of adults with a possible common mental health problem. N.B. This indicator is also available from the ScotPHO Online Profiles (national, health board, and council area level, but not by SIMD). A score of four or more on the General Health Questionnaire-12 (GHQ-12) indicates a possible mental health problem over the past few weeks. GHQ-12 is a standardised scale which measures mental distress and mental ill-health. There are 12 questions which cover concentration abilities, sleeping patterns, self-esteem, stress, despair, depression, and confidence in the past few weeks. For each of the 12 questions one point is given if the participant responded 'more than usual' or 'much more than usual'. Scores are then totalled to create an overall score of zero to twelve. A score of four or more (described as a high GHQ-12 score) is indicative of a potential psychiatric disorder. Conversely a score of zero is indicative of psychological wellbeing. As GHQ-12 measures only recent changes to someone's typical functioning it cannot be used to detect chronic conditions. The variable used was GHQg2.
-#### 30013: Fruit & vegetable consumption (guidelines): Percentage of adults who met the daily fruit and vegetable consumption recommendation - five or more portions - in the previous day (survey variables porftvg3Intake and porftvg3). According to the guidelines, it is recommended for adults to consume at least five varied portions of fruit and vegetables per day. The module includes questions on consumption of the following food types in the 24 hours to midnight preceding the interview: vegetables (fresh, frozen or canned); salads; pulses; vegetables in composites (e.g. vegetable chilli); fruit (fresh, frozen or canned); dried fruit; fruit in composites (e.g. apple pie); fresh fruit juice. Fruit and vegetable consumption figures for 2021 have been calculated from online dietary recalls using INTAKE24. In 2021, less than half a portion of fruit and vegetables is defined as none. This is due to the inclusion of fruit and vegetables from composite dishes which has led to a decrease in the proportion consuming no fruit or vegetables. Data from earlier years were taken from the fruit and vegetable module. Fruit and vegetable consumption data for NHS health boards and council area areas for 2017-2021 combined are not available, as due to the different method of data collection, it was not possible to combine data for these years. Respondents to the INTAKE24 food diary were included if they had provided data for two days.
-#### 99105: Food insecurity
-#### 99106: Adult Healthy Weight
-#### 99107: Summary activity levels (ADULT) Percentage of adults who met the recommended moderate or vigorous physical activity guideline in the previous four weeks. In July 2011, the Chief Medical Officers of each of the four UK countries agreed and introduced revised guidelines on physical activity. Adults are recommended to accumulate 150 minutes of moderate activity or 75 minutes of vigorous activity per week, or an equivalent combination of both, in bouts of 10 minutes or more. The variable used was adt10gpTW. This bandings used for this variable include the new walking definition for those aged 65 years and over.
-#### 99108: Self-assessed health of adults (age 16+) Percentage of adults who, when asked "How good is your health in general?", selected "good" or "very good". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
-#### 99109: Limiting long-term conditions (age 16+) Percentage of adults who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
-#### 99121: Health risk behaviours (NO DATA EXTRACTED FROM UKDS DATA AS UNCLEAR HOW TO CODE)
-
-## CHILDREN (N=6)
-#### 30111: Children's PA guidelines:  % children meeting 1 hour PA per day (INCL. SCHOOL)
-#### 14003: Children with very low PA levels
-#### 14006: Children participating in sport
-#### 30114: Children's general health. Percentage of children who, when asked "How good is your health in general?", selected "good" or "excellent". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
-#### 30115: Children with Limiting long-term conditions.	Percentage of children who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
-#### 14012 % children meeting activity guidelines (NOT inc school) (var ch00sum7)
-
-
-#########################################################
-# STEP 2:
-#########################################################
-
-# Additional indicators (20 as of May 2026, listed below) can only be sourced from the UK Data Service (UKDS) microdata. 
-# The UKDS data are imported and processed in a separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
-# In that repo we calculate estimates for all available splits for all available indicators, including those available on the SHeS dashboard (listed above), 
-# as there could be additional splits that aren't published, despite being above the SHeS suppression threshold of denominators <30). 
-# Suppression of splits below that threshold is done in the ScotPHO_survey_data ukds_shes_calcs.R script, 
-# and any splits where more than 25% of the estimates have to be suppressed are removed entirely 
-# (25% was an entirely arbitrary figure from Liz's head, which seemed reasonable at the time).
-
-##### ADULTS (N=11)
+##### ADULTS (N=26)
+#### 4170 = Alcohol consumption: Binge drinking (drinking over (6/8) units in a day (includes non-drinkers): Over 8 units for men, over 6 units for women" (previous indicator definition excluded non-drinkers from denom)
+#### 4171 = Alcohol consumption: Hazardous/Harmful drinker" (% consuming over 14 units per week) (NB. original ScotPHO indicator excluded non-drinkers from denominator... it's not clear whether they are included here)
+#### 4172 = Alcohol consumption (mean weekly units)
+#### 14001 = Adults meeting muscle strengthening guidelines. 2011 CMO guidelines recommend 2x 30 minute muscle strengthening sessions per week
+#### 14002 = Adult very low PA: Adults with very low activity levels. Also in CWB, AMH profiles. 2011 CMO guidelines recommend 150 mins/week MVPA.
+#### 30001 = Mental wellbeing (WEMWBS): Mean score on the WEMWBS scale (adults). WEMWBS stands for Warwick-Edinburgh Mental Wellbeing Scale. N.B. This indicator is also available from the ScotPHO Online Profiles (national, health board, and council area level, but not by SIMD). The questionnaire consists of 14 positively worded items designed to assess: positive affect (optimism, cheerfulness, relaxation) and satisfying interpersonal relationships and positive functioning (energy, clear thinking, self-acceptance, personal development, mastery and autonomy). It is scored by summing the response to each item answered on a 1 to 5 Likert scale ('none of the time', 'rarely', 'some of the time', often', 'all of the time'). The total score ranges from 14 to 70 with higher scores indicating greater wellbeing. The variable used was WEMWBS.
+#### 30002 = Life satisfaction: % scoring above the mode: Percentage with the highest levels of life satisfaction: responses above the mode (9 to 10-Extremely satisfied) when asked "All things considered, how satisfied are you with your life as a whole nowadays?"
+#### 30003 = General health questionnaire (GHQ-12)Percentage of adults with a possible common mental health problem. N.B. This indicator is also available from the ScotPHO Online Profiles (national, health board, and council area level, but not by SIMD). A score of four or more on the General Health Questionnaire-12 (GHQ-12) indicates a possible mental health problem over the past few weeks. GHQ-12 is a standardised scale which measures mental distress and mental ill-health. There are 12 questions which cover concentration abilities, sleeping patterns, self-esteem, stress, despair, depression, and confidence in the past few weeks. For each of the 12 questions one point is given if the participant responded 'more than usual' or 'much more than usual'. Scores are then totalled to create an overall score of zero to twelve. A score of four or more (described as a high GHQ-12 score) is indicative of a potential psychiatric disorder. Conversely a score of zero is indicative of psychological wellbeing. As GHQ-12 measures only recent changes to someone's typical functioning it cannot be used to detect chronic conditions. The variable used was GHQg2.
 #### 30004 = depsymp	Percentage of adults who had a symptom score of two or more on the depression section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was depsymp (or dvg11 in 2008). 
 #### 30005 = anxsymp	Percentage of adults who had a symptom score of two or more on the anxiety section of the Revised Clinical Interview Schedule (CIS-R). A score of two or more indicates symptoms of moderate to high severity experienced in the previous week. The variable used was anxsymp (or dvj12 in 2008). 
 #### 30009 = suicide2	Percentage of adults who made an attempt to take their own life, by taking an overdose of tablets or in some other way, in the past year. The variable used was suicide2. 
 #### 30010 = dsh5sc	Percentage of adults who deliberately harmed themselves but not with the intention of killing themselves in the past year. The variable used was DSH5 from 2008 to 2011, or DSH5SC from 2013 onwards. 
+#### 30013 = Fruit & vegetable consumption (guidelines): Percentage of adults who met the daily fruit and vegetable consumption recommendation - five or more portions - in the previous day (survey variables porftvg3Intake and porftvg3). According to the guidelines, it is recommended for adults to consume at least five varied portions of fruit and vegetables per day. The module includes questions on consumption of the following food types in the 24 hours to midnight preceding the interview: vegetables (fresh, frozen or canned); salads; pulses; vegetables in composites (e.g. vegetable chilli); fruit (fresh, frozen or canned); dried fruit; fruit in composites (e.g. apple pie); fresh fruit juice. Fruit and vegetable consumption figures for 2021 have been calculated from online dietary recalls using INTAKE24. In 2021, less than half a portion of fruit and vegetables is defined as none. This is due to the inclusion of fruit and vegetables from composite dishes which has led to a decrease in the proportion consuming no fruit or vegetables. Data from earlier years were taken from the fruit and vegetable module. Fruit and vegetable consumption data for NHS health boards and council area areas for 2017-2021 combined are not available, as due to the different method of data collection, it was not possible to combine data for these years. Respondents to the INTAKE24 food diary were included if they had provided data for two days.
 #### 30021 = involve	Percentage of adults who, when asked "How involved do you feel in the local community?", responded "a great deal" or "a fair amount". The four possible options ranged from "a great deal" to "not at all". The variables used were Involve and INVOLV19. 
 #### 30023 = p_crisis	Percentage of adults with a primary support group of three or more to rely on for comfort and support in a personal crisis. Respondents were asked "If you had a serious personal crisis, how many people, if any, do you feel you could turn to for comfort and support?", and the variables were PCrisis or PCRIS19. 
 #### 30026 = rg17a_new	Percentage of adults who provide 20 or more hours of care per week to a member of their household or to someone not living with them, excluding help provided in the course of employment. Participants were asked whether they look after, or give any regular help or support to, family members, friends, neighbours or others because of a long-term physical condition, mental ill-health or disability; or problems related to old age. Caring which is done as part of any paid employment is not asked about. From 2014 onwards, this question explicitly instructed respondents to exclude caring as part of paid employment. The variables used to construc this indicator were RG15aNew (Do you provide any regular help or care for any sick, disabled, or frail people?) and RG17aNew (How many hours do you spend each week providing help or unpaid care for him/her/them?). 
@@ -70,29 +29,69 @@
 #### 30052 = work_bal	Mean score for how satisfied adults are with their work-life balance (paid work). Respondents were asked "How satisfied are you with the balance between the time you spend on your paid work and the time you spend on other aspects of your life?" on a scale between 0 (extremely dissatisfied) and 10 (extremely satisfied). The intervening scale points were numbered but not labelled. The variable was WorkBal. 
 #### 30053 = contrl	Percentage of adults who often or always have a choice in deciding how they do their work, in their current main job. The five possible responses ranged from "always" to "never". The variable was Contrl. 
 #### 30054 = support1	Percentage of adults who "strongly agree" or "tend to agree" that their line manager encourages them at work. The five options ranged from "strongly agree" to "strongly disagree". The variables used were Support1 and Support1_19. 
-##### CHILDREN (N=9)
-#### 14007 - ch30plyg - Children engaging in active play
+#### 99105 = Food insecurity
+#### 99106 = Adult Healthy Weight
+#### 99107 = Summary activity levels (ADULT) Percentage of adults who met the recommended moderate or vigorous physical activity guideline in the previous four weeks. In July 2011, the Chief Medical Officers of each of the four UK countries agreed and introduced revised guidelines on physical activity. Adults are recommended to accumulate 150 minutes of moderate activity or 75 minutes of vigorous activity per week, or an equivalent combination of both, in bouts of 10 minutes or more. The variable used was adt10gpTW. This bandings used for this variable include the new walking definition for those aged 65 years and over.
+#### 99108 = Self-assessed health of adults (age 16+) Percentage of adults who, when asked "How good is your health in general?", selected "good" or "very good". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
+#### 99109 = Limiting long-term conditions (age 16+) Percentage of adults who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
+#### 99121 = Health risk behaviours (NO DATA EXTRACTED FROM UKDS DATA AS UNCLEAR HOW TO CODE)
+
+##### CHILDREN (N=15)
+#### 14003 = Children with very low PA levels
+#### 14006 = Children participating in sport
+#### 14007 = ch30plyg - Children engaging in active play
+#### 14012 = % children meeting activity guidelines (NOT inc school) (var ch00sum7)
+#### 30111 = Children's PA guidelines:  % children meeting 1 hour PA per day (INCL. SCHOOL)
+#### 30114 = Children's general health. Percentage of children who, when asked "How good is your health in general?", selected "good" or "excellent". The five possible options ranged from very good to very bad, and the variable was GenHelf2.
+#### 30115 = Children with Limiting long-term conditions.	Percentage of children who have a limiting long-term illness. Long-term conditions are defined as a physical or mental health condition or illness lasting, or expected to last, 12 months or more. A long-term condition is defined as limiting if the respondent reported that it limited their activities in any way. The variable used was limitill.
 #### 30129 = ch_audit  Percentage of children aged 15 years or under with a parent/carer who reports consuming alcohol at hazardous or harmful levels (AUDIT questionnaire score 8+)
 #### 30130 = ch_ghq  Percentage of children aged 15 years or under who have a parent/carer who scores 4 or more on the General Health Questionnaire-12 (GHQ-12)
-#### 30170	Peer relationship problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the peer relationship problems scale of the Strengths and Difficulties Questionnaire (SDQ)
-#### 30172	Emotional symptoms - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 4-10) on the emotional symptoms scale of the Strengths and Difficulties Questionnaire (SDQ)
-#### 30173	Conduct problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the conduct problems scale of the Strengths and Difficulties Questionnaire (SDQ)
-#### 30174	Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
-#### 30175	Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
-#### 99117	Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
-
-#########################################################
-# STEP 3: 
-#########################################################
-
-# Check availability of the indicators from these two sources.
-# Use the SHeS dashboard data wherever available.
-# Prep the final ScotPHO dashboard indicator files
+#### 30170 = Peer relationship problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the peer relationship problems scale of the Strengths and Difficulties Questionnaire (SDQ)
+#### 30172 = Emotional symptoms - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 4-10) on the emotional symptoms scale of the Strengths and Difficulties Questionnaire (SDQ)
+#### 30173 = Conduct problems - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 3-10) on the conduct problems scale of the Strengths and Difficulties Questionnaire (SDQ)
+#### 30174 = Hyperactivity/inattention - Percentage of children with a 'slightly raised', 'high' or 'very high' score (a score of 6-10) on the hyperactivity/inattention scale of the Strengths and Difficulties Questionnaire (SDQ)
+#### 30175 = Prosocial behaviour - Percentage of children with a 'close to average' score (a score of 8-10) on the prosocial scale of the Strengths and Difficulties Questionnaire (SDQ)
+#### 99117 = Total difficulties - Percentage of children with a 'slightly raised', 'high' or 'very high' total difficulties score (a score of 14-40) on the Strengths and Difficulties Questionnaire (SDQ). A total difficulties score of 14 or over is also referred to as borderline (14-16) or abnormal (17-40).
 
 
 #########################################################
-### Functions/packages -----
+# STEP 1: Import the processed UK Data Service data
 #########################################################
+
+# The UKDS data are imported and processed in a separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
+# In that repo we calculate estimates for all available splits for all available indicators, including those available on the SHeS dashboard, 
+# as there could be additional splits that aren't published (despite being above the SHeS suppression threshold of denominators <30). 
+# Suppression of splits below that threshold is done in the ScotPHO_survey_data ukds_shes_calcs.R script, 
+# and any splits where more than 25% of the estimates have to be suppressed are removed entirely 
+# (25% was an entirely arbitrary figure from Liz's head, which seemed reasonable at the time).
+
+
+#########################################################
+# STEP 2: Import and process the SHeS dashboard data
+#########################################################
+
+# This script uses the data published on the SHeS dashboard https://scotland.shinyapps.io/sg-scottish-health-survey/ 
+# for the indicators that are published there (currently 21, as of May 2026, see below). 
+# (It can be easiest to request the published data direct from the SHeS team, scottishhealthsurvey@gov.scot) 
+
+
+##############################################################################
+# STEP 3: Compare the two sources, combine, prep indicator files, and run QA
+##############################################################################
+
+# Check availability of the indicators from these two sources: decide which to keep.
+
+# Decision: 
+## Keep the SHeS dashboard data for indicators just available for Scotland.
+## If lower geogs are available for an indicator the Scotland data needs to match the aggregation level (e.g., 2021-24) of the lower geography data.
+## This is so that both can be plotted concurrently on the trends and ranks tabs.
+## SHeS dashboard Scotland data for single years can still be used for SIMD and popgroup tabs, as these only ever present a single geography at once.
+
+# Prep and QA the final ScotPHO dashboard indicator files
+
+
+
+### Functions/packages/paths -----
 
 source("functions/main_analysis.R") # for packages and QA
 source("functions/deprivation_analysis.R") # for packages and QA
@@ -104,12 +103,17 @@ shes_folder <- file.path(profiles_data_folder, "Received Data", "Scottish Health
 
 
 #########################################################
-### Read in the data -----
+# STEP 1: Import the processed UK Data Service data
 #########################################################
 
-## Import the pre-processed UKDS data (UK data service)
-# The data read in below has been prepared in separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
-# Last updated June 2026 (SHeS data up to 2024)
+# The UKDS data are imported and processed in a separate git repo https://github.com/Public-Health-Scotland/ScotPHO_survey_data
+# In that repo we calculate estimates for all available splits for all available indicators, including those available on the SHeS dashboard, 
+# as there could be additional splits that aren't published (despite being above the SHeS suppression threshold of denominators <30). 
+# Suppression of splits below that threshold is done in the ScotPHO_survey_data ukds_shes_calcs.R script, 
+# and any splits where more than 25% of the estimates have to be suppressed are removed entirely (rather than having suppressed estimates shown as NA)
+# (25% was an entirely arbitrary figure from Liz's head, which seemed reasonable at the time).
+
+# LATEST: to 2024
 shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes_raw.rds")) %>%
   mutate(code = as.character(code)) %>%
   mutate(source = "UKDS") %>%
@@ -134,7 +138,11 @@ ind_ids <- shes_from_ukds %>%
   unique() 
 
 
-## Import SHeS dashboard data: 
+#########################################################
+# STEP 2: Import and process the SHeS dashboard data
+#########################################################
+
+# LATEST: to 2024
 ## Can be downloaded from there but easier to get direct from the SHeS team (see open_data_to_2024 folder)
 SHeS_SCOTLAND <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_trend_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
 SHeS_LA <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024", "shes_rank_sex_opendata.xlsx")) %>% mutate(split_name = "Sex")
@@ -176,9 +184,7 @@ SHeS_CONDITIONS <- readxl::read_xlsx(file.path(shes_folder, "open_data_to_2024",
 # SHeS_CONDITIONS <- read_parquet(file.path(shes_folder, "SHeS_LONGTERM_CONDITIONS.parquet")) %>% mutate(split_name = "Long-term illness")
 
 
-#########################################################
 ### Process the published data -----
-#########################################################
 
 ### Combine data and get column data and formats right----
 shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes in the environment starting with "SHeS_"
@@ -188,22 +194,26 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
                           Measurement=="95% Upper Confidence Limit" ~ "upci",
                           Measurement %in% c("Mean", "Percent") ~ "rate")) %>%
   rename(trend_axis = DateCode) %>%
-  # create a new split_value column: coalesce combines non-NA values into a single column
-  mutate(split_value = coalesce(Age, Sex, LongtermConditions, EquivalisedIncome, SIMDquintiles)) %>% # this works because there is only ever one non-NA cell in these 5 columns
-  mutate(split_value = if_else(split_value == "All", "Total", split_value)) %>% # recode All -> Total
-  mutate(split_value = case_when(# Deprivation:
-    split_name == "Deprivation (SIMD)" & split_value=="1 - most deprived" ~ "1", # format needed for the inequalities analysis
+  # create a new split_value column: 
+  # coalesce() combines non-NA values into a single column: this works because there is only ever one non-NA cell in these 5 columns
+  mutate(split_value = coalesce(Age, Sex, LongtermConditions, EquivalisedIncome, SIMDquintiles)) %>%  
+  # recode All -> Total
+  mutate(split_value = if_else(split_value == "All", "Total", split_value)) %>% 
+  
+  mutate(split_value = case_when(
+    # recode deprivation splits (to format needed for inequalities analysis)
+    split_name == "Deprivation (SIMD)" & split_value=="1 - most deprived" ~ "1", 
     split_name == "Deprivation (SIMD)" & split_value=="2nd quintile" ~ "2",
     split_name == "Deprivation (SIMD)" & split_value=="3rd quintile" ~ "3",
     split_name == "Deprivation (SIMD)" & split_value=="4th quintile" ~ "4",
     split_name == "Deprivation (SIMD)" & split_value=="5 - least deprived" ~ "5",
-    # equivalised household income
-    split_name == "Income (equivalised)" & split_value=="1st-Top quintile" ~ "Q1 (highest income)", # match ScotPHO format
+    # recode equivalised household income (makes low and high explicit, and matches how quintiles are presented on ScotPHO)
+    split_name == "Income (equivalised)" & split_value=="1st-Top quintile" ~ "Q1 (highest income)", 
     split_name == "Income (equivalised)" & split_value=="2nd quintile" ~ "Q2", 
     split_name == "Income (equivalised)" & split_value=="3rd quintile" ~ "Q3", 
     split_name == "Income (equivalised)" & split_value=="4th quintile" ~ "Q4", 
     split_name == "Income (equivalised)" & split_value=="5th-Bottom quintile" ~ "Q5 (lowest income)",
-    # Age group:
+    # recode age groups (make units explicit):
     split_name == "Age group" & split_value=="0-3" ~ "0 to 3y",
     split_name == "Age group" & split_value=="11-12" ~ "11 to 12y",
     split_name == "Age group" & split_value=="12-15" ~ "12 to 15y",
@@ -213,7 +223,7 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
     split_name == "Age group" & split_value=="5-7" ~ "5 to 7y",
     split_name == "Age group" & split_value=="8-10" ~ "8 to 10y",
     split_name == "Age group" & split_value=="8-11" ~ "8 to 11y",
-    # long-term illness
+    # recode long-term illness (long-term illness seems to be the terminology now used)
     split_name == "Long-term Illness" & split_value=="Limiting long-term conditions" ~ "Limiting Long-term Illness",
     split_name == "Long-term Illness" & split_value=="No long-term conditions" ~ "No Long-term Illness",
     split_name == "Long-term Illness" & split_value=="Non-limiting long-term conditions" ~ "Non-limiting Long-term Illness",
@@ -232,14 +242,14 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
   mutate(year_diff =
            as.numeric(substr(trend_axis, nchar(trend_axis) - 3, nchar(trend_axis))) # the last year in trend_axis
          - as.numeric(substr(trend_axis, 1, 4))) %>% # minus the first year in trend_axis
-  filter(year_diff!=1) %>% #drop the two-year aggregates: we don't present these
+  filter(year_diff!=1) %>% #drop any two-year aggregates: we don't present these
   mutate(year = case_when(year_diff == 0 ~ as.numeric(substr(trend_axis, 1, 4)), # only one year in the label
                           year_diff %in% c(3:4) ~ as.numeric(substr(trend_axis, 1, 4))+2)) %>% # year = first year in the label + 2 (=mid point or midpoint rounded up to nearest whole year)
   mutate(def_period = ifelse(year_diff==0,
                              paste0("Survey year (", trend_axis, ")"),
                              paste0("Aggregated survey years (", trend_axis, ")"))) %>%
-  mutate(numerator = NA, # columns needed to get into same format as the imported UKDS data
-         sex = case_when(split_name=="Sex" ~ split_value,
+  mutate(numerator = NA, # columns needed for subsequent processing
+         sex = case_when(split_name=="Sex" ~ split_value, # make a separate sex column for all
                          TRUE ~ "Total")) %>%
   # identify the areatype
   mutate(areatype = case_when(substr(code, 1, 3)=="S00" ~ "Scot",
@@ -253,8 +263,10 @@ shes_from_dashboard <- mget(ls(pattern="^SHeS_")) %>% # get all the dataframes i
 # print out list of all available indicators in the data:
 unique(shes_from_dashboard$ind)
 # look through to check which ones we need to keep
+# NB. Some indicators on the SHeS dashboard look similar but aren't defined/grouped in the way we want/need for ScotPHO indicators.
 
-# List all the indicators we want to keep:
+
+# List all the indicators we want to keep (n=21):
 dashboard_vars_to_keep <- c("Alcohol consumption: Hazardous/Harmful drinker",                                                                               
                             "Alcohol consumption (mean weekly units)",                                                                                      
                             "Drinking over 6/8 units in a day (includes non-drinkers): Over 8 units for men/6 units for women",                             
@@ -308,8 +320,8 @@ shes_from_dashboard <- shes_from_dashboard %>%
   # Select relevant columns
   select(ind_id, indicator, code, areatype, year, trend_axis, def_period, sex, split_name, split_value, rate, lowci, upci, numerator) 
 
-# which indicator ids?
-inds_in_db <- shes_from_dashboard$ind_id %>% unique() #n=21
+# Do all the indicators now have ind_ids?
+inds_in_db <- shes_from_dashboard$ind_id %>% unique() #confirms that the 21 indicators now all have ind_id added
 
 ### Add totals for the popgroup and SIMD splits ----
 # This is needed for subsequent calculation of the inequalities metrics, and is nice-to-have for the popgroup data:
@@ -336,29 +348,48 @@ shes_from_dashboard <- shes_from_dashboard %>%
   rbind(totals_to_add) %>%
   mutate(source="dashboard")
 
-#########################################################
-### Compare availability -----
-#########################################################
+write_rds(shes_from_dashboard, "/conf/MHI_Data/derived data/shes_from_dashboard.rds")
+shes_from_dashboard <- readRDS("/conf/MHI_Data/derived data/shes_from_dashboard.rds")
 
-#indicators with different age groups to the dashboard data:
-# = adult low activity, adult meet muscle recs, child v low PA, child sport. 
+##############################################################################
+# STEP 3: Compare the two sources, combine, prep indicator files, and run QA
+##############################################################################
+
+### Compare SHeS dashboard and UKDS availability -----
+# Make a file containing the indicators available from both sources, and keep the comparable splits that are in both
+
+# Remove age groups for indicators where we want to use different age groups to the dashboard data:
+# = PA profile indicators = adult low activity, adult meet muscle recs, child v low PA, child sport. 
 pa_inds_agegp <- c(14001, 14002, 14006, 14003)
-# remove the dashboard age group splits for these indicators
 
 source_comparison <- shes_from_dashboard %>%
+  # drop age group splits as required
   filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>%
-  filter(!split_name=="Long-term Illness") %>% # we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  # drop LTI splits, as we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  filter(!split_name=="Long-term Illness") %>% 
   merge(y=shes_from_ukds, by=c("indicator", "ind_id", "code", "areatype", "year", "trend_axis", "def_period", "sex", "split_name", "split_value"), all=TRUE) %>%
-  filter(areatype %in% c("Scot", "HB", "CA") & ind_id %in% inds_in_db) %>% # UKDS provides any PD, HSCP or ADP splits, as these aren't available in the dashboard. 
-  mutate(final_source = ifelse(is.na(source.x), source.y, source.x))
+  # keep only the geogs available in the dashboard (this drops any PD, HSCP or ADP data in the UKDS data)
+  filter(areatype %in% c("Scot", "HB", "CA") & ind_id %in% inds_in_db) %>% 
+  mutate(on_dashboard = ifelse(is.na(source.x), "not on db", "on db"))
 
-# This comparison is limited to the indicators that are available from both sources (n=20 as of June 2026).
-# Another 21 (as of June 2026) are only available from the UKDS extract. One is only available from the dashboard data.
+# This comparison is limited to the indicators that are available from both sources:
 ftable(source_comparison$indicator, 
        source_comparison$split_name, 
-       source_comparison$final_source, 
+       source_comparison$on_dashboard, 
        source_comparison$areatype, 
        row.vars=c(1:2))
+
+# how do the indicator values compare?
+source_comparison %>% 
+  filter(!is.na(rate.x) & !is.na(rate.y)) %>%
+  ggplot() +
+  geom_point(aes(x=rate.x, y=rate.y)) +
+  facet_wrap(~indicator)
+# SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
+# THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
+# main reason: UKDS estimates have more decimal places
+# also some of our indicators for children's PA exclude some ages in the original data (children participating in sport, )
+
 
 # Key points about the two sources:
 ## Aggregated UKDS data start from 2008-11, while the aggregated dashboard data starts at 2012-15. 
@@ -372,40 +403,54 @@ ftable(source_comparison$indicator,
 ## UKDS provides SIMD splits by sex, dashboard doesn't.
 ## UKDS provides urban/rural splits, while dashboard doesn't
 
+# Decision: 
+## Keep the SHeS dashboard data for indicators just available for Scotland.
+## If lower geogs are available for an indicator the Scotland data needs to match the aggregation level (e.g., 2021-24) of the lower geography data.
+## This is so that both can be plotted concurrently on the trends and ranks tabs.
+## SHeS dashboard Scotland data for single years can still be used for SIMD and popgroup tabs, as these only ever present a single geography at once.
 
-# keep UKDS where available (for lower geogs)
+# Now we've compared the dashboard and UKDS data we can produce a file containing just the data we have decided to use. 
 shes_combined <- shes_from_dashboard %>%
-  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>% #drop the dashboard data for indicators where we want to use different age groups
-  filter(!split_name=="Long-term Illness") %>% # we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  # drop the dashboard data for indicators where we want to use different age groups
+  filter(!(ind_id %in% pa_inds_agegp & split_name=="Age group")) %>% 
+  # drop the dashboard LTI splits, as we have opted to produce 2 llti splits (yes/no) rather than the 3 used on dashboard.
+  filter(!split_name=="Long-term Illness") %>% 
+  # merge in the UKDS data
   merge(y=shes_from_ukds, by=c("indicator", "ind_id", "split_name", "split_value", "sex", "code", "areatype", "trend_axis", "year", "def_period"), all=TRUE) %>%
-  # .x is dashboard, .y is ukds, so we keep dashboard for Scotland, where available
-  # opted to take lower geog data from UKDS processing, rather than dashboard data (even when available), so that all coincident geographies have the same data.
+  # .x is dashboard, .y is ukds
+  # Apply this logic:
+  # Scotland: keep dashboard data (.x) where available
+  # Lower geogs: keep UKDS data (.y), rather than dashboard data (even when available), so that all coincident geographies have precisely the same estimates and CIs (otherwise QA shows discrepancy).
   mutate(rate = ifelse(areatype=="Scot" & !is.na(rate.x), rate.x, rate.y), 
          lowci = ifelse(areatype=="Scot" & !is.na(rate.x), lowci.x, lowci.y),
          upci = ifelse(areatype=="Scot" & !is.na(rate.x), upci.x, upci.y),
          numerator = numerator.y, # there are no numerators in the dashboard extract
          source = ifelse(areatype=="Scot" & !is.na(rate.x), source.x, source.y)) %>%
-  mutate(rate = ifelse(ind_id==99121, rate.x, rate), # indicator 99121 (health risk behaviours) only available from dashboard, so keep dashboard data for all geogs where available
+  # indicator 99121 (health risk behaviours) only available from dashboard, so keep dashboard data for all geogs where available
+  mutate(rate = ifelse(ind_id==99121, rate.x, rate), 
          lowci = ifelse(ind_id==99121, lowci.x, lowci),
          upci = ifelse(ind_id==99121, upci.x, upci),
          source = ifelse(ind_id==99121, source.x, source)) %>%
   mutate(rate_diff = case_when(!is.na(rate.x) & !is.na(rate.y) ~ rate.x-rate.y, 
-                               TRUE ~ as.numeric(NA)))
+                               TRUE ~ as.numeric(NA)),
+         rate_diff = round(sqrt(rate_diff*rate_diff))) # magnitude of the difference, to 0 dp
 #shes_from_dashboard has 25,693 records
-#shes_from_ukds has 487,605 records
-#shes_combined has 489,947 records
+#shes_from_ukds has 499,383 records
+#shes_combined has 501,138 records
 
-
-# how do the indicator values compare?
-shes_combined %>% 
-  filter(!is.na(rate.x) & !is.na(rate.y)) %>%
-  ggplot() +
+# check big diffs
+check <- shes_combined %>%
+  filter(rate_diff>0)
+ggplot(check) +
   geom_point(aes(x=rate.x, y=rate.y)) +
   facet_wrap(~indicator)
-# SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
-# THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
-# could be explained by UKDS estimates having more decimal places, and the UKDS data being slightly more suppressed than the raw data the SHeS team have access to
+check_all <- shes_combined %>%
+  filter(!is.na(rate_diff))
 
+
+table(check_all$indicator)
+table(check$indicator)
+table(check$indicator, check$split_name)
 
 ### 6. Check geographical availability: ----
 
