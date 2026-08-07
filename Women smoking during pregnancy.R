@@ -1,5 +1,9 @@
 ### Analyst notes ----
 
+## MM note Aug 2026: Deprivation data not updated for latest data (up to 2025) as SIMD lookup only goes up to 2024
+# to be updated when SIMD lookup updated
+
+
 # This script prepares data for the 'Women smoking during pregnancy' (30058) indicator
 # this is a replacement of smoking during pregnancy indicators which used to use SMR02
 # the new data source is the antenatal booking system (ABC dataset)
@@ -20,7 +24,7 @@ source("functions/deprivation_analysis.R")
 ##################################.
 
 # read in received data ----
-raw_data <- read_csv(file = file.path(profiles_data_folder, "Received Data/Smoking during pregnancy/IR2025-00379_ABC_smoking_calyear.csv"))
+raw_data <- read_csv(file = file.path(profiles_data_folder, "Received Data/Smoking during pregnancy/IR2026-00003_ABC_smoking_calyear.csv"))
 
 # rename columns ----
 raw_data <- raw_data |>
@@ -41,7 +45,7 @@ saveRDS(raw_data, file.path(profiles_data_folder, 'Prepared Data/smoking_during_
 
 # main dataset analysis functions ----
 main_analysis(filename = "smoking_during_preg", geography = "datazone11", measure = "percent", 
-              yearstart = 2020, yearend = 2024, time_agg = 3, ind_id = 30058, year_type = "calendar")
+              yearstart = 2020, yearend = 2025, time_agg = 3, ind_id = 30058, year_type = "calendar")
 
 
 # deprivation analysis function ----
