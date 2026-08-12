@@ -13,6 +13,8 @@
 #   Part 8 - Vandalism (4155)
 #   Part 9 - Violent Crime (20805)
 #   Part 10 - Driving under the Influence (4158)
+#   Part 11 - Drunkenness and other Disorderly Behaviour (4157)
+
 
 ###############################################.
 ## Packages/Filepaths/Functions ----
@@ -202,6 +204,22 @@ main_analysis(filename = "drink_drug_driving", geography = "council", measure = 
               year_type = "financial", ind_id = 4158, time_agg = 1, yearstart = 2014, 
               yearend = 2025, pop = "CA_pop_allages", crude_rate = 10000)
 
+###############################################.
+## Part 11 - Drunkenness and other Disorderly Behaviour ----
+###############################################.
+drunk <- crime_breakdown(crime, c("Offences: Group 6: Drunkenness and other disorderly conduct")) 
+
+#Save prepared data for analysis functions
+saveRDS(drunk, file.path(profiles_data_folder, '/Prepared Data/drunkeness_and_dis_behaviour_raw.rds'))
+
+#Starting from 09/10 as this was when Licensing (Scotland) Act 2005 was implemented. 
+#Sharp declines afterwards in mid 2010s likely the result of formation of Police Scotland and
+#changes to policing methods limiting charges for minor crimes.
+
+#Run analysis functions
+main_analysis(filename = "drunkeness_and_dis_behaviour", geography = "council", measure = "crude",
+              year_type = "financial", ind_id = 4157, time_agg = 1, yearstart = 2009, 
+              yearend = 2025, pop = "CA_pop_allages", crude_rate = 10000)
 
 ############################################.
 ##End.
