@@ -74,7 +74,7 @@ data_indicator$upci[is.na(data_indicator$upci)] <- 0 # Converting NA's to 0s
 old_file <-ifelse((!is.null(old_filename)),old_filename,filename)
 
 # Create object detailing filepath of comparison file (this appears in checking report)
-old_indicator_filepath <- paste0(profiles_data_folder, "Shiny Data/", old_file, "_shiny.rds")
+old_indicator_filepath <- paste0(profiles_data_folder, "/Shiny Data/", old_file, "_shiny.rds")
 
 
 # statement that checks if there an old indicator data file of the same name exists in Shiny data folder 
