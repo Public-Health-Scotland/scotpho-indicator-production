@@ -5,7 +5,7 @@
 # 15001: Long-acting reversible contraception prescribing rate
 # (women aged 15-44 - primary care and sexual health combined)
 
-# Data sourced from this publication (typically published anually in Sep):
+# Data sourced from this publication (typically published annually in Sep):
 # https://publichealthscotland.scot/publications/long-acting-reversible-contraception-larc-key-clinical-indicator-kci/
 
 # Save 'Table 5 - LARC prescribing rate' (tab called 'Both Sources') excel doc in this network folder:
@@ -49,7 +49,7 @@ data_clean <- data |>
 
 
 # pivot data longer
-# data is in wide format, with a column for each year/rate (e.g. "2015/16") and year/numerator (e.g."2015/16.1")
+# data is in wide format, with a column for each year/numerator (e.g. "x2015/16") and year/rate (e.g."x2015/16_2")
 # switch instead to columns year, rate and numerator
 
 # pivot numerator data longer
@@ -71,7 +71,7 @@ combined <- left_join(numerator, rate, by = c("areaname", "year"))
 # add required columns for final file 
 final <- combined |>
   mutate(
-    # ind id columns
+    # ind id column
     ind_id = 15001, 
     
     # year columns 
