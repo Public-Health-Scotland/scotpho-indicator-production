@@ -338,9 +338,9 @@ suppress_data(file = "popgrp")
 # e.g. 2019: the sum of the 3 councils of ayrshire combined doesn't match the NHS Ayrshire & Arran total
 # this is to be expected due to suppression - in this example Easy Ayrshire council was suppressed (numerator: 341)
 # but North and South Ayrshire were not 
-run_qa(filename = "child_healthyweight", type = "main", test_file = FALSE)
-run_qa(filename = "child_healthyweight_depr", type = "deprivation", test_file = FALSE)
-run_qa(filename = "child_healthyweight", type = "popgrp", test_file = FALSE)
+run_qa(filename = "15002_child_obesity_risk", type = "main", test_file = FALSE)
+run_qa(filename = "15002_child_obesity_risk", type = "deprivation", test_file = FALSE)
+run_qa(filename = "15002_child_obesity_risk", type = "popgrp", test_file = FALSE)
 
 
 ## END
