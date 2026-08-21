@@ -339,7 +339,7 @@ suppress_data(file = "popgrp")
 # this is to be expected due to suppression - in this example Easy Ayrshire council was suppressed (numerator: 341)
 # but North and South Ayrshire were not 
 run_qa(filename = "15002_child_obesity_risk", type = "main", test_file = FALSE)
-run_qa(filename = "15002_child_obesity_risk", type = "deprivation", test_file = FALSE)
+run_qa(filename = "15002_child_obesity_risk_depr", type = "deprivation", test_file = FALSE)
 run_qa(filename = "15002_child_obesity_risk", type = "popgrp", test_file = FALSE)
 
 
