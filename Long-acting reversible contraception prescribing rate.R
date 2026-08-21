@@ -29,7 +29,8 @@ library(readxl)
 # read in data 
 data <- read_excel(
   path = file.path(profiles_data_folder, "Received Data", "LARC prescribing", "mat_la_table.xlsx"), # path to file saved on network
-  sheet = "Both Sources" # name of tab to read in 
+  sheet = "Both Sources", # name of tab to read in 
+  range = "A5:K20" # range to filter on (2nd part of range needs tweaked each year as there's 1 column per year)
   )
 
 
@@ -39,68 +40,32 @@ data <- read_excel(
 
 # only keep rows required
 data_clean <- data |>
-  head(-3) |> # remove bottom 3 rows (tweak as required)
-  tail(-3) |> # remove top 3 rows (tweak as required)
-  row_to_names(row_number = 1) |> # use new first row as header
-  clean_names() |> # clean column names
-  remove_empty(which = c("rows", "cols")) |> # remove NA rows and columns
+  tail(-1) |> # remove top row (empty row)
   rename(areaname = 1) # rename first col
 
 
 
-# pivot data longer
-# data is in wide format, with a column for each year/numerator (e.g. "x2015/16") and year/rate (e.g."x2015/16_2")
-# switch instead to columns year, rate and numerator
-
-# pivot numerator data longer
-numerator <- data_clean |>
-  select(areaname, 2:11) |> # tweak as required
-  pivot_longer(cols = -areaname, names_to = "year", values_to = "numerator", names_prefix = "x")
-
-# pivot rate data longer 
-rate <- data_clean |>
-  select(areaname, 12:21) |> # tweak as required
-  pivot_longer(cols = -areaname, names_to = "year", values_to = "rate", names_pattern = "x(.*)_2")
+# pivot data longer so there's just 1 year column 
+data_clean <- data_clean |>
+  pivot_longer(cols = -areaname, names_to = "year", values_to = "numerator")
 
 
-# combine numerator and rate data 
-combined <- left_join(numerator, rate, by = c("areaname", "year"))
+# add required columns for analysis function
+data_long <- data_long |>
+  mutate(year = substr(year, start = 1, stop = 4)) |> # convert FY year column to cal year 
+  hb_names_to_codes(areaname) # add geo code column
 
 
-
-# add required columns for final file 
-final <- combined |>
-  mutate(
-    # ind id column
-    ind_id = 15001, 
-    
-    # year columns 
-    trend_axis = str_replace(year, pattern = "_", replacement = "/"),
-    def_period = str_replace(year, pattern = "_", replacement = "/"),
-    year = substr(year, start = 1, stop = 4),
-    
-    # upci/lowci columns 
-    upci = NA, 
-    lowci = NA
-    ) |>
-  # code column
-  hb_names_to_codes(areaname) |>
-  mutate(code = if_else(is.na(code), "S00000001", code))
+# save temp file to be used in analysis function
+saveRDS(final, file = file.path(profiles_data_folder, "Prepared Data", "15001_larc_prescriptions_raw.rds"))
 
 
-# convert numerator and rate cols to class numeric 
-final <- final |>
-  mutate(across(c("numerator", "rate"), ~ as.numeric(.)))
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Generate final indicator file ------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+main_analysis(ind_id = 15001, filename = "15001_larc_prescriptions", geography = "board", 
+              measure = "crude", crude_rate = 1000, pop = "CA_pop_fem15to49", 
+              year_type = "financial", time_agg = 1, yearstart = 2015, yearend = 2024)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-# Save final files -----
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-# save files in data to be checked folder
-saveRDS(final, file = file.path(profiles_data_folder, "Data to be checked", "15001_larc_prescriptions_shiny.rds"))
-write.csv(final, file = file.path(profiles_data_folder, "Data to be checked", "15001_larc_prescriptions_shiny.csv"), row.names = FALSE)
-
-
-# clear global env.
-rm(list = ls())
