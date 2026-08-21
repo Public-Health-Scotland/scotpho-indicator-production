@@ -90,8 +90,8 @@ main_data <- data_clean |>
 
 # popgroups dataset 
 popgrp_data <- data_clean |>
-  mutate(split_value = "Sex") |>
-  rename(split_name = sex) |>
+  rename(split_value = sex) |>
+  mutate(split_name = "Sex") |>
   select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, def_period, trend_axis)
 
 
