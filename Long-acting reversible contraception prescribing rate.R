@@ -51,13 +51,13 @@ data_clean <- data_clean |>
 
 
 # add required columns for analysis function
-data_long <- data_long |>
+data_clean <- data_clean |>
   mutate(year = substr(year, start = 1, stop = 4)) |> # convert FY year column to cal year 
   hb_names_to_codes(areaname) # add geo code column
 
 
 # save temp file to be used in analysis function
-saveRDS(final, file = file.path(profiles_data_folder, "Prepared Data", "15001_larc_prescriptions_raw.rds"))
+saveRDS(data_clean, file = file.path(profiles_data_folder, "Prepared Data", "15001_larc_prescriptions_raw.rds"))
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
