@@ -2,7 +2,7 @@
 # Analyst notes ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 
-# 15001: Long-acting reversible contraception prescribing rate
+# 15001: Long-acting reversible contraception (LARC) prescribing rate
 # (women aged 15-44 - primary care and sexual health combined)
 
 # Data sourced from this publication (typically published annually in Sep):
