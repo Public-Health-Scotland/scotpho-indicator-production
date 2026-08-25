@@ -8,7 +8,7 @@
 
 # Data source is Section 4: Stillbirths and infant deaths from NRS:
 # Section 4: Stillbirths and infant deaths (specifically Table_402) 
-# https://www.nrscotland.gov.uk/publications/vital-events-reference-tables-2024/
+# https://www.nrscotland.gov.uk/publications/adoptions-births-deaths-marriages-and-civil-partnerships-in-scotland-2025-registrar-generals-annual-statistical-tables-of-vital-events/
 
 # Note that data only available at Scotland level (and there is no confidence intervals) and goes back as far as 1971
 # Would be better to source Board level data from 2002 onwards instead however PHS SBAND dashboard
@@ -23,7 +23,6 @@
 library(readxl)
 source("functions/main_analysis.R")
 
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ## Read in and clean data  ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,9 +31,9 @@ source("functions/main_analysis.R")
 folder <- file.path(profiles_data_folder, "Received Data", "Perinatal mortality")
 
 # some of these details may change each year - check file before reading in 
-filename <- "vital-events-reference-tables-chapter-4.xlsx"
-sheetname <- "Table_402"
-rows_skip = 6
+filename <- "statistical-tables-of-vital-events-25-chapter-4-stillbirths-and-infant-deaths.xlsx"
+sheetname <- "Table_4.02"
+rows_skip = 4
 
 # read data 
 perinatal_data <- read_xlsx(file.path(folder, filename), sheet = sheetname, skip = rows_skip) |>
@@ -42,7 +41,7 @@ perinatal_data <- read_xlsx(file.path(folder, filename), sheet = sheetname, skip
 
 # clean data 
 clean_data <- perinatal_data |>
-  filter(year %in% c(2002:2024) & sex == "Both sexes") |>
+  filter(year %in% c(2002:2025) & sex == "Both sexes") |>
   rename(rate = perinatal_death_rate_including_stillbirths_of_gestation_28_weeks_onwards)
 
 # add required columns 
