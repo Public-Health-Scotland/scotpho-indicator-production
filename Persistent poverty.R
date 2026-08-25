@@ -3,7 +3,7 @@
 #########################################################
 
 ### Update ScotPHO persistent poverty indicators 
-### Author: Liz Richardson, 30 June 2025
+### Author: Liz Richardson, August 2026
 
 #   99116: Persistent poverty (includes both adults and children)
 #   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
@@ -11,7 +11,7 @@
 
 ### Notes on the data source:
 # https://data.gov.scot/poverty/persistent.html
-# Latest = March 2025
+# Latest = March 2026
 # Downloaded to Persistent poverty folder
 
 
@@ -19,35 +19,35 @@
 source("functions/main_analysis.R") # for packages and QA function 
 
 # Load additional packages
-library(openxlsx)
+library(readODS) # for reading in ods files (open source spreadsheets)
 
 ### 1. Paths ----
 
 # Identify data folder
 data_folder <- paste0(profiles_data_folder, "/Received Data/Persistent poverty/")
-data_file <- "data2025_persistent.xlsx"
-
+data_file <- "Persistent+Poverty+in+Scotland+2010-2024.ods"
 
 ### 2. Read in data ----
 
 get_pers_pov_data <- function(tab) {
 
-  rate <- read.xlsx(paste0(data_folder, data_file),
+  rate <- read_ods(paste0(data_folder, data_file),
                            sheet = tab,
-                           startRow = 6,
-                           colNames = TRUE) %>%
-    filter(!is.na(After.housing.costs)) %>%
-    select(trend_axis = Period, rate = After.housing.costs)
+                           skip = 6,
+                           col_names = TRUE) %>%
+    select(trend_axis = Period, rate = "After housing costs") %>%
+    mutate(rate = as.numeric(rate)) %>%
+    filter(!is.na(rate)) 
   
-  count <- read.xlsx(paste0(data_folder, data_file),
+  count <- read_ods(paste0(data_folder, data_file),
                             sheet = tab,
-                            startRow = 18,
-                            colNames = TRUE) %>%
+                            skip = 20,
+                            col_names = TRUE) %>%
     select(trend_axis = Period, denominator = Sample)
   
   rate_and_count <- rate %>%
     merge(y = count, by = "trend_axis") %>%
-    mutate(rate = rate * 100, # excel's % formatting saves it as rate/100
+    mutate(rate = rate * 100, # spreaddsheet's % formatting saves it as rate/100
            numerator = round(denominator * rate / 100),
            # confidence intervals
            ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method.
@@ -61,22 +61,22 @@ get_pers_pov_data <- function(tab) {
   
 # All people
 people_df <- get_pers_pov_data(tab="1") %>%
-  mutate(split_name = "Age", 
+  mutate(split_name = "Age group", 
          split_value = "Total")
 
 # Children
 children_df <- get_pers_pov_data(tab="2") %>%
-  mutate(split_name = "Age", 
+  mutate(split_name = "Age group", 
          split_value = "Children")
 
 # Working age adults
 wkadults_df <- get_pers_pov_data(tab="3") %>%
-  mutate(split_name = "Age", 
+  mutate(split_name = "Age group", 
          split_value = "Working age")
 
 # Pensioners
 pensioners_df <- get_pers_pov_data(tab="4") %>%
-  mutate(split_name = "Age", 
+  mutate(split_name = "Age group", 
          split_value = "Pensioners")
 
 
@@ -157,6 +157,9 @@ prepare_final_files(ind = "children_persistent_poverty")
 
 run_qa(type = "main", filename = "people_persistent_poverty", test_file = FALSE) 
 run_qa(type = "main", filename = "children_persistent_poverty", test_file = FALSE) 
+
+run_qa(type = "popgrp", filename = "people_persistent_poverty", test_file = FALSE)
+
 
 #END
 
