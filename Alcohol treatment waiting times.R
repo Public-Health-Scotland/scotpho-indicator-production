@@ -82,7 +82,9 @@ main_analysis(filename = "Alcohol_waiting_times",
               yearend = 2024,
               ind_id = 4119,
               test_file = FALSE,
-              QA = TRUE)
+              QA = FALSE)
+
+run_qa(filename = "Alcohol_waiting_times", type = "main")
 
 
 # Last update first basefile passed into analyze_second() - doesn't go through analyze_first() - saved to Temporary (10/11/2023 13:05)
