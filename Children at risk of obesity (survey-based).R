@@ -3,7 +3,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~
 
 # This script updates the following indicator:-
-# 99144 - Children at risk of obesity
+# 99144 - Children at risk of obesity (survey-based)
 
 # Data sourced from Scottish Health Survey:
 # Note that the chapter no. and table name that data is sourced from may vary each year
