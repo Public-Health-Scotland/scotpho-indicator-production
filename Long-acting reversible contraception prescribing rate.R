@@ -68,4 +68,5 @@ main_analysis(ind_id = 15001, filename = "15001_larc_prescriptions", geography =
               measure = "crude", crude_rate = 1000, pop = "CA_pop_fem15to49", 
               year_type = "financial", time_agg = 1, yearstart = 2015, yearend = 2024)
 
+#note some data checks comparing NHS board to councils/hscp won't run since this inidicator is only available at scotland and nhs board level. 
 
