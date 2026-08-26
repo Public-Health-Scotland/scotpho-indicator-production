@@ -4,6 +4,9 @@
 
 ### Update ScotPHO poverty indicators 
 ### Author: Liz Richardson, August 2026
+### Script to read in 2026 ods data published by SG. From 2027 we'll use data extracted from data.gov.scot.
+
+
 
 # Indicators:
 
@@ -23,16 +26,6 @@
 # 99990 Relative poverty AHC, overall and by age groups
 # 99991 Absolute poverty AHC, overall and by age groups
 
-
-############################################
-# ADULT POVERTY RATES NOT PRODUCED NOW.
-# LIZ EMAILED SG ON 25 AUG 2026 TO ASK IF THESE COULD BE MADE AVAILABLE
-# ALTERNATIVE: USE WORKING AGE OR ALL PEOPLE AS SPLITS ARE AVAILABLE FOR THESE? 
-# SG DATA REFERS TO WORKING AGE AS 'ADULTS' FOR SHORTHAND
-# ADULTS ARE 78% OF TOTAL POP IN 2022-25, AND WORKING AGE IS 82% OF ADULT POP
-# SO EITHER OVERALL OR WORKING AGE POVERTY ARE PRETTY REASONABLE PROXIES FOR ADULT POVERTY...
-# PLOT ADULT POVERTY (TO 2021-24) AGAINST OVERALL AND WORKING AGE TO ASSESS
-############################################
 
 ### Notes on the data source:
 # NEW SOURCE FROM 2026:
@@ -130,7 +123,6 @@ get_data_from_pov_CIs_file <- function(tab, names_row, ind_num, ind_name) {
            split_name = "Age group",
            code = "S00000001", #all are Scotland
            numerator = as.numeric(NA), # insert column where numerator would ordinarily be 
-           def_period = paste0(trend_axis, " (aggregated financial years)"),
            year = as.numeric(substr(trend_axis, 1, 4)) + 1) # data are 3 year average, so find mid point
     
 }
@@ -189,7 +181,6 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
             numerator = as.numeric(NA), # insert NA columns where required
             lowci = as.numeric(NA),
             upci = as.numeric(NA),
-            def_period = paste0(trend_axis, " (aggregated financial years)"),
             year = as.numeric(substr(trend_axis, 1, 4)) + 1) %>% # 3 year average, so find mid point
     mutate(split_value = ifelse(split_value=="All", "Total", split_value)) 
 
@@ -289,6 +280,19 @@ pov_file <- pov_file %>%
                                          "Owned outright", "Buying with a mortgage", "Rented from council or housing association", "Rented privately",
                                          "Urban", "Rural",
                                          "1 - Most deprived", "2", "3","4", "5", "6","7","8","9","10 - Least deprived")))
+
+# get trend_axis labels right:
+# current format 2019-22 but these are aggregated financial years, so need to be 2019/20-2021/22
+pov_file <- pov_file %>%
+  mutate(start_year = as.numeric(str_sub(trend_axis, 1, 4)),
+         trend_axis = paste0(start_year, "/", 
+                             str_sub(as.character(start_year+1), 3, 4), "-",
+                             start_year+2, "/",
+                             str_sub(as.character(start_year+3), 3, 4)),
+         def_period = paste0(trend_axis, " (aggregated financial years)")) %>%
+  select(-start_year)
+
+
 
 # # save intermediate df:
 # arrow::write_parquet(pov_file, paste0(data_folder, "pov_file.parquet"))
