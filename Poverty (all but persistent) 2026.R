@@ -79,6 +79,7 @@ library(readODS) # for reading in ods files (open source spreadsheets)
 data_folder = paste0(profiles_data_folder, "/Received Data/Poverty - absolute and relative/")
 pov_3y <- paste0(data_folder, "data2026.ods")
 pov_CIs <- paste0(data_folder, "2026_Confidence_intervals_3yr.ods")
+pov_adult <- paste0(data_folder, "SG_poverty_alladults_analysis.xlsx")
 
 
 # REL/ABS POVERTY X AGE GROUP SPLITS
