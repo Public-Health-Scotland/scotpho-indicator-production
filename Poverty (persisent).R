@@ -6,7 +6,7 @@
 ### Author: Liz Richardson, August 2026
 
 #   99116: Persistent poverty (includes both adults and children)
-#   30155: Child persistent poverty (uses the same data as appears 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
+#   30155: Child persistent poverty (uses the same data as 99116 but this includes only child age group as this is specifically presented in CYP mental health indicators)
 #   NB. Poverty defined as 60% of median income for both
 
 ### Notes on the data source:
@@ -24,7 +24,7 @@ library(readODS) # for reading in ods files (open source spreadsheets)
 ### 1. Paths ----
 
 # Identify data folder
-data_folder <- paste0(profiles_data_folder, "/Received Data/Persistent poverty/")
+data_folder <- paste0(profiles_data_folder, "/Received Data/Poverty - persistent/")
 data_file <- "Persistent+Poverty+in+Scotland+2010-2024.ods"
 
 ### 2. Read in data ----
