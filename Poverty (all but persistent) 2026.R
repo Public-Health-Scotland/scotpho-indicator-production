@@ -76,7 +76,7 @@ library(readODS) # for reading in ods files (open source spreadsheets)
 ### 1. Read in data ----
 
 # the downloaded spreadsheets:
-data_folder = paste0(profiles_data_folder, "/Received Data/Absolute and relative poverty/")
+data_folder = paste0(profiles_data_folder, "/Received Data/Poverty - absolute and relative/")
 pov_3y <- paste0(data_folder, "data2026.ods")
 pov_CIs <- paste0(data_folder, "2026_Confidence_intervals_3yr.ods")
 
