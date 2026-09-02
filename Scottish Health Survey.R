@@ -124,6 +124,9 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
                               substr(code, 1, 3)=="S32" ~ "PD",
                               substr(code, 1, 3)=="S37" ~ "HSCP",
                               TRUE ~ "NA")) %>%
+  mutate(rate = round(rate,0),
+         lowci = round(lowci, 1),
+         upci = round(upci, 1)) %>%
   filter(!(split_name=="Deprivation (SIMD)" & areatype!="Scot" & sex!="Total")) # drop deprivation x sex for all lower geogs
 
 # Drop any geogs we don't want
@@ -370,7 +373,8 @@ source_comparison <- shes_from_dashboard %>%
   merge(y=shes_from_ukds, by=c("indicator", "ind_id", "code", "areatype", "year", "trend_axis", "def_period", "sex", "split_name", "split_value"), all=TRUE) %>%
   # keep only the geogs available in the dashboard (this drops any PD, HSCP or ADP data in the UKDS data)
   filter(areatype %in% c("Scot", "HB", "CA") & ind_id %in% inds_in_db) %>% 
-  mutate(on_dashboard = ifelse(is.na(source.x), "not on db", "on db"))
+  mutate(on_dashboard = ifelse(is.na(source.x), "not on db", "on db"),
+         rate_diff = round(rate.x-rate.y))
 
 # This comparison is limited to the indicators that are available from both sources:
 ftable(source_comparison$indicator, 
@@ -387,8 +391,16 @@ source_comparison %>%
   facet_wrap(~indicator)
 # SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
 # THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
-# main reason: UKDS estimates have more decimal places
-# also some of our indicators for children's PA exclude some ages in the original data (children participating in sport, )
+# some of our indicators for children's PA exclude some ages (2-4y) in the original data (children participating in sport, children very low activity) so the whole pop averages will be different
+table(source_comparison$indicator, source_comparison$rate_diff)
+# of 19,454 rates we can compare: 
+# 450 (2%) are from the 2 child PA indicators with different age groups, 
+table(source_comparison$indicator[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
+# of remaining 19,004
+# 18507 (97%) are identical
+# 466 (2% are 1%pt either side)
+# biggest diffs are 4%pts lower and higher: fruitveg consumption and problem drinker
+table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
 
 
 # Key points about the two sources:
