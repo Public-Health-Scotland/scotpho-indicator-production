@@ -1,24 +1,16 @@
+## NPF data not updated since 2024.
+## More up-to-date versions of most indicators now produced in other scripts
+## Persistent poverty now produced in Persistent poverty.R
+## Indicators 99117 (Young peoples mental wellbeing) and 99121 (Health risk behaviours) produced in Scottish Health Survey.R
+
 #new indicators introduced for Population health Framework/care and wellbeing portfolio
 
-###################################################################################################################################################################
-####### JUNE 2025: ##########
-####### NB. Persistent poverty now produced in a separate script (Persistent poverty.R), as more recent data are available from a different source. ###############
-###################################################################################################################################################################
-
-
 ##  This script will update indicators: 
-#   99121: Health risk behaviours
 #   99123: Gender balance in organisations (for minority ethnic population)
 
-#   Indicator 99117 (Young peoples mental wellbeing) was previously produced here, but as this is sourced from the SHeS, and hasn't been updated in the NPF data file, we're
-#   now producing it with other SHeS indicators: starting with extraction of the microdata in the ScotPHO_survey_data repo, and then finishing the processing in this repo.
 
 # Data source is the National Performance Framework open data on statistics.gov.scot
 # 2024 update (August 2024): https://statistics.gov.scot/downloads/file?id=ca23e4da-4aa2-49e7-96e2-38f227f9d0de%2FALL+NPF+INDICATORS+-+2024+-+statistics.gov.scot+NPF+database+excel+file+-+August+2024.xlsx
-# (N.B. THERE ARE OTHER SCOTPHO INDICATORS IN THIS FILE THAT COULD BE USED TO DE-DUPLICATE OTHER SCRIPTS. NOT READ IN CURRENTLY.)
-# (N.B.2 THE DATA AREN'T CONSISTENTLY PRESENTED IN THIS FILE, SO ADD NEW INDICATORS WITH CARE)
-
-
 
 ### Functions/packages ----
 source("functions/main_analysis.R") # for packages and QA
@@ -66,33 +58,13 @@ data <- dat %>%
   clean_names() %>% 
   
   # Select relevant indicators 
-  filter(indicator %in% c("Persistent poverty", 
-                          "Health risk behaviours",
+  filter(indicator %in% c( 
                           "Gender balance in organisations",
                         # Sourced from elsewhere now:  
                           # "Child material deprivation", "Children's material deprivation", # now source direct from stats.gov (see Child Poverty.R script) as more disaggregated there
                           # "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
-                        # Additional CWB indicators available:
-                          "Access to green and blue space",
-                          "Healthy Start", #perinatal mort
-                          "Employees on the Living wage", "Employees on the living wage",
-                          "Places to interact",
-                          "Satisfaction with housing", "Satisfaction with Housing",
-                          "Quality of public services",
-                          "Visits to the outdoors", "Visits to the Outdoors",
-                          "Work place learning",
-                          "Contractually secure work"
-                        # Other ScotPHO/CWB indicators that could be read in from this file:
-                          # "Educational attainment 7", # school leaver attainment (other educ attainment vars too)
-                          # "Child social and physical development",
-                          # "Food Insecurity",
-                          # "Healthy life expectancy - Female",                         
-                          # "Healthy life expectancy - Male",
-                          # "Healthy life expectancy: Females",                         
-                          # "Healthy life expectancy: Males",
-                          # "Healthy weight - Adult",
-                          # "Influence over local decisions", "Loneliness", "Mental wellbeing", "Pay gap", 
-                          # "Perceptions of local area", "Physical activity", "Premature mortality", "Unmanageable debt", "Young peoples participation"
+                          # "Health risk behaviours",
+                          # "Persistent poverty"
                       )) %>%
 
   # Convert indicator names to lower case and add underscore 
@@ -170,7 +142,7 @@ data <- dat %>%
   
   # Add indicator ids
   mutate(ind_id = case_when(#indicator == "persistent_poverty" ~ 99116, # subsequently split out child poverty into ind_id 30155
-                            indicator == "health_risk_behaviours" ~ 99121,
+                            #indicator == "health_risk_behaviours" ~ 99121,
                             indicator == "gender_balance_in_organisations" ~ 99123
                             # Uncomment once these CWB indicators have IDs and are added to techdoc (will be NA currently):
                             # indicator == "contractually_secure_work" ~ xxxxx,
@@ -365,9 +337,6 @@ prepare_final_files <- function(ind, agerange=NULL){
 # Create final files and run QA reports ----
 
 
-# Indicator  99121: Health risk behaviours ----
-prepare_final_files(ind = "health_risk_behaviours", agerange="16+")
-
 # Indicator 99123: Gender balance in organisations (for minority ethnic population)
 prepare_final_files(ind = "gender_balance_in_organisations", agerange="16+")
 
@@ -376,13 +345,10 @@ prepare_final_files(ind = "gender_balance_in_organisations", agerange="16+")
 
 
 ###  Run QA reports ----
-run_qa(type = "main", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "main", filename = "gender_balance_in_organisations", test_file = FALSE)
 
-run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "deprivation", filename = "gender_balance_in_organisations", test_file = FALSE)
  
-run_qa(type = "popgrp", filename = "health_risk_behaviours", test_file = FALSE)
 run_qa(type = "popgrp", filename = "gender_balance_in_organisations", test_file = FALSE)
 
 
