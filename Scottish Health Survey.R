@@ -391,17 +391,18 @@ source_comparison %>%
   facet_wrap(~indicator)
 # SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
 # THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
-# some of our indicators for children's PA exclude some ages (2-4y) in the original data (children participating in sport, children very low activity) so the whole pop averages will be different
+# BIGGEST DISCREPANCIES = children participating in sport & children very low activity. These opt to exclude some ages (2-4y) that are present in the original data, so the whole pop averages will be different
 table(source_comparison$indicator, source_comparison$rate_diff)
-# of 19,454 rates we can compare: 
-# 450 (2%) are from the 2 child PA indicators with different age groups, 
-table(source_comparison$indicator[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
-# of remaining 19,004
-# 18507 (97%) are identical
-# 466 (2% are 1%pt either side)
-# biggest diffs are 4%pts lower and higher: fruitveg consumption and problem drinker
+# approx 2% of these comparisons are from the 2 child PA indicators with different age groups, 
 table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
-
+table(source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
+# of remaining 17,762
+# 17,299 (97%) are identical
+# 451 (3% are 1%pt either side)
+# biggest diffs are 4%pts lower and higher: fruitveg consumption (30013) and problem drinker (4171)
+table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
+table(source_comparison$trend_axis[source_comparison$ind_id %in% c(30013, 4171)], source_comparison$rate_diff[source_comparison$ind_id %in% c(30013, 4171)])
+# most concerned about problem drinkers in 2023: 1 at -2 and 7 at -1%pt. self-completion adjustment... try other weight instead?
 
 # Key points about the two sources:
 ## Aggregated UKDS data start from 2008-11, while the aggregated dashboard data starts at 2012-15. 
