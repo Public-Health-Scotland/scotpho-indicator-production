@@ -172,23 +172,19 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
                                str_detect(measure, "Sample") ~ "denominator")) %>%
 
     # fix the data
-    mutate(across(-c(split_value, measure), ~as.numeric(.))) %>% # break in series ([b]) replaced with NA
-    pivot_longer(-c(split_value, measure), names_to = "trend_axis", values_to = "value") %>%
-    pivot_wider(names_from = measure, values_from = value) %>%
+    mutate(across(-c(split_value), ~100*as.numeric(.))) %>% # convert proportions to percentages; break in series replaced with NA
+    pivot_longer(-c(split_value), names_to = "trend_axis", values_to = "rate") %>%
+    # opted not to back-calculate numerators and CIs from the denominator as the numerator would be numerator x weights, and the CIs wouldn't account for complex survey design (would be too narrow)
     
-    mutate(rate = rate * 100, # excel's % formatting saves it as rate/100
-           numerator = round(denominator * rate / 100),
-           # confidence intervals
-           ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method.
-           lowci = rate - ci_wald,
-           upci = rate + ci_wald ) %>%
-  
     # create new columns required for the dashboard
     mutate(ind_id = ind_num,
-            indicator = ind_name,
-            split_name = split_name,
-            code = "S00000001", #all are Scotland
-            year = as.numeric(substr(trend_axis, 1, 4)) + 1) %>% # 3 year average, so find mid point
+           indicator = ind_name,
+           split_name = split_name,
+           code = "S00000001", #all are Scotland
+           numerator = as.numeric(NA), # insert NA columns where required
+           lowci = as.numeric(NA),
+           upci = as.numeric(NA),
+           year = as.numeric(substr(trend_axis, 1, 4)) + 1) %>% # 3 year average, so find mid point
     mutate(split_value = ifelse(split_value=="All", "Total", split_value)) 
 
   }
