@@ -48,11 +48,10 @@ get_pers_pov_data <- function(tab) {
   rate_and_count <- rate %>%
     merge(y = count, by = "trend_axis") %>%
     mutate(rate = rate * 100, # spreaddsheet's % formatting saves it as rate/100
-           numerator = round(denominator * rate / 100),
-           # confidence intervals
-           ci_wald = 100 * (1.96*sqrt(((rate/100)*(1-(rate/100)))/denominator)), # Wald method.
-           lowci = rate - ci_wald,
-           upci = rate + ci_wald,
+           # opted not to back-calculate numerators and CIs from the denominator as the numerator would be numerator x weights, and the CIs wouldn't account for complex survey design (would be too narrow)
+           numerator = as.numeric(NA), # insert NA columns where required
+           lowci = as.numeric(NA),
+           upci = as.numeric(NA),
            indicator = "people_persistent_poverty",
            ind_id = 99116)
   
@@ -98,6 +97,13 @@ pers_pov2 <- pers_pov %>%
          split_name = "Total",
          split_value = "Total") %>%
   rbind(pers_pov)
+
+
+# get sort order right for split_values:
+pers_pov2 <- pers_pov2 %>%
+  mutate(split_value = factor(split_value,
+                              levels = c("Total", "Children", "Working age", "Pensioners"),
+                              labels = c("Total", "Children", "Working-age adults", "Pension-age adults")))
 
 ##########################################################
 ### 3. Prepare final files -----
@@ -155,8 +161,8 @@ prepare_final_files(ind = "children_persistent_poverty")
 # Run QA reports
 ####################
 
-run_qa(type = "main", filename = "people_persistent_poverty", test_file = FALSE) 
-run_qa(type = "main", filename = "children_persistent_poverty", test_file = FALSE) 
+run_qa(type = "main", filename = "people_persistent_poverty", test_file = FALSE) # check 5 looks odd cos no CIs
+run_qa(type = "main", filename = "children_persistent_poverty", test_file = FALSE) # check 5 looks odd cos no CIs
 
 run_qa(type = "popgrp", filename = "people_persistent_poverty", test_file = FALSE)
 
