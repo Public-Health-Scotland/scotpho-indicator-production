@@ -31,7 +31,7 @@ pupil_census_folder <- file.path(profiles_data_folder, "Received Data", "School 
 
 # read in data from the 2 sheets containing 
 # data on number of primary and secondary pupils 
-data <- rio::import_list(file = file.path(pupil_census_folder, "Pupil+census+supplementary+statistics+2024+-+March (1).xlsx"), 
+data <- rio::import_list(file = file.path(pupil_census_folder, "Pupil+census+supplementary+statistics+2025+-+March.xlsx"), 
                          which = c("Table 6.2", "Table 7.2"), 
                          rbind = TRUE, 
                          rbind_label = "sheet", 
@@ -107,12 +107,12 @@ saveRDS(data$secondary, file.path(profiles_data_folder, "Prepared Data", "13108_
 
 # analyse and prepare final file for primary pupils indicator  
 main_analysis(filename = "13107_primary_pupils", geography = "council", measure = "percent", yearstart = 2002,
-              yearend = 2024, time_agg = 1, year_type = "calendar", ind_id = 13107)
+              yearend = 2025, time_agg = 1, year_type = "calendar", ind_id = 13107)
 
 
 # analyse and prepare final file for secondary pupils indicator 
 main_analysis(filename = "13108_secondary_pupils", geography = "council", measure = "percent", yearstart = 2002,
-              yearend = 2024, time_agg = 1, year_type = "calendar", ind_id = 13108)
+              yearend = 2025, time_agg = 1, year_type = "calendar", ind_id = 13108)
 
 
 ## END
