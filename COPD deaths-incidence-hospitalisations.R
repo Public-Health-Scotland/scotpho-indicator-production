@@ -30,7 +30,7 @@ copd_deaths <- as_tibble(dbGetQuery(channel, statement=
           THEN extract(year from date_of_registration) 
           ELSE extract(year from date_of_registration) -1 END as finyear 
    FROM ANALYSIS.GRO_DEATHS_C
-   WHERE date_of_registration between '1 January 2002' and '31 March 2025'
+   WHERE date_of_registration between '1 January 2002' and '31 March 2026'
       AND sex <> 9 
       AND age>=16 
       AND country_of_residence= 'XS'
@@ -39,7 +39,7 @@ copd_deaths <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing datazones and LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_1.rds') %>% 
   setNames(tolower(names(.))) %>%   #variables to lower case
   select(pc7, datazone2001, datazone2011, ca2019)
 
@@ -156,7 +156,7 @@ saveRDS(copd_incidence, file.path(profiles_data_folder, 'Prepared Data/copd_inci
 ###############################################.
 #COPD deaths
 main_analysis(filename = "copd_deaths", geography = "council", measure = "stdrate",
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2024, year_type = "calendar",
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2025, year_type = "calendar",
               ind_id = 1547, time_agg = 3, epop_total = 165800, epop_age = "16+")
 
 ###############################################.
