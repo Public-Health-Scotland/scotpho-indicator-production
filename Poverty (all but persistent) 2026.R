@@ -76,9 +76,9 @@ library(readxl) # to read in excel spreadsheets
 
 # the downloaded spreadsheets:
 data_folder = paste0(profiles_data_folder, "/Received Data/Poverty - absolute and relative/")
-pov_3y <- paste0(data_folder, "data2026.ods")
 pov_CIs <- paste0(data_folder, "2026_Confidence_intervals_3yr.ods")
 pov_adult <- paste0(data_folder, "Copy of alladults_analysis2.xlsx") # from Gillian Diggins in SG; Gillian.Diggins@gov.scot and social-justice-analysis@gov.scot
+pov_3y <- paste0(data_folder, "data2026.ods")
 
 
 # Function to get pov rates when provided with CIs: 
@@ -115,27 +115,6 @@ get_rows_from_CIs_file <- function(filename, filetype, tab, range ) {
            split_name = "Total",
            split_value = "Total") 
 }
-
-# Child relative poverty
-children_relpov_ahc <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="1", range="A13:AD16") %>%
-  mutate(ind_id = 30152, 
-         indicator = "child_rel_pov_ahc")
-  
-# Child absolute poverty
-children_abspov_ahc <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="3", range="A14:AD17") %>%
-  mutate(ind_id = 30153, 
-         indicator = "child_abs_pov_ahc")
-
-# Adult relative poverty
-adult_rel_pov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A7:AD10")  %>% 
-  mutate(ind_id=30031, 
-         indicator="adult_rel_pov_ahc")
-
-# Adult absolute poverty
-adult_abs_pov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A15:AD18")  %>% 
-  mutate(ind_id=30035, 
-         indicator="adult_abs_pov_ahc")
-
 
 
 ### OTHER RELATIVE POVERTY SPLITS ###
@@ -180,58 +159,58 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
 
   }
 
+# Child relative poverty
+cyp_relpov <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="1", range="A13:AD16") %>%
+  mutate(ind_id = 30152, 
+         indicator = "cyp-relative-poverty")
 
-### Get splits for relative poverty (AHC)
+# Child absolute poverty
+cyp_abspov <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="3", range="A14:AD17") %>%
+  mutate(ind_id = 30153, 
+         indicator = "cyp-absolute-poverty")
 
-# ### overall rel poverty (given new ind_id 99990)
-# NOT USING AT PRESENT: REVISIT IN FUTURE
-# overall_urbrur <- get_splits_from_pov_3y_file(tab="16", names_row=9, split_name="Urban-rural classification", 
-#                                               text_to_keep="All|Urban|Rural", ind_num=99990, ind_name="rel_pov_ahc")
-# 
-# overall_simd <- get_splits_from_pov_3y_file(tab="17", names_row=7, split_name="SIMD decile", 
-#                                             text_to_keep="All|[1-9]", ind_num=99990, ind_name="rel_pov_ahc")
-# 
-# overall_tenure <- get_splits_from_pov_3y_file(tab="15", names_row=9, split_name="Housing tenure", 
-#                                               text_to_keep="All|Own|Buy|Rent", ind_num=99990, ind_name="rel_pov_ahc")
-# 
-# overall_disabled <- get_splits_from_pov_3y_file(tab="11", names_row=11, split_name="Disabled person(s) in household", 
-#                                                 text_to_keep="All|person", ind_num=99990, ind_name="rel_pov_ahc") %>%
-#   mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
-#                                  str_detect(split_value, "with disabled") ~ "Yes",
-#                                  TRUE ~ split_value))
-  
-### child rel poverty splits (ind_id 30152)
-children_disabled <- get_splits_from_pov_3y_file(tab="27", names_row=11, split_name="Disabled person(s) in household", 
-                                                 text_to_keep="All|person", ind_num=30152, ind_name="child_rel_pov_ahc") %>%
+# Adult relative poverty
+adult_relpov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A7:AD10")  %>% 
+  mutate(ind_id=30031, 
+         indicator="adult-relative-poverty")
+
+# Adult absolute poverty
+adult_abspov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A15:AD18")  %>% 
+  mutate(ind_id=30035, 
+         indicator="adult-absolute-poverty")
+
+# Other splits for child relative poverty:
+cyp_disabled <- get_splits_from_pov_3y_file(tab="27", names_row=11, split_name="Disabled person(s) in household", 
+                                                 text_to_keep="All|person", ind_num=30152, ind_name="cyp-relative-poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "with disabled") ~ "Yes",
                                  TRUE ~ split_value))
 
-children_age <- get_splits_from_pov_3y_file(tab="20", names_row=8, split_name="Child age group (years)", 
-                                            text_to_keep="All|[1-9]", ind_num=30152, ind_name="child_rel_pov_ahc") 
+cyp_age <- get_splits_from_pov_3y_file(tab="20", names_row=8, split_name="Child age group (years)", 
+                                            text_to_keep="All|[1-9]", ind_num=30152, ind_name="cyp-relative-poverty") 
 
-children_urbrur <- get_splits_from_pov_3y_file(tab="26", names_row=9, split_name="Urban-rural classification", 
-                                               text_to_keep="All|Urban|Rural", ind_num=30152, ind_name="child_rel_pov_ahc")
+cyp_urbrur <- get_splits_from_pov_3y_file(tab="26", names_row=9, split_name="Urban-rural classification", 
+                                               text_to_keep="All|Urban|Rural", ind_num=30152, ind_name="cyp-relative-poverty")
 
-children_inwork <- get_splits_from_pov_3y_file(tab="24", names_row=9, split_name="Someone in paid work", 
-                                               text_to_keep="All|work", ind_num=30152, ind_name="child_rel_pov_ahc") %>%
+cyp_inwork <- get_splits_from_pov_3y_file(tab="24", names_row=9, split_name="Someone in paid work", 
+                                               text_to_keep="All|work", ind_num=30152, ind_name="cyp-relative-poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "No") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "Someone") ~ "Yes",
                                  TRUE ~ split_value))
 
-children_tenure <- get_splits_from_pov_3y_file(tab="25", names_row=9, split_name="Housing tenure", 
-                                               text_to_keep="All|Own|Buy|Rent", ind_num=30152, ind_name="child_rel_pov_ahc")
+cyp_tenure <- get_splits_from_pov_3y_file(tab="25", names_row=9, split_name="Housing tenure", 
+                                               text_to_keep="All|Own|Buy|Rent", ind_num=30152, ind_name="cyp-relative-poverty")
 
-children_loneparent <- get_splits_from_pov_3y_file(tab="18", names_row=8, 
+cyp_loneparent <- get_splits_from_pov_3y_file(tab="18", names_row=8, 
                                                    split_name="Lone parent household", text_to_keep="All|parent", 
-                                                   ind_num=30152, ind_name="child_rel_pov_ahc") %>%
+                                                   ind_num=30152, ind_name="cyp-relative-poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "No") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "Single") ~ "Yes",
                                  TRUE ~ split_value))
 
 ### in-work rel poverty (ind_id=99147)
-in_work_pov_ahc <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name="Someone in paid work", 
-                                              text_to_keep="All|work", ind_num=99147, ind_name="in_work_pov_ahc") %>%
+in_work_poverty <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name="Someone in paid work", 
+                                              text_to_keep="All|work", ind_num=99147, ind_name="in-work-poverty") %>%
   filter(str_detect(split_value, "Someone")) %>% # keep those where someone in the household is in work
   mutate(split_value = "Total", # no splits in this file
          split_name = "Total") 
@@ -239,10 +218,10 @@ in_work_pov_ahc <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name
 # Children's combined low income and material deprivation:
 # The definition of child material deprivation changed in 2010/11 and in 2023/24, creating breaks in the time series. 
 # Please consult the single year workbook and methodological notes for the one year estimates.
-children_lowinc_matdep <- get_splits_from_pov_3y_file(tab="7", names_row=9, split_name="Total", 
-                                               text_to_keep="After|after", ind_num=30154, ind_name="children_lowinc_matdep")
+cyp_lowincome_matdep <- get_splits_from_pov_3y_file(tab="7", names_row=9, split_name="Total", 
+                                               text_to_keep="After|after", ind_num=30154, ind_name="cyp-combined-low-income-and-material-deprivation")
 
-children_lowinc_matdep <- children_lowinc_matdep %>%
+cyp_lowincome_matdep <- cyp_lowincome_matdep %>%
   group_by(trend_axis) %>%
   arrange(rate, .by_group=TRUE) %>% # there's only a single rate for each trend_axis: this brings the single rate to the top of the group...
   filter(row_number()==1) %>%  # then just keeps that row. Will keep NA if there's no data for that trend_axis
@@ -252,10 +231,10 @@ children_lowinc_matdep <- children_lowinc_matdep %>%
 
 
 # combine the data:
-pov_file <- mget(ls(pattern = "^adult|children|work|_ahc"), .GlobalEnv) %>% # finds all the dataframes processed above
+pov_file <- mget(ls(pattern = "^adult|cyp|work"), .GlobalEnv) %>% # finds all the dataframes processed above
   bind_rows() %>%
   mutate(sex=NA) 
-rm(list=ls(pattern="^adult|children|work|_ahc"))
+rm(list=ls(pattern="^adult|cyp|work"))
 
 
 # get sort order right for split_values:
@@ -282,12 +261,6 @@ pov_file <- pov_file %>%
                              str_sub(as.character(start_year+3), 3, 4)),
          def_period = paste0(trend_axis, " (aggregated financial years)")) %>%
   select(-start_year)
-
-
-
-# # save intermediate df:
-# arrow::write_parquet(pov_file, paste0(data_folder, "pov_file.parquet"))
-# pov_file <- arrow::read_parquet(paste0(data_folder, "pov_file.parquet")) 
 
 
 
@@ -321,7 +294,7 @@ prepare_final_files <- function(ind) {
 
   # 2 - population groups data (ie data behind population groups tab)
   # NB only applies to child rel pov:
-  if(ind %in% c("child_rel_pov_ahc")) {
+  if(ind %in% c("cyp-relative-poverty")) {
       
       pop_grp_data <- pov_file %>% 
         filter(indicator == ind & !(split_name %in% c("Total"))) %>% 
@@ -341,21 +314,20 @@ prepare_final_files <- function(ind) {
 
 
 # Run function to create final files
-prepare_final_files(ind = "adult_abs_pov_ahc")
-prepare_final_files(ind = "adult_rel_pov_ahc")
-prepare_final_files(ind = "child_rel_pov_ahc")
-prepare_final_files(ind = "child_abs_pov_ahc")
-prepare_final_files(ind = "children_lowinc_matdep")
-prepare_final_files(ind = "in_work_pov_ahc")
+prepare_final_files(ind = "adult-absolute-poverty")
+prepare_final_files(ind = "adult-relative-poverty")
+prepare_final_files(ind = "cyp-relative-poverty")
+prepare_final_files(ind = "cyp-absolute-poverty")
+prepare_final_files(ind = "cyp-combined-low-income-and-material-deprivation")
+prepare_final_files(ind = "in-work-poverty")
 
-                                 
 # # Run QA reports 
-run_qa(type = "main", filename = "adult_abs_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "adult_rel_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "child_rel_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "child_abs_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "children_lowinc_matdep", test_file = FALSE) # no CIs
-run_qa(type = "main", filename = "in_work_pov_ahc", test_file = FALSE) # no CIs
+run_qa(type = "main", filename = "adult-absolute-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "adult-relative-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp-relative-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp-absolute-poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp-combined-low-income-and-material-deprivation", test_file = FALSE) # no CIs
+run_qa(type = "main", filename = "in-work-poverty", test_file = FALSE) # no CIs
 
-run_qa(type = "popgrp", filename = "child_rel_pov_ahc", test_file = FALSE) #no CIs
+run_qa(type = "popgrp", filename = "cyp-relative-poverty", test_file = FALSE) #no CIs
 
