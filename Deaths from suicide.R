@@ -49,7 +49,7 @@ deaths_suicide <- as_tibble(dbGetQuery(channel, statement=
 
 # Bringing LA and datazone info. (as not all records have datazone info attached initially)
 # latest postcode directory from lookups folder
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') %>% 
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_1.rds') %>% 
   setNames(tolower(names(.)))  #variables to lower case
 
 
@@ -173,11 +173,9 @@ main_analysis(filename = "suicides_16plus_ca", ind_id = 30008, geography = "coun
 
 
 # deprivation analysis function
-# can only go up to 2023 until 2024 SAPE populations are released
 deprivation_analysis(filename="suicides_16plus_depr", measure="stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 165800, epop_age = "16+",
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "all")
-
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 30008, pop_sex = "all")
 
 
 ###############################################.
@@ -196,7 +194,7 @@ main_analysis(filename = "suicides_16plus_F_ca", ind_id = 30008, geography = "co
 # generating data to allow assessment for suitability to publish
 deprivation_analysis(filename = "suicides_16plus_F_depr", measure = "stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 82900, epop_age = "16+",
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "female", QA=FALSE)
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 30008, pop_sex = "female", QA=FALSE)
 
 ###############################################.
 
@@ -213,7 +211,7 @@ main_analysis(filename = "suicides_16plus_M_ca", ind_id = 30008, geography = "co
 # generating data to allow assessment for suitability to publish
 deprivation_analysis(filename = "suicides_16plus_M_depr", measure = "stdrate", time_agg = 5,
                      pop_age = c(16, 150), epop_total = 82900, epop_age = "16+",
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 30008, pop_sex = "male", QA=FALSE)
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 30008, pop_sex = "male", QA=FALSE)
 
 
 
@@ -229,7 +227,7 @@ main_analysis(filename = "suicides_young", ind_id = 13033, geography = "council"
 # deprivation analysis function
 deprivation_analysis(filename = "suicides_young_depr", measure = "crude", time_agg = 5,
                      pop_age = c(11, 25), crude_rate = 100000,
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 13033, pop_sex = "all")
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 13033, pop_sex = "all")
 
 ###############################################.
 # Young persons - Female
@@ -243,7 +241,7 @@ deprivation_analysis(filename = "suicides_young_depr", measure = "crude", time_a
 # deprivation analysis function
 deprivation_analysis(filename = "suicides_young_F_depr", measure = "crude", time_agg = 5,
                      pop_age = c(11, 25), crude_rate = 100000,
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 13033, pop_sex = "female")
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 13033, pop_sex = "female", QA=FALSE)
 
 ###############################################.
 # Young persons - Male
@@ -256,7 +254,7 @@ deprivation_analysis(filename = "suicides_young_F_depr", measure = "crude", time
 # deprivation analysis function
 deprivation_analysis(filename = "suicides_young_M_depr", measure = "crude", time_agg = 5,
                      pop_age = c(11, 25), crude_rate = 100000,
-                     yearstart = 2002, yearend = 2023, year_type = "calendar", ind_id = 13033, pop_sex = "male")
+                     yearstart = 2002, yearend = 2024, year_type = "calendar", ind_id = 13033, pop_sex = "male", QA=FALSE)
 
 
 
