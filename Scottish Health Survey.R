@@ -718,8 +718,8 @@ run_qa(type = "deprivation", filename = "children_very_low_activity", test_file 
 run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE) # Scot + Police Depts (WHY?)
-run_qa(type = "deprivation", filename = "cyp_llti", test_file = FALSE) # Scot + Police Depts (WHY?)
+run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "cyp_llti", test_file = FALSE) 
 
 # (b) smaller sample indicators (Scotland only)
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)   
