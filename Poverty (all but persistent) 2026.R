@@ -3,14 +3,15 @@
 #########################################################
 
 ### Update ScotPHO poverty indicators 
-### Author: Liz Richardson, August 2026
-### Script to read in 2026 ods data published by SG. From 2027 we'll use data extracted from data.gov.scot.
+### Author: Liz Richardson, Sept 2026
+### Script to read in 2026 ods data published by SG (plus additional xlsx they provided us with). 
+### From 2027 we'll use data extracted from data.gov.scot.
 
 
 
 # Indicators:
 
-# Previously prepared in script "Poverty (child absolute relative and persistent).R" (NB persistent poverty wasn't in that script despite being in title: this is still prepared in the script "Persistent poverty.R")
+# Previously prepared in script "Poverty (child absolute relative and persistent).R" (NB persistent poverty wasn't in that script despite being in title: this is still prepared in the script "Poverty (persistent).R")
 # 30152 = Percentage of 'dependent children' living in relative poverty (after housing costs). Relative poverty is defined as living in households whose equivalised income is below 60% of UK median income in the same year.
 # 30153 = Percentage of 'dependent children' living in absolute poverty (after housing costs). Absolute poverty is defined as living in households whose equivalised income is below 60% of the (inflation adjusted) Great Britain median income in 2010/11. 
 # 30154 = Percentage of 'dependent children' in combined material deprivation and low income after housing costs (below 70% of UK median income).
@@ -18,19 +19,16 @@
 # Previously prepared in "Poverty (in work).R"
 # 99147 = In-work poverty: % of working age adults (16-64 years) living in households in relative poverty AHC where someone in the household is in paid work
 
-# Previously prepared in script "Poverty (absolute and relative).R", and data not updated since 2025
-# 30035 = LAST PUBLISHED 2025 - absolute poverty = Percentage of adults living in households whose income is below 60% of the inflation-adusted UK median income in 2010/11, AHC. 
-# 30031 = LAST PUBLISHED 2025 - relative poverty = Percentage of adults living in private households with an equivalised income of less than 60% of the UK median income in the same year, after housing costs
-
-# New indicators proposed here (/thinking about): (given that adult poverty 30035 and 30031 aren't presented anymore)
-# 99990 Relative poverty AHC, overall and by age groups
-# 99991 Absolute poverty AHC, overall and by age groups
+# Previously prepared in script "Poverty (adult absolute and relative).R"
+# 30035 = absolute adult poverty = Percentage of adults living in households whose income is below 60% of the inflation-adusted UK median income in 2010/11, AHC. 
+# 30031 = relative adult poverty = Percentage of adults living in private households with an equivalised income of less than 60% of the UK median income in the same year, after housing costs
 
 
 ### Notes on the data source:
-# NEW SOURCE FROM 2026:
+# NEW SOURCE FOR 2026:
 # SOURCE: https://www.gov.scot/publications/poverty-and-income-inequality-in-scotland-2022-25/documents/
 # National Statistics of the number and proportions of people living in private households with an equivalised household income below various poverty thresholds. 
+# FROM 2027 WE SHOULD BE ABEL TO DOWNLOAD DIRECT FROM DATA.GOV.SCOT SO THIS SCRIPT WILL CHANGE
 
 ### Definitions:
 # Relative poverty: Individuals living in households whose equivalised income is below 60% of UK median income in the same year. 
@@ -72,6 +70,7 @@
 ### functions/packages -----
 source("functions/main_analysis.R") #Normal indicator functions
 library(readODS) # for reading in ods files (open source spreadsheets)
+library(readxl) # to read in excel spreadsheets
 
 ### 1. Read in data ----
 
@@ -79,72 +78,64 @@ library(readODS) # for reading in ods files (open source spreadsheets)
 data_folder = paste0(profiles_data_folder, "/Received Data/Poverty - absolute and relative/")
 pov_3y <- paste0(data_folder, "data2026.ods")
 pov_CIs <- paste0(data_folder, "2026_Confidence_intervals_3yr.ods")
-pov_adult <- paste0(data_folder, "SG_poverty_alladults_analysis.xlsx")
+pov_adult <- paste0(data_folder, "Copy of alladults_analysis2.xlsx") # from Gillian Diggins in SG; Gillian.Diggins@gov.scot and social-justice-analysis@gov.scot
 
 
-# REL/ABS POVERTY X AGE GROUP SPLITS
-# Function to get headline pov rates and CIs 
-get_data_from_pov_CIs_file <- function(tab, names_row, ind_num, ind_name) {
+# Function to get pov rates when provided with CIs: 
+get_rows_from_CIs_file <- function(filename, filetype, tab, range ) {
   
-  df <- read_ods(pov_CIs, sheet = tab, skip=2) %>% # skip 2 so we read in the first blank line as the column headings, so that we know what the cols will be called whichever tab is read in
+  if(filetype=="ods") {
+    df <- read_ods(path=filename, sheet = tab, range = range) 
+  } else {
+    df <- read_xlsx(path=filename, sheet = tab, range = range)
+  }
+  
+  names(df) <- c("measure", names(df)[2:length(names(df))]) # ensures first column has standard name
+  
+  df <- df %>%
     
-    # population group headings
-    mutate(split_value = ifelse(str_detect(...1, "Rate"), ...1, NA)) %>% # puts the sub-headings into a new column at the end (all contain "Rate")...
-    fill(split_value) %>% # ... then apply the heading to all rows in that part (i.e., until the next heading is encountered)
-    
-    # column names
-    row_to_names(row_number = names_row-3) %>% # now can apply the correct col headings...
-    rename(split_value = names(.)[ncol(.)] ) %>% # ... but need to fix the last column back to "split_value"
-    
-    # recode the measures (rate, lowci or upci)
-    filter(!str_detect(level, "level|Rate" )) %>% # now can drop any rows with "level" or "rate" in them (these contain no data)
-    mutate(level = case_when(str_detect(level, "Central") ~ "rate", 
-                             str_detect(level, "Lower") ~ "lowci",
-                             str_detect(level, "Upper") ~ "upci",
+    # rename the measures (rate, lowci or upci)
+    mutate(measure = case_when(str_detect(measure, "Central|All") ~ "rate", 
+                             str_detect(measure, "Lower") ~ "lowci",
+                             str_detect(measure, "Upper") ~ "upci",
                                         )) %>%
-    rename(measure = level) %>%
-    
-    # recode the population groups
-    mutate(split_value = case_when(str_detect(split_value, "people") ~ "Total", 
-                             str_detect(split_value, "children") ~ "Children",
-                             str_detect(split_value, "working-age adults") ~ "Working-age adults",
-                             str_detect(split_value, "pensioners") ~ "Pension-age adults")) %>%
-    
+
     # fix the data
-    mutate(across(everything(), ~str_replace(., "[b]", "NA"))) %>% # [b] is the break in the data (the break will be noted in techdoc), so replace with NA
-    mutate(across(-c(measure, split_value), ~100*as.numeric(.))) %>% # convert proportions to percentages
+    mutate(across(everything(), ~str_replace(., "^[b]", "NA"))) %>% # [b] is the break in the data (the break will be noted in techdoc), so replace with NA
+    mutate(across(-measure, ~100*as.numeric(.))) %>% # convert proportions to percentages
     
     # get years into a column, and measures into columns
-    pivot_longer(-c(measure, split_value), names_to = "trend_axis", values_to = "value") %>%
+    pivot_longer(-measure, names_to = "trend_axis", values_to = "value") %>%
     pivot_wider(names_from=measure, values_from = value) %>%
     
     # create new columns required for the dashboard
-    mutate(ind_id = ind_num,
-           indicator = ind_name,
-           split_name = "Age group",
-           code = "S00000001", #all are Scotland
+    mutate(code = "S00000001", #all are Scotland
            numerator = as.numeric(NA), # insert column where numerator would ordinarily be 
-           year = as.numeric(substr(trend_axis, 1, 4)) + 1) # data are 3 year average, so find mid point
-    
+           year = as.numeric(substr(trend_axis, 1, 4)) + 1, # data are 3 year average, so find mid point
+           split_name = "Total",
+           split_value = "Total") 
 }
 
-# Tab 1 = Relative poverty
-rel_pov_ahc <- get_data_from_pov_CIs_file(tab="1", names_row=8, ind_num=99990, ind_name="rel_pov_ahc")
-children_relpov_ahc <- rel_pov_ahc %>%
-  filter(split_value == "Children") %>%
+# Child relative poverty
+children_relpov_ahc <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="1", range="A13:AD16") %>%
   mutate(ind_id = 30152, 
-         indicator = "child_rel_pov_ahc",
-         split_name = "Total",
-         split_value = "Total")
-
-# Tab 3 = Absolute poverty
-abs_pov_ahc <- get_data_from_pov_CIs_file(tab="3", names_row=9, ind_num=99991, ind_name="abs_pov_ahc")
-children_abspov_ahc <- abs_pov_ahc %>%
-  filter(split_value == "Children") %>%
+         indicator = "child_rel_pov_ahc")
+  
+# Child absolute poverty
+children_abspov_ahc <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="3", range="A14:AD17") %>%
   mutate(ind_id = 30153, 
-         indicator = "child_abs_pov_ahc",
-         split_name = "Total",
-         split_value = "Total")
+         indicator = "child_abs_pov_ahc")
+
+# Adult relative poverty
+adult_rel_pov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A7:AD10")  %>% 
+  mutate(ind_id=30031, 
+         indicator="adult_rel_pov_ahc")
+
+# Adult absolute poverty
+adult_abs_pov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A15:AD18")  %>% 
+  mutate(ind_id=30035, 
+         indicator="adult_abs_pov_ahc")
+
 
 
 ### OTHER RELATIVE POVERTY SPLITS ###
@@ -166,7 +157,7 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
     # keep the rows we want
     filter(!str_detect(split_value, "Group|Scotland" )) %>% #drop non-data rows
     filter(str_detect(split_value, text_to_keep)) %>% #keeps just the rows we want
-    filter(str_detect(measure, c("ate:|Sample"))) %>% #keep the rates only
+    filter(str_detect(measure, c("ate:"))) %>% #keep the rates only
     filter(!str_detect(measure, "Severe")) %>% #drop the severe poverty rates
     mutate(measure = case_when(str_detect(measure, "ate:") ~ "rate",
                                str_detect(measure, "Sample") ~ "denominator")) %>%
@@ -192,23 +183,24 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
 
 ### Get splits for relative poverty (AHC)
 
-### overall rel poverty (given new ind_id 99990)
-overall_urbrur <- get_splits_from_pov_3y_file(tab="16", names_row=9, split_name="Urban-rural classification", 
-                                              text_to_keep="All|Urban|Rural", ind_num=99990, ind_name="rel_pov_ahc")
-
-overall_simd <- get_splits_from_pov_3y_file(tab="17", names_row=7, split_name="SIMD decile", 
-                                            text_to_keep="All|[1-9]", ind_num=99990, ind_name="rel_pov_ahc")
-
-overall_tenure <- get_splits_from_pov_3y_file(tab="15", names_row=9, split_name="Housing tenure", 
-                                              text_to_keep="All|Own|Buy|Rent", ind_num=99990, ind_name="rel_pov_ahc")
-
-overall_disabled <- get_splits_from_pov_3y_file(tab="11", names_row=11, split_name="Disabled person(s) in household", 
-                                                text_to_keep="All|person", ind_num=99990, ind_name="rel_pov_ahc") %>%
-  mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
-                                 str_detect(split_value, "with disabled") ~ "Yes",
-                                 TRUE ~ split_value))
+# ### overall rel poverty (given new ind_id 99990)
+# NOT USING AT PRESENT: REVISIT IN FUTURE
+# overall_urbrur <- get_splits_from_pov_3y_file(tab="16", names_row=9, split_name="Urban-rural classification", 
+#                                               text_to_keep="All|Urban|Rural", ind_num=99990, ind_name="rel_pov_ahc")
+# 
+# overall_simd <- get_splits_from_pov_3y_file(tab="17", names_row=7, split_name="SIMD decile", 
+#                                             text_to_keep="All|[1-9]", ind_num=99990, ind_name="rel_pov_ahc")
+# 
+# overall_tenure <- get_splits_from_pov_3y_file(tab="15", names_row=9, split_name="Housing tenure", 
+#                                               text_to_keep="All|Own|Buy|Rent", ind_num=99990, ind_name="rel_pov_ahc")
+# 
+# overall_disabled <- get_splits_from_pov_3y_file(tab="11", names_row=11, split_name="Disabled person(s) in household", 
+#                                                 text_to_keep="All|person", ind_num=99990, ind_name="rel_pov_ahc") %>%
+#   mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
+#                                  str_detect(split_value, "with disabled") ~ "Yes",
+#                                  TRUE ~ split_value))
   
-### child rel poverty (existing ind_id 30152)
+### child rel poverty splits (ind_id 30152)
 children_disabled <- get_splits_from_pov_3y_file(tab="27", names_row=11, split_name="Disabled person(s) in household", 
                                                  text_to_keep="All|person", ind_num=30152, ind_name="child_rel_pov_ahc") %>%
   mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
@@ -247,9 +239,6 @@ in_work_pov_ahc <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name
 # Children's combined low income and material deprivation:
 # The definition of child material deprivation changed in 2010/11 and in 2023/24, creating breaks in the time series. 
 # Please consult the single year workbook and methodological notes for the one year estimates.
-# IS THERE A CASE FOR USING THE 1 YEAR DATA INSTEAD?
-# LOOK AT 1 YEAR DATA FOR THE HEADLINE POVERTY MEASURES - ABS AND REL BY POP GROUP - THOUGH THE SPLITS AREN'T AVAILABLE. 
-
 children_lowinc_matdep <- get_splits_from_pov_3y_file(tab="7", names_row=9, split_name="Total", 
                                                text_to_keep="After|after", ind_num=30154, ind_name="children_lowinc_matdep")
 
@@ -263,26 +252,25 @@ children_lowinc_matdep <- children_lowinc_matdep %>%
 
 
 # combine the data:
-pov_file <- mget(ls(pattern = "children|work|overall|_ahc"), .GlobalEnv) %>% # finds all the dataframes from the CI files
-  bind_rows(.) %>%
+pov_file <- mget(ls(pattern = "^adult|children|work|_ahc"), .GlobalEnv) %>% # finds all the dataframes processed above
+  bind_rows() %>%
   mutate(sex=NA) 
-rm(list=ls(pattern="children|work|overall|_ahc"))
+rm(list=ls(pattern="^adult|children|work|_ahc"))
+
 
 # get sort order right for split_values:
 pov_file <- pov_file %>%
   mutate(split_value = factor(split_value,
-                              levels = c("Total", "Children", "Working-age adults", "Pension-age adults",
+                              levels = c("Total", 
                                          "0-4", "5-12", "13-19",
                                          "No", "Yes",
                                          "Owned outright", "Buying with a mortgage", "Rented from council or housing association", "Rented privately",
-                                         "Urban", "Rural",
-                                         "1 - Most deprived", "2", "3","4", "5", "6","7","8","9","10 - Least deprived"),
-                              labels = c("Total", "Children", "Working-age adults", "Pension-age adults",
+                                         "Urban", "Rural"),
+                              labels = c("Total", 
                                          "0-4", "5-12", "13-19",
                                          "No", "Yes",
                                          "Owned outright", "Buying with a mortgage", "Rented from council or housing association", "Rented privately",
-                                         "Urban", "Rural",
-                                         "1 - Most deprived", "2", "3","4", "5", "6","7","8","9","10 - Least deprived")))
+                                         "Urban", "Rural")))
 
 # get trend_axis labels right:
 # current format 2019-22 but these are aggregated financial years, so need to be 2019/20-2021/22
@@ -332,8 +320,8 @@ prepare_final_files <- function(ind) {
   assign(paste0("main_", ind), main_data, envir=.GlobalEnv)
 
   # 2 - population groups data (ie data behind population groups tab)
-  # NB only applies to these 3 indicators:
-  if(ind %in% c("abs_pov_ahc", "rel_pov_ahc", "child_rel_pov_ahc")) {
+  # NB only applies to child rel pov:
+  if(ind %in% c("child_rel_pov_ahc")) {
       
       pop_grp_data <- pov_file %>% 
         filter(indicator == ind & !(split_name %in% c("Total"))) %>% 
@@ -353,8 +341,8 @@ prepare_final_files <- function(ind) {
 
 
 # Run function to create final files
-prepare_final_files(ind = "abs_pov_ahc")
-prepare_final_files(ind = "rel_pov_ahc")
+prepare_final_files(ind = "adult_abs_pov_ahc")
+prepare_final_files(ind = "adult_rel_pov_ahc")
 prepare_final_files(ind = "child_rel_pov_ahc")
 prepare_final_files(ind = "child_abs_pov_ahc")
 prepare_final_files(ind = "children_lowinc_matdep")
@@ -362,14 +350,12 @@ prepare_final_files(ind = "in_work_pov_ahc")
 
                                  
 # # Run QA reports 
-run_qa(type = "main", filename = "abs_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "rel_pov_ahc", test_file = FALSE)
+run_qa(type = "main", filename = "adult_abs_pov_ahc", test_file = FALSE)
+run_qa(type = "main", filename = "adult_rel_pov_ahc", test_file = FALSE)
 run_qa(type = "main", filename = "child_rel_pov_ahc", test_file = FALSE)
 run_qa(type = "main", filename = "child_abs_pov_ahc", test_file = FALSE)
-run_qa(type = "main", filename = "children_lowinc_matdep", test_file = FALSE)
-run_qa(type = "main", filename = "in_work_pov_ahc", test_file = FALSE)
+run_qa(type = "main", filename = "children_lowinc_matdep", test_file = FALSE) # no CIs
+run_qa(type = "main", filename = "in_work_pov_ahc", test_file = FALSE) # no CIs
 
-run_qa(type = "popgrp", filename = "abs_pov_ahc", test_file = FALSE)
-run_qa(type = "popgrp", filename = "rel_pov_ahc", test_file = FALSE)
-run_qa(type = "popgrp", filename = "child_rel_pov_ahc", test_file = FALSE)
+run_qa(type = "popgrp", filename = "child_rel_pov_ahc", test_file = FALSE) #no CIs
 
