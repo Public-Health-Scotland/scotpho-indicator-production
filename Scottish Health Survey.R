@@ -396,13 +396,13 @@ table(source_comparison$indicator, source_comparison$rate_diff)
 # approx 2% of these comparisons are from the 2 child PA indicators with different age groups, 
 table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
 table(source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
-# of remaining 17,762
-# 17,299 (97%) are identical
-# 451 (3% are 1%pt either side)
-# biggest diffs are 4%pts lower and higher: fruitveg consumption (30013) and problem drinker (4171)
+# of remaining 22,040
+# 21539 (98%) are identical
+# 489 (2% are 1%pt either side)
 table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
+# bigger diffs go back to the years up to 2014 (fruit/veg consumption (30013) and problem drinking (4171))
+# could suggest small differences in SHeS' processing back then?
 table(source_comparison$trend_axis[source_comparison$ind_id %in% c(30013, 4171)], source_comparison$rate_diff[source_comparison$ind_id %in% c(30013, 4171)])
-# most concerned about problem drinkers in 2023: 1 at -2 and 7 at -1%pt. self-completion adjustment... try other weight instead?
 
 # Key points about the two sources:
 ## Aggregated UKDS data start from 2008-11, while the aggregated dashboard data starts at 2012-15. 
@@ -443,27 +443,11 @@ shes_combined <- shes_from_dashboard %>%
   mutate(rate = ifelse(ind_id==99121, rate.x, rate), 
          lowci = ifelse(ind_id==99121, lowci.x, lowci),
          upci = ifelse(ind_id==99121, upci.x, upci),
-         source = ifelse(ind_id==99121, source.x, source)) %>%
-  mutate(rate_diff = case_when(!is.na(rate.x) & !is.na(rate.y) ~ rate.x-rate.y, 
-                               TRUE ~ as.numeric(NA)),
-         rate_diff = round(sqrt(rate_diff*rate_diff))) # magnitude of the difference, to 0 dp
+         source = ifelse(ind_id==99121, source.x, source)) 
 #shes_from_dashboard has 25,693 records
-#shes_from_ukds has 499,383 records
-#shes_combined has 501,138 records
+#shes_from_ukds has 499,662 records
+#shes_combined has 501,417 records
 
-# check big diffs
-check <- shes_combined %>%
-  filter(rate_diff>0)
-ggplot(check) +
-  geom_point(aes(x=rate.x, y=rate.y)) +
-  facet_wrap(~indicator)
-check_all <- shes_combined %>%
-  filter(!is.na(rate_diff))
-
-
-table(check_all$indicator)
-table(check$indicator)
-table(check$indicator, check$split_name)
 
 ### 6. Check geographical availability: ----
 
@@ -640,11 +624,9 @@ prepare_final_files(ind = "healthy_weight")
 # Run QA reports 
 
 # NB differences from previous file identified for many, as now we're using the UKDS data where available for lower geogs, rather than dashboard. 
+# Also because we're no rounding to 0dp to match SHeS dashboard, so this looks like a 'difference' in the QA process
 # Did this so that all coincident geographies have the same data (otherwise Ed council and HSCP highlighted as having slight differences, when they should be identical).
 # I looked at the differences and many concerned the confidence intervals rather than the rates (SHeS must use a different type of survey estimation calculation). 
-# Rates were very similar, though the UKDS figures had 2 decimal places compared with 0 for SHeS dashboard, which sometimes showed as a big % difference if the rate was small.
-# Rates sometimes differ between UKDS and dashboard by around 1 % point.
-# Will add explanatory note to the techdoc.
 
 ###########################
 # Main data
@@ -660,7 +642,7 @@ run_qa(type = "main", filename = "fruit_veg_consumption", test_file = FALSE)
 run_qa(type = "main", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "main", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
 run_qa(type = "main", filename = "adults_very_low_activity", test_file = FALSE)
-run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) # lower geogs only have data up to 2016-19 (same as existing ScotPHO data) NEEDS TO BE FIXED: WAITING FOR SHES COMMENT
+run_qa(type = "main", filename = "healthy_weight", test_file = FALSE) 
 run_qa(type = "main", filename = "food_insecurity", test_file = FALSE) 
 run_qa(type = "main", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "main", filename = "problem_drinker", test_file = FALSE)  
@@ -703,6 +685,8 @@ run_qa(type = "main", filename = "work-life_balance", test_file = FALSE)
 # some gaps at lower geogs 
 
 # (a) main sample indicators (Scot + lower geogs) (lower geogs will only have sex==Total)
+# NB. latest = 2024 for Scotland, but 2021-24 (shown in QA shiny plot as year==2023) for lower geogs
+# some lower geogs are missing (geog tallies show red in QA) as values could only be produced for fewer than 3 quintiles (island boards kept if they have values for 3 or 4 quintiles)
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)   
@@ -712,13 +696,14 @@ run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file = FAL
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
 run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
-run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) # lower geogs only have data up to 2016-19 (same as existing ScotPHO data) NEEDS TO BE FIXED: WAITING FOR SHES COMMENT
+run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "food_insecurity", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "problem_drinker", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "mental_wellbeing", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "drinker_units", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE) # Scotland only because all data are from dashboard
+
 # (ai) main children indicators: Scot only
 run_qa(type = "deprivation", filename = "cyp_parent_w_ghq4", test_file = FALSE)     
 run_qa(type = "deprivation", filename = "cyp_parent_w_harmful_alc", test_file = FALSE) 
@@ -745,7 +730,7 @@ run_qa(type = "deprivation", filename = "line_manager", test_file = FALSE)
 run_qa(type = "deprivation", filename = "depression_symptoms", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)    
-run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE) #drop ineqs and other splits now
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE) 
 
 ###########################
