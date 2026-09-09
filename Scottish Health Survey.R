@@ -124,7 +124,7 @@ shes_from_ukds <- readRDS(file.path(profiles_data_folder, "Prepared Data", "shes
                               substr(code, 1, 3)=="S32" ~ "PD",
                               substr(code, 1, 3)=="S37" ~ "HSCP",
                               TRUE ~ "NA")) %>%
-  mutate(rate = round(rate,0),
+  mutate(rate = round(rate,1), # SHeS round to 0dp, but 1dp gives better (less jagged) trends, and means rate always falls between CIs.
          lowci = round(lowci, 1),
          upci = round(upci, 1)) %>%
   filter(!(split_name=="Deprivation (SIMD)" & areatype!="Scot" & sex!="Total")) # drop deprivation x sex for all lower geogs
@@ -392,6 +392,7 @@ source_comparison %>%
 # SHOWS VERY CLOSE AND LARGELY PERFECT MATCH BETWEEN UKDS AND DASHBOARD DATA, WHERE BOTH ARE AVAILABLE. 
 # THE LINES ARE MOSTLY PERFECTLY STRAIGHT 1:1 RELATIONSHIPS, BUT SOME SLIGHT DISCREPANCIES APPARENT: 
 # BIGGEST DISCREPANCIES = children participating in sport & children very low activity. These opt to exclude some ages (2-4y) that are present in the original data, so the whole pop averages will be different
+# OTHER DISCREPANCIES = differences between 0dp rates (dashboard) and 1dp rates (ours from UKDS)
 table(source_comparison$indicator, source_comparison$rate_diff)
 # approx 2% of these comparisons are from the 2 child PA indicators with different age groups, 
 table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
@@ -445,8 +446,8 @@ shes_combined <- shes_from_dashboard %>%
          upci = ifelse(ind_id==99121, upci.x, upci),
          source = ifelse(ind_id==99121, source.x, source)) 
 #shes_from_dashboard has 25,693 records
-#shes_from_ukds has 499,662 records
-#shes_combined has 501,417 records
+#shes_from_ukds has 446,255 records
+#shes_combined has 448,010 records
 
 
 ### 6. Check geographical availability: ----
@@ -495,85 +496,90 @@ prepare_final_files <- function(ind){
   write.csv(main_data_final, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
   write_rds(main_data_final, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
   
+  # Make data created available outside of function so it can be visually inspected if required
+  main_data_result <<- main_data_final
+  
   # 2 - population groups data (i.e. data behind population groups tab)
   # Contains single year Scotland data and lower geog aggregated data 
   # Can use single year and aggregated data in the popgrp tab (as will only ever be comparing across data with the same geog)
-  pop_grp_data <- shes_combined %>% 
-    filter(indicator == ind) %>% 
-    filter(split_name!="Deprivation (SIMD)") %>%
-    filter((areatype=="Scot" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
-             (areatype!="Scot" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
-    select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
-    mutate(split_value = factor(split_value, 
-                                levels = c("Total", 
-                                           "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
-                                           "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
-                                           "16-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+",             
-                                           "1", "2", "3", "4", "5",   
-                                           "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
-                                           "Female", "Male",    
-                                           "No long-term illness", "Long-term illness",   
-                                           "Urban", "Rural"),
-                                labels = c("Total", 
-                                           "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
-                                           "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
-                                           "16-24y", "25-34y", "35-44y", "45-54y", "55-64y", "65-74y", "75y+",             
-                                           "1", "2", "3", "4", "5",   
-                                           "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
-                                           "Female", "Male",    
-                                           "No long-term illness", "Long-term illness",   
-                                           "Urban", "Rural"))) %>%
-    arrange(code, year, split_name, split_value)
   
-  
-  
-  # Save
-  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
-  
-  # Process SIMD data
-  simd_data <- shes_combined %>% 
-    filter(indicator == ind) %>% 
-    filter(split_name=="Deprivation (SIMD)") %>%
-    filter(!(areatype=="Scot" & str_detect(def_period, "Aggregated "))) %>% # for Scotland data, keep only the single year data
-    select(ind_id, year, code, sex, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
-    rename(quintile = split_value) %>%
-    mutate(quint_type="sc_quin") %>%
-    select(-split_name) %>%
-    arrange(code, year, quintile)
-  
-  # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
-  ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
-  ind_id <- unique(simd_data$ind_id) # identify the indicator number 
-  
-  # get the right age groups for the inequalities calculation:
-  age_under16y <- c(30130, 30129, 30114, 30115, 99144) # all children included 
-  age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
-  age_5to15y <- c(14003, 14006, 14007) # these child PA indicators restricted to 5-15y olds
-  age_2to15y <- c(30111, 14012) # child PA recs pertains to 2-15y olds
-  
-  agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
-                      ifelse(ind %in% age_4to12y, "depr_pop_4to12",
-                             ifelse(ind %in% age_2to15y, "depr_pop_2to15", 
-                                    ifelse(ind %in% age_5to15y, "depr_pop_5to15", "depr_pop_16+")))) # default is adult (16+)  
-  
-  # add population data (quintile level) so that inequalities can be calculated
-  simd_data <-  simd_data|>
-    add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
-    filter(!is.na(rate)) # some data biennial so not all years have data
-  
-  # calculate the inequality measures
-  simd_data <- simd_data |>
-    calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
-    select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
-  
-  # save the data as RDS file
-  saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
-  
-  # Make data created available outside of function so it can be visually inspected if required
-  main_data_result <<- main_data_final
-  pop_grp_data_result <<- pop_grp_data
-  simd_data_result <<- simd_data
+  if (ind != "attempted_suicide") { # counts too small for attempted suicide. keep it as Scotland only, no splits.
+    pop_grp_data <- shes_combined %>% 
+      filter(indicator == ind) %>% 
+      filter(split_name!="Deprivation (SIMD)") %>%
+      filter((areatype=="Scot" & str_detect(def_period, "Survey year ")) |  #select the un-aggregated data for Scotland
+               (areatype!="Scot" & str_detect(def_period, "Aggregated"))) %>%   # select the aggregated data for lower geogs
+      select(ind_id, year, code, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
+      mutate(split_value = factor(split_value, 
+                                  levels = c("Total", 
+                                             "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
+                                             "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
+                                             "16-24", "25-34", "35-44", "45-54", "55-64", "65-74", "75+",             
+                                             "1", "2", "3", "4", "5",   
+                                             "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
+                                             "Female", "Male",    
+                                             "No long-term illness", "Long-term illness",   
+                                             "Urban", "Rural"),
+                                  labels = c("Total", 
+                                             "0 to 3y", "0 to 4y", "2 to 4y", "4 to 7y", "4 to 8y", "5 to 11y", "5 to 7y", "8 to 10y", "8 to 11y", "9 to 12y",
+                                             "11 to 12y", "12 to 15y", "13 to 15y", "16 to 64y", "65y and over", 
+                                             "16-24y", "25-34y", "35-44y", "45-54y", "55-64y", "65-74y", "75y+",             
+                                             "1", "2", "3", "4", "5",   
+                                             "Q1 (highest income)", "Q2", "Q3", "Q4", "Q5 (lowest income)",
+                                             "Female", "Male",    
+                                             "No long-term illness", "Long-term illness",   
+                                             "Urban", "Rural"))) %>%
+      arrange(code, year, split_name, split_value)
+    
+    
+    
+    # Save
+    write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+    write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
+    
+    # Process SIMD data
+    simd_data <- shes_combined %>% 
+      filter(indicator == ind) %>% 
+      filter(split_name=="Deprivation (SIMD)") %>%
+      filter(!(areatype=="Scot" & str_detect(def_period, "Aggregated "))) %>% # for Scotland data, keep only the single year data
+      select(ind_id, year, code, sex, split_name, split_value, numerator, rate, upci, lowci, trend_axis, def_period) %>%
+      rename(quintile = split_value) %>%
+      mutate(quint_type="sc_quin") %>%
+      select(-split_name) %>%
+      arrange(code, year, quintile)
+    
+    # get arguments for the add_population_to_quintile_level_data() function: (done because the ind argument to the current function is not the same as the ind argument required by the next function)
+    ind_name <- ind # dataset will already be filtered to a single indicator based on the parameter supplied to 'prepare final files' function
+    ind_id <- unique(simd_data$ind_id) # identify the indicator number 
+    
+    # get the right age groups for the inequalities calculation:
+    age_under16y <- c(30130, 30129, 30114, 30115, 99144) # all children included 
+    age_4to12y <- c(99117, 30170, 30172, 30173, 30174, 30175) # all SDQ indicators pertain to 4-12 y olds
+    age_5to15y <- c(14003, 14006, 14007) # these child PA indicators restricted to 5-15y olds
+    age_2to15y <- c(30111, 14012) # child PA recs pertains to 2-15y olds
+    
+    agegp_pop <- ifelse(ind %in% age_under16y, "depr_pop_under16",
+                        ifelse(ind %in% age_4to12y, "depr_pop_4to12",
+                               ifelse(ind %in% age_2to15y, "depr_pop_2to15", 
+                                      ifelse(ind %in% age_5to15y, "depr_pop_5to15", "depr_pop_16+")))) # default is adult (16+)  
+    
+    # add population data (quintile level) so that inequalities can be calculated
+    simd_data <-  simd_data|>
+      add_population_to_quintile_level_data(pop="depr_pop_16+",ind = ind_id,ind_name = ind_name) |>
+      filter(!is.na(rate)) # some data biennial so not all years have data
+    
+    # calculate the inequality measures
+    simd_data <- simd_data |>
+      calculate_inequality_measures() |> # call helper function that will calculate sii/rii/paf
+      select(-c(overall_rate, total_pop, proportion_pop, most_rate,least_rate, par_rr, count)) #delete unwanted fields
+    
+    # save the data as RDS file
+    saveRDS(simd_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_ineq.rds"))
+    
+    # Make data created available outside of function so it can be visually inspected if required
+    pop_grp_data_result <<- pop_grp_data
+    simd_data_result <<- simd_data
+  }
   
 }
 
@@ -624,8 +630,8 @@ prepare_final_files(ind = "healthy_weight")
 # Run QA reports 
 
 # NB differences from previous file identified for many, as now we're using the UKDS data where available for lower geogs, rather than dashboard. 
-# Also because we're no rounding to 0dp to match SHeS dashboard, so this looks like a 'difference' in the QA process
-# Did this so that all coincident geographies have the same data (otherwise Ed council and HSCP highlighted as having slight differences, when they should be identical).
+# (Did this so that all coincident geographies have the same data (otherwise QA highlights Ed council and HSCP as having slight differences, when they should be identical)).
+# Also because we're not rounding to 0dp to match SHeS dashboard, so this looks like a 'difference' in the QA process
 # I looked at the differences and many concerned the confidence intervals rather than the rates (SHeS must use a different type of survey estimation calculation). 
 
 ###########################
@@ -686,7 +692,7 @@ run_qa(type = "main", filename = "work-life_balance", test_file = FALSE)
 
 # (a) main sample indicators (Scot + lower geogs) (lower geogs will only have sex==Total)
 # NB. latest = 2024 for Scotland, but 2021-24 (shown in QA shiny plot as year==2023) for lower geogs
-# some lower geogs are missing (geog tallies show red in QA) as values could only be produced for fewer than 3 quintiles (island boards kept if they have values for 3 or 4 quintiles)
+# some lower geogs are missing (geog tallies show red in QA) as values were only available/unsuppressed for <3 quintiles (island boards kept if they have values for 3 or 4 quintiles)
 run_qa(type = "deprivation", filename = "common_mh_probs", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "self_assessed_health", test_file = FALSE) 
 run_qa(type = "deprivation", filename = "life_satisfaction", test_file = FALSE)   
@@ -718,8 +724,8 @@ run_qa(type = "deprivation", filename = "children_very_low_activity", test_file 
 run_qa(type = "deprivation", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "deprivation", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "cyp_llti", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "child_general_health", test_file = FALSE) # no previous file as was previously from HBSC
+run_qa(type = "deprivation", filename = "cyp_llti", test_file = FALSE) # no previous file as was previously from HBSC
 
 # (b) smaller sample indicators (Scotland only)
 run_qa(type = "deprivation", filename = "involved_locally", test_file = FALSE)   
@@ -730,7 +736,7 @@ run_qa(type = "deprivation", filename = "line_manager", test_file = FALSE)
 run_qa(type = "deprivation", filename = "depression_symptoms", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "anxiety_symptoms", test_file = FALSE)   
 run_qa(type = "deprivation", filename = "deliberate_selfharm", test_file = FALSE)    
-run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE) #drop ineqs and other splits now
+#run_qa(type = "deprivation", filename = "attempted_suicide", test_file = FALSE) #small numbers: have now removed ineqs and other splits from data prep function
 run_qa(type = "deprivation", filename = "work-life_balance", test_file = FALSE) 
 
 ###########################
@@ -768,7 +774,7 @@ run_qa(type = "popgrp", filename = "children_participating_sport", test_file = F
 run_qa(type = "popgrp", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "popgrp", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
 run_qa(type = "popgrp", filename = "child_general_health", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "cyp_llti", test_file = FALSE) # new source explains the differences (was HBSC previously)
+run_qa(type = "popgrp", filename = "cyp_llti", test_file = FALSE) 
 
 # (b) smaller sample indicators (Scotland only)
 run_qa(type = "popgrp", filename = "involved_locally", test_file = FALSE)   
@@ -779,8 +785,8 @@ run_qa(type = "popgrp", filename = "line_manager", test_file = FALSE)
 run_qa(type = "popgrp", filename = "depression_symptoms", test_file = FALSE)   
 run_qa(type = "popgrp", filename = "anxiety_symptoms", test_file = FALSE)   
 run_qa(type = "popgrp", filename = "deliberate_selfharm", test_file = FALSE)    
-run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE) 
-run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE) 
+#run_qa(type = "popgrp", filename = "attempted_suicide", test_file = FALSE) #small numbers: have now removed ineqs and other splits from data prep function
+run_qa(type = "popgrp", filename = "work-life_balance", test_file = FALSE) # boring 
 
 #END
 
