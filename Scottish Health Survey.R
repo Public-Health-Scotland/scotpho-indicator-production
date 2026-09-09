@@ -418,9 +418,9 @@ table(source_comparison$trend_axis[source_comparison$ind_id %in% c(30013, 4171)]
 ## UKDS provides urban/rural splits, while dashboard doesn't
 
 # Decision: 
-## Keep the SHeS dashboard data for indicators just available for Scotland.
-## If lower geogs are available for an indicator the Scotland data needs to match the aggregation level (e.g., 2021-24) of the lower geography data.
-## This is so that both can be plotted concurrently on the trends and ranks tabs.
+## Keep the SHeS dashboard data for Scotland single-year data, where available.
+## Lower geogs need to use aggregated years (e.g., 2021-24) so Scotland data also need to be available at this aggregation too 
+##  (so they can be plotted together on trends and ranks tabs): use our UKDS data in these cases.
 ## SHeS dashboard Scotland data for single years can still be used for SIMD and popgroup tabs, as these only ever present a single geography at once.
 
 # Now we've compared the dashboard and UKDS data we can produce a file containing just the data we have decided to use. 
@@ -433,8 +433,9 @@ shes_combined <- shes_from_dashboard %>%
   merge(y=shes_from_ukds, by=c("indicator", "ind_id", "split_name", "split_value", "sex", "code", "areatype", "trend_axis", "year", "def_period"), all=TRUE) %>%
   # .x is dashboard, .y is ukds
   # Apply this logic:
-  # Scotland: keep dashboard data (.x) where available
-  # Lower geogs: keep UKDS data (.y), rather than dashboard data (even when available), so that all coincident geographies have precisely the same estimates and CIs (otherwise QA shows discrepancy).
+  # Scotland: keep dashboard data (.x) where available (single year)
+  # Lower geogs and Scotland (aggregate years): keep UKDS data (.y), rather than dashboard data (even when available), 
+  # so that all coincident geographies have precisely the same estimates and CIs (otherwise QA shows discrepancy).
   mutate(rate = ifelse(areatype=="Scot" & !is.na(rate.x), rate.x, rate.y), 
          lowci = ifelse(areatype=="Scot" & !is.na(rate.x), lowci.x, lowci.y),
          upci = ifelse(areatype=="Scot" & !is.na(rate.x), upci.x, upci.y),
