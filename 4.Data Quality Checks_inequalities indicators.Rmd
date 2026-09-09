@@ -70,7 +70,7 @@ if(file.exists(old_indicator_filepath)) {
 Indicator:  **`r filename`** <br>
 Date:  **`r format(Sys.time(), '%d %B, %Y %H:%M')`** <br>
 
-**New** indicator file:  /`r (paste0(output_folder,"/", filename, ".rds"))`<br>
+**New** indicator file:  /`r (paste0(output_folder,"/", filename, "_ineq.rds"))`<br>
 **Old** indicator file (for comparisons):  /`r (paste0(old_indicator_filepath))` <br>
 
 ------------------------------------------------------------------------------------
