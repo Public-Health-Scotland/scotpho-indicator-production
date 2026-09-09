@@ -138,8 +138,7 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
     filter(str_detect(split_value, text_to_keep)) %>% #keeps just the rows we want
     filter(str_detect(measure, c("ate:"))) %>% #keep the rates only
     filter(!str_detect(measure, "Severe")) %>% #drop the severe poverty rates
-    mutate(measure = case_when(str_detect(measure, "ate:") ~ "rate",
-                               str_detect(measure, "Sample") ~ "denominator")) %>%
+    select(-measure) %>%
 
     # fix the data
     mutate(across(-c(split_value), ~100*as.numeric(.))) %>% # convert proportions to percentages; break in series replaced with NA
@@ -162,55 +161,55 @@ get_splits_from_pov_3y_file <- function(tab, names_row, split_name, text_to_keep
 # Child relative poverty
 cyp_relpov <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="1", range="A13:AD16") %>%
   mutate(ind_id = 30152, 
-         indicator = "cyp-relative-poverty")
+         indicator = "cyp_relative_poverty")
 
 # Child absolute poverty
 cyp_abspov <- get_rows_from_CIs_file(filename=pov_CIs, filetype="ods", tab="3", range="A14:AD17") %>%
   mutate(ind_id = 30153, 
-         indicator = "cyp-absolute-poverty")
+         indicator = "cyp_absolute_poverty")
 
 # Adult relative poverty
 adult_relpov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A7:AD10")  %>% 
   mutate(ind_id=30031, 
-         indicator="adult-relative-poverty")
+         indicator="adult_relative_poverty")
 
 # Adult absolute poverty
 adult_abspov <- get_rows_from_CIs_file(filename=pov_adult, filetype="xlsx", tab="After housing costs", range="A15:AD18")  %>% 
   mutate(ind_id=30035, 
-         indicator="adult-absolute-poverty")
+         indicator="adult_absolute_poverty")
 
 # Other splits for child relative poverty:
 cyp_disabled <- get_splits_from_pov_3y_file(tab="27", names_row=11, split_name="Disabled person(s) in household", 
-                                                 text_to_keep="All|person", ind_num=30152, ind_name="cyp-relative-poverty") %>%
+                                                 text_to_keep="All|person", ind_num=30152, ind_name="cyp_relative_poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "no") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "with disabled") ~ "Yes",
                                  TRUE ~ split_value))
 
 cyp_age <- get_splits_from_pov_3y_file(tab="20", names_row=8, split_name="Child age group (years)", 
-                                            text_to_keep="All|[1-9]", ind_num=30152, ind_name="cyp-relative-poverty") 
+                                            text_to_keep="All|[1-9]", ind_num=30152, ind_name="cyp_relative_poverty") 
 
 cyp_urbrur <- get_splits_from_pov_3y_file(tab="26", names_row=9, split_name="Urban-rural classification", 
-                                               text_to_keep="All|Urban|Rural", ind_num=30152, ind_name="cyp-relative-poverty")
+                                               text_to_keep="All|Urban|Rural", ind_num=30152, ind_name="cyp_relative_poverty")
 
 cyp_inwork <- get_splits_from_pov_3y_file(tab="24", names_row=9, split_name="Someone in paid work", 
-                                               text_to_keep="All|work", ind_num=30152, ind_name="cyp-relative-poverty") %>%
+                                               text_to_keep="All|work", ind_num=30152, ind_name="cyp_relative_poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "No") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "Someone") ~ "Yes",
                                  TRUE ~ split_value))
 
 cyp_tenure <- get_splits_from_pov_3y_file(tab="25", names_row=9, split_name="Housing tenure", 
-                                               text_to_keep="All|Own|Buy|Rent", ind_num=30152, ind_name="cyp-relative-poverty")
+                                               text_to_keep="All|Own|Buy|Rent", ind_num=30152, ind_name="cyp_relative_poverty")
 
 cyp_loneparent <- get_splits_from_pov_3y_file(tab="18", names_row=8, 
                                                    split_name="Lone parent household", text_to_keep="All|parent", 
-                                                   ind_num=30152, ind_name="cyp-relative-poverty") %>%
+                                                   ind_num=30152, ind_name="cyp_relative_poverty") %>%
   mutate(split_value = case_when(str_detect(split_value, "No") ~ "No", # recode the splits to Yes, No or keep as Total
                                  str_detect(split_value, "Single") ~ "Yes",
                                  TRUE ~ split_value))
 
 ### in-work rel poverty (ind_id=99147)
 in_work_poverty <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name="Someone in paid work", 
-                                              text_to_keep="All|work", ind_num=99147, ind_name="in-work-poverty") %>%
+                                              text_to_keep="All|work", ind_num=99147, ind_name="in_work_poverty") %>%
   filter(str_detect(split_value, "Someone")) %>% # keep those where someone in the household is in work
   mutate(split_value = "Total", # no splits in this file
          split_name = "Total") 
@@ -219,7 +218,7 @@ in_work_poverty <- get_splits_from_pov_3y_file(tab="33", names_row=8, split_name
 # The definition of child material deprivation changed in 2010/11 and in 2023/24, creating breaks in the time series. 
 # Please consult the single year workbook and methodological notes for the one year estimates.
 cyp_lowincome_matdep <- get_splits_from_pov_3y_file(tab="7", names_row=9, split_name="Total", 
-                                               text_to_keep="After|after", ind_num=30154, ind_name="cyp-combined-low-income-and-material-deprivation")
+                                               text_to_keep="After|after", ind_num=30154, ind_name="cyp_combined_low_income_and_material_deprivation")
 
 cyp_lowincome_matdep <- cyp_lowincome_matdep %>%
   group_by(trend_axis) %>%
@@ -294,7 +293,7 @@ prepare_final_files <- function(ind) {
 
   # 2 - population groups data (ie data behind population groups tab)
   # NB only applies to child rel pov:
-  if(ind %in% c("cyp-relative-poverty")) {
+  if(ind %in% c("cyp_relative_poverty")) {
       
       pop_grp_data <- pov_file %>% 
         filter(indicator == ind & !(split_name %in% c("Total"))) %>% 
@@ -314,20 +313,20 @@ prepare_final_files <- function(ind) {
 
 
 # Run function to create final files
-prepare_final_files(ind = "adult-absolute-poverty")
-prepare_final_files(ind = "adult-relative-poverty")
-prepare_final_files(ind = "cyp-relative-poverty")
-prepare_final_files(ind = "cyp-absolute-poverty")
-prepare_final_files(ind = "cyp-combined-low-income-and-material-deprivation")
-prepare_final_files(ind = "in-work-poverty")
+prepare_final_files(ind = "adult_absolute_poverty")
+prepare_final_files(ind = "adult_relative_poverty")
+prepare_final_files(ind = "cyp_relative_poverty")
+prepare_final_files(ind = "cyp_absolute_poverty")
+prepare_final_files(ind = "cyp_combined_low_income_and_material_deprivation")
+prepare_final_files(ind = "in_work_poverty")
 
 # # Run QA reports 
-run_qa(type = "main", filename = "adult-absolute-poverty", test_file = FALSE)
-run_qa(type = "main", filename = "adult-relative-poverty", test_file = FALSE)
-run_qa(type = "main", filename = "cyp-relative-poverty", test_file = FALSE)
-run_qa(type = "main", filename = "cyp-absolute-poverty", test_file = FALSE)
-run_qa(type = "main", filename = "cyp-combined-low-income-and-material-deprivation", test_file = FALSE) # no CIs
-run_qa(type = "main", filename = "in-work-poverty", test_file = FALSE) # no CIs
+run_qa(type = "main", filename = "adult_absolute_poverty", test_file = FALSE) # differences are the new CIs provided by SG, and the break in the series.
+run_qa(type = "main", filename = "adult_relative_poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_relative_poverty", test_file = FALSE) 
+run_qa(type = "main", filename = "cyp_absolute_poverty", test_file = FALSE)
+run_qa(type = "main", filename = "cyp_combined_low_income_and_material_deprivation", test_file = FALSE) # shows breaks in the series. No CIs.
+run_qa(type = "main", filename = "in_work_poverty", test_file = FALSE) # no CIs 
 
-run_qa(type = "popgrp", filename = "cyp-relative-poverty", test_file = FALSE) #no CIs
+run_qa(type = "popgrp", filename = "cyp_relative_poverty", test_file = FALSE) #no CIs
 
