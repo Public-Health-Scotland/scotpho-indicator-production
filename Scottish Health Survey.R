@@ -400,7 +400,7 @@ table(source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)
 # 21539 (98%) are identical
 # 489 (2% are 1%pt either side)
 table(source_comparison$trend_axis[!source_comparison$ind_id %in% c(14006, 14003)], source_comparison$rate_diff[!source_comparison$ind_id %in% c(14006, 14003)])
-# bigger diffs go back to the years up to 2014 (fruit/veg consumption (30013) and problem drinking (4171))
+# bigger diffs (more than 1% point either side of the dashbaord figure) go back to the years up to 2014 (fruit/veg consumption (30013) and problem drinking (4171))
 # could suggest small differences in SHeS' processing back then?
 table(source_comparison$trend_axis[source_comparison$ind_id %in% c(30013, 4171)], source_comparison$rate_diff[source_comparison$ind_id %in% c(30013, 4171)])
 
@@ -662,7 +662,7 @@ run_qa(type = "main", filename = "children_very_low_activity", test_file = FALSE
 run_qa(type = "main", filename = "children_participating_sport", test_file = FALSE)
 run_qa(type = "main", filename = "children_active_play", test_file = FALSE)
 run_qa(type = "main", filename = "children_meet_pa_recs_excl_school", test_file = FALSE)
-run_qa(type = "main", filename = "child_general_health", test_file = FALSE) 
+run_qa(type = "main", filename = "child_general_health", test_file = FALSE) # new source explains the differences (was HBSC previously)
 run_qa(type = "main", filename = "cyp_llti", test_file = FALSE) # new source explains the differences (was HBSC previously)
 
 # (b) smaller sample indicators (Scotland only)
@@ -696,11 +696,11 @@ run_qa(type = "deprivation", filename = "fruit_veg_consumption", test_file = FAL
 run_qa(type = "deprivation", filename = "unpaid_caring", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "meeting_muscle_strengthening_recommendations", test_file = FALSE)
 run_qa(type = "deprivation", filename = "adults_very_low_activity", test_file = FALSE)
-run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) 
-run_qa(type = "deprivation", filename = "food_insecurity", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "healthy_weight", test_file = FALSE) # CA and HSCP data removed as too many (>25%) with low sample sizes 
+run_qa(type = "deprivation", filename = "food_insecurity", test_file = FALSE) # CA and HSCP data removed as too many (>25%) with low sample sizes 
 run_qa(type = "deprivation", filename = "binge_drinking", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "problem_drinker", test_file = FALSE)  
-run_qa(type = "deprivation", filename = "mental_wellbeing", test_file = FALSE) 
+run_qa(type = "deprivation", filename = "mental_wellbeing", test_file = FALSE) # CA and HSCP data removed as too many (>25%) with low sample sizes 
 run_qa(type = "deprivation", filename = "drinker_units", test_file = FALSE)  
 run_qa(type = "deprivation", filename = "health_risk_behaviours", test_file = FALSE) # Scotland only because all data are from dashboard
 
