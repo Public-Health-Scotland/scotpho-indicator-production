@@ -1,7 +1,12 @@
-## NPF data not updated since 2024.
-## More up-to-date versions of most indicators now produced in other scripts
-## Persistent poverty now produced in Persistent poverty.R
-## Indicators 99117 (Young peoples mental wellbeing) and 99121 (Health risk behaviours) produced in Scottish Health Survey.R
+## NB. NPF data not updated since 2024.
+## More up-to-date versions of all but the gender balance indicator are now produced in other scripts
+## Persistent poverty now produced in Poverty (persistent).R
+## Child combined low income and material deprivation now produced in Poverty (all but persistent).R
+## Scottish Health Survey.R now produces:
+## 99117 (Young peoples mental wellbeing) 
+## 99121 (Health risk behaviours) 
+## 99105 Food insecurity
+## 99106 Adult healthy weight 
 
 #new indicators introduced for Population health Framework/care and wellbeing portfolio
 
@@ -61,7 +66,7 @@ data <- dat %>%
   filter(indicator %in% c( 
                           "Gender balance in organisations",
                         # Sourced from elsewhere now:  
-                          # "Child material deprivation", "Children's material deprivation", # now source direct from stats.gov (see Child Poverty.R script) as more disaggregated there
+                          # "Child material deprivation", "Children's material deprivation", 
                           # "Child Wellbeing and Happiness", #NPF name for young peoples mental wellbeing indicator
                           # "Health risk behaviours",
                           # "Persistent poverty"
