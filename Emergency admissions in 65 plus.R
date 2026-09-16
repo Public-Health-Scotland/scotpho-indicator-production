@@ -64,7 +64,7 @@ emergency_cis <- as_tibble(dbGetQuery(channel, statement=paste0(
 WHERE rn = 1
 AND age > 64
 AND sex_grp not in ('9', '0')
-AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2025'
+AND ddisch BETWEEN '1 April 2002' and '31 MARCH 2026'
 AND (adm_type between '20' and '22' or adm_type between '30' and '39')
 ORDER BY link_no, cis_marker"))) %>% 
   setNames(tolower(names(.)))  #variables to lower case
@@ -79,17 +79,17 @@ emergency_cis <- emergency_cis %>%
          year = case_when(staymonth >3 ~ year(ddisch), staymonth <= 3 ~ year(ddisch)-1, TRUE ~ 0))
 
 # open lookup that will allow attachment of postcode to datazone2011.
-postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>%
+postcode_lookup <- read_rds('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_2.rds') %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
-  select (pc7, datazone2011, datazone2001)
+  select (pc7,datazone2022, datazone2011, datazone2001)
 
 # Match geography information (datazone) to emergency admission data
 data_ea65 <- left_join(emergency_cis , postcode_lookup, "pc7")
 
 # aggregate to give total emergency admissions by datazone for only scottish residents
 data_ea65 <-data_ea65 %>%
-  subset(!(is.na(datazone2011))) %>%  #select out non-scottish resident
-  group_by(year, age_grp, sex_grp, datazone2011, datazone2001) %>%
+  subset(!(is.na(datazone2022))) %>%  #select out non-scottish resident
+  group_by(year, age_grp, sex_grp,datazone2022, datazone2011, datazone2001) %>%
   summarise(numerator=n()) %>%
   ungroup()
 
@@ -105,16 +105,22 @@ rm(emergency_cis) #tidy large file
 
 ## Once data checks complete send to NICK CASSIDY (nicholas.cassidy@improvementservice.org.uk)
 
+## SEPT 2026
+## Running an update to provide 2022 datazone figures which have been requested however
+## ScotPHO geo lookup not yet updated to new datazones. Agreed with IS that we would provide 
+## raw counts and any populations we had but for dz level geographies only.
+## Also 2025/26 data can't be supplied until after 29th September when secondary care team release their annual publication.
+
 ######################################################################################.
 
 # Reading file
 data_ea65<- readRDS(paste0(profiles_data_folder, '/Prepared Data/smr01_emergency65_basefile.rds'))
 
-# prepare 2011 datazone population denominator file (aged 65 and over)
-# annual populations from 2009 to latest
-dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce1-4813-b25c-f7f335bdc4dc/resource/c505f490-c201-44bd-abd1-1bd7a64285ee/download/dz2011-pop-est_07092021.csv") %>%
+# prepare 2022 datazone population denominator file (aged 65 and over)
+# annual populations from 2011 to latest
+dz22_populations <- read_csv("https://www.opendata.nhs.scot/dataset/population-estimates/resource/35d69dbe-0657-47fe-9a68-d6ffd63a50a9/download/dz2011-pop-est_07092021.csv") %>%
   setNames(tolower(names(.))) %>%   #variables to lower case
-  filter(year >= 2002 & substr(datazone, 1, 3) != "S92" & sex != "All") %>% #years and no Scotland
+  filter(year >= 2011 & substr(datazone, 1, 3) != "S92" & sex != "All") %>% #years and no Scotland
   mutate(sex = recode(sex, "Male" = 1, "Female" = 2, "f" = 2, "m" = 1)) %>%
   select(year, sex, datazone, age0:age90plus) %>%
   gather(age, pop, -c(year, sex, datazone)) %>% #wide to long format
@@ -123,43 +129,53 @@ dz11_populations <- read_csv("https://www.opendata.nhs.scot/dataset/7f010430-6ce
   group_by(year, datazone) %>%
   summarise(pop=sum(pop)) %>%
   ungroup() %>%
-  rename(datazone2011=datazone)
+  rename(datazone2022=datazone)
+
+# Improvement service use crude rates so no need to split data by age and sex
+emergency_admissions_forIS <-data_ea65 %>%
+  group_by(year, datazone2022) %>%
+  summarise(emergency_cis=sum(numerator)) %>%
+  ungroup()|>
+  filter(year !=2025)#exclude 2025 data until secondary care team publication
+
+
+# Match on emergency admissions data to populations
+emergency_admissions_forIS <- full_join(x = dz22_populations, y = emergency_admissions_forIS, 
+                            by = c("year", "datazone2022")) |> 
+  arrange(year, datazone2022)
+
+# Save out CSV file that can be sent to Improvement Service 
+# log information request and send data to improvement service - Nick Cassidy
+# 2026-00725
+write_csv(emergency_admissions_forIS, file = paste0(profiles_data_folder, "/Data to be checked/IR2026-00725_ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
 
 
 # open ScotPHO geography look-up that enables matching datazones to all parent geographies
 # (there should be no duplicate dz to parent matches ie. datazones dont map to more than one NHS board/CA)
-geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds"))
+#geo_lookup <- readRDS(paste0(profiles_lookups, "/Geography/DataZone11_All_Geographies_Lookup.rds"))
 
-# Improvement service use crude rates so no need to split data by age and sex
-emergency_admissions_forIS <-data_ea65 %>%
-  group_by(year, datazone2011) %>%
-  summarise(emergency_cis=sum(numerator)) %>%
-  ungroup()
+# # Match on parent geogrpahies
+# emergency_admissions_forIS <- left_join(emergency_admissions_forIS , geo_lookup, "datazone2022") %>%
+#   select(-adp, -hb2019, -hscp2019,-hscp_locality) %>%
+#   mutate(scotland = as.factor("S00000001")) 
+# 
+# # Gather data into long format so all geographies are stacked on top of each other & calculate crude rate
+# emergency_admissions_forIS <- emergency_admissions_forIS %>%
+#   gather(geolevel, code, datazone2011, intzone2011:scotland) %>% 
+#   ungroup() %>%
+#   select(-c(geolevel)) %>% 
+#   group_by(code, year) %>%
+#   summarise_all(sum, na.rm =T) %>%
+#   ungroup() %>%
+#   mutate(crate=(emergency_cis/pop)*100000,
+#          crate= ifelse(is.infinite(crate), NA, crate), ## Converting Infinites to NA and NA's to 0s to allow proper functioning
+#          year=paste0(year,"/",year+1))
+# 
 
-# Match on emergency admissions data to populations
-emergency_admissions_forIS <- full_join(x = dz11_populations, y = emergency_admissions_forIS, 
-                            by = c("year", "datazone2011"))
-
-# Match on parent geogrpahies
-emergency_admissions_forIS <- left_join(emergency_admissions_forIS , geo_lookup, "datazone2011") %>%
-  select(-adp, -hb2019, -hscp2019,-hscp_locality) %>%
-  mutate(scotland = as.factor("S00000001"))
-
-# Gather data into long format so all geographies are stacked on top of each other & calculate crude rate
-emergency_admissions_forIS <- emergency_admissions_forIS %>%
-  gather(geolevel, code, datazone2011, intzone2011:scotland) %>% 
-  ungroup() %>%
-  select(-c(geolevel)) %>% 
-  group_by(code, year) %>%
-  summarise_all(sum, na.rm =T) %>%
-  ungroup() %>%
-  mutate(crate=(emergency_cis/pop)*100000,
-         crate= ifelse(is.infinite(crate), NA, crate), ## Converting Infinites to NA and NA's to 0s to allow proper functioning
-         year=paste0(year,"/",year+1))
 
 # Save out CSV file that can be sent to Improvement Service 
 # log information request and s
-write_csv(emergency_admissions_forIS, file = paste0(profiles_data_folder, "/Data to be checked/ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
+#write_csv(emergency_admissions_forIS, file = paste0(profiles_data_folder, "/Data to be checked/IR2026-00725_ScotPHO ImprovementService_Emergency_Admissions_65.csv"))
 
 rm(emergency_admissions_forIS) #tidy large file
 
