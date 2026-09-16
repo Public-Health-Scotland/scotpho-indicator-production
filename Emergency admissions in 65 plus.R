@@ -105,6 +105,12 @@ rm(emergency_cis) #tidy large file
 
 ## Once data checks complete send to NICK CASSIDY (nicholas.cassidy@improvementservice.org.uk)
 
+## SEPT 2026
+## Running an update to provide 2022 datazone figures which have been requested however
+## ScotPHO geo lookup not yet updated to new datazones. Agreed with IS that we would provide 
+## raw counts and any populations we had but for dz level geographies only.
+## Also 2025/26 data can't be supplied until after 29th September when secondary care team release their annual publication.
+
 ######################################################################################.
 
 # Reading file
