@@ -81,9 +81,8 @@ main_analysis(filename = "Drug_waiting_times",
               yearstart = 2015,
               yearend = 2024,
               ind_id = 4136,
-              test_file = FALSE,
-              QA = FALSE)
+              test_file = FALSE)
 
-run_qa(filename = "Drug_waiting_times", type = "main")
+#run_qa(filename = "Drug_waiting_times", type = "main")
 
 # END

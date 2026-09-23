@@ -82,9 +82,8 @@ main_analysis(filename = "Co-dependency_waiting_times",
               yearstart = 2020,
               yearend = 2024,
               ind_id = 4150,
-              test_file = FALSE,
-              QA = FALSE)
+              test_file = FALSE)
 
-run_qa(filename = "Co-dependency_waiting_times", type = "main")
+#run_qa(filename = "Co-dependency_waiting_times", type = "main")
 
 # END
