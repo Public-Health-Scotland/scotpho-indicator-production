@@ -44,14 +44,15 @@ calculate_inequality_measures <- function(dataset){
            relative_rank = case_when(
              quintile == "1" ~ 0.5*proportion_pop,
              quintile != "1" ~ lag(cumulative_pro) + 0.5*proportion_pop),
-           sqr_proportion_pop = sqrt(proportion_pop), #square root of the proportion of the population in each SIMD
-           relrank_sqr_proppop = relative_rank * sqr_proportion_pop,
-           rate_sqr_proppop = sqr_proportion_pop * rate) %>% #rate based on population weights
+           # sqr_proportion_pop = sqrt(proportion_pop), #square root of the proportion of the population in each SIMD
+           # relrank_sqr_proppop = relative_rank * sqr_proportion_pop,
+           # rate_sqr_proppop = sqr_proportion_pop * rate
+           ) %>% #rate based on population weights
     filter(!is.na(rate), !is.na(proportion_pop)) %>% #exclude any rows where rate is NA, e.g. due to missing data. Modelling doesn't work otherwise. 
     nest() %>% #creating one column called data with all the variables not in the grouping
     # Calculating linear regression for all the groups, then formatting the results
     # and calculating the confidence intervals
-    mutate(model = map(data, ~ lm(rate_sqr_proppop ~ sqr_proportion_pop + relrank_sqr_proppop + 0, data = .)),
+    mutate(model = map(data, ~ glm(numerator ~ relative_rank + offset(log(denominator)), family = poisson, data = .)))#,
            #extracting sii from model, a bit fiddly but it works
            sii = -1 * as.numeric(map(map(model, "coefficients"), "relrank_sqr_proppop")),
       #     cis = map(model, confint_tidy) # deprecated. next two lines do the same thing
