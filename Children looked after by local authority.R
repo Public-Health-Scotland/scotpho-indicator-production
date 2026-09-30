@@ -9,23 +9,25 @@
 # Children looked after by the local authority; number and rate per 1,000 children aged 0-17 years.
 # based on children looked after as at 31 July when snapshot taken
 
-# Trend data used to be extracted solely from statistics.gov.scot using the opendatascot R package
-# However, due to delays in that platform being updated, we have to use a combination 
-# of open data (2009 - 2022) and data from two publication (for 2023 and 2024 data)
+# Trend data from data.gov.scot only available from 2009-2022. Therefore have to use a combination of this 
+# and data from three publication (for 2023-2025 data)
 # from the childrens social work statistics (additional tables):
 
-# 2023 data
+# 2023 data (Table 3.2)
 # https://www.gov.scot/publications/childrens-social-work-statistics-2022-23-looked-after-children/
 
-# 2024 data
+# 2024 data (Table 3.2)
 # https://www.gov.scot/publications/childrens-social-work-statistics-looked-after-children-2023-24/documents/
 
-# Review this as at next update as statistics.gov.scot platform may have been updated:
-# https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Flooked-after-children
+# 2025 data (Table 23)
+# https://www.gov.scot/publications/childrens-social-work-statistics-looked-after-children-2024-25/documents/
+
+# Review this as at next update as data.gov.scot platform may have been updated:
+# https://data.gov.scot/dataset/looked_after_children
 
 
 #   1. load/install packages and functions
-#   2. Extract open data
+#   2. Extract data.gov.scot data
 #   3. Read in publication tables data
 #   4. Prepare data file for analysis
 #   5. run analysis function
@@ -35,15 +37,12 @@
 # 1. Load/install Packages and functions ----
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-source("functions/main_analysis.R") # for creating main dataset indicator file 
-library(opendatascot) # for extracting data from statistics.gov.scot
+source("functions/main_analysis.R") # for creating main dataset indicator file
+source("functions/data cleaning functions/ca_names_to_codes.R") # for adding geo code column
 library(readxl) # for reading in excel files
 library(data.table) # for rbindlist() function to combine excel files
 
 
-# uncomment the 2 lines below to install package if required:-
-# install.packages("devtools")
-# devtools::install_github("datasciencescotland/opendatascot")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,17 +50,23 @@ library(data.table) # for rbindlist() function to combine excel files
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # extract data 
-opendata_extract <- ods_dataset("looked-after-children", 
-                                measureType="count",
-                                residentialStatus = "all",
-                                geography = "la") 
+opendata_extract <- read.csv("https://data.gov.scot/dataset/looked_after_children/resource/08744c2f-657f-402e-b6df-1e9d4e94a485/download")
+
+# Apply filters
+opendata_extract <- opendata_extract |>
+  filter(
+    Measurement == "Count" &
+      Residential.Status == "All" &
+      GeographyType == "Council Areas"
+  )
+
 
 
 # select/rename columns and change column classes
 opendata_extract  <- opendata_extract |>
-  select(code = refArea, 
-         year = refPeriod, 
-         numerator = value)
+  select(code = GeographyCode, 
+         year = DateCode, 
+         numerator = Value)
   
 
 
@@ -75,11 +80,20 @@ folder <- file.path(profiles_data_folder, "Received Data", "Looked after childre
 # full filepath for each file in folder 
 files <- list.files(folder, full.names = TRUE)
 
-# read in and combine 'Table 3.2 'from different years publications
+
+# read in and combine correct sheet from different years publications
 # excel files must be closed or you'll get an error!
 pub_tables <- rbindlist(lapply(files, function(x) {
-  read_xlsx(x, sheet = "Table 3.2", skip = 4) |>
-    mutate(file = basename(x))
+  
+  # name of file to read in 
+  filename <- basename(x)
+  
+  # name of sheet to read in
+  sheetname <- ifelse(grepl("2022-23|2023-24", filename), "Table 3.2", "Table 23")
+  
+  read_xlsx(x, sheet = sheetname, range = "A5:N37") |>
+    mutate(file = filename)
+  
   }))
 
 
@@ -90,19 +104,14 @@ pub_tables <- pub_tables |>
   mutate(year = case_when(
     grepl("2022-23", file) ~ 2023,
     grepl("2023-24", file) ~ 2024,
+    grepl("2024-25", file) ~ 2025,
     .default = NA)
     )
 
 
-
-
-# read in council area lookup containing geography codes
-ca_dictionary <- readRDS(file.path(profiles_data_folder, "Lookups", "Geography", "CAdictionary.rds"))
-
-# join with lookup 
+# add council area codes
 pub_tables <- pub_tables |>
-  inner_join(ca_dictionary, by = c("Local authority" = "areaname"))
-
+  ca_names_to_codes(council_area = `Local authority`)
 
 
 # select/rename required cols
@@ -128,7 +137,7 @@ saveRDS(data_combined, file.path(profiles_data_folder, 'Prepared Data/looked_aft
 
 main_analysis(filename = "looked_after", ind_id = 20503, geography = "council", 
               measure = "crude", pop = "CA_pop_under18", crude_rate = 1000,
-              yearstart = 2009, yearend = 2024, time_agg = 1, year_type = "snapshot")
+              yearstart = 2009, yearend = 2025, time_agg = 1, year_type = "snapshot")
 
 
 
