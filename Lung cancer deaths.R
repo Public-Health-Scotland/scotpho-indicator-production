@@ -6,8 +6,7 @@
 ###############################################.
 ## Packages/Filepaths/Functions ----
 ###############################################.
-source("1.indicator_analysis.R") #Normal indicator functions
-source("2.deprivation_analysis.R") # deprivation function
+source("./functions/main_analysis.R")
 
 # SMRA login information
 channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
@@ -24,33 +23,29 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 lung_deaths <- as_tibble(dbGetQuery(channel, statement=
       "SELECT year_of_registration year, AGE, SEX sex_grp, POSTCODE pc7 
        FROM ANALYSIS.GRO_DEATHS_C
-       WHERE date_of_registration between '1 January 2002' and '31 December 2022'
+       WHERE date_of_registration between '1 January 2002' and '31 December 2024'
           AND country_of_residence= 'XS' 
           AND regexp_like(underlying_cause_of_death, 'C3[34]')
           AND age >= 16
           AND sex <> 9")) %>% 
-  setNames(tolower(names(.))) %>%  #variables to lower case
+  clean_names() %>%  #variables to lower case
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing  LA info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2024_2.rds') %>% 
-  setNames(tolower(names(.))) %>% select(pc7, ca2019)
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_2.rds') %>% 
+  clean_names() %>% select(pc7, ca2019)
   
 lung_deaths <- left_join(lung_deaths, postcode_lookup, by = "pc7") %>% #merging with lookup
   # aggregating by council area
-  group_by(year, ca2019, sex_grp, age_grp) %>% count() %>% ungroup() %>% 
-  rename(ca = ca2019, numerator = n)
+  group_by(year, ca2019, sex_grp, age_grp) %>% summarise(numerator = n(), .groups = "drop") 
 
-saveRDS(lung_deaths, file=paste0(data_folder, 'Prepared Data/lungcancer_deaths_raw.rds'))
+saveRDS(lung_deaths, file.path(profiles_data_folder, 'Prepared Data/lungcancer_deaths_raw.rds'))
 
 ###############################################.
 ## Part 2 - Run analysis functions ----
 ###############################################.
-analyze_first(filename = "lungcancer_deaths", geography = "council", measure = "stdrate", 
-              pop = "CA_pop_16+", yearstart = 2002, yearend = 2022, hscp = T,
-              time_agg = 3, epop_age = "16+")
-
-analyze_second(filename = "lungcancer_deaths", measure = "stdrate", time_agg = 3, 
-               epop_total = 165800, ind_id = 1546, year_type = "calendar")
+main_analysis(filename = "lungcancer_deaths", geography = "council", measure = "stdrate", 
+              pop = "CA_pop_16+", yearstart = 2002, yearend = 2024, time_agg = 3,
+              epop_age = "16+", epop_total = 165800, ind_id = 1546, year_type = "calendar")
 
 ##END
