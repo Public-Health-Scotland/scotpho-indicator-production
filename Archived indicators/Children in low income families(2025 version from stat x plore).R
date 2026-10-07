@@ -17,13 +17,6 @@
 # https://stat-xplore.dwp.gov.uk/webapi/jsf/login.xhtml
 # Extracting data requires registration with statxplore (ie username and password) to create custom tables and extract data
 
-# For the release on 26 March 2026, there are revisions to the Before Housing Costs time-series at UK,
-# regional and local area level. Data prior to 2022 will not be published and there is no scheduled additional 
-# release later in the year. More information is available in the HBAI release strategy.
-
-# DWP changed methodology for the 2026 publication meaning time trends prior to 2022 are not avaiable.
-# 2026 release also transition to 2022 datazone boundaries meaning IZ and Hscp locality figures can only be published
-# once all hscp have provided 2022 dz lookups
 
 
 ###############################################.
@@ -43,7 +36,7 @@ library(readxl)
 # Contains clif for local authorities and scotland split by age band - note that totals for age splits in area don't match reported total (ie 0-4 + 5-10 + 11-15 dones't always equal under 16 total)
 # DWP apply some kind of cell swapping or small number disclosure control that prevent accurate summing.
 # Figures are for total children (i.e. not split according to parental status e.g. lone parent)
-raw_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2026.xlsx"),sheet="total") %>%
+raw_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2025.xlsx"),sheet="all_data") %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   mutate(code=case_when(code=="S92000003" ~ "S00000001", TRUE ~ code))|> #reset scotland code to that used by scotpho
   select(-total)|> #don't need total column as it should equal the under 16 column
@@ -57,29 +50,26 @@ raw_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low
 
 
 ################################################################################.
-# Extract 2 : Intermediate Zone level data. (SEPT 2026 - 2022 datazone extract available but profiles tool not ready to accept these geographies yet)
+# Extract 2 : Intermediate Zone level data.
+# Figures are for total children (i.e. not split according to parental status e.g. lone parent)
+# Figures are not split by age band since this split not available for small geographies
+# Note that some IZ figures are suppressed by DWP as they are too small (this can generate warnings when you read in the data where cells have "..." instead of a figure
+# e.g.
+# Warning messages:                                                                                                                                                               
+# 1: Expecting numeric in C6247 / R6247C3: got)
 
-# Although dwp publish ageband splits and splits by parental status there is suppression applied meaning aggregating 
-# IZ level data into HSCP locality for these split may not be reliable
-# At IZ level and HSCP locality we only publish total count of children under 16.
-
-
-raw_iz <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_IZ2026.xlsx"),sheet="total") %>%
+raw_iz <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_IZ2025.xlsx"),sheet="iz") %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   filter(code != "S92000003") %>% # don't need scotland level again
   rename(numerator=u16) %>%
   mutate(age2="under16") # year from stat explore is FYE but scotpho year needs
 
 
-# SEPT 2026 - not adding the 2022dz data yet as we aren't ready to include in the profiles tool
 # Join the local authority and iz level data
-# clif_data <-bind_rows(raw_la,raw_iz) |>
-#   mutate(split_name = case_when(age2=="under16" ~ "main",TRUE ~ "age"),
-#          split_value = age2)
-
-clif_data <-raw_la |>
+clif_data <-bind_rows(raw_la,raw_iz) |>
   mutate(split_name = case_when(age2=="under16" ~ "main",TRUE ~ "age"),
-         split_value = age2)  
+         split_value = age2)
+  
 
 
 ## EXTRACTS 3 and 4 will form breakdowns presented in the populations group tab only.
@@ -89,7 +79,7 @@ clif_data <-raw_la |>
 # Contains cilif for local authorities and scotland where parents are lone parents
 # Only keeping the total for under16s (although age splits are available not sure how we would present in profiles tool and may not be useful)
 
-lone_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2026.xlsx"),sheet="lone") %>%
+lone_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2025.xlsx"),sheet="loneparent") %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   mutate(code=case_when(code=="S92000003" ~ "S00000001", TRUE ~ code),#reset scotland code to that used by scotpho
          split_name="Parental Status",
@@ -101,7 +91,7 @@ lone_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in lo
 # Contains cilif for local authorities and scotland where parents are lone parents
 # Only keeping the total for under16s (although age splits are available not sure how we would present in profiles tool and may not be useful)
 
-couple_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2026.xlsx"),sheet="couple") %>%
+couple_la <- read_xlsx(paste0(profiles_data_folder, "/Received Data/Children in low income families/children_in_low_income_families_LA2025.xlsx"),sheet="couple") %>%
   setNames(tolower(names(.))) %>%  #variables to lower case
   mutate(code=case_when(code=="S92000003" ~ "S00000001", TRUE ~ code),#reset scotland code to that used by scotpho
          split_name="Parental Status",
@@ -173,7 +163,7 @@ rm(hb_data, hscp_data) #remove no longer required
 
 # Need population aged 0-15 population - here we use the scotphop dz populations basefile which already contains all geography levels (ie IZ,HSCP,HB,LA,Scotland)
 population <- readRDS(file=paste0(profiles_data_folder, "/Lookups/Population/basefile_DZ11.rds")) %>%
-  filter(year>=2021,  #select from 2021 onwards since thats the furthest back dwp data goes
+  filter(year>=2014,  #select from 2014 onwards
          age<16) |> #only want under 16s
   mutate(age2 = case_when(age<= 4 ~"0-4",age>=5 & age<=10 ~ "5-10",age>=11 & age<=15 ~ "11-15", TRUE ~ "other")) |>
   group_by(year,code,age2) %>%
@@ -181,39 +171,28 @@ population <- readRDS(file=paste0(profiles_data_folder, "/Lookups/Population/bas
   ungroup()
 
 #add rows containing total under 16 populations by year and geography (note this step can take a few minutes to run)
-# adorn totals takes too long to run, so reverting to aggregating then binding pops
-# population <-population |>
-#   group_by(year,code) %>%
-#   group_modify(~ .x |> adorn_totals(name = "under16")) %>% #adorn_total from janitor package adds totals row into data set but can take a while to run
-#   ungroup()
+population <-population |>
+  group_by(year,code) %>%
+  group_modify(~ .x |> adorn_totals(name = "under16")) %>% #adorn_total from janitor package adds totals row into data set but can take a while to run
+  ungroup()
 
-pop_16 <-population |>
-  group_by(year,code) |>
-  summarise(pop=sum(pop)) |>
-  ungroup() |>
-  mutate(age2="under16")
 
-# bind the age specific and totul under 16 population
-pops <- rbind(population, pop_16) |>
-  arrange(year, code, age2)
-
-pops <- pops |>
+population <- population |>
   # create flag column that can be used as a filter 
   # we only need overall under 16 pop at IZ level (numbers too small to publish age splits at this geographic level)
   # exclude when area code is IZ and population not the total for 'under16' 
   mutate (filter= case_when(substr(code,1,3)=="S02" & age2 !="under16" ~ "exclude", TRUE ~ "keep")) |>
   filter (filter=="keep") |> # keep total under 16 pop for IZs and all age groups and total pop for scotland and LA level
   select(-filter) |>
-  rename (age=age2)
+  rename (age=age2) 
 
-rm(population,pop_16)
 
 ################################################################################.
 ## PART 4 : Join populations to CLIF data and calculate rates ----
 ################################################################################.  
 
 
-indicator_data <- left_join(x = pops, y = clif_data, by = c("year","code","age")) |>
+indicator_data <- left_join(x = population, y = clif_data, by = c("year","code","age")) |>
   rename(denominator=pop)|>
   filter(substr(code,1,3) %in% c( "S00","S08","S12","S37","S02")) |> #filter so that HSCO locality and ADP excluded as these are not presented for this indicator
   calculate_percent() |> #call scotpho helper function to add percentage and confidence intervals
