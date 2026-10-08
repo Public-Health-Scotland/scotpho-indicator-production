@@ -1,4 +1,6 @@
-
+# To do: equalities data published since 2021, in a separate spreadsheet.
+# Includes counts of those threatened with homelessness (ind 30034) by age group and sex for Scotland: could be used?
+# Also: should this indicator include all people, not just adults?
 
 # ============================================================================
 # ===== Processing SG HOMELESSNESS STATS =====
