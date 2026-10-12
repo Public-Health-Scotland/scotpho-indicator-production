@@ -26,7 +26,7 @@
 #	CIs derived using Wald method, % and unweighted base (sample size). 
 
 ### functions/packages -----
-source("1.indicator_analysis.R")
+source("functions/main_analysis.R") # for packages and QA function 
 
 # Load additional packages
 library(openxlsx)
@@ -34,8 +34,8 @@ library(openxlsx)
 ### 1. Read in data ----
 
 # Identify data folder
-was_data_folder <- paste0(data_folder, "Received Data/Unmanageable debt/sg_wealth_in_scotland_report/")
-file <- "tables2022.xlsx"
+was_data_folder <- paste0(profiles_data_folder, "/Received Data/Unmanageable debt/sg_wealth_in_scotland_report/")
+file <- "tables2024.xlsx"
 
 
 ## Read in data
@@ -64,20 +64,20 @@ import_wealth_data <- function(sheet, rows, groups, split_name) {
     select(-c(Group, ci_wald, samplesize))
 }
 
-data_sex <- import_wealth_data(sheet="53", rows=c(6:24), groups=c("Female", "Male", "All"), split_name="Sex of household head")
-data_ur <- import_wealth_data(sheet="54", rows=c(6:24), groups=c("Rural", "Urban", "All"), split_name="Urban/Rural status")
-data_disab <- import_wealth_data(sheet="51", rows=c(6:24), groups=c("Someone disabled", "No-one disabled", "All"), split_name="Disability of household member(s)")
-data_ethnicity <- import_wealth_data(sheet="46", rows=c(7:25), groups=c("White British", "Minority ethnic", "All"), split_name="Ethnicity of household head")
-data_income <- import_wealth_data(sheet="49", rows=c(6:36), 
-                                  groups=c("1st (lowest) household income quintile", "2nd", "3rd", "4th", "5th (highest) household income quintile", "All"), 
+data_sex <- import_wealth_data(sheet="53", rows=c(7:25), groups=c("Female", "Male", "All"), split_name="Sex of household head")
+data_ur <- import_wealth_data(sheet="54", rows=c(7:25), groups=c("Rural", "Urban", "All"), split_name="Urban/Rural status")
+data_disab <- import_wealth_data(sheet="51", rows=c(7:25), groups=c("Someone disabled", "No-one disabled", "All"), split_name="Disability of household member(s)")
+data_ethnicity <- import_wealth_data(sheet="46", rows=c(8:26), groups=c("White British", "Minority ethnic", "All"), split_name="Ethnicity of household head")
+data_income <- import_wealth_data(sheet="49", rows=c(7:37), 
+                                  groups=c("1st (lowest) income quintile", "2nd", "3rd", "4th", "5th (highest) income quintile", "All"), 
                                   split_name="Household income (equivalised)") %>%
-  mutate(split_value = case_when(split_value == "1st (lowest) household income quintile" ~ "1 - lowest income", 
+  mutate(split_value = case_when(split_value == "1st (lowest) income quintile" ~ "1 - lowest income", 
                                  split_value == "2nd" ~ "2", 
                                  split_value == "3rd" ~ "3", 
                                  split_value == "4th" ~ "4", 
-                                 split_value == "5th (highest) household income quintile" ~ "5 - highest income",
-                                 split_value == "All" ~ "Total"))
-data_age <- import_wealth_data(sheet="47", rows=c(6:40), 
+                                 split_value == "5th (highest) income quintile" ~ "5 - highest income",
+                                 split_value == "Total" ~ "Total"))
+data_age <- import_wealth_data(sheet="47", rows=c(7:41), 
                                groups=c("16-34","35-44","45-54","55-64","65-74","75+","All"), split_name="Age of household head") %>%
   mutate(split_value = paste0(split_value, "y"),
          split_value = case_when(split_value == "Totaly" ~ "Total",
@@ -115,8 +115,8 @@ prepare_final_files <- function(ind){
     unique() %>%
     arrange(code, year)
   
-  write.csv(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
-  write_rds(main_data, paste0(data_folder, "Data to be checked/", ind, "_shiny.rds"))
+  write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.csv"), row.names = FALSE)
+  write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny.rds"))
 
   # 2 - population groups data (ie data behind population groups tab)
   # Contains Scotland data by population groups (including total)
@@ -127,8 +127,8 @@ prepare_final_files <- function(ind){
     arrange(code, year, split_name)
   
   # Save
-  write.csv(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
-  write_rds(pop_grp_data, paste0(data_folder, "Data to be checked/", ind, "_shiny_popgrp.rds"))
+  write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.csv"), row.names = FALSE)
+  write_rds(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/", ind, "_shiny_popgrp.rds"))
 
   # Make data created available outside of function so it can be visually inspected if required
   main_data_result <<- main_data
@@ -142,53 +142,6 @@ prepare_final_files <- function(ind){
 prepare_final_files(ind = "unmanageable_debt")
 
 # # Run QA reports 
-run_qa(filename = "unmanageable_debt")
-
-# Manual plot checks as pop group automated checks not written yet
-
-# Plot the indicator(s)
-# =================================================================================================================
-# Let's now see what the series and CIs look like:
-
-# Sex of household head
-all_data %>%
-  filter(split_name=="Sex of household head") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# Age of household head
-all_data %>%
-  filter(split_name=="Age of household head") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# Urban/rural status
-all_data %>%
-  filter(split_name=="Urban/Rural status") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# Disability of household member(s)
-all_data %>%
-  filter(split_name=="Disability of household member(s)") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# Household income
-all_data %>%
-  filter(split_name=="Household income (equivalised)") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
-
-# Ethnicity of household head
-all_data %>%
-  filter(split_name=="Ethnicity of household head") %>% 
-  ggplot(aes(year, rate, group = split_value, colour = split_value, shape = split_value)) + 
-  geom_point() + geom_line() +
-  geom_ribbon(aes(ymin = lowci, ymax = upci), alpha = 0.1) 
+run_qa(type = "main", filename = "unmanageable_debt", test_file=FALSE)
+run_qa(type = "popgrp", filename = "unmanageable_debt", test_file=FALSE)
 
