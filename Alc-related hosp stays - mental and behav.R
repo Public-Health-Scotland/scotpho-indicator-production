@@ -10,28 +10,14 @@
 # Whether rate of patients or stays was not specified in MHI spec. 
 # I opted to use stays, as this is the headline stat the ARHS team use in their publications. 
 
-# Changes in 2025: the alcohol team now provide the raw counts by DZ in an rds file:
-
-# SEPT 2025: 
-# Data provided by Scott Kilgariff, mailto:phs.alcohol@phs.scot
-# rds file at DZ11 level: "IR2025-00668-output.RDS"
+# OCT 2026:
+# Data to 2025/26 provided: IR2026-00790-output.rds
+# with DZ01 for 1998 to 2011 and DZ11 for 2012 onwards, 
+# and age_grp 4 = 16-19 years.
 # Patients/stays from 16 years and older.
 # Only Scottish residents have been included
 # Only those patients/stays where the sex is known have been included
-
-# OCT 2025: 
-# Alc team confirmed that age_grp 4 = 16-19 years (not 15-19, as labelled) and provided a new rds file "IR2025-00668-output_updated.RDS" with DZ01 for 1998 to 2011 and DZ11 for 2012 onwards.
-# Use updated file for SIMD analysis, but original file for main analysis.
-# DZ01 have been supplied up to and including 2011, because the alcohol team have been using SIMD 2016 for 2012 and 2013 data (a departure from the ISD GPD guidance which uses SIMD 2012 for these years)
-# This has been noted in the indicator metadata.
-
-# FUTURE DATA:
-# I queried the use of SIMD 2016 rather than SIMD 2012 with the alcohol team, and their analysis will be reviewed in future. Response received:
-# "Thanks for bringing the updated guidance to our attention. 
-# I’ve looked in to our existing code and we use SIMD2016 for 2012 & 2013 because we use the 2011 Data Zones for our population estimates. 
-# The current guidance states that “Pre-SIMD 2016 versions cannot be used with 2011 Data Zone” which is quoted in the commentary for the script calculating decile populations.
-# However, this was decided based on the 3.3 version of the guidance so we will be looking into this further for future updates."
-
+# 
 # statistical disclosure control applied to numerator after rate calculations : CHECK FINAL OUTPUT WITH ALCOHOL TEAM BEFORE PUBLISHING.
 # Method used in disclosure control should align with that used in total alcohol related admissions indicator & alcohol team publication not be published. 
 
@@ -52,18 +38,14 @@ source("//PHI_conf/ScotPHO/Profiles/Code/stat_disclosure_alcohol_stays.R") # sta
 arhs_data_folder <- paste0(profiles_data_folder, "/Received Data/Alc-related hosp stays - mental and behavioural disorders/")
 file1 <- "IR2025-00668-output.RDS"
 file2 <- "IR2025-00668-output_updated.RDS"
+file <- "IR2026-00790-output.RDS"
 
-arhs <- readRDS(paste0(arhs_data_folder, file1)) %>%
-  mutate(sex_grp = ifelse(sex=="Female", 2, 1)) %>%
-  select(year, datazone2011, sex_grp, age_grp, numerator = stays)
-
-arhs_simd <- readRDS(paste0(arhs_data_folder, file2)) %>%
-  mutate(sex_grp = ifelse(sex=="Female", 2, 1)) %>%
-  select(year, datazone, sex_grp, age_grp, numerator = stays)
+arhs <- readRDS(paste0(arhs_data_folder, file)) %>%
+  mutate(sex_grp = ifelse(sex=="Female", 2, 1),
+         year = as.numeric(substr(financial_year, 1, 4))) %>%
+  select(year, trend_axis = financial_year, datazone, sex_grp, age_grp, numerator = stays)
 
 # Save the raw data for feeding to the processing functions
-
-# File 1
 
 # Total population
 saveRDS(arhs, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_and_behav_raw.rds"))
@@ -75,20 +57,6 @@ saveRDS(arhs_m, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_an
 arhs_f <- arhs %>% filter(sex_grp==2)
 saveRDS(arhs_f, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_and_behav_F_raw.rds"))
 
-# File 2 (SIMD analysis)
-
-# Total population
-saveRDS(arhs_simd, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_raw.rds"))
-
-# Subsets by sex
-arhs_simd_m <- arhs_simd %>% filter(sex_grp==1)
-saveRDS(arhs_simd_m, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_M_raw.rds"))
-
-arhs_simd_f <- arhs_simd %>% filter(sex_grp==2)
-saveRDS(arhs_simd_f, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_F_raw.rds"))
-
-
-
 
 ##########################################################
 ### Main analysis (used for pop group files too) -----
@@ -97,12 +65,12 @@ saveRDS(arhs_simd_f, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_
 # Run main_analysis to produce total population rates
 main_analysis(filename="ARHS_mental_and_behav",
                             measure = "stdrate",
-                            geography = "datazone11",
-                            year_type = "calendar",
+                            geography = "datazone",
+                            year_type = "financial",
                             ind_id = 30006, 
                             time_agg = 1, 
                             yearstart=2002, 
-                            yearend=2023, 
+                            yearend=2024, 
                             pop = "DZ11_pop_16+", 
                             epop_total = 165800, # 82900 x 2 sexes (because age grp 4 starts at 16y)
                             epop_age = "16+", 
