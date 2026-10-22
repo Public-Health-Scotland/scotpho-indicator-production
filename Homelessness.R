@@ -171,6 +171,15 @@ homeless_female <- readRDS(file.path(profiles_data_folder, "Data to be checked",
 homeless_total <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_total_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Total")
 homeless_popgroup <- rbind(homeless_male, homeless_female, homeless_total)
 
+#delete the individual male/female from 'to be checked' folder so these aren't accidentally copied over to the shiny data folder
+# delete male only files from folder
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_female_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_female_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_male_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_male_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_total_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_total_shiny.csv"))
+
 # Save
 write_rds(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.rds"))
 write.csv(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.csv"), row.names = FALSE)
