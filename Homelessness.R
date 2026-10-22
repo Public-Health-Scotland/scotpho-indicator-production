@@ -1,4 +1,6 @@
-
+# To do: equalities data published since 2021, in a separate spreadsheet.
+# Includes counts of those threatened with homelessness (ind 30034) by age group and sex for Scotland: could be used?
+# Also: should this indicator include all people, not just adults?
 
 # ============================================================================
 # ===== Processing SG HOMELESSNESS STATS =====
@@ -10,7 +12,7 @@
 # 30034 = "Rate of homelessness applications assessed as homeless or potentially homeless in the past year, per 1000 population."
 # 30161 = "Number of children per 1,000 in temporary accommodation" 
 
-# xlsx received from Kelechi.Agwu@gov.scot on behalf of homelessness_statistics_inbox@gov.scot, Nov 2024
+# xlsx received from Kelechi.Agwu@gov.scot on behalf of homelessness_statistics_inbox@gov.scot, Oct 2026
 # Data also available online (main tables at https://www.gov.scot/publications/homelessness-in-scotland-2023-24/documents/), but not by gender (these have to be requested)
 # Data are counts of adults or children (not counts of applications or households)
 
@@ -60,7 +62,8 @@ library(openxlsx)
 
 # Identify data folder
 homeless_data_folder <- paste0(profiles_data_folder, "/Received Data/Homelessness/")
-file <- "Adhoc - 2024.11.13 - Homeless Adults gender breakdown & children in TA - PHS.xlsx"
+file <- "Adhoc - 2026.10.07 - Homeless Adults gender breakdown  children in TA - PHS.xlsx"
+# CHECK THIS FILE IS IN THE SAME FORMAT AS THE PREVIOUS EXTRACT SO THE GET_DATA() FUNCTION WORKS
 
 # Read in geography lookups:
 
@@ -139,21 +142,21 @@ saveRDS(tempaccom_total, file=paste0(profiles_data_folder, '/Prepared Data/tempa
 
 # Run main analysis function
 main_analysis(filename = "homeless_total", ind_id = 30034, geography = "council", measure = "crude", 
-              pop = "CA_pop_19+", yearstart = 2002, yearend = 2023,
+              pop = "CA_pop_19+", yearstart = 2002, yearend = 2025,
               time_agg = 1, crude_rate = 1000, year_type = "financial", police_div=TRUE)
 
 #saved to 'to be checked folder' but is not standalone indicator - only required to generate popgrp data
 main_analysis(filename = "homeless_male", ind_id = 30034, geography = "council", measure = "crude", 
-              pop = "CA_pop_M_19+", yearstart = 2002, yearend = 2023,
+              pop = "CA_pop_M_19+", yearstart = 2002, yearend = 2025,
               time_agg = 1, crude_rate = 1000, year_type = "financial", police_div=TRUE)
 
 #saved to 'to be checked folder' but is not standalone indicator - only required to generate popgrp data
-main_analysis(filename = "homeless_female_X", ind_id = 30034, geography = "council", measure = "crude", 
-              pop = "CA_pop_F_19+", yearstart = 2002, yearend = 2023,
+main_analysis(filename = "homeless_female", ind_id = 30034, geography = "council", measure = "crude", 
+              pop = "CA_pop_F_19+", yearstart = 2002, yearend = 2025,
               time_agg = 1, crude_rate = 1000, year_type = "financial",police_div=TRUE)
 
 main_analysis(filename = "tempaccom_total", ind_id = 30161, geography = "council", measure = "crude", 
-              pop = "CA_pop_under16", yearstart = 2002, yearend = 2024, # requires the 2024 MYE, due Aug 2025.
+              pop = "CA_pop_under16", yearstart = 2002, yearend = 2025, 
               time_agg = 1, crude_rate = 1000, year_type = "snapshot",police_div=TRUE)
 
 
@@ -167,6 +170,15 @@ homeless_male <- readRDS(file.path(profiles_data_folder, "Data to be checked", "
 homeless_female <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_female_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Femle")
 homeless_total <- readRDS(file.path(profiles_data_folder, "Data to be checked", "homeless_total_shiny.rds") ) %>% mutate(split_name="Gender", split_value="Total")
 homeless_popgroup <- rbind(homeless_male, homeless_female, homeless_total)
+
+#delete the individual male/female from 'to be checked' folder so these aren't accidentally copied over to the shiny data folder
+# delete male only files from folder
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_female_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_female_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_male_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_male_shiny.csv"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_total_shiny.rds"))
+file.remove(file.path(profiles_data_folder, "/Data to be checked/homeless_total_shiny.csv"))
 
 # Save
 write_rds(homeless_popgroup, paste0(profiles_data_folder, "/Data to be checked/homeless_shiny_popgrp.rds"))
