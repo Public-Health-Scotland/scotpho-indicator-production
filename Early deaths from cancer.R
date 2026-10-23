@@ -35,30 +35,44 @@ cancer_deaths <- as_tibble(dbGetQuery(channel, statement=
 # Bringing datazone info.
 postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_2.rds') %>% 
   clean_names() %>%   #variables to lower case
-  select(pc7, datazone2001, datazone2011)
+  select(pc7, datazone2001, datazone2011, datazone2022)
 
 cancer_deaths <- left_join(cancer_deaths, postcode_lookup, "pc7") %>% 
-  select(year, age_grp, sex_grp, datazone2001, datazone2011) %>% 
+  select(year, age_grp, sex_grp, datazone2001, datazone2011, datazone2022) %>% 
   mutate_if(is.character, factor) #converting variables into factors
 
 ###############################################.
 ## Part 2 - Create the different geographies basefiles ----
 ###############################################.
 ###############################################.
+
 # Datazone2011
 candeath_dz11 <- cancer_deaths %>% group_by(year, datazone2011, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2011)
 
 saveRDS(candeath_dz11, file.path(profiles_data_folder, 'Prepared Data/early_cancer_deaths_dz11_raw.rds'))
 
+# WHEN READY TO SWTICH TO 2022 DATAZONES
+# Datazone2022 
+# candeath_dz22 <- cancer_deaths %>% group_by(year, datazone2022, sex_grp, age_grp) %>%  
+#  summarize(numerator = n()) %>% ungroup() %>%  rename(datazone = datazone2022)
+
+saveRDS(candeath_dz11, file.path(profiles_data_folder, 'Prepared Data/early_cancer_deaths_dz11_raw.rds'))
+
 ###############################################.
-#Deprivation basefile
-# DZ 2001 data needed up to 2013 to enable matching to advised SIMD
+#Deprivation trend basefiles - simd index require different dz boundaries for matching - see SAAG guidance
+
+#DZ 2001 data needed up to 2013 to enable matching to advised SIMD
 candeath_dz01 <- cancer_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
   summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
   subset(year<=2013)
 
-candeath_depr <- rbind(candeath_dz01, candeath_dz11 %>% subset(year>=2014)) 
+#DZ211 required for years between 2014 and 2023 
+candeath_dz11 <- cancer_deaths %>% group_by(year, datazone2001, sex_grp, age_grp) %>%  
+  summarize(numerator = n()) %>% ungroup() %>% rename(datazone = datazone2001) %>% 
+  subset(year>=2014 & year <= 2023)
+
+candeath_depr <- rbind(candeath_dz01, candeath_dz11, candeath_dz22 %>% subset(year>=2024)) 
 
 saveRDS(candeath_depr, file=paste0(data_folder, 'Prepared Data/early_cancer_deaths_depr_raw.rds'))
 
@@ -69,6 +83,7 @@ main_analysis(filename = "early_cancer_deaths_dz11", geography = "datazone11",
               measure = "stdrate", yearstart = 2002, yearend = 2024, time_agg = 3,
               epop_age = "normal", pop = "DZ11_pop_under75", epop_total = 182000,
               ind_id = 20106, year_type = "calendar")
+
 
 #Deprivation analysis function
 #Run when new SIMD is released
