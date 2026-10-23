@@ -22,7 +22,7 @@ check_file_exists <- function(folder, filename){
         "Prepared data file not found",
         "x" = "File '{filename}' not saved {folder}",
         "i" = "There should be a step within your indicator production R script that saves 
-               a prepared 'rds' file ending in '_raw' to be further processed in this function."
+               a prepared 'rds' file ending in '_raw' (or _popgrps_raw for the popgrps analysis function) to be further processed in this function."
       )
     )
   }
