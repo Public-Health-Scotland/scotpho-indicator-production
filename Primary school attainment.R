@@ -1,27 +1,31 @@
 #########################################################.
-# SG Curriculum for Excellence attainment: P1, P4 and P7 - data import
+# SG Primary school attainment (Curriculum for Excellence, CfE): P1, P4 and P7 - data import
 #########################################################.
 
 ### ScotPHO indicators sourced from SG CfE attainment data: 
-### Author: Liz Richardson, 8 Aug 2025
+### Author: Liz Richardson, Oct 2026
 
 ### CYP mental health indicators:
 # 30157 = Primary educational attainment (literacy)	=	Percentage of P1, P4 and P7 pupils achieving expected Curriculum for Excellence levels in literacy (reading, writing, listening and talking) 
 # 30158 = Primary educational attainment (numeracy)	=	Percentage of P1, P4 and P7 pupils achieving expected Curriculum for Excellence levels in numeracy
 
 ### Notes on the data source:
-# Spreadsheet containing the data 2016/17 to 2023/24 downloaded from SG: 
-# Supplementary tables from https://www.gov.scot/publications/achievement-of-curriculum-for-excellence-cfe-levels-2023-24/documents/.
-# (statistics.gov.scot has Scotland-wide and SIMD quintile data, but not for councils or population splits)
+# Spreadsheet containing the data 2016/17 to 2024/25 downloaded from SG: 
+# Supplementary tables from https://www.gov.scot/publications/achievement-of-curriculum-for-excellence-cfe-levels-2024-25/.
 # SIMD is based on pupil's home post code: 
 # SIMD 2016 for 2016/17, 2017/18, 2018/19 
-# SIMD 2020 for 2020/21, 2021/22 and 2022/23. 
+# SIMD 2020 from 2020/21. 
 # No data collected in 2019/20 (collection and publication was cancelled in 2019-2020 due to the difficulties in collecting data whilst schools were closed due to COVID-19)
 
 # For inequalities calcs: 
 # Published pupil census data don't provide the denominator granularity we need (quintile x stage x council area). 
 # Denominator data obtained directly from Keith Hoy (school.stats@gov.scot). 
 
+# Things to check when running this script in the future: (the data have looked similar in recent years, with a few small inconsistencies)
+# Tab names 
+# Which row number the column headers are in 
+# Labels in the "Stage" and "SIMD" columns, so that they recode correctly
+# Column names (maybe the note suffixes have changed)
 
 ##########################################################.
 ### Source functions and additional packages ----
@@ -40,9 +44,9 @@ library(hablar)
 ##########################################################.
 
 # Identify data folder
-cfe_profiles_data_folder <- paste0(profiles_data_folder, "/Received Data/Curriculum for Excellence/")
-file <- "ACEL+2324+-+Publication+-+Supplementary+tables+-+final.xlsx"
-cohort <- "ACEL 23-24 Table 11 with cohort for Elizabeth Richardson.xlsx"
+attainment_folder <- paste0(profiles_data_folder, "/Received Data/Primary school attainment/")
+data_file <- "ACEL+2425+-+Publication+-+Supplementary+tables+-+PUBLISHED+TABLES.xlsx"
+denominators <- "A2503 - Liz Richardson - ACEL 1617 to  2425 table 11 with cohorts.xlsx"
 geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
 
 ## Geography lookups -----
@@ -72,38 +76,38 @@ geography_lookup <- readRDS(file.path(geography_lookups, "DataZone11_All_Geograp
 
 # Process the denominator data (requested from SG)
 
-denoms <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
-                     sheet = "ACEL Table_11",
+denoms <- read.xlsx(paste0(attainment_folder, denominators),
+                     sheet = "Table_11 - cohort 2324 2425",
                      startRow = 5,
                      colNames = TRUE) %>%
   clean_names() %>%
   select(year = year_note_9, stage, areaname=local_authority_note_7, quintile = simd_note_3, 
-         denominator = cohort) %>%
+         denom_Literacy = english_literacy_cohort, denom_Numeracy = numeracy_cohort) %>%
   
   # Add split columns (by stage)
-  filter(grepl("^P", stage)) %>%
-  mutate(split_value = case_when(stage == "P1 (Early Level)" ~ "P1",
-                           stage == "P4 (First Level)" ~ "P4",
-                           stage == "P7 (Second Level)" ~ "P7",
-                           stage == "P1, P4 and P7 combined" ~ "Total")) %>%
+  filter(grepl("^P", stage)) %>% # keep the P1/P4/P7 rows only
+  mutate(split_value = case_when(str_detect(stage, "combined") ~ "Total",
+                                 str_detect(stage, "P1") ~ "P1",
+                                 str_detect(stage, "P4") ~ "P4",
+                                 str_detect(stage, "P7") ~ "P7")) %>%
   mutate(split_name = "Stage") %>%
   
   # numeric year column (used to match to the indicator data)
   mutate(year = as.numeric(substr(year, 1, 4))) %>%
   
-  # NA means different things in this file. 
-  # Need to recode the splits where the denominator should be 0 rather than NA, as these will be dropped. 
-  # NA also used for 2019 here (no data rather than no cases), which needs to be kept in (so the plots work).
-  mutate(denominator = case_when(is.na(denominator) & year!=2019 ~ 0, # these were NA but should be 0
-                                 TRUE ~ denominator)) %>%
-  
+  # Suppressed and NA data.
+  # No data from 2019 (indicated as "-"): keep in as NA so 2019 is included in plots (no data rather than no cases)
+  # The other "-" in the spreadsheet mean 0, and are read in as 0
+  # "c" and "[c]" are used for suppressed data: replace with NA  
+  mutate(across(c(denom_Literacy, denom_Numeracy), ~ as.numeric(.))) %>%
+
   # SIMD column
-  mutate(quintile = case_when(quintile %in% c("SIMD Quintile 1 - most deprived", "SIMD Quintile 1") ~ "1",
-                              quintile=="SIMD Quintile 2" ~ "2",
-                              quintile=="SIMD Quintile 3" ~ "3",
-                              quintile=="SIMD Quintile 4" ~ "4",
-                              quintile=="SIMD Quintile 5 - least deprived" ~ "5",
-                              quintile=="Local Authority Total" ~ "Total")) %>%
+  mutate(quintile = case_when(str_detect(quintile, "1") ~ "1",
+                              str_detect(quintile, "2") ~ "2",
+                              str_detect(quintile, "3") ~ "3",
+                              str_detect(quintile, "4") ~ "4",
+                              str_detect(quintile, "5") ~ "5",
+                              str_detect(quintile, "Total") ~ "Total")) %>%
   filter(!is.na(quintile)) %>%
 
   # add areatype column
@@ -114,20 +118,21 @@ denoms <- read.xlsx(paste0(cfe_profiles_data_folder, cohort),
   
   # add the geog codes, 
   merge(y=code_lookup, by=c("areaname", "areatype")) %>% 
-  
+
   # select required variables
   select(-starts_with("area"), -stage)
 
 # Aggregate denoms to Scotland
 denoms_scotland <- denoms %>%
   group_by(year, quintile, split_name, split_value) %>%
-  summarise(denominator = sum_(denominator)) %>% # sum_ means NAs in 2019 sum to NA (rather than 0)
+  summarise(across(c(denom_Literacy, denom_Numeracy), ~ sum_(.))) %>% # sum_ means NAs in 2019 sum to NA (rather than 0)
   ungroup() %>%
   mutate(code = "S00000001") 
 
 # Combine
 denoms <- rbind(denoms, denoms_scotland) %>%
-  mutate(quint_type = "sc_quin")
+  mutate(quint_type = "sc_quin") %>%
+  pivot_longer(cols=starts_with("denom"), names_to = "indicator", values_to = "denominator", names_prefix="denom_")
 
 
 ##########################################################.
@@ -156,26 +161,26 @@ get_range_midpoint <- function(var) {
 
 
 # Function to read in data from any spreadsheet tab
+non_numeric_cols <- c("organiser", "local", "simd", "year", "sex", "ethnicity", "urban", "stage", "indicator", "simd_not")
 
 get_attainment_data <- function (sheetname, startnumber) {
   
-  non_numeric_cols <- c("organiser", "local", "simd", "year", "sex", "ethnicity", "urban", "stage")
   
-  df <- read.xlsx(paste0(cfe_profiles_data_folder, file),
+  df <- read.xlsx(paste0(attainment_folder, data_file),
                   sheet = sheetname,
-                  startRow = startnumber,
+                  startRow = startnumber, # where the column headings are
                   colNames = TRUE) %>%
     clean_names() %>%
     # filter and recode if 'stage' is a column
     filter(if_any(matches("stage"), ~ grepl("^P", .))) %>% # select P1, P4, P7, and all combined
-    mutate(stage = case_when(stage %in% c("P1 - Early level", "P1 (Early Level)") ~ "P1",
-                             stage %in% c("P4 - First level", "P4 (First Level)") ~ "P4",
-                             stage %in% c("P7 - Second level", "P7 (Second Level)") ~ "P7",
-                             stage == "P1, P4 and P7 combined" ~ "Total")) %>%
+    mutate(stage = case_when(str_detect(stage, "combined") ~ "Total",
+                             str_detect(stage, "P1") ~ "P1",
+                             str_detect(stage, "P4") ~ "P4",
+                             str_detect(stage, "P7") ~ "P7")) %>%
     # convert to character for next bit of processing
     mutate(across(everything(), ~ as.character(.))) %>%
     # convert suppressed (or 2019) values to NA
-    mutate(across(.cols = -c(starts_with(c(non_numeric_cols))), # works even if these cols don't exist... result!
+    mutate(across(.cols = -c(starts_with(c(non_numeric_cols))), # ignore the pre-specified non-numeric cols
                   .fns = ~ case_when(. %in% c("[w]", "[c]", "c", "[x]") ~ NA, # replace the missing codes with NA
                                      TRUE ~ .))) %>%
     # # convert [x] to 0
@@ -203,7 +208,7 @@ process_national_data <- function(data) {
     rename(indicator = organise) %>%
     
     # reshape the data 
-    pivot_longer(cols = c(x2016_17 : x2023_24), values_to="rate", names_to = "year", names_prefix = "x") %>%
+    pivot_longer(cols = -any_of(non_numeric_cols), values_to="rate", names_to = "year", names_prefix = "x") %>%
     mutate(year = as.numeric(substr(year, 1, 4))) %>%
     
     # add areatype column
@@ -228,13 +233,13 @@ format_simd_data <- function(data) {
   df <- data %>%
     
     # standardise quintile column
-    mutate(quintile = case_when(quintile %in% c("SIMD Quintile 1 - most deprived", "SIMD Quintile 1", "SIMD Quintile 1 - Most Deprived") ~ "1",
-                                   quintile=="SIMD Quintile 2" ~ "2",
-                                   quintile=="SIMD Quintile 3" ~ "3",
-                                   quintile=="SIMD Quintile 4" ~ "4",
-                                   quintile %in% c("SIMD Quintile 5 - Least Deprived", "SIMD Quintile 5 - least deprived") ~ "5",
-                                   quintile %in% c("Total", "Local Authority Total") ~ "Total",
-                                   TRUE ~ as.character(NA))) %>%
+    mutate(quintile = case_when(str_detect(quintile, "1") ~ "1",
+                                str_detect(quintile, "2") ~ "2",
+                                str_detect(quintile, "3") ~ "3",
+                                str_detect(quintile, "4") ~ "4",
+                                str_detect(quintile, "5") ~ "5",
+                                str_detect(quintile, "Total") ~ "Total",
+                                TRUE ~ as.character(NA))) %>%
     filter(!is.na(quintile)) 
   
 }
@@ -245,12 +250,12 @@ format_simd_data <- function(data) {
 
 # Scotland, overall (Table 1) (used for Scot splits by stage (P1, P4, P7))
 
-scotland <- get_attainment_data(sheetname="Table_1", startnumber=5) %>% 
+scotland <- get_attainment_data(sheetname="Table_1", startnumber=6) %>% # column headings are in row 6 in 2026 data
   process_national_data()
 
-# Scotland, by deprivation (Table 2.4) (used for Scot splits by SIMD)
+# Scotland, by deprivation (Table 2) (used for Scot splits by SIMD)
 
-simd <- get_attainment_data(sheetname="Table_2_4", startnumber=5) %>%
+simd <- get_attainment_data(sheetname="Table_2", startnumber=5) %>%
   process_national_data() %>%
   # SIMD column
   select(-quintile) %>%
@@ -291,7 +296,7 @@ data_scot_la_simd <- simd %>%
   select(-starts_with("area")) %>%
   
   # add in denominators 
-  merge(y=denoms, by=c("year", "split_value", "split_name", "code", "quintile")) %>% # add denominators
+  merge(y=denoms, by=c("year", "split_value", "split_name", "code", "quintile", "indicator")) %>% # add denominators
   filter(denominator>0 |is.na(denominator)) %>% # if denominator is zero the split shouldn't be included in the output data (e.g., some SIMD quintiles in small boards)
   mutate(numerator = round(denominator * rate/100))  %>% # back calculate the numerators
   # rate is NA if suppressed (based on small counts)
@@ -388,7 +393,7 @@ prep_popgrp_data_by_stage <- function(ind, ind_num) {
   
   for (stage in c("P1", "P4", "P7")) {
     main_analysis(filename = paste0(ind, "_", stage), ind_id = ind_num, geography = "council", measure = "percent", 
-                  yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", QA = FALSE, NA_means_suppressed=TRUE)
+                  yearstart = 2016, yearend = 2024, time_agg = 1, year_type = "school", QA = FALSE, NA_means_suppressed=TRUE)
     df1 <- main_analysis_result %>% mutate(split_name="Stage", split_value=stage)
     df_name <- stage
     assign(df_name, df1)
@@ -462,12 +467,12 @@ process_simd_data <- function(ind, ind_num) {
 #################################.
 
 main_analysis(filename = "Literacy", ind_id = 30157, geography = "council", measure = "percent", 
-              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
+              yearstart = 2016, yearend = 2024, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
 
 main_analysis(filename = "Numeracy", ind_id = 30158, geography = "council", measure = "percent", 
-              yearstart = 2016, yearend = 2023, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
+              yearstart = 2016, yearend = 2024, time_agg = 1, year_type = "school", NA_means_suppressed=TRUE, police_div = TRUE)
 
-# QA and main_analysis_result df show that 2019/20 has been retained despite being all NA, which is the desired result
+# main_analysis_result df shows that 2019/20 has been retained despite being all NA, which is the desired result (so that the break is shown in plots)
 
 
 
