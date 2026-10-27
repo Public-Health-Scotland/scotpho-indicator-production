@@ -53,7 +53,7 @@ unintentional_under5 <- tibble::as_tibble(dbGetQuery(channel, statement=paste0(
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END as year
   FROM ANALYSIS.SMR01_PI z
-  WHERE admission_date between  '1 April 2005' and '31 March 2025'
+  WHERE admission_date between  '1 April 2005' and '31 March 2026'
     AND sex <> 0
     AND AGE_IN_YEARS <=4
     AND CASE WHEN admission_type = '32' THEN 1
@@ -75,7 +75,7 @@ unintentional_under5 <- tibble::as_tibble(dbGetQuery(channel, statement=paste0(
    mutate(age_grp = 1)
 
  # Bringing council area info.
- postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_2.rds') %>%
+ postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_2.rds') %>%
    setNames(tolower(names(.))) %>%   #variables to lower case
    select(pc7, ca2019)
 
@@ -97,7 +97,7 @@ unintentional_under5 <- tibble::as_tibble(dbGetQuery(channel, statement=paste0(
 main_analysis(filename = "unintentional_under5", ind_id = 13050, 
               geography = "council", measure = "stdrate",
               pop = "CA_pop_under5", epop_age = 'normal', epop_total = 10000, 
-              yearstart = 2005, yearend = 2024, time_agg = 3, year_type = "financial")
+              yearstart = 2005, yearend = 2025, time_agg = 3, year_type = "financial")
 
 
 ##END
