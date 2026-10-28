@@ -2,6 +2,9 @@
 # ===== Processing PHS HOSPITAL STATS (SMR01 AND SMR04) =====
 # ============================================================================
 
+# Liz Richardson
+# Oct 2026
+
 # NOTES ON THE INDICATOR
 
 # 1 adult MH indicator: 
@@ -10,29 +13,15 @@
 # Whether rate of patients or stays was not specified in MHI spec. 
 # I opted to use stays, as this is the headline stat the ARHS team use in their publications. 
 
-# Changes in 2025: the alcohol team now provide the raw counts by DZ in an rds file:
-
-# SEPT 2025: 
+# OCT 2026:
 # Data provided by Scott Kilgariff, mailto:phs.alcohol@phs.scot
-# rds file at DZ11 level: "IR2025-00668-output.RDS"
-# Patients/stays from 16 years and older.
+# Patients/stays from 16 years and older (alc team confirmed that age_grp 4 = 16-19 years)
 # Only Scottish residents have been included
 # Only those patients/stays where the sex is known have been included
+# Separate RDS files by DZ01, DZ11, and DZ22 (same individuals in each). REQUEST THIS FORMAT GOING FORWARD, TO AVOID HAVING TO CHANGE THE CODE.
+# We use DZ11 data for main and popgrp data time series, and add in DZ01 data when analysing inequalities pre 2014.
 
-# OCT 2025: 
-# Alc team confirmed that age_grp 4 = 16-19 years (not 15-19, as labelled) and provided a new rds file "IR2025-00668-output_updated.RDS" with DZ01 for 1998 to 2011 and DZ11 for 2012 onwards.
-# Use updated file for SIMD analysis, but original file for main analysis.
-# DZ01 have been supplied up to and including 2011, because the alcohol team have been using SIMD 2016 for 2012 and 2013 data (a departure from the ISD GPD guidance which uses SIMD 2012 for these years)
-# This has been noted in the indicator metadata.
-
-# FUTURE DATA:
-# I queried the use of SIMD 2016 rather than SIMD 2012 with the alcohol team, and their analysis will be reviewed in future. Response received:
-# "Thanks for bringing the updated guidance to our attention. 
-# I’ve looked in to our existing code and we use SIMD2016 for 2012 & 2013 because we use the 2011 Data Zones for our population estimates. 
-# The current guidance states that “Pre-SIMD 2016 versions cannot be used with 2011 Data Zone” which is quoted in the commentary for the script calculating decile populations.
-# However, this was decided based on the 3.3 version of the guidance so we will be looking into this further for future updates."
-
-# statistical disclosure control applied to numerator after rate calculations : CHECK FINAL OUTPUT WITH ALCOHOL TEAM BEFORE PUBLISHING.
+# Statistical disclosure control applied to numerator after rate calculations : CHECK FINAL OUTPUT WITH ALCOHOL TEAM BEFORE PUBLISHING.
 # Method used in disclosure control should align with that used in total alcohol related admissions indicator & alcohol team publication not be published. 
 
 
@@ -45,108 +34,131 @@ source("functions/deprivation_analysis.R") # for packages and QA
 source("//PHI_conf/ScotPHO/Profiles/Code/stat_disclosure_alcohol_stays.R") # statistical disclosure methodology - confidential - do not share
 
 ##########################################################
+### Paths -----
+##########################################################
+
+# File paths
+arhs_data_folder <- paste0(profiles_data_folder, "/Received Data/Alc-related hosp stays - mental and behavioural disorders/")
+data_datazone2001 <- "IR2026-00790-output_dz2001.RDS"
+data_datazone2011 <- "IR2026-00790-output_dz2011.RDS"
+data_datazone2022 <- "IR2026-00790-output_dz2022.RDS"
+
+
+##########################################################
 ### Read in data -----
 ##########################################################
 
-# File location
-arhs_data_folder <- paste0(profiles_data_folder, "/Received Data/Alc-related hosp stays - mental and behavioural disorders/")
-file1 <- "IR2025-00668-output.RDS"
-file2 <- "IR2025-00668-output_updated.RDS"
+# Numerator data
 
-arhs <- readRDS(paste0(arhs_data_folder, file1)) %>%
-  mutate(sex_grp = ifelse(sex=="Female", 2, 1)) %>%
-  select(year, datazone2011, sex_grp, age_grp, numerator = stays)
+get_numerators <- function(filename) {
+  df <- readRDS(paste0(arhs_data_folder, filename)) %>%
+    mutate(sex_grp = ifelse(sex=="Female", 2, 1),
+           year = as.numeric(substr(financial_year, 1, 4))) %>%
+    select(year, starts_with("datazone"), sex_grp, age_grp, numerator = stays) 
+}
 
-arhs_simd <- readRDS(paste0(arhs_data_folder, file2)) %>%
-  mutate(sex_grp = ifelse(sex=="Female", 2, 1)) %>%
-  select(year, datazone, sex_grp, age_grp, numerator = stays)
+arhs_dz01 <- get_numerators(data_datazone2001)
+arhs_dz11 <- get_numerators(data_datazone2011)
+arhs_dz22 <- get_numerators(data_datazone2022)
 
-# Save the raw data for feeding to the processing functions
 
-# File 1
+# Save the raw numerator data for feeding to the processing functions
 
-# Total population
-saveRDS(arhs, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_and_behav_raw.rds"))
+# Main data - uses datazone2011 throughout the series (back to 2002)
 
-# Subsets by sex
-arhs_m <- arhs %>% filter(sex_grp==1)
-saveRDS(arhs_m, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_and_behav_M_raw.rds"))
+arhs_main <- arhs_dz11 %>%
+  select(year, datazone=datazone2011, sex_grp, age_grp, numerator) 
 
-arhs_f <- arhs %>% filter(sex_grp==2)
-saveRDS(arhs_f, file.path(profiles_data_folder, "Prepared Data", "ARHS_mental_and_behav_F_raw.rds"))
+# Save overall
+saveRDS(arhs_main, 
+        file.path(profiles_data_folder, "Prepared Data", "arhs_main_raw.rds"))
 
-# File 2 (SIMD analysis)
+# Save subsets by sex
+saveRDS(arhs_main %>% filter(sex_grp==1), 
+        file.path(profiles_data_folder, "Prepared Data", "arhs_main_m_raw.rds"))
 
-# Total population
-saveRDS(arhs_simd, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_raw.rds"))
+saveRDS(arhs_main %>% filter(sex_grp==2), 
+        file.path(profiles_data_folder, "Prepared Data", "arhs_main_f_raw.rds"))
 
-# Subsets by sex
-arhs_simd_m <- arhs_simd %>% filter(sex_grp==1)
-saveRDS(arhs_simd_m, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_M_raw.rds"))
+# Deprivation data - uses datazone2001 if year<2014, and datazone2011 after this 
+# (datazone2022 will be included when SIMD2026 and population data available)
+arhs_simd_dz01 <- arhs_dz01 %>%
+  filter(year<2014) %>%
+  rename(datazone = datazone2001)
+arhs_simd_dz11 <- arhs_dz11 %>%
+  filter(year>=2014) %>%
+  rename(datazone = datazone2011)
+arhs_simd <- rbind(arhs_simd_dz01, arhs_simd_dz11)
 
-arhs_simd_f <- arhs_simd %>% filter(sex_grp==2)
-saveRDS(arhs_simd_f, file.path(profiles_data_folder, "Prepared Data", "ARHS_MBD_SIMD_F_raw.rds"))
+# Save overall
+saveRDS(arhs_simd,
+        file.path(profiles_data_folder, "Prepared Data", "arhs_simd_raw.rds"))
 
+# Save subsets by sex
+saveRDS(arhs_simd %>% filter(sex_grp==1),
+        file.path(profiles_data_folder, "Prepared Data", "arhs_simd_m_raw.rds"))
+saveRDS(arhs_simd %>% filter(sex_grp==2),
+        file.path(profiles_data_folder, "Prepared Data", "arhs_simd_f_raw.rds"))
 
 
 
 ##########################################################
-### Main analysis (used for pop group files too) -----
+### Main data processing -----
 ##########################################################
 
 # Run main_analysis to produce total population rates
-main_analysis(filename="ARHS_mental_and_behav",
-                            measure = "stdrate",
-                            geography = "datazone11",
-                            year_type = "calendar",
-                            ind_id = 30006, 
-                            time_agg = 1, 
-                            yearstart=2002, 
-                            yearend=2023, 
-                            pop = "DZ11_pop_16+", 
-                            epop_total = 165800, # 82900 x 2 sexes (because age grp 4 starts at 16y)
-                            epop_age = "16+", 
-                            test_file = FALSE, 
-                            QA = TRUE, 
-                            police_div = TRUE)
+main_analysis(filename="arhs_main",
+              measure = "stdrate",
+              geography = "datazone11",
+              year_type = "financial",
+              ind_id = 30006, 
+              time_agg = 1, 
+              yearstart=2002, 
+              yearend=2024, 
+              pop = "DZ11_pop_16+", 
+              epop_total = 165800, # 82900 x 2 sexes (because age grp 4 starts at 16y)
+              epop_age = "16+", 
+              test_file = FALSE, 
+              QA = FALSE, 
+              police_div = TRUE)
 
 popgrp_total <- main_analysis_result %>%
   mutate(split_name = "Sex",
          split_value = "Total")
 
 # Run main_analysis to produce rates by sex
-main_analysis(filename="ARHS_mental_and_behav_M",
+main_analysis(filename="arhs_main_m",
               measure = "stdrate",
               geography = "datazone11",
-              year_type = "calendar",
+              year_type = "financial",
               ind_id = 30006, 
               time_agg = 1, 
               yearstart=2002, 
-              yearend=2023, 
+              yearend=2024, 
               pop = "DZ11_pop_16+", 
               epop_total = 82900, # because starts at 16y
               epop_age = "16+", 
               test_file = FALSE, 
-              QA = TRUE, 
+              QA = FALSE, 
               police_div = TRUE)
 
 popgrp_m <- main_analysis_result %>%
   mutate(split_name = "Sex",
          split_value = "Male")
 
-main_analysis(filename="ARHS_mental_and_behav_F",
+main_analysis(filename="arhs_main_f",
               measure = "stdrate",
               geography = "datazone11",
-              year_type = "calendar",
+              year_type = "financial",
               ind_id = 30006, 
               time_agg = 1, 
               yearstart=2002, 
-              yearend=2023, 
+              yearend=2024, 
               pop = "DZ11_pop_16+", 
               epop_total = 82900, # because starts at 16y
               epop_age = "16+", 
               test_file = FALSE, 
-              QA = TRUE, 
+              QA = FALSE, 
               police_div = TRUE)
 
 popgrp_f <- main_analysis_result %>%
@@ -155,9 +167,9 @@ popgrp_f <- main_analysis_result %>%
 
 
 # Combine data
-stays <- rbind(popgrp_total,
-               popgrp_f,
-               popgrp_m) |>
+arhs_main_rates <- rbind(popgrp_total,
+                         popgrp_f,
+                         popgrp_m) |>
   apply_stats_disc_mandb() |> # statistical disclosure applied to final values
   # remove small geographies
   filter(!(substr(code, 1, 3) %in% c("S02", "S99"))) #IZs and localities, these have some counts < 5
@@ -166,177 +178,60 @@ stays <- rbind(popgrp_total,
 
 
 ##########################################################
-### Deprivation analysis -----
+### Deprivation data processing -----
 ##########################################################
 
-# The ARHS data and publications use SIMD 2012 for 2010-11 and SIMD 2016 for 2012-16
-# This differs from the simd_lookup used in the deprivation_analysis process, where SIMD 2012 is used up to 2013.
-# Here we adjust the simd_lookup file to match the data, and run the other functions used in deprivation_analysis
+deprivation_analysis(filename = "arhs_simd",
+                     measure = "stdrate",
+                     time_agg = 1,
+                     yearstart = 2002,
+                     yearend = 2024,
+                     year_type = "financial",
+                     pop_sex = "all",
+                     pop_age = c(16,150),
+                     epop_age = "16+",
+                     epop_total = 165800,
+                     ind_id = 30006,
+                     test_file = FALSE, QA = FALSE)
+arhs_simd_result <- deprivation_analysis_result %>% mutate(sex="Total")
 
-# Lookups
-geography_lookups <- file.path(profiles_data_folder, "Lookups", "Geography")
-population_lookups <- file.path(profiles_data_folder, "Lookups", "Population")
+deprivation_analysis(filename = "arhs_simd_f",
+                     measure = "stdrate",
+                     time_agg = 1,
+                     yearstart = 2002,
+                     yearend = 2024,
+                     year_type = "financial",
+                     pop_sex = "female",  
+                     pop_age = c(16,150),
+                     epop_age = "16+",
+                     epop_total = 82900,
+                     ind_id = 30006,
+                     test_file = FALSE, QA = FALSE)
+arhs_simd_result_F <- deprivation_analysis_result %>% mutate(sex="Female")
 
-# get simd lookup
-simd_lookup <- readRDS(file.path(geography_lookups, "simd_datazone_lookup.rds"))
-# data for 2012 and 2013 need to be replaced with a copy of the data for 2014
-simd_2014 <- simd_lookup %>% filter(year == 2014)
-simd_2012 <- simd_2014 %>% mutate(year = 2012)
-simd_2013 <- simd_2014 %>% mutate(year = 2013)
-simd_lookup <- simd_lookup %>%
-  filter(!year %in% c(2012, 2013)) %>%
-  rbind(simd_2012, simd_2013)
-
-
-# Function to run the deprivation_analysis:
-arhs_deprivation_analysis <- function(filename, yearstart, yearend, pop_sex, epop_total) {
-  
-  # Read in data
-  data <- readRDS(file.path(profiles_data_folder, "Prepared Data", paste0(filename, "_raw.rds"))) |>
-    janitor::clean_names()
-  
-  # Assign each geography to an SIMD quintile/decile  ----
-  
-  # join data with lookup
-  data <- left_join(data, simd_lookup, by = c("datazone", "year"))
-  
-  # Aggregate by geography and SIMD quintiles/deciles  ----
-  # keep only Scotland data (small numbers in smaller geographies)
-  simd_data <- rbind(
-    aggregate_by_simd(data, geo_col = "scotland", simd_col = "sc_decile"), # scotland data, split by scotland deciles
-    aggregate_by_simd(data, geo_col = "scotland", simd_col = "sc_quin") # scotland data, split by scotland quintiles
-  )
-
-  # create overall totals
-  totals <- simd_data |>
-    mutate(quintile = "Total") |>
-    group_by(across(any_of(c("year", "code", "quint_type", "quintile", "sex_grp", "age_grp")))) |>
-    summarise_all(sum) |>
-    ungroup()
-  
-  # combine totals with SIMD splits
-  simd_data <- simd_data |>
-    rbind(totals) |> # remove any data that wasn't assigned to a datazone in the prepared datafile, that therefore couldn't be assigned to any SIMD quintiles/deciles
-    filter(!is.na(code))
-
-  # Add population figures  ----
-
-    #convert specified sex to code for lookup - this is used to filter population lookup
-  if(pop_sex == "male") {
-    pop_sex = 1
-  } else if(pop_sex == "female") {
-    pop_sex = 2
-  } else {
-    pop_sex = NULL  # No filtering on sex if "all"
-  }
-  
-  # read in the simd population lookup, filter by age group and summarise
-  population_lookup <- readRDS(file.path(population_lookups, "basefile_deprivation.rds")) |> #new file with PD, HSCP in it (revert to simd_population_lookup once that file has these geogs in)
-    filter(year >= yearstart & year <=yearend)  |> 
-    filter(age >= 16 & age <= 150) |> # filter by age range
-    filter(code == "S00000001")
-
-  # if indicator is for a single sex, filter pop lookup by that sex. Otherwise do not filter
-  if (!is.null(pop_sex)) {
-    population_lookup <- population_lookup |>
-      filter(sex_grp == pop_sex)
-  }
-  
-  grouping_vars <- c("year", "code", "quintile", "quint_type", "age_grp", "sex_grp")
-
-  population_lookup <- population_lookup |>
-    select(-age) |>
-    group_by(across(grouping_vars)) |>
-    summarise(denominator = sum(denominator), .groups = "drop")
-  
-  # join data with population lookup to add population column to use as denominator (when 2024 populations added double check that right join is most appropriate)
-  simd_data <- right_join(simd_data, population_lookup, by = grouping_vars)
- 
-  # Aggregate by time period  ----
-
-  # filter years
-  simd_data <- simd_data |>
-    filter(year >= yearstart & year <= yearend)
-  
-  # replace NAs with 0 before aggregating data by time period
-  simd_data <- simd_data |>
-    tidyr::replace_na(list(numerator = 0,
-                           denominator = 0))
-  
-  # Calculate rate ----
-  simd_data <- calculate_easr(simd_data, epop_total, epop_age="16+") # calculate standarised rate
-
-  # Calculate measures of inequality  ----
-  simd_data <- calculate_inequality_measures(simd_data)
-  
-  # Add some metadata columns  ----
-  simd_data <- simd_data |>
-    # create indicator id column - whatever id has been passed to the 'ind_id' argument should match
-    # the id assigned to the indicator in our teams technical document
-    mutate(ind_id = 30006) |>
-    # create trend axis column (used to create axis labels on trend charts)
-    create_trend_axis_column(year_type="calendar", agg=1) |>
-    # create definition period column (used to show time period for charts looking at a single year)
-    create_def_period_column(year_type="calendar", agg=1)
-  
-  # Save final file  ----
-
-  # select final columns
-  simd_data <- simd_data |>
-    select(-c(overall_rate, total_pop, proportion_pop, most_rate, 
-              least_rate, par_rr, count))
-
-  # save the data as an RDS file
-  saveRDS(simd_data, file.path(profiles_data_folder, "Data to be checked", paste0(filename, "_ineq.rds")))
-  
-  # make results available in global environment
-  deprivation_analysis_result <<- simd_data
-  
-  # Run QA  ----
-  run_qa(type = "deprivation", filename={{filename}}, test_file=FALSE)
-
-}
-
-
-
-# Total population
-arhs_deprivation_analysis(filename="ARHS_MBD_SIMD", 
-                          yearstart=2002, 
-                          yearend=2023,
-                          pop_sex = "all", 
-                          epop_total = 165800) # because starts at 16y
-
-arhs_simd_total <- deprivation_analysis_result %>%
-  mutate(sex = "Total")
-
-# Male population
-arhs_deprivation_analysis(filename="ARHS_MBD_SIMD_M", 
-                          yearstart=2002, 
-                          yearend=2023,
-                          pop_sex = "male", 
-                          epop_total = 82900) # because starts at 16y
-
-arhs_simd_m <- deprivation_analysis_result %>%
-  mutate(sex = "Male")
-
-# Female population
-arhs_deprivation_analysis(filename="ARHS_MBD_SIMD_F", 
-                          yearstart=2002, 
-                          yearend=2023,
-                          pop_sex = "female", 
-                          epop_total = 82900) # because starts at 16y
-
-arhs_simd_f <- deprivation_analysis_result %>%
-  mutate(sex = "Female")
-
+deprivation_analysis(filename = "arhs_simd_m",
+                     measure = "stdrate",
+                     time_agg = 1,
+                     yearstart = 2002,
+                     yearend = 2024,
+                     year_type = "financial",
+                     pop_sex = "male",
+                     pop_age = c(16,150),
+                     epop_age = "16+",
+                     epop_total = 82900,
+                     ind_id = 30006,
+                     test_file = FALSE, QA = FALSE)
+arhs_simd_result_M <- deprivation_analysis_result %>% mutate(sex="Male")
 
 # Combine data
-stays_simd<- rbind(arhs_simd_total,
-                    arhs_simd_f,
-                    arhs_simd_m) |>
-  apply_stats_disc_mandb() # statistical disclosure applied to final values
-# Smallest numerator is 207 for deciles (468 for quintiles)
-  
+arhs_simd_rates <- rbind(arhs_simd_result,
+                         arhs_simd_result_F,
+                         arhs_simd_result_M) |>
+  # Keep only Scotland
+  filter(substr(code, 1, 3) == "S00") |> 
+  apply_stats_disc_mandb() # statistical disclosure applied to final values (num<3 become 0, other values rounded to nearest 3)
+# smallest numerator 216
+
 
 ##########################################################
 ### Prepare final files -----
@@ -345,13 +240,12 @@ stays_simd<- rbind(arhs_simd_total,
 
 # 1 - main data (ie data behind summary/trend/rank tab)
 
-main_data <- stays %>% 
+main_data <- arhs_main_rates %>% 
   filter(split_value == "Total") %>% 
   select(code, ind_id, year, 
          numerator, rate, upci, lowci, 
-         def_period, trend_axis) %>%
-  unique() 
-# SMALLEST NUMERATOR = 75
+         def_period, trend_axis) 
+# SMALLEST NUMERATOR = 57
 
 # Save 
 write_rds(main_data, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_shiny.rds"))
@@ -360,9 +254,9 @@ write.csv(main_data, paste0(profiles_data_folder, "/Data to be checked/ARHS_ment
 
 # 2 - population groups data (ie data behind population groups tab)
 
-pop_grp_data <- stays %>% # includes the contents of main data, as the 'total' for each split
+pop_grp_data <- arhs_main_rates %>% # includes the contents of main data, as the 'total' for each split
   select(code, ind_id, year, numerator, rate, upci, 
-         lowci, def_period, trend_axis, split_name, split_value,) 
+         lowci, def_period, trend_axis, split_name, split_value) 
 # SMALLEST NUMERATOR = 15
 
 # Save
@@ -371,18 +265,20 @@ write.csv(pop_grp_data, paste0(profiles_data_folder, "/Data to be checked/ARHS_m
 
 
 # 3 - SIMD data (ie data behind deprivation tab)
-# SMALLEST NUMERATOR = 207
 
 # Save
-write_rds(stays_simd, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_ineq.rds"))
-write.csv(stays_simd, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_ineq.csv"), row.names = FALSE)
+write_rds(arhs_simd_rates, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_ineq.rds"))
+write.csv(arhs_simd_rates, paste0(profiles_data_folder, "/Data to be checked/ARHS_mental_and_behav_ineq.csv"), row.names = FALSE)
+# SMALLEST NUMERATOR = 216
 
-
+## SEND THE DATA TO THE ALCOHOL TEAM TO CHECK FOR DISCREPANCIES WITH THEIR PUBLISHED FIGURES BEFORE WE PUBLISH ##
 
 ##########################################################
 ### QA -----
 ##########################################################
 
-run_qa(type = "main", filename = "ARHS_mental_and_behav", test_file = FALSE) # any differences across nested geogs are <=3 (explained by the rounding)
+run_qa(type = "main", filename = "ARHS_mental_and_behav", test_file = FALSE) 
+# any differences across nested geogs are <=3 (explained by the rounding)
+# differences between previous file and the update run in Oct 2026 are because we're now producing the data for financial years rather than calendar. Creates numerator diffs.
 run_qa(type = "popgrp", filename = "ARHS_mental_and_behav", test_file = FALSE)
 run_qa(type = "deprivation", filename = "ARHS_mental_and_behav", test_file = FALSE) 
