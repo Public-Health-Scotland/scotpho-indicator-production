@@ -3,7 +3,7 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 
 # 15001: Long-acting reversible contraception (LARC) prescribing rate
-# (women aged 15-44 - primary care and sexual health combined)
+# (women aged 15-49 - primary care and sexual health combined)
 
 # Data sourced from this publication (typically published annually in Sep):
 # https://publichealthscotland.scot/publications/long-acting-reversible-contraception-larc-key-clinical-indicator-kci/
@@ -28,7 +28,7 @@ library(readxl)
 
 # read in data 
 data <- read_excel(
-  path = file.path(profiles_data_folder, "Received Data", "LARC prescribing", "mat_la_table.xlsx"), # path to file saved on network
+  path = file.path(profiles_data_folder, "Received Data", "LARC prescribing", "mat_la_table-2026.xlsx"), # path to file saved on network
   sheet = "Both Sources", # name of tab to read in 
   range = "A5:K20" # range to filter on (2nd part of range needs tweaked each year as there's 1 column per year)
   )
@@ -65,8 +65,8 @@ saveRDS(data_clean, file = file.path(profiles_data_folder, "Prepared Data", "150
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 main_analysis(ind_id = 15001, filename = "15001_larc_prescriptions", geography = "board", 
-              measure = "crude", crude_rate = 1000, pop = "CA_pop_fem15to49", 
-              year_type = "financial", time_agg = 1, yearstart = 2015, yearend = 2024)
+              measure = "crude", crude_rate = 1000, pop = "CA_pop_fem_15to49", 
+              year_type = "financial", time_agg = 1, yearstart = 2016, yearend = 2025)
 
 #note some data checks comparing NHS board to councils/hscp won't run since this inidicator is only available at scotland and nhs board level. 
 
