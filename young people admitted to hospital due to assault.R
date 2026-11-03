@@ -18,7 +18,7 @@ channel <- suppressWarnings(dbConnect(odbc(),  dsn="SMRA",
 
 # Extracts one row per admission of people between 15 and 25 with known sex
 # and a diagnosis of assault
-#1 subtracted from year for admissions in Jan-March to get first year of financial year (line 29)
+#1 subtracted from year for admissions in Jan-March to get first year of financial year (line 27)
 young_assault <- as_tibble(dbGetQuery(channel, statement=
   "SELECT distinct link_no linkno, cis_marker cis, min(AGE_IN_YEARS) age, 
       min(SEX) sex_grp, min(DR_POSTCODE) pc7,
@@ -26,7 +26,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
         THEN extract(year from admission_date)
         ELSE extract(year from admission_date) -1 END) as year
   FROM ANALYSIS.SMR01_PI z 
-  WHERE admission_date between '1 April 2005' and '31 March 2025' 
+  WHERE admission_date between '1 April 2005' and '31 March 2026' 
    AND sex <> 0 
    AND (main_condition between 'X850' and 'Y099' 
       or other_condition_1 between 'X850' and 'Y099'  
@@ -40,7 +40,7 @@ young_assault <- as_tibble(dbGetQuery(channel, statement=
   create_agegroups() # Creating age groups for standardization.
 
 # Bringing council area info.
-postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2025_1.rds') |>  
+postcode_lookup <- readRDS('/conf/linkage/output/lookups/Unicode/Geography/Scottish Postcode Directory/Scottish_Postcode_Directory_2026_2.rds') |>  
   clean_names() |>    #variables to lower case
   select(pc7, ca2019)
 
@@ -59,7 +59,7 @@ saveRDS(young_assault, file=paste0(profiles_data_folder, '/Prepared Data/youngas
 ###############################################.
 main_analysis(filename = "youngassault_ca2019", geography = "council", measure = "stdrate",
               year_type = "financial", ind_id = 13049, time_agg = 3, yearstart = 2005,
-              yearend = 2024, pop = "CA_pop_15to25", epop_total = 25400, epop_age = "15to25")
+              yearend = 2025, pop = "CA_pop_15to25", epop_total = 25400, epop_age = "15to25")
 
 
 ##END
