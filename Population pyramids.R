@@ -3,7 +3,7 @@
 # Script generates populations data file containing projections and mid-year estimates 
 # Also population_dependency_ratio (working age population (16-64) as a percentage of total pop
 
-# The output files produced form datafiles that are used in the demographics profile within profiles tool
+# The output files produced form data files that are used in the demographics profile within profiles tool
 
 
 ###############################################.
@@ -46,7 +46,7 @@ label_agegroups <- function(dataset,age_type = c("5 year agebands","Broad ageban
 
 
 ######################################################################.
-## Population projections ----
+## Source population projections ----
 ## Available for Scotland, NHS board, council and hscp only
 ######################################################################.
 
@@ -73,31 +73,20 @@ projections <- rbind(projections_scot, projections_hb, projections_ca, projectio
 rm(projections_ca,projections_hb,projections_hscp, projections_scot)
 
 
-#####################################################.
-## Dependency Ratio ----
-## Create file that can be used to generate projected dependency ratios (0-16 plus 65+ versus working age)
-projections_dependency <-projections |>
-  mutate(dependency_cat = case_when (age <=15 ~ "young&old", age >=65 ~ "young&old", TRUE ~"working")) |>
-  group_by(year, code, sex, dependency_cat) |>
-  summarise (pop=sum(pop)) |>
-  ungroup()
-
-# this file is picked up again later in syntax when creating dependency ratio indicator
-
-
 ########################################################################################.
-## Creating datset containg population projections for use in population pyramids ----
+## Projections: Population Pyramid File ----
+## Create dataset containing population projections for use in population pyramids
 
 projections <-projections |>
   create_agegroups()|>
   create_broad_agegroups() |>
   # not all geography levels available for same time period
-  # projections are published at a differnt point in the year to new MYE (so need to look out for possible duplicate years i.e. years which are in available through MYE but that might also 
+  # projections are published at a different point in the year to new MYE (so need to look out for possible duplicate years i.e. years which are in available through MYE but that might also 
   # be contained in the projections if they haven't been updated - this is done when projections and mye dataframes are combined).
-  # Also note that Scotland level and subnation projections may cover different period since these are also published at different times of the year.
+  # Also note that Scotland level and sub-national projections may cover different period since these are also published at different times of the year.
   # national 2024-2049
-  # subnational 2022-2047
-  # We don't need every single year of porjected population - filter for a selection of useful date e.g. ?every 5 years for example- 2025,2030,2035,2040,2045,2049
+  # sub-national 2022-2047
+  # We don't need every single year of projected population - filter for a selection of useful date e.g. ?every 5 years for example- 2025,2030,2035,2040,2045,2049
   filter(year %in% c("2025","2030","2035","2040","2045","2049"))
        
 ## 5 YEAR AGE BAND PROJECTIONS ----
@@ -136,11 +125,11 @@ xtabs(~pop_projections$geotype+pop_projections$year)
 #   filter(year != XXXX)
 
 #tidy
-rm(projections_5y ,projections_broadage, projections)
+rm(projections_5y ,projections_broadage)
 
 
 ################################################.
-## Mid Year/SAPE Populations ----
+## Source Mid Year/SAPE Populations ----
 ################################################.
 
 ## Populations derived from ScotPHO population lookups (all geographies, single year of age, all years) - note this is a large file 
@@ -217,15 +206,58 @@ write_parquet(demographics_populations, paste0(profiles_data_folder, "/Data to b
 ## Dependency ratio ----
 ################################################.
 
-all<- rbind(demographics_dataset,projections_pop2)
+#####################################################.
+## Projections: Dependency Ratio ----
+## Prepare file that can be used to generate projected dependency ratios (0-16 plus 65+ versus working age)
+projections_dependency <-projections |>
+  mutate(dependency_cat = case_when (age <=15 ~ "young_old", age >=65 ~ "young_old", TRUE ~"working")) |>
+  group_by(year, code, dependency_cat) |>
+  summarise (pop=sum(pop)) |>
+  ungroup() |>
+  filter(year %in% c("2025","2030","2035","2040","2045","2049")) #we dont want all years 
 
 
-depend_ratio <- all |>
-  mutate(category = case_when(age %in% c("0-4","5-9","10-14",))
-  group_by(year, code
-  summarise(dependents = sum())
+# MYE Populations: Dependency Ratio
+
+estimates_dataset <- readRDS(file=paste0(profiles_data_folder, '/Lookups/Population/basefile_DZ11.rds')) 
+
+mye_dependency<- estimates_dataset |>
+  mutate(dependency_cat = case_when (age <=15 ~ "young_old", age >=65 ~ "young_old", TRUE ~"working")) |>
+  group_by(year, code, dependency_cat) |>
+  summarise (pop=sum(denominator)) |>
+  ungroup()
+
+rm(estimates_dataset, demographics_populations,pop_estimates,pop_projections)
+
+# prepare outfile file as indicator file
+dependency <-rbind(mye_dependency,projections_dependency) |>
+  pivot_wider(names_from = dependency_cat, values_from = pop)|>
+  mutate(dependency_ratio=round(young_old/working*100,2),
+         
+         # Generate missing fields required for a shiny indicator data file (even though some will be blank)
+         numerator="", 
+         lowci = "", 
+         upci = "", 
+         
+         # Extract year from the 'date' column and create new columns
+         def_period = paste0(as.character(year), " mid year"),
+         trend_axis = year,
+         
+         # Create indicator id column
+         ind_id = 99150) |>
+  rename(rate=dependency_ratio) |>
+  # Remove columns no longer needed  
+  select(code,	ind_id,	year,	numerator,	rate,	lowci,	upci,	def_period,	trend_axis)
+
+## Save output file which can be picked up in shiny app data prep steps 
+write_parquet(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.parquet"))
+write_rds(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.rds"))
+write.csv(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.csv"), row.names = FALSE)
+
+run_qa(filename="dependency_ratio", type="main", test_file=FALSE)
 
 
 
+data_indicator <- readRDS(paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
 
 
