@@ -214,7 +214,7 @@ projections_dependency <-projections |>
   group_by(year, code, dependency_cat) |>
   summarise (pop=sum(pop)) |>
   ungroup() |>
-  filter(year %in% c("2025","2030","2035","2040","2045","2049")) #we dont want all years 
+  filter(year %in% c("2025","2030","2035","2040","2045")) #we dont want all years, 2045 last year that we have board/ca and scotland  
 
 
 # MYE Populations: Dependency Ratio
@@ -236,28 +236,23 @@ dependency <-rbind(mye_dependency,projections_dependency) |>
          
          # Generate missing fields required for a shiny indicator data file (even though some will be blank)
          numerator="", 
-         lowci = "", 
-         upci = "", 
+         lowci =as.numeric(""), 
+         upci = as.numeric(""), 
          
          # Extract year from the 'date' column and create new columns
          def_period = paste0(as.character(year), " mid year"),
-         trend_axis = year,
+         trend_axis = as.character(year),
+         year  = as.numeric(year),
          
          # Create indicator id column
          ind_id = 99150) |>
   rename(rate=dependency_ratio) |>
   # Remove columns no longer needed  
-  select(code,	ind_id,	year,	numerator,	rate,	lowci,	upci,	def_period,	trend_axis)
+  select(year, code, rate, numerator,	lowci,	upci,	def_period,	trend_axis, ind_id)
 
 ## Save output file which can be picked up in shiny app data prep steps 
-write_parquet(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.parquet"))
 write_rds(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.rds"))
 write.csv(dependency, paste0(profiles_data_folder, "/Data to be checked/dependency_ratio_shiny.csv"), row.names = FALSE)
 
 run_qa(filename="dependency_ratio", type="main", test_file=FALSE)
-
-
-
-data_indicator <- readRDS(paste0(profiles_data_folder, "/Data to be checked/", filename, "_shiny.rds"))
-
 
