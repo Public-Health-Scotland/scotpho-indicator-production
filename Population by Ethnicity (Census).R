@@ -1,8 +1,6 @@
 # Ethnicity populations
 
-# Script generates populations data file containing census based populations by ethnicity
-
-
+# Script generates populations by ethnicity data sourced from 2022 Census
 # The output files produced form datafiles that are used in the demographics profile within profiles tool
 
 
@@ -52,26 +50,46 @@ ethnicity_pops <- ethnicity_pops |>
 #tidy
 rm(ethnicity_pops_ca,ethnicity_pops_hb,ethnicity_pops_scot)
 
-## Datazone level aggregation available from census website
+## Datazone level aggregation available from census website (I SOURCED DATAZONE LEVEL BECUASE I WANT TO MAP TO HSCP LOCALITY BUT COULD HAVE CHOSEN IZ LEVEL EXTRACT TOO- NOT SURE WHICH IS EASIER)
 # https://www.scotlandscensus.gov.uk/webapi/opentable?id=01a1c607-1a14-7fab-ac6b-3f85638acab1
 
 # small area populations are only available by 2 broad ethnicity groups - white and other.
 ################################################################################################.
 
+## Intermediate Zone 2011
+# https://www.scotlandscensus.gov.uk/webapi/opentable?id=01a1d55e-ade1-7c8b-9118-9a66e8d038f5
+
+ethnicity_iz <- read.xlsx(paste0(profiles_data_folder,"/Received Data/census/2022 census populations by ethnicity and 2011 intzone.xlsx"), sheet = "iz") |>
+  clean_names() |> # converts column names to lowercase
+  rename(code = intermediate_zone_2011, tot_pop=total) |>
+  mutate(percentage_other=other_ethnic_group/tot_pop*100) #only calculate % other ethnic group
+
+
+## HSCP (integration authorities)
+#https://www.scotlandscensus.gov.uk/webapi/opentable?id=01a1d568-41ac-74f9-b825-1700eb9f1a9a
+
+ethnicity_hscp <- read.xlsx(paste0(profiles_data_folder,"/Received Data/census/2022 census populations by ethnicity and hscp.xlsx"), sheet = "hscp") |>
+  clean_names() |> # converts column names to lowercase
+  rename(code = integration_authority_2019, tot_pop=total) |>
+  mutate(percentage_other=other_ethnic_group/tot_pop*100) #only calculate % other ethnic group
+
+
+## DataZone used to generate hscp locality (although not perfect measure since census apply disclosure and summing of small geographies not quite correct) 
+# https://www.scotlandscensus.gov.uk/webapi/opentable?id=01a1d55e-ade1-7c8b-9118-9a66e8d038f5
+
 ethnicity_dz <- read.xlsx(paste0(profiles_data_folder,"/Received Data/census/2022 census populations by ethnicity and 2011 datazone.xlsx"), sheet = "dz_pop") |>
   clean_names() |> # converts column names to lowercase
-  mutate(area_type = "Scotland")|> # add in column for area type
   rename(datazone2011 = data_zone_2011)
 
 # open geo lookup that can match 2011 dz to any higher geography
 geography_lookup <- readRDS(file.path(profiles_data_folder, "Lookups/Geography/DataZone11_All_Geographies_Lookup.rds")) 
 
 # match to geo lookup 
-ethnicity_dz <- left_join(x = ethnicity_dz, y = geography_lookup, by = "datazone2011") |>
-  select(intzone2011, hscp2019, hscp_locality, white, other_ethnic_group, total)
+ethnicity_locality <- left_join(x = ethnicity_dz, y = geography_lookup, by = "datazone2011") |>
+  select(hscp_locality, white, other_ethnic_group, total) |>
+  rename(code = hscp_locality)
 
-ethnicity_dz <- ethnicity_dz |>
-  pivot_longer(cols = intzone2011:hscp_locality, values_to = "code", names_to = NULL) |>
+ethnicity_locality <- ethnicity_locality |>
   group_by(code) |>
   summarise_all(sum, na.rm = T) |>
   ungroup() |>
@@ -79,18 +97,16 @@ ethnicity_dz <- ethnicity_dz |>
   rename(tot_pop=total)
 
 #tidy
-rm(geography_lookup)
+rm(geography_lookup, ethnicity_dz)
 
 
 ######################################################################.
 ## add all geographies ----
 
 
-ethnicity_populations <- rbind(ethnicity_pops, ethnicity_dz)
-
+ethnicity_populations <- rbind(ethnicity_pops, ethnicity_hscp, ethnicity_locality, ethnicity_iz) |>
+  mutate(percentage_other=round(percentage_other,2))
 
 ## Save output file which can be picked up in shiny app data prep steps 
 write_parquet(ethnicity_populations, paste0(profiles_data_folder, "/Data to be checked/ethnicity_populations.parquet"))
-
-
 
