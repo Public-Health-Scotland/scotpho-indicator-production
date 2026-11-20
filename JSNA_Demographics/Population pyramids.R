@@ -260,7 +260,7 @@ demographics_populations_final <- rbind(demographics_populations_filtered , demo
          tot_percent= abs(percentage_Male)+percentage_Female) 
 
 ## Save output file which can be picked up in shiny app data prep steps 
-write_parquet(demographics_populations, paste0(profiles_data_folder, "/Data to be checked/demographics_populations.parquet"))
+write_parquet(demographics_populations_final, paste0(profiles_data_folder, "/Data to be checked/demographics_populations.parquet"))
   
 
   
