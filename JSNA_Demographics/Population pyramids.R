@@ -3,6 +3,9 @@
 # Script generates populations data file containing projections and mid-year estimates 
 # Also population_dependency_ratio (working age population (16-64) as a percentage of total pop
 
+# remember that projections and estimates population series will contain overlapping time periods so we need to decide
+# what years to select from which data series.
+
 # The output files produced form data files that are used in the demographics profile within profiles tool
 
 
@@ -20,12 +23,16 @@ cl_out <- "/conf/linkage/output/lookups/Unicode/"
 create_broad_agegroups <- function(dataset) {
   dataset %>% mutate(age_grp_broad = as.character(case_when(between(age, 0, 17) ~ 1, between(age, 18, 44) ~ 2,
                                                       between(age, 45, 64) ~ 3, between(age, 65, 74) ~ 4, 
-                                                      between(age, 75, 84) ~ 5, between(age, 85, 200) ~ 6)))
+                                                      between(age, 75, 84) ~ 5, between(age, 85, 200) ~ 6)),
+                     
+                     age_grp_summary = as.character(case_when(between(age, 0, 15) ~ 1, between(age, 16, 64) ~ 2,
+                                                            between(age, 65, 84) ~ 3, between(age, 85, 200) ~ 4))
+                     )
 }
 
 
 # Function to flexibly label agebands depending on what age band type is (5 year or broad ageband) ----
-label_agegroups <- function(dataset,age_type = c("5 year agebands","Broad agebands"), age_col=c("age_grp5","age_grp_broad")) {
+label_agegroups <- function(dataset,age_type = c("5 year agebands","Broad agebands","Summary agebands"), age_col=c("age_grp5","age_grp_broad","age_grp_summary")) {
   
   if(age_type== "Broad agebands") {
   dataset %>% mutate(age_label = case_when({{age_col}} == "1" ~ "0-17", {{age_col}} == "2"   ~ "18-44",
@@ -42,7 +49,13 @@ label_agegroups <- function(dataset,age_type = c("5 year agebands","Broad ageban
                                             {{age_col}}  == 13  ~ "60-64", {{age_col}}  == 14  ~ "65-69",
                                             {{age_col}}  == 15  ~ "70-74", {{age_col}}  == 16  ~ "75-79",
                                             {{age_col}}  == 17  ~ "80-84", {{age_col}}  == 18  ~ "85-89",
-                                            {{age_col}}  == 19  ~ "90+", TRUE ~"other")) }}
+                                            {{age_col}}  == 19  ~ "90+", TRUE ~"other")) 
+  }else if(age_type == "Summary agebands") {
+    dataset %>% mutate(age_label = case_when({{age_col}} == "1" ~ "Under 16", {{age_col}} == "2"   ~ "16-64",
+                                             {{age_col}} == "3"   ~ "65-84", {{age_col}} == "4"   ~ "85+", TRUE ~"other")) 
+    
+    }}
+  
 
 
 ######################################################################.
@@ -79,7 +92,7 @@ rm(projections_ca,projections_hb,projections_hscp, projections_scot)
 
 projections <-projections |>
   create_agegroups()|>
-  create_broad_agegroups() |>
+  create_broad_agegroups() |> # additional columns with 2 distinct wide age groups
   # not all geography levels available for same time period
   # projections are published at a different point in the year to new MYE (so need to look out for possible duplicate years i.e. years which are in available through MYE but that might also 
   # be contained in the projections if they haven't been updated - this is done when projections and mye dataframes are combined).
@@ -95,7 +108,7 @@ projections_5y <-projections |>
   summarise(population=sum(pop),
             age_category = "5 year agebands")|>
   ungroup()|>
-  rename(age_grp5="age_grp") |> # naming agegrp field explicitly to reduce chance of mislabelling 
+  rename(age_grp5="age_grp") |> # naming agegrp field explicitly to reduce chance of mis-labelling 
   label_agegroups(age_type="5 year agebands", age_col=age_grp5) |>
   rename(age_grp=age_grp5) #revert to original name to allow binding of df
 
@@ -109,9 +122,18 @@ projections_broadage <-projections |>
   label_agegroups(age_col=age_grp_broad, age_type="Broad agebands") |>
   rename(age_grp=age_grp_broad)
 
+## SUMMARY AGE BANDS PROJECTIONS----
+projections_summary <-projections |>
+  group_by(code, year, sex, age_grp_summary)|>
+  summarise(population=sum(pop),
+            age_category = "Summary agebands")|>
+  ungroup()|>
+  label_agegroups(age_col=age_grp_summary, age_type="Summary agebands") |>
+  rename(age_grp=age_grp_summary)
 
-#bind the two data frames
-pop_projections <- rbind(projections_5y, projections_broadage) |>
+
+#bind the three data frames
+pop_projections <- rbind(projections_5y, projections_broadage,projections_summary  ) |>
   arrange(year, code, sex, age_category, as.numeric(age_grp)) |>
   mutate(geotype=substr(code,1,3), #create a geo type field as we need to avoid where years are present in both projections and population estimates
          pop_type="Population Projection")|> #label source of this population 
@@ -125,7 +147,7 @@ xtabs(~pop_projections$geotype+pop_projections$year)
 #   filter(year != XXXX)
 
 #tidy
-rm(projections_5y ,projections_broadage)
+rm(projections_5y ,projections_broadage, projections_summary)
 
 
 ################################################.
@@ -161,9 +183,18 @@ estimates_broadage <- estimates_dataset|>
   label_agegroups(age_col=age_grp_broad, age_type="Broad agebands") |>
   rename(age_grp=age_grp_broad)  
   
+## SUMMARY AGE BAND ESTIMATES ----
+estimates_summary <- estimates_dataset|>
+  group_by(code, year, sex_grp, age_grp_summary)|>
+  summarise(population=sum(denominator),
+            age_category = "Summary agebands")|>
+  ungroup()|>
+  label_agegroups(age_col=age_grp_summary, age_type="Summary agebands") |>
+  rename(age_grp=age_grp_summary)  
+
 
 #bind the two data frames
-pop_estimates <- rbind(estimates_5y, estimates_broadage) |>
+pop_estimates <- rbind(estimates_5y, estimates_broadage, estimates_summary) |>
   arrange(year, code, sex_grp, age_category, as.numeric(age_grp)) |>
   mutate(geotype=substr(code,1,3),#create a geo type field as we need to avoid where years are present in both projections and population estimates
          pop_type="Population Estimates") #label source of this population
@@ -176,7 +207,7 @@ pop_estimates <- pop_estimates |>
 filter(year %in% c(2024,2023,2022,2020,2015,2011,2002)) 
 
 #tidy
-rm(estimates_5y ,estimates_broadage, estimates_dataset)
+rm(estimates_5y ,estimates_broadage, estimates_dataset, estimates_summary)
 
 ################################################.
 ## Bind Projection and Estimates dataframes ----
@@ -184,18 +215,50 @@ rm(estimates_5y ,estimates_broadage, estimates_dataset)
 
 # bind the projection & estimate files
 demographics_populations <- rbind(pop_estimates, pop_projections) |>
-
  # group to add total population for a geography by year
   group_by(year,code, age_category) |>
   mutate(pop_sum=sum(population), #add total population for a particular geography code & year 
          sex_grp=case_when(sex_grp=="1" ~ "Male",sex_grp=="2" ~"Female", TRUE ~"other")) |>
   ungroup()|> #ungroup to allow % with male/female within geocode
   mutate(percentage=population/pop_sum*100) |>
-  select(-pop_sum) |>
+  select(-pop_sum) # remove
+
+# Calculate an all ages group
+demographics_all_ages <-demographics_populations |>
+  filter(age_category=="Broad agebands")|> 
+  mutate(age_label="All ages",
+         age_category="All ages",
+         age_grp="0") |>
+  # group to add total population for a geography by year
+  group_by(year,code, age_category, pop_type, geotype, age_grp,sex_grp, age_label) |>
+  summarise(population=sum(population),
+            percentage=sum(percentage)) |>
+  ungroup() 
+  
+
+# The '65+' age band requires addition of 65-84 and 85+ age bands from the summary age band group
+# remember from this point on the age groups won't be mutually exclusive so can't sum the summary age category to derive all ages
+demographics_65plus <-demographics_populations |>
+  filter(age_category=="Summary agebands" & age_label %in% c("65-84","85+"))|>
+  mutate(age_label="65+",
+         age_grp="3") |>
+  # group to add total population for a geography by year
+  group_by(year,code, age_category, pop_type, geotype, age_grp,sex_grp, age_label) |>
+  summarise(population=sum(population),
+         percentage=sum(percentage)) |>
+  ungroup() 
+
+#remove the 65-84 and the 16-64 age groups as these aren't required
+demographics_populations_filtered <-demographics_populations |>
+  filter (!(age_category =="Summary agebands" & age_label == "65-84")) # filter out the 65-84 agegroup which we don't need
+
+demographics_populations_final <- rbind(demographics_populations_filtered , demographics_65plus, demographics_all_ages) |>
+  ## add columns for both sex which can be used for % change
   pivot_wider(names_from = sex_grp, values_from = c(percentage,population))|>
   mutate(percentage_Male=0-percentage_Male,#convert male percentage to negative value which is required in population pyramid
-         tot_pop= population_Male+population_Female) 
-  
+         tot_pop= population_Male+population_Female,
+         tot_percent= abs(percentage_Male)+percentage_Female) 
+
 ## Save output file which can be picked up in shiny app data prep steps 
 write_parquet(demographics_populations, paste0(profiles_data_folder, "/Data to be checked/demographics_populations.parquet"))
   
